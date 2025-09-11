@@ -1,0 +1,24 @@
+# 팀원 리뷰가 끝난 뒤 PR을 Merge하기 전에 수동으로 리뷰를 요청(자동실행 비활성화)
+# @coderabbit review 또는 @coderabbit summarize를 PR의 댓글에 작성해 호출
+language: "ko-KR"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: true
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: false
+    drafts: false
+    base_branches:
+      - "main"
+      - "dev"
+  # 테스트 커버리지 관련 리뷰 강화
+  test_coverage:
+    enabled: true
+    threshold: 80
+    message: "테스트 커버리지가 80% 미만입니다. 추가 테스트를 작성해주세요."
+chat:
+  auto_reply: true

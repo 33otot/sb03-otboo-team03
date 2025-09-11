@@ -1,0 +1,22 @@
+# Otboo 프로젝트
+
+[![codecov](https://codecov.io/gh/33otot/sb03-otboo-team03/branch/main/graph/badge.svg)](https://codecov.io/gh/33otot/sb03-otboo-team03)
+[![codecov](https://codecov.io/gh/33otot/sb03-otboo-team03/branch/dev/graph/badge.svg)](https://codecov.io/gh/33otot/sb03-otboo-team03)
+
+## 프로젝트 개요
+
+Otboo는 날씨 기반 의상 추천 서비스입니다.
+
+## 테스트 커버리지
+
+이 프로젝트는 80% 이상의 테스트 커버리지를 유지합니다. PR이 merge되려면 다음 조건을 만족해야 합니다:
+
+- ✅ 테스트 커버리지 80% 이상
+- ✅ 모든 테스트 통과
+- ✅ CI/CD 파이프라인 성공
+
+## 브랜치 보호 규칙
+
+- `main` 브랜치: 80% 이상 커버리지 필요
+- `dev` 브랜치: 80% 이상 커버리지 필요
+- PR merge 전 CI 성공 필수

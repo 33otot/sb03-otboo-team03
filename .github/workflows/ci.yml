@@ -1,0 +1,67 @@
+name: Java CI with Gradle
+
+on:
+pull_request:
+branches: [ "dev", "main" ]
+
+jobs:
+build:
+runs-on: ubuntu-latest
+
+
+steps:
+    # 소스 코드 체크아웃
+    - name: Checkout code
+    uses: actions/checkout@v4
+
+    # JDK 17 환경 설정
+    - name: Set up JDK 17
+    uses: actions/setup-java@v4
+    with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    # Gradle wrapper 실행 권한 부여
+    - name: Grant execute permission for gradlew
+    run: chmod +x ./gradlew
+
+    # Gradle 빌드 및 테스트 실행
+    - name: Build with Gradle and check coverage
+    run: ./gradlew clean build check --parallel --build-cache
+    env:
+        GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g -Dorg.gradle.daemon=false"
+
+    # JaCoCo 코드 커버리지 리포트 생성
+    - name: Generate JaCoCo coverage report
+    run: ./gradlew jacocoTestReport
+
+    # 커버리지 리포트 존재 여부 확인
+    - name: Check coverage threshold
+    run: |
+        echo "Checking coverage threshold..."
+        if [ -f "build/reports/jacoco/test/jacocoTestReport.xml" ]; then
+        echo "Coverage report found"
+        else
+        echo "Coverage report not found"
+        exit 1
+        fi
+
+    # JaCoCo 커버리지 리포트를 아티팩트로 업로드
+    - name: Upload JaCoCo coverage report
+    uses: actions/upload-artifact@v4
+    with:
+        name: jacoco-report
+        path: build/reports/jacoco/test/html
+
+    # Codecov에 커버리지 리포트 업로드
+    - name: Upload coverage to Codecov
+    uses: codecov/codecov-action@v4
+    with:
+        file: ./build/reports/jacoco/test/jacocoTestReport.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        verbose: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: ./
+        root_dir: ./
