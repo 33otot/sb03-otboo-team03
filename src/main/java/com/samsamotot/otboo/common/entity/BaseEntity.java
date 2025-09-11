@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.common.domain;
+package com.samsamotot.otboo.common.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
