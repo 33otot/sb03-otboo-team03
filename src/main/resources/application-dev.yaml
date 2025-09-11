@@ -1,0 +1,43 @@
+spring:
+  sql.init.mode: always
+  devtools:
+    restart:
+      additional-exclude: "**/mapper/**/*MapperImpl.class"
+      log-condition-evaluation-delta: true
+
+  # DB 접속 정보
+  datasource:
+    url: jdbc:postgresql://postgres:5432/otboo
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  # JPA 설정
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        show_sql: true
+        default_batch_fetch_size: 100
+        format_sql: true
+
+  # Batch 설정
+  batch:
+    jdbc:
+      initialize-schema: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+
+server:
+  port: 8080
