@@ -1,7 +1,6 @@
 # Otboo 프로젝트
 
 [![codecov](https://codecov.io/gh/33otot/sb03-otboo-team03/branch/main/graph/badge.svg)](https://codecov.io/gh/33otot/sb03-otboo-team03)
-[![codecov](https://codecov.io/gh/33otot/sb03-otboo-team03/branch/dev/graph/badge.svg)](https://codecov.io/gh/33otot/sb03-otboo-team03)
 
 ## 프로젝트 개요
 
