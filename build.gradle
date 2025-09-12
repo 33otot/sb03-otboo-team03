@@ -70,6 +70,7 @@ dependencies {
 	// Database
 	runtimeOnly 'com.h2database:h2' // H2 인메모리 데이터베이스
 	runtimeOnly 'org.postgresql:postgresql' // PostgreSQL 데이터베이스
+	implementation 'com.vladmihalcea:hibernate-types-60:2.21.1' // JSONB 매핑
 	// Testing
 	testImplementation 'org.springframework.boot:spring-boot-starter-test' // Spring Boot 테스트
 	testImplementation 'org.springframework.batch:spring-batch-test' // 배치 테스트
