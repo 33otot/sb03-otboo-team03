@@ -21,6 +21,9 @@ spring:
         default_batch_fetch_size: 100
         format_sql: false
         dialect: org.hibernate.dialect.H2Dialect
+        # H2에서 UUID 타입 지원을 위한 설정
+        type:
+          uuid: org.hibernate.type.UUIDCharType
   
   # H2 콘솔 활성화 (테스트용)
   h2:
@@ -28,10 +31,17 @@ spring:
       enabled: true
       path: /h2-console
   
+  # SQL 초기화 비활성화 (PostgreSQL 스키마 사용 안함)
+  sql:
+    init:
+      mode: never
+      schema-locations: ""
+      data-locations: ""
+  
   # Batch 설정
   batch:
     jdbc:
-      initialize-schema: always
+      initialize-schema: never
 
 # 테스트용 로깅 설정
 logging:
