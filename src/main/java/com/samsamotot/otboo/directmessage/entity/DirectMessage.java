@@ -8,9 +8,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-
-import java.util.UUID;
-
 /**
  * PackageName  : com.samsamotot.otboo.directmessage.entity
  * FileName     : DirectMessage
