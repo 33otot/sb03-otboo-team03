@@ -2,6 +2,8 @@ spring:
   config:
     activate:
       on-profile: dev
+    # .env 파일을 속성 소스로 추가
+    import: optional:file:.env[.properties]
   
   # 개발환경에서 보안 자동설정 비활성화
   autoconfigure:
