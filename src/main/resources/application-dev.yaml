@@ -1,34 +1,42 @@
 spring:
+  config:
+    activate:
+      on-profile: dev
+  
   # 개발환경에서 보안 자동설정 비활성화
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
       - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+  
+  # PostgreSQL 데이터베이스 초기화
   sql:
     init:
       mode: always
+      schema-locations: classpath:schema.sql
   devtools:
     restart:
       additional-exclude: "**/mapper/**/*MapperImpl.class"
       log-condition-evaluation-delta: true
 
-  # DB 접속 정보
+  # PostgreSQL DB 접속 정보
   datasource:
     url: jdbc:postgresql://postgres:5432/otboo
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
-  # JPA 설정
+  # JPA 설정 (PostgreSQL용)
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none  # schema.sql로 테이블 생성하므로 none
     properties:
       hibernate:
         show_sql: true
         default_batch_fetch_size: 100
         format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   # Batch 설정
   batch:
