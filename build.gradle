@@ -39,6 +39,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web' // 웹 MVC
 	implementation 'org.springframework.boot:spring-boot-starter-websocket' // 웹소켓
 	implementation 'org.springframework.kafka:spring-kafka' // Kafka 메시지 처리
+    runtimeOnly  "io.micrometer:micrometer-registry-prometheus"
 	
 	// JWT
     implementation 'com.nimbusds:nimbus-jose-jwt:10.3' // JWT 토큰 처리

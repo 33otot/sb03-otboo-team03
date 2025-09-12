@@ -23,21 +23,24 @@ RUN ./gradlew --no-daemon clean bootJar -x test
 # 2단계: 런타임 스테이지 (경량 이미지)
 FROM eclipse-temurin:17-jre-alpine AS runtime
 
-# 작업 디렉토리 설정
-WORKDIR /app
-
 # curl 설치
 RUN apk add --no-cache curl
 
-# 비루트 유저 생성
+# 비루트 유저 생성 및 전환
 RUN addgroup -S app && adduser -S app -G app
 USER app
+
+# 작업 디렉토리 설정
+WORKDIR /app
+
+# 로그 디렉터리 생성
+RUN mkdir -p /app/logs
 
 # 빌드된 JAR 복사 및 권한 설정
 COPY --from=build --chown=app:app /app/build/libs/*-SNAPSHOT.jar /app/app.jar
 
-# 비루트 유저로 전환
-USER app
+# Logback 에서 사용할 로그 디렉터리
+ENV LOG_DIR=/app/logs
 
 # 기본 포트 노출 (실제 포트는 SERVER_PORT 환경변수로)
 EXPOSE 8080
