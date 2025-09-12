@@ -2,6 +2,7 @@ package com.samsamotot.otboo.profile.entity;
 
 import com.samsamotot.otboo.common.entity.BaseEntity;
 import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
