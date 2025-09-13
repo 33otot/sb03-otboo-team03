@@ -31,7 +31,8 @@ public class FollowController {
     // 팔로우 생성
     @PostMapping
     public ResponseEntity<FollowDto> follow(@RequestBody FollowCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(new FollowDto());
+        FollowDto follow = followService.follow(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(follow);
     }
 
     // 팔로우 요약 정보 조회

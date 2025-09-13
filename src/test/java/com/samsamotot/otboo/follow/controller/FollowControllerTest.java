@@ -3,6 +3,7 @@ package com.samsamotot.otboo.follow.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
+import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.service.FollowService;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
@@ -20,6 +21,8 @@ import javax.print.attribute.standard.Media;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -64,10 +67,15 @@ class FollowControllerTest {
     @Test
     void 바디를_정상입력_받을경우_팔로우를_성공한다() throws Exception {
         // given
-        User user = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
-        UUID followerId = UUID.randomUUID();
-        UUID followeeId = UUID.randomUUID();
-        FollowCreateRequest validRequest = new FollowCreateRequest(followerId, followeeId);
+        User follower = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
+        User followee = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
+
+        FollowCreateRequest validRequest = new FollowCreateRequest(follower.getId(), followee.getId());
+        FollowDto response = new FollowDto(UUID.randomUUID(), followee, follower);
+
+        // when
+        when(followService.follow(any(FollowCreateRequest.class)))
+            .thenReturn(response);
 
         // when n then
         mockMvc.perform(post("/api/follows")
@@ -75,8 +83,8 @@ class FollowControllerTest {
                 .content(objectMapper.writeValueAsString(validRequest)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.followee").isMap())
-            .andExpect(jsonPath("$.followee.userId").value(followeeId))
+            .andExpect(jsonPath("$.followee.id").value(followee.getId()))
             .andExpect(jsonPath("$.follower").isMap())
-            .andExpect(jsonPath("$.follower.userId").value(followerId));
+            .andExpect(jsonPath("$.follower.id").value(follower.getId()));
     }
 }
