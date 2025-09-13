@@ -1,7 +1,6 @@
 package com.samsamotot.otboo.follow.dto;
 
 import com.samsamotot.otboo.follow.dto.user.UserSummaryDto;
-import com.samsamotot.otboo.user.entity.User;
 import lombok.Builder;
 
 import java.util.UUID;

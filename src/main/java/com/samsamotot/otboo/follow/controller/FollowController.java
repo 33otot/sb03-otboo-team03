@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.follow.controller;
 
+import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowListResponse;
@@ -29,7 +30,20 @@ public class FollowController {
 
     private final FollowService followService;
 
-    // 팔로우 생성
+    /**
+     * 새로운 팔로우 관계를 생성한다.
+     *
+     * 요청으로 전달된 팔로워 ID와 팔로위 ID를 기반으로
+     * 팔로우를 생성하고, 생성된 팔로우 정보를 반환한다.
+     *
+     * 요청 본문은 {@link FollowCreateRequest} 형식이며,
+     * 유효성 검증(@Valid)이 수행된다.
+     *
+     * @param request 팔로우 생성 요청 DTO (followerId, followeeId 포함)
+     * @return 생성된 팔로우 정보를 담은 ResponseEntity (HTTP 201 Created)
+     * @throws OtbooException 잘못된 요청, 중복 팔로우, 존재하지 않는 사용자,
+     *                        잠금 계정에 대한 요청일 경우
+     */
     @PostMapping
     public ResponseEntity<FollowDto> follow(@RequestBody @Valid FollowCreateRequest request) {
         FollowDto follow = followService.follow(request);

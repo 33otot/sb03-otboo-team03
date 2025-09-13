@@ -1,33 +1,24 @@
 package com.samsamotot.otboo.follow.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.user.UserSummaryDto;
 import com.samsamotot.otboo.follow.service.FollowService;
-import com.samsamotot.otboo.user.entity.Role;
-import com.samsamotot.otboo.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import javax.print.attribute.standard.Media;
-import java.time.Instant;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -49,17 +40,6 @@ class FollowControllerTest {
 
     @MockitoBean
     private FollowService followService;
-
-    /**
-     * private User(
-     * String email,
-     * String name,
-     * String password,
-     * Role role,
-     * Boolean locked,
-     * Instant temporaryPasswordExpiresAt
-     * ) {
-     */
 
     @Test
     void 바디를_정상입력_받을경우_팔로우를_성공한다() throws Exception {
