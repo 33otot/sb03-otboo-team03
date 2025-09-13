@@ -51,39 +51,39 @@ public class FollowController {
     }
 
     // 팔로우 요약 정보 조회
-    @GetMapping("/summary")
-    public ResponseEntity<FollowSummaryDto> followSummary(@RequestParam UUID userId) {
-        return ResponseEntity.ok().body(new FollowSummaryDto());
-    }
+//    @GetMapping("/summary")
+//    public ResponseEntity<FollowSummaryDto> followSummary(@RequestParam UUID userId) {
+//        return ResponseEntity.ok().body(new FollowSummaryDto());
+//    }
 
     // 팔로잉 목록 조회
-    @GetMapping("/followings")
-    public ResponseEntity<FollowListResponse> getFollowings(
-        @RequestParam UUID followerId,
-        @RequestParam(required = false) String cursor,
-        @RequestParam(required = false) String idAfter,
-        @RequestParam Integer limit,
-        @RequestParam(required = false) String nameLike
-    ) {
-        return ResponseEntity.ok().body(new FollowListResponse());
-    }
+//    @GetMapping("/followings")
+//    public ResponseEntity<FollowListResponse> getFollowings(
+//        @RequestParam UUID followerId,
+//        @RequestParam(required = false) String cursor,
+//        @RequestParam(required = false) String idAfter,
+//        @RequestParam Integer limit,
+//        @RequestParam(required = false) String nameLike
+//    ) {
+//        return ResponseEntity.ok().body(new FollowListResponse());
+//    }
 
     // 팔로워 목록 조회
-    @GetMapping("/followers")
-    public ResponseEntity<FollowListResponse> getFollowers(
-        @RequestParam UUID followeeId,
-        @RequestParam(required = false) String cursor,
-        @RequestParam(required = false) String idAfter,
-        @RequestParam Integer limit,
-        @RequestParam(required = false) String nameLike
-    ) {
-        return ResponseEntity.ok().body(new FollowListResponse());
-    }
+//    @GetMapping("/followers")
+//    public ResponseEntity<FollowListResponse> getFollowers(
+//        @RequestParam UUID followeeId,
+//        @RequestParam(required = false) String cursor,
+//        @RequestParam(required = false) String idAfter,
+//        @RequestParam Integer limit,
+//        @RequestParam(required = false) String nameLike
+//    ) {
+//        return ResponseEntity.ok().body(new FollowListResponse());
+//    }
 
 
     // 팔로우 취소
-    @DeleteMapping("/{followId}")
-    public ResponseEntity<Void> deleteFollow(@PathVariable UUID followId) {
-        return ResponseEntity.noContent().build();
-    }
+//    @DeleteMapping("/{followId}")
+//    public ResponseEntity<Void> deleteFollow(@PathVariable UUID followId) {
+//        return ResponseEntity.noContent().build();
+//    }
 }
