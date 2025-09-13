@@ -48,6 +48,7 @@ public enum ErrorCode {
     FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "FO001", "팔로우 관계를 찾을 수 없습니다."),
     INVALID_FOLLOW_REQUEST(HttpStatus.BAD_REQUEST, "FO002", "팔로우 관계를 생성할 수 없습니다."),
 
+
     // 다이렉트 메시지 관련 에러
     DM_NOT_FOUND(HttpStatus.NOT_FOUND, "DM001", "메시지를 찾을 수 없습니다."),
 
