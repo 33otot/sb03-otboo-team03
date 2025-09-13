@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
+import com.samsamotot.otboo.follow.dto.user.UserSummaryDto;
 import com.samsamotot.otboo.follow.service.FollowService;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
@@ -22,10 +23,13 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.refEq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * PackageName  : com.samsamotot.otboo.follow.controller
@@ -56,35 +60,36 @@ class FollowControllerTest {
      * Instant temporaryPasswordExpiresAt
      * ) {
      */
-    static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
-    static final String EMAIL = "test@test.com";
-    static final String NAME = "name";
-    static final String PASSWORD = "password";
-    static final Role ROLE = Role.USER;
-    static final boolean LOCKED = false;
-    static final Instant TEMPORARY_PASSWORD_EXPIRESAT = Instant.now().plusSeconds(60*10);
 
     @Test
     void 바디를_정상입력_받을경우_팔로우를_성공한다() throws Exception {
         // given
-        User follower = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
-        User followee = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
+        UserSummaryDto followee = new UserSummaryDto(UUID.randomUUID(), "팔로위", "profileImageUrl");
+        UserSummaryDto follower = new UserSummaryDto(UUID.randomUUID(), "팔로워", "profileImageUrl");
 
-        FollowCreateRequest validRequest = new FollowCreateRequest(follower.getId(), followee.getId());
+        FollowCreateRequest validRequest = new FollowCreateRequest(follower.userId(), followee.userId());
         FollowDto response = new FollowDto(UUID.randomUUID(), followee, follower);
 
-        // when
-        when(followService.follow(any(FollowCreateRequest.class)))
-            .thenReturn(response);
+        given(followService.follow(refEq(validRequest))).willReturn(response);
 
-        // when n then
+        // when & then
         mockMvc.perform(post("/api/follows")
                 .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(validRequest)))
             .andExpect(status().isCreated())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.id").isNotEmpty())
             .andExpect(jsonPath("$.followee").isMap())
-            .andExpect(jsonPath("$.followee.id").value(followee.getId()))
+            .andExpect(jsonPath("$.followee.userId").value(followee.userId().toString()))
+            .andExpect(jsonPath("$.followee.name").value(followee.name()))
+            .andExpect(jsonPath("$.followee.profileImageUrl").value(followee.profileImageUrl()))
             .andExpect(jsonPath("$.follower").isMap())
-            .andExpect(jsonPath("$.follower.id").value(follower.getId()));
+            .andExpect(jsonPath("$.follower.userId").value(follower.userId().toString()))
+            .andExpect(jsonPath("$.follower.name").value(follower.name()))
+            .andExpect(jsonPath("$.follower.profileImageUrl").value(follower.profileImageUrl()));
+
+        then(followService).should(times(1)).follow(refEq(validRequest));
+        then(followService).shouldHaveNoMoreInteractions();
     }
 }

@@ -1,32 +1,77 @@
 package com.samsamotot.otboo.follow.service;
 
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
+import com.samsamotot.otboo.follow.entity.Follow;
+import com.samsamotot.otboo.follow.mapper.FollowMapper;
+import com.samsamotot.otboo.follow.repository.FollowRepository;
 import com.samsamotot.otboo.user.entity.User;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import com.samsamotot.otboo.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 /**
  * PackageName  : com.samsamotot.otboo.follow.service
  * FileName     : FollowServiceImpl
  * Author       : dounguk
  * Date         : 2025. 9. 12.
+ * Description  : 팔로우 비즈니스 로직의 구현을 담당한다
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class FollowServiceImpl implements FollowService {
+    private static final String SERVICE = "[FollowService] ";
+
+    private final FollowRepository followRepository;
+    private final UserRepository userRepository;
+    private final FollowMapper followMapper;
+
     // 팔로우 기능
     @Override
     public FollowDto follow(FollowCreateRequest request) {
-        // request 값에 있는지 확인
-        // 유저 존재 여부 확인 -> 유저 조회 *2
-        // 팔로우 되어있는지 확인 -> exception + DB에서도 막아놓음
-        // 문제 없으면 생성
-        // 유저를 dto로 변환
-        // 응답 dto 생성
 
-        User user = User.createUser("test@test.com", "name", "randomPS", new BCryptPasswordEncoder());
-        return new FollowDto(UUID.randomUUID(), user, user);
+        log.info(SERVICE + "팔로우 요청 수신: followerId={}, followeeId={}", request.followerId(), request.followeeId());
+        boolean isFollowExists = followRepository.existsFollowByFollowerIdAndFolloweeId(request.followerId(), request.followeeId());
+        if (isFollowExists) {
+            log.warn(SERVICE + "중복 팔로우 감지: followerId={}, followeeId={}", request.followerId(), request.followeeId());
+            throw new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST);
+        }
+
+        User follower = userRepository.findById(request.followerId())
+            .orElseThrow(() -> {
+                log.warn(SERVICE + "팔로워 사용자 없음: followerId={}", request.followerId());
+                return new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST); // (권장: FOLLOWER_NOT_FOUND)
+            });
+
+        if (follower.isLocked()) {
+            log.warn(SERVICE + "잠금 계정(팔로워): followerId={}", follower.getId());
+            throw new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST); // (권장: USER_LOCKED)
+        }
+
+        User followee = userRepository.findById(request.followeeId())
+            .orElseThrow(() -> {
+                log.warn(SERVICE + "팔로우 대상 사용자 없음: followeeId={}", request.followeeId());
+                return new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST); // (권장: FOLLOWEE_NOT_FOUND)
+            });
+
+        if (followee.isLocked()) {
+            log.warn(SERVICE + "잠금 계정(팔로위): followeeId={}", followee.getId());
+            throw new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST); // (권장: USER_LOCKED)
+        }
+
+        Follow follow = Follow.builder()
+            .follower(follower)
+            .followee(followee)
+            .build();
+
+        Follow savedFollow = followRepository.save(follow);
+        log.info(SERVICE + "팔로우 생성 완료: followId={}, followerId={}, followeeId={}", savedFollow.getId(), follower.getId(), followee.getId());
+
+        // TODO 진짜 userSummaryDto 만들어지면 Follow package 내부 UserSummaryDto 삭제, FollowMapper 수정 필요
+        return followMapper.toDto(savedFollow);
     }
 }

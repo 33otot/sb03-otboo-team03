@@ -1,6 +1,8 @@
 package com.samsamotot.otboo.follow.dto;
 
+import com.samsamotot.otboo.follow.dto.user.UserSummaryDto;
 import com.samsamotot.otboo.user.entity.User;
+import lombok.Builder;
 
 import java.util.UUID;
 
@@ -10,9 +12,10 @@ import java.util.UUID;
  * Author       : dounguk
  * Date         : 2025. 9. 12.
  */
+@Builder
 public record FollowDto(
     UUID id,
-    User followee,
-    User follower
+    UserSummaryDto followee,
+    UserSummaryDto follower
 ) {
 }

@@ -1,31 +1,31 @@
 package com.samsamotot.otboo.follow.service;
 
+import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
+import com.samsamotot.otboo.follow.dto.user.UserSummaryDto;
+import com.samsamotot.otboo.follow.entity.Follow;
+import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
-import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.N;
 
-import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.Matchers.any;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 /**
  * PackageName  : com.samsamotot.otboo.follow.service
@@ -34,7 +34,7 @@ import static org.mockito.BDDMockito.then;
  * Date         : 2025. 9. 13.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Follow service unit test")
+@DisplayName("팔로우 서비스 단위 테스트")
 class FollowServiceImplTest {
     @InjectMocks
     private FollowServiceImpl followService;
@@ -45,116 +45,143 @@ class FollowServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
-    static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
-    static final String EMAIL = "test@test.com";
-    static final String NAME = "name";
-    static final String PASSWORD = "password";
-    static final Role ROLE = Role.USER;
-    static final boolean LOCKED = false;
-    static final Instant TEMPORARY_PASSWORD_EXPIRESAT = Instant.now().plusSeconds(60*10);
+    @Mock
+    private FollowMapper followMapper;
 
     @Test
     void 팔로우_생성한다() throws Exception {
-        // given
-        User follower = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
-        User followee = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
+        UUID followerId = UUID.randomUUID();
+        UUID followeeId = UUID.randomUUID();
+        FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
 
-        FollowCreateRequest validRequest = new FollowCreateRequest(follower.getId(), followee.getId());
-
-        given(userRepository.findById(followee.getId()))
-            .willReturn(Optional.of(followee));
-
-        given(userRepository.findById(follower.getId()))
-            .willReturn(Optional.of(follower));
-
-        given(followRepository.existsFollowByFollowerIdAndFolloweeId(follower,followee))
+        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
             .willReturn(false);
 
+        User follower = mock(User.class, Answers.RETURNS_DEFAULTS);
+        User followee = mock(User.class, Answers.RETURNS_DEFAULTS);
+        lenient().when(follower.isLocked()).thenReturn(false);
+        lenient().when(followee.isLocked()).thenReturn(false);
+
+        given(userRepository.findById(followerId)).willReturn(Optional.of(follower));
+        given(userRepository.findById(followeeId)).willReturn(Optional.of(followee));
+
+        given(followRepository.save(any(Follow.class))).willAnswer(inv -> inv.getArgument(0));
+
+        given(followMapper.toDto(any(Follow.class))).willAnswer(inv -> {
+            return new FollowDto(
+                UUID.randomUUID(),
+                new UserSummaryDto(followeeId, "followeeName", null),
+                new UserSummaryDto(followerId, "followerName", null)
+            );
+        });
+
         // when
-        FollowDto follow = followService.follow(validRequest);
+        FollowDto dto = followService.follow(req);
 
         // then
-        assertNotNull(follow);
-        assertThat(follow.follower().getId()).isEqualTo(follower.getId());
-        assertThat(follow.followee().getId()).isEqualTo(followee.getId());
+        assertThat(dto).isNotNull();
+        assertThat(dto.followee()).isNotNull();
+        assertThat(dto.follower()).isNotNull();
+        assertThat(dto.followee().userId()).isEqualTo(followeeId);
+        assertThat(dto.follower().userId()).isEqualTo(followerId);
     }
 
     @Test
-    void 두_유저가_팔로우_되어있는지_조회한다_실패() throws Exception {
+    void 중복_팔로우_확인한다_실패() throws Exception {
         // given
-        User follower = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
-        User followee = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
+        UUID followerId = UUID.randomUUID();
+        UUID followeeId = UUID.randomUUID();
+        FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
 
-        FollowCreateRequest invalidRequest = new FollowCreateRequest(follower.getId(), followee.getId());
-
-        given(userRepository.findById(followee.getId()))
-            .willReturn(Optional.of(followee));
-
-        given(userRepository.findById(follower.getId()))
-            .willReturn(Optional.of(follower));
-
-        given(followRepository.existsFollowByFollowerIdAndFolloweeId(follower,followee))
-            .willReturn(false);
-
-        // when
-        assertThatThrownBy(() -> followService.follow(invalidRequest))
-            .isInstanceOf(Exception.class);
-
-        // then
-        then(followRepository).should().existsFollowByFollowerIdAndFolloweeId(follower,followee);
-    }
-
-    @Test
-    void 유저가_있는지_확인한다_실패() throws Exception {
-        // given
-        User follower = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
-        User followee = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
-
-        FollowCreateRequest invalidRequest = new FollowCreateRequest(follower.getId(), followee.getId());
-
-        given(userRepository.findById(followee.getId()))
-            .willReturn(null);
-
-        given(userRepository.findById(follower.getId()))
-            .willReturn(null);
-
-        given(followRepository.existsFollowByFollowerIdAndFolloweeId(follower,followee))
+        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
             .willReturn(true);
 
-        // when
-        assertThatThrownBy(() -> followService.follow(invalidRequest))
-            .isInstanceOf(Exception.class);
-
-        // then
-        then(followRepository).shouldHaveNoInteractions();
-        then(userRepository).should().findById(followee.getId());
-        then(userRepository).should().findById(follower.getId());
+        // when & then
+        assertThatThrownBy(() -> followService.follow(req))
+            .isInstanceOf(OtbooException.class);
     }
 
     @Test
-    void follower_논리삭제_여부_확인한다_실패() throws Exception {
+    void follower_있는지_확인한다_실패() throws Exception {
         // given
-        User follower = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
-        ReflectionTestUtils.setField(follower, "locked", true);
+        UUID followerId = UUID.randomUUID();
+        UUID followeeId = UUID.randomUUID();
+        FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
 
-        User followee = User.createUser(EMAIL,NAME,PASSWORD,PASSWORD_ENCODER);
-
-        FollowCreateRequest invalidRequest = new FollowCreateRequest(follower.getId(), followee.getId());
-
-        given(userRepository.findById(followee.getId()))
-            .willReturn(Optional.of(followee));
-
-        given(userRepository.findById(follower.getId()))
-            .willReturn(Optional.of(follower));
-
-        given(followRepository.existsFollowByFollowerIdAndFolloweeId(follower,followee))
+        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
             .willReturn(false);
 
-        // when
-        assertThatThrownBy(() -> followService.follow(invalidRequest))
-            .isInstanceOf(Exception.class);
+        given(userRepository.findById(followerId)).willReturn(Optional.empty());
 
-        // then
-        then(followRepository).shouldHaveNoInteractions();
+        // when & then
+        assertThatThrownBy(() -> followService.follow(req))
+            .isInstanceOf(OtbooException.class);
+    }
+
+    @Test
+    void followee_있는지_확인한다_실패() throws Exception {
+        // given
+        UUID followerId = UUID.randomUUID();
+        UUID followeeId = UUID.randomUUID();
+        FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
+
+        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
+            .willReturn(false);
+
+        User follower = mock(User.class, Answers.RETURNS_DEFAULTS);
+        lenient().when(follower.isLocked()).thenReturn(false);
+        given(userRepository.findById(followerId)).willReturn(Optional.of(follower));
+
+        given(userRepository.findById(followeeId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> followService.follow(req))
+            .isInstanceOf(OtbooException.class);
+    }
+
+    @Test
+    void follower_논리삭제_확인한다_실패() throws Exception {
+        // given
+        UUID followerId = UUID.randomUUID();
+        UUID followeeId = UUID.randomUUID();
+        FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
+
+        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
+            .willReturn(false);
+
+        User follower = mock(User.class, Answers.RETURNS_DEFAULTS);
+        User followee = mock(User.class, Answers.RETURNS_DEFAULTS);
+
+        lenient().when(follower.isLocked()).thenReturn(true);
+        lenient().when(followee.isLocked()).thenReturn(false);
+
+        given(userRepository.findById(followerId)).willReturn(Optional.of(follower));
+
+        // when & then
+        assertThatThrownBy(() -> followService.follow(req))
+            .isInstanceOf(OtbooException.class);
+    }
+
+    @Test
+    void followee_논리삭제_확인한다_실패() throws Exception {
+        // given
+        UUID followerId = UUID.randomUUID();
+        UUID followeeId = UUID.randomUUID();
+        FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
+
+        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
+            .willReturn(false);
+
+        User follower = mock(User.class, Answers.RETURNS_DEFAULTS);
+        User followee = mock(User.class, Answers.RETURNS_DEFAULTS);
+
+        lenient().when(follower.isLocked()).thenReturn(false);
+        lenient().when(followee.isLocked()).thenReturn(true);
+
+        given(userRepository.findById(followerId)).willReturn(Optional.of(follower));
+
+        // when & then
+        assertThatThrownBy(() -> followService.follow(req))
+            .isInstanceOf(OtbooException.class);
     }
 }

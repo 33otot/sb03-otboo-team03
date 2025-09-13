@@ -5,6 +5,7 @@ import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowListResponse;
 import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
 import com.samsamotot.otboo.follow.service.FollowService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ public class FollowController {
 
     // 팔로우 생성
     @PostMapping
-    public ResponseEntity<FollowDto> follow(@RequestBody FollowCreateRequest request) {
+    public ResponseEntity<FollowDto> follow(@RequestBody @Valid FollowCreateRequest request) {
         FollowDto follow = followService.follow(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(follow);
     }
