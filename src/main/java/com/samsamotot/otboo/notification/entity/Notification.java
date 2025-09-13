@@ -35,5 +35,3 @@ public class Notification extends BaseEntity {
     @Column(nullable = false,length = 10)
     private NotificationLevel level;
 }
-
-
