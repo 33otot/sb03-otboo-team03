@@ -35,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Feed 서비스 단위 테스트")
 public class FeedServiceTest {
 
     @Mock
@@ -57,7 +58,7 @@ public class FeedServiceTest {
 
     @Nested
     @DisplayName("피드 생성 테스트")
-    class FeedCreateTests {
+    class FeedCreateTest {
 
         @Test
         void 피드를_생성하면_FeedDto를_반환해야한다() {

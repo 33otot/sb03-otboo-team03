@@ -43,4 +43,14 @@ public class FeedFixture {
             .content(feed.getContent())
             .build();
     }
+
+    public static FeedDto createFeedDto(String content, AuthorDto authorDto, WeatherDto weatherDto, List<OotdDto> ootdDtos) {
+        return FeedDto.builder()
+            .id(UUID.randomUUID())
+            .author(authorDto)
+            .weather(weatherDto)
+            .ootds(ootdDtos)
+            .content(content)
+            .build();
+    }
 }
