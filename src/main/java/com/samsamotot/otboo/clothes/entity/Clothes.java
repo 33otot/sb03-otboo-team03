@@ -48,6 +48,7 @@ public class Clothes extends BaseEntity {
     private User owner;
 
     @OneToMany(mappedBy = "clothes", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ClothesAttribute> attributes = new ArrayList<>();
 
     // 연관관계 편의 메서드

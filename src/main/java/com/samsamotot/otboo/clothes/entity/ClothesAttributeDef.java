@@ -33,6 +33,7 @@ public class ClothesAttributeDef extends BaseEntity {
     private Instant updatedAt;
 
     @OneToMany(mappedBy = "definition", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ClothesAttributeOption> options = new ArrayList<>();
 
     // 연관관계 편의 메서드
