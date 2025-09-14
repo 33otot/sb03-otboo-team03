@@ -3,6 +3,7 @@ package com.samsamotot.otboo.feed.controller;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -91,6 +92,36 @@ public class FeedControllerTest {
         }
 
         @Test
+        void 존재하지_않는_유저면_404가_반환되어야_한다() throws Exception {
+
+            // given
+            String content = "피드 생성 테스트";
+            UUID invalidAuthorId = UUID.randomUUID();
+            UUID weatherId = UUID.randomUUID();
+            UUID clothesId = UUID.randomUUID();
+            List<UUID> clothesIds = List.of(clothesId);
+
+            FeedCreateRequest feedCreateRequest = FeedCreateRequest.builder()
+                .authorId(invalidAuthorId)
+                .weatherId(weatherId)
+                .clothesIds(clothesIds)
+                .content(content)
+                .build();
+
+            given(feedService.create(any(FeedCreateRequest.class)))
+                .willThrow(new OtbooException(ErrorCode.USER_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(post("/api/feeds")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(feedCreateRequest)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.USER_NOT_FOUND.toString()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.USER_NOT_FOUND.getMessage()))
+                .andExpect(jsonPath("$.code").value(ErrorCode.USER_NOT_FOUND.getCode()));
+        }
+
+        @Test
         void 존재하지_않는_날씨면_404가_반환되어야_한다() throws Exception {
 
             // given
@@ -148,6 +179,27 @@ public class FeedControllerTest {
                 .andExpect(jsonPath("$.exceptionName").value(ErrorCode.CLOTHES_NOT_FOUND.toString()))
                 .andExpect(jsonPath("$.message").value(ErrorCode.CLOTHES_NOT_FOUND.getMessage()))
                 .andExpect(jsonPath("$.code").value(ErrorCode.CLOTHES_NOT_FOUND.getCode()));
+        }
+
+        @Test
+        void 본문_길이가_1000자를_초과하면_400이_반환되어야_한다() throws Exception {
+
+            // given
+            String over = "a".repeat(1001); // 1001자
+            FeedCreateRequest req = FeedCreateRequest.builder()
+                .authorId(UUID.randomUUID())
+                .weatherId(UUID.randomUUID())
+                .clothesIds(List.of(UUID.randomUUID()))
+                .content(over)
+                .build();
+
+            // when & then
+            mockMvc.perform(post("/api/feeds")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(feedService);
         }
     }
 }
