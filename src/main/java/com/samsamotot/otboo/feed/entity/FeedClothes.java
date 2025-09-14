@@ -1,4 +1,5 @@
 package com.samsamotot.otboo.feed.entity;
+
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.common.entity.BaseEntity;
 import jakarta.persistence.Entity;
@@ -12,7 +13,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Builder
 @Entity
@@ -20,7 +20,6 @@ import lombok.Setter;
     @UniqueConstraint(name = "uq_feed_clothes", columnNames = {"feed_id", "clothes_id"})
 })
 @Getter
-@Setter(AccessLevel.NONE)
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FeedClothes extends BaseEntity {

@@ -8,7 +8,6 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.entity.Feed;
-import com.samsamotot.otboo.feed.entity.FeedClothes;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.user.entity.User;
@@ -90,14 +89,7 @@ public class FeedServiceImpl implements FeedService {
             .content(content)
             .build();
 
-        List<FeedClothes> feedClothesList = clothesList.stream()
-            .map(clothes -> FeedClothes.builder()
-                .feed(feed)
-                .clothes(clothes)
-                .build())
-            .toList();
-
-        feed.getFeedClothes().addAll(feedClothesList);
+        clothesList.forEach(feed::addClothes);
 
         Feed saved = feedRepository.save(feed);
         FeedDto result = feedMapper.toDto(saved);

@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.feed.entity;
 
+import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.common.entity.BaseEntity;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.entity.Weather;
@@ -59,4 +60,21 @@ public class Feed extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "feed", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FeedClothes> feedClothes = new ArrayList<>();
+
+    public void addClothes(Clothes clothes) {
+        if (clothes == null) return;
+        if (this.feedClothes == null) this.feedClothes = new ArrayList<>();
+
+        boolean exists = this.feedClothes.stream()
+            .anyMatch(fc ->
+                fc.getClothes().getId().equals(clothes.getId())
+            );
+        if (exists) return;
+
+        FeedClothes fc = FeedClothes.builder()
+            .feed(this)
+            .clothes(clothes)
+            .build();
+        this.feedClothes.add(fc);
+    }
 }
