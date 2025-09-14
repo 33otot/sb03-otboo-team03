@@ -22,6 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 피드(Feed) 관련 비즈니스 로직을 처리하는 서비스 구현체입니다.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -34,6 +37,15 @@ public class FeedServiceImpl implements FeedService {
     private final ClothesRepository clothesRepository;
     private final FeedMapper feedMapper;
 
+    /**
+     * 새로운 피드를 생성하고 저장합니다.
+     * 요청 DTO를 기반으로 작성자, 날씨, 의상 정보를 조회하여
+     * 피드 엔티티를 구성하고 데이터베이스에 저장합니다.
+     *
+     * @param feedCreateRequest 피드 생성에 필요한 데이터
+     * @return  생성된 피드의 정보를 담은 FeedDto
+     * @throws OtbooException 존재하지 않는 사용자/날씨 정보/의상 정보
+     */
     @Override
     public FeedDto create(FeedCreateRequest feedCreateRequest) {
 
