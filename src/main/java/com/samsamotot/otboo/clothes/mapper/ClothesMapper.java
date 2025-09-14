@@ -21,10 +21,14 @@ public interface ClothesMapper {
 
     @Mapping(source = "definition.id", target = "definitionId")
     @Mapping(source = "definition.name", target = "definitionName")
-    @Mapping(target = "selectableValues", expression = "java(mapOptionsToSelectableValues(attribute.getDefinition().getOptions()))")
+    @Mapping(target = "selectableValues", expression = "java(mapOptionsToSelectableValues(attribute))")
     ClothesAttributeWithDefDto toClothesAttributeWithDefDto(ClothesAttribute attribute);
 
-    default List<String> mapOptionsToSelectableValues(List<ClothesAttributeOption> options) {
+    default List<String> mapOptionsToSelectableValues(ClothesAttribute attribute) {
+        if (attribute == null || attribute.getDefinition() == null) {
+            return null;
+        }
+        List<ClothesAttributeOption> options = attribute.getDefinition().getOptions();
         if (options == null) {
             return null;
         }

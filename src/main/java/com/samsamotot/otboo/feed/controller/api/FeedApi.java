@@ -20,15 +20,23 @@ public interface FeedApi {
             responseCode = "201",
             description = "피드 등록 성공",
             content = @Content(
-                mediaType = "*/*",
+                mediaType = "application/json",
                 schema = @Schema(implementation = FeedDto.class)
+            )
+        ),
+        @ApiResponse(
+          responseCode = "404",
+          description = "관련 자원(사용자/의상/날씨) 미존재",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
             )
         ),
         @ApiResponse(
             responseCode = "400",
             description = "피드 등록 실패",
             content = @Content(
-                mediaType = "*/*",
+                mediaType = "application/json",
                 schema = @Schema(implementation = ErrorResponse.class)
             )
         )

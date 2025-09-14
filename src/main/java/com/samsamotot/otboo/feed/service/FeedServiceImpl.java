@@ -2,6 +2,7 @@ package com.samsamotot.otboo.feed.service;
 
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
+import com.samsamotot.otboo.common.entity.BaseEntity;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
@@ -14,9 +15,12 @@ import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -54,7 +58,7 @@ public class FeedServiceImpl implements FeedService {
         List<UUID> clothesIds = feedCreateRequest.clothesIds();
         String content = feedCreateRequest.content();
 
-        log.info("[FeedServiceImpl] 피드 등록 시작: authorId = {}, weatherId = {}, clothesIds = {}", authorId, weatherId, clothesIds);
+        log.debug("[FeedServiceImpl] 피드 등록 시작: authorId = {}, weatherId = {}, clothesIds = {}", authorId, weatherId, clothesIds);
 
         User author = userRepository.findById(authorId)
             .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND, Map.of("authorId", authorId.toString())));
@@ -62,9 +66,22 @@ public class FeedServiceImpl implements FeedService {
         Weather weather = weatherRepository.findById(weatherId)
                 .orElseThrow(() -> new OtbooException(ErrorCode.WEATHER_NOT_FOUND, Map.of("weatherId", weatherId.toString())));
 
-        List<Clothes> clothesList = clothesRepository.findAllById(clothesIds);
-        if (clothesList.isEmpty()) {
-            throw new OtbooException(ErrorCode.CLOTHES_NOT_FOUND, Map.of("clothesIds", clothesIds.toString()));
+        Set<UUID> uniqueClothesIds = new HashSet<>(clothesIds);
+        List<Clothes> clothesList = clothesRepository.findAllById(uniqueClothesIds);
+
+        // 조회된 의류 개수가 고유 ID 개수와 다르면, 존재하지 않는 ID가 있다는 의미
+        if (clothesList.size() != uniqueClothesIds.size()) {
+
+            Set<UUID> foundIds = clothesList.stream()
+                .map(BaseEntity::getId)
+                .collect(Collectors.toSet());
+
+            uniqueClothesIds.removeAll(foundIds);
+
+            throw new OtbooException(
+                ErrorCode.CLOTHES_NOT_FOUND,
+                Map.of("notFoundClothesIds", uniqueClothesIds.toString())
+            );
         }
 
         Feed feed = Feed.builder()
@@ -73,19 +90,19 @@ public class FeedServiceImpl implements FeedService {
             .content(content)
             .build();
 
-        for (Clothes c : clothesList){
-            FeedClothes feedClothes = FeedClothes.builder()
+        List<FeedClothes> feedClothesList = clothesList.stream()
+            .map(clothes -> FeedClothes.builder()
                 .feed(feed)
-                .clothes(c)
-                .build();
+                .clothes(clothes)
+                .build())
+            .toList();
 
-            feed.getFeedClothes().add(feedClothes);
-        }
+        feed.getFeedClothes().addAll(feedClothesList);
 
         Feed saved = feedRepository.save(feed);
         FeedDto result = feedMapper.toDto(saved);
 
-        log.info("[FeedServiceImpl] 피드 등록 완료: feedId = {}", saved.getId());
+        log.debug("[FeedServiceImpl] 피드 등록 완료: feedId = {}", saved.getId());
 
         return result;
     }

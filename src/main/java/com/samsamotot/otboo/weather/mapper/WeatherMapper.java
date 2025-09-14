@@ -8,7 +8,7 @@ import com.samsamotot.otboo.weather.dto.WindSpeedDto;
 import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -25,10 +25,11 @@ public interface WeatherMapper {
         if (instant == null) {
             return null;
         }
-        return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 
     default PrecipitationDto toPrecipitationDto(Weather weather) {
+        if (weather == null) return null;
         return PrecipitationDto.builder()
             .type(weather.getPrecipitationType())
             .amount(weather.getPrecipitationAmount())
@@ -37,6 +38,7 @@ public interface WeatherMapper {
     }
 
     default HumidityDto toHumidityDto(Weather weather) {
+        if (weather == null) return null;
         return HumidityDto.builder()
             .current(weather.getHumidityCurrent())
             .comparedToDayBefore(weather.getHumidityComparedToDayBefore())
@@ -44,6 +46,7 @@ public interface WeatherMapper {
     }
 
     default TemperatureDto toTemperatureDto(Weather weather) {
+        if (weather == null) return null;
         return TemperatureDto.builder()
             .current(weather.getTemperatureCurrent())
             .comparedToDayBefore(weather.getTemperatureComparedToDayBefore())
@@ -53,6 +56,7 @@ public interface WeatherMapper {
     }
 
     default WindSpeedDto toWindSpeedDto(Weather weather) {
+        if (weather == null) return null;
         return WindSpeedDto.builder()
             .speed(weather.getWindSpeed())
             .asWord(weather.getWindAsWord())

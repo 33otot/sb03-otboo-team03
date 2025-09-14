@@ -85,6 +85,7 @@ public class FeedControllerTest {
                 .andExpect(jsonPath("$.author.userId").value(authorId.toString()))
                 .andExpect(jsonPath("$.weather.id").value(weatherId.toString()))
                 .andExpect(jsonPath("$.ootds", hasSize(1)))
+                .andExpect(jsonPath("$.ootds[0].clothesId").value(clothesId.toString()))
                 .andExpect(jsonPath("$.content").value(content))
                 .andExpect(jsonPath("$.likeCount").value(0))
                 .andExpect(jsonPath("$.commentCount").value(0))

@@ -20,7 +20,7 @@ import lombok.Setter;
     @UniqueConstraint(name = "uq_feed_clothes", columnNames = {"feed_id", "clothes_id"})
 })
 @Getter
-@Setter
+@Setter(AccessLevel.NONE)
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FeedClothes extends BaseEntity {

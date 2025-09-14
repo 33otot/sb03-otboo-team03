@@ -92,9 +92,9 @@ public class FeedServiceTest {
                 .content(savedFeed.getContent())
                 .build();
 
-            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
-            given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
-            given(clothesRepository.findAllById(clothesIds)).willReturn(mockClothesList);
+            given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(mockUser));
+            given(weatherRepository.findById(any(UUID.class))).willReturn(Optional.of(mockWeather));
+            given(clothesRepository.findAllById(any(Iterable.class))).willReturn(mockClothesList);
             given(feedRepository.save(any(Feed.class))).willReturn(savedFeed);
             given(feedMapper.toDto(savedFeed)).willReturn(expectedDto);
 
@@ -124,7 +124,7 @@ public class FeedServiceTest {
                 .content(content)
                 .build();
 
-            given(userRepository.findById(invalidUserId)).willReturn(Optional.empty());
+            given(userRepository.findById(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> feedService.create(request))
@@ -138,7 +138,7 @@ public class FeedServiceTest {
         }
 
         @Test
-        void 피드를_등록할_때_존재하지_않는_날씨면_예외가_발생한다1() {
+        void 피드를_등록할_때_존재하지_않는_날씨면_예외가_발생한다() {
 
             // given
             UUID userId = UUID.randomUUID();
@@ -156,8 +156,8 @@ public class FeedServiceTest {
                 .content(content)
                 .build();
 
-            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
-            given(weatherRepository.findById(invalidWeatherId)).willReturn(Optional.empty());
+            given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(mockUser));
+            given(weatherRepository.findById(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> feedService.create(request))
@@ -171,7 +171,7 @@ public class FeedServiceTest {
         }
 
         @Test
-        void 피드를_등록할_때_존재하지_않는_의상이면_예외가_발생한다1() {
+        void 피드를_등록할_때_존재하지_않는_의상이면_예외가_발생한다() {
 
             // given
             UUID userId = UUID.randomUUID();
@@ -190,9 +190,9 @@ public class FeedServiceTest {
                 .content(content)
                 .build();
 
-            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
-            given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
-            given(clothesRepository.findAllById(invalidClothesIds)).willReturn(List.of());
+            given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(mockUser));
+            given(weatherRepository.findById(any(UUID.class))).willReturn(Optional.of(mockWeather));
+            given(clothesRepository.findAllById(any(Iterable.class))).willReturn(List.of());
 
             // when & then
             assertThatThrownBy(() -> feedService.create(request))
