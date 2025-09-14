@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 public interface UserMapper {
 
     @Mapping(source = "id", target = "userId")
+    @Mapping(source = "username", target = "name")
     @Mapping(target = "profileImageUrl", ignore = true)
     AuthorDto toAuthorDto(User user);
 }
