@@ -3,10 +3,7 @@ package com.samsamotot.otboo.follow.service;
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
-import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
-import com.samsamotot.otboo.follow.dto.FollowingRequest;
+import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
@@ -106,7 +103,7 @@ public class FollowServiceImpl implements FollowService {
 
 
     @Override
-    public CursorResponse<FollowSummaryDto> getFollowings(FollowingRequest request) {
+    public FollowListResponse getFollowings(FollowingRequest request) {
         // 1. user 검색
         // 2. locked 여부 확인
         // 3. 쿼리 dsl 사용해서 유저 응답 호출

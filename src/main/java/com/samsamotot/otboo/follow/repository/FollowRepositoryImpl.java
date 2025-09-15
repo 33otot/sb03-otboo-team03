@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.follow.repository;
 
+import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
 import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
     }
 
     @Override
-    public List<FollowSummaryDto> findFollowings(FollowingRequest request) {
+    public List<FollowDto> findFollowings(FollowingRequest request) {
         return List.of();
     }
 }

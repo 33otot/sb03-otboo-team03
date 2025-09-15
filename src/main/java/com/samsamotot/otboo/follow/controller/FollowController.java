@@ -56,10 +56,10 @@ public class FollowController {
 
     // 팔로잉 목록 조회
     @GetMapping("/followings")
-    public ResponseEntity<CursorResponse<FollowSummaryDto>> getFollowings(
+    public ResponseEntity<FollowListResponse> getFollowings(
         @RequestParam UUID followerId,
         @RequestParam(required = false) String cursor,
-        @RequestParam(required = false) String idAfter,
+        @RequestParam(required = false) UUID idAfter, //
         @RequestParam Integer limit,
         @RequestParam(required = false) String nameLike
     ) {

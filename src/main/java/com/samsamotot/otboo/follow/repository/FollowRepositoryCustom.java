@@ -16,5 +16,5 @@ public interface FollowRepositoryCustom {
 
     long countTotalElements(FollowingRequest request);
 
-    List<FollowSummaryDto> findFollowings(FollowingRequest request);
+    List<FollowDto> findFollowings(FollowingRequest request);
 }

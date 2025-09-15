@@ -17,7 +17,7 @@ public record FollowingRequest(
 
     String cursor,
 
-    String idAfter,
+    UUID idAfter,
 
     @NotNull
     Integer limit,
