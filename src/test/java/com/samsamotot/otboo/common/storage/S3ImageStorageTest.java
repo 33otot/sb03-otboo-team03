@@ -3,7 +3,7 @@ package com.samsamotot.otboo.common.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.samsamotot.otboo.common.S3ImageFixture;
+import com.samsamotot.otboo.common.fixture.S3ImageFixture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

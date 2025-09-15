@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.common;
+package com.samsamotot.otboo.common.fixture;
 
 import org.springframework.mock.web.MockMultipartFile;
 
