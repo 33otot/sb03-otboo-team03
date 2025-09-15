@@ -60,10 +60,14 @@ public enum ErrorCode {
 
     // 관리자 관련 에러
     ADMIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "AD001", "관리자 권한이 필요합니다."),
-    USER_ROLE_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "AD002", "사용자 권한 업데이트에 실패했습니다.");
+    USER_ROLE_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "AD002", "사용자 권한 업데이트에 실패했습니다."),
+
+    // 커서 기반 페이지네이션 관련 에러
+    INVALID_CURSOR_FORMAT(HttpStatus.BAD_REQUEST, "P001", "잘못된 커서 형식입니다."),
+    INVALID_SORT_FIELD(HttpStatus.BAD_REQUEST,"P002", "지원하지 않는 정렬 필드입니다."),
+    INVALID_SORT_DIRECTION(HttpStatus.BAD_REQUEST,"P003", "지원하지 않는 정렬 방향입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;
-
 }

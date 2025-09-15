@@ -2,10 +2,12 @@ package com.samsamotot.otboo.feed.service;
 
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
+import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.entity.BaseEntity;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
+import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
@@ -97,5 +99,10 @@ public class FeedServiceImpl implements FeedService {
         log.debug("[FeedServiceImpl] 피드 등록 완료: feedId = {}", saved.getId());
 
         return result;
+    }
+
+    @Override
+    public CursorResponse<FeedDto> getFeeds(FeedCursorRequest request) {
+        return null;
     }
 }

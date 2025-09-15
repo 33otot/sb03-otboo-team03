@@ -3,23 +3,33 @@ package com.samsamotot.otboo.feed.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
+import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.FeedFixture;
+import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
+import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.entity.FeedClothes;
-import com.samsamotot.otboo.common.fixture.FeedFixture;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import com.samsamotot.otboo.weather.entity.Precipitation;
+import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import java.util.List;
@@ -202,6 +212,331 @@ public class FeedServiceTest {
                 .isEqualTo(ErrorCode.CLOTHES_NOT_FOUND);
 
             verify(feedRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 목록 조회 테스트")
+    class FeedListGetTest {
+
+        @Test
+        void 커서없이_조회시_주어진_정렬조건으로_레포지토리를_호출한다() {
+
+            // given
+            FeedCursorRequest request = createDefaultRequest();
+
+            given(feedRepository.findByCursor(any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()))
+                .willReturn(List.of());
+            given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(0L);
+
+            // when
+            feedService.getFeeds(request);
+
+            // then
+            verify(feedRepository).findByCursor(
+                isNull(String.class),
+                isNull(UUID.class),
+                eq(request.limit() + 1),
+                eq(request.sortBy()),
+                eq(request.sortDirection()),
+                isNull(String.class),
+                isNull(SkyStatus.class),
+                isNull(Precipitation.class),
+                isNull(UUID.class)
+            );
+        }
+
+        @Test
+        void hasNext_true면_nextCursor를_생성한다() {
+
+            // given
+            int limit = 2;
+            String sortBy = "createdAt";
+            SortDirection sortDirection = SortDirection.DESCENDING;
+
+            FeedCursorRequest request = FeedCursorRequest.builder()
+                .limit(limit)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .build();
+            List<Feed> contents = FeedFixture.createFeedsWithSequentialCreationDate(limit + 1);
+
+            given(feedRepository.findByCursor(
+                any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
+            )).willReturn(contents);
+            given(feedMapper.toDto(any(Feed.class))).willAnswer(inv -> FeedFixture.createFeedDto(inv.getArgument(0)));
+            given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(3L);
+
+            // when
+            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+
+            // then
+            assertThat(result.data()).hasSize(limit);
+            assertThat(result.hasNext()).isTrue();
+            assertThat(result.nextCursor()).isNotNull();
+            verify(feedRepository).findByCursor(
+                isNull(String.class),
+                isNull(UUID.class),
+                eq(request.limit() + 1),
+                eq(request.sortBy()),
+                eq(request.sortDirection()),
+                isNull(String.class),
+                isNull(SkyStatus.class),
+                isNull(Precipitation.class),
+                isNull(UUID.class)
+            );
+        }
+
+        @Test
+        void hasNext_false면_nextCursor는_null이다() {
+
+            // given
+            int limit = 2;
+            String sortBy = "createdAt";
+            SortDirection sortDirection = SortDirection.DESCENDING;
+
+            FeedCursorRequest request = FeedCursorRequest.builder()
+                .limit(limit)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .build();
+            Feed a = FeedFixture.createDefaultFeed();
+            List<Feed> contents = List.of(a);
+
+            given(feedRepository.findByCursor(
+                any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
+            )).willReturn(contents);
+            given(feedMapper.toDto(any(Feed.class))).willAnswer(inv -> FeedFixture.createFeedDto(inv.getArgument(0)));
+            given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(1L);
+
+            // when
+            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+
+            // then
+            assertThat(result.hasNext()).isFalse();
+            assertThat(result.nextCursor()).isNull();
+            verify(feedRepository).findByCursor(
+                isNull(String.class),
+                isNull(UUID.class),
+                eq(request.limit() + 1),
+                eq(request.sortBy()),
+                eq(request.sortDirection()),
+                isNull(String.class),
+                isNull(SkyStatus.class),
+                isNull(Precipitation.class),
+                isNull(UUID.class)
+            );
+        }
+
+        @Test
+        void 생성된_커서정보는_마지막_조회결과의_정보를_올바르게_포함한다() {
+
+            // given
+            FeedCursorRequest request = createDefaultRequest();
+            List<Feed> contents = FeedFixture.createFeedsWithSequentialCreationDate(request.limit() + 1);
+            Feed lastFeed = contents.get(request.limit() - 1);
+
+            given(feedRepository.findByCursor(
+                any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
+            )).willReturn(contents);
+            given(feedMapper.toDto(any(Feed.class))).willAnswer(inv -> FeedFixture.createFeedDto(inv.getArgument(0)));
+            given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(11L);
+
+            // when
+            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+
+            // then
+            assertThat(result.hasNext()).isTrue();
+            assertThat(result.nextCursor()).isEqualTo(lastFeed.getCreatedAt().toString());
+            assertThat(result.nextIdAfter()).isEqualTo(lastFeed.getId());
+
+            verify(feedRepository).findByCursor(
+                isNull(String.class),
+                isNull(UUID.class),
+                eq(request.limit() + 1),
+                eq(request.sortBy()),
+                eq(request.sortDirection()),
+                isNull(String.class),
+                isNull(SkyStatus.class),
+                isNull(Precipitation.class),
+                isNull(UUID.class)
+            );
+        }
+
+        @Test
+        void 조회시_필터링된_총_개수를_함께_반환한다() {
+
+            // given
+            int limit = 10;
+            String sortBy = "createdAt";
+            SortDirection sortDirection = SortDirection.DESCENDING;
+            long expectedTotalCount = 1L;
+            String keyword = "keyword";
+
+            Feed f1 = FeedFixture.createFeedWithKeyword(keyword);
+            List<Feed> contents = List.of(f1);
+
+            FeedCursorRequest request = FeedCursorRequest.builder()
+                .limit(limit)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .keywordLike(keyword)
+                .build();
+
+            given(feedRepository.findByCursor(
+                any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
+            )).willReturn(contents);
+            given(feedMapper.toDto(any(Feed.class))).willAnswer(inv -> FeedFixture.createFeedDto(inv.getArgument(0)));
+            given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(expectedTotalCount);
+
+            // when
+            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+
+            // then
+            assertThat(result.totalCount()).isEqualTo(expectedTotalCount);
+
+            verify(feedRepository).countByFilter(
+                eq(request.keywordLike()),
+                eq(request.skyStatusEqual()),
+                eq(request.precipitationTypeEqual()),
+                eq(request.authorIdEqual())
+            );
+        }
+
+        @Test
+        void 커서_포맷이_잘못되면_예외가_발생한다() {
+
+            // given
+            String badCursor = "Invalid Cursor";
+            int limit = 2;
+            String sortBy = "createdAt";
+            SortDirection sortDirection = SortDirection.DESCENDING;
+
+            FeedCursorRequest request = FeedCursorRequest.builder()
+                .cursor(badCursor)
+                .limit(limit)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .build();
+
+            // when & then
+            assertThatThrownBy(() -> feedService.getFeeds(request))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_CURSOR_FORMAT);
+
+            verifyNoInteractions(feedRepository);
+        }
+
+        @Test
+        void 조회할_피드가_전혀_없을_때_빈_리스트와_null_커서를_반환한다() {
+
+            // given
+            FeedCursorRequest request = createDefaultRequest();
+
+            given(feedRepository.findByCursor(
+                any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
+            )).willReturn(List.of());
+            given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(0L);
+
+            // when
+            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+
+            // then
+            assertThat(result.data()).isEmpty();
+            assertThat(result.hasNext()).isFalse();
+            assertThat(result.nextCursor()).isNull();
+        }
+
+        @Test
+        void 정렬_조건과_검색_조건을_지정하면_레포지토리에_정확하게_전달한다() {
+
+            // given
+            int limit = 10;
+            String sortBy = "createdAt";
+            SortDirection sortDirection = SortDirection.DESCENDING;
+            String keyword = "a";
+            SkyStatus skyStatus = SkyStatus.CLEAR;
+            Precipitation precipitation = Precipitation.NONE;
+            UUID authorId = UUID.randomUUID();
+
+            FeedCursorRequest request = FeedCursorRequest.builder()
+                .cursor(null)
+                .idAfter(null)
+                .limit(limit)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .keywordLike(keyword)
+                .skyStatusEqual(skyStatus)
+                .precipitationTypeEqual(precipitation)
+                .authorIdEqual(authorId)
+                .build();
+
+            given(feedRepository.findByCursor(any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()))
+                .willReturn(List.of());
+            given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(0L);
+
+            // when
+            feedService.getFeeds(request);
+
+            // then
+            verify(feedRepository).findByCursor(
+                isNull(String.class),
+                isNull(UUID.class),
+                eq(request.limit() + 1),
+                eq(request.sortBy()),
+                eq(request.sortDirection()),
+                eq(request.keywordLike()),
+                eq(request.skyStatusEqual()),
+                eq(request.precipitationTypeEqual()),
+                eq(request.authorIdEqual())
+            );
+        }
+
+        @Test
+        void 조회결과는_DTO로_매핑된다() {
+
+            // given
+            Feed f1 = FeedFixture.createDefaultFeed();
+            Feed f2 = FeedFixture.createDefaultFeed();
+            List<Feed> contents = List.of(f1, f2);
+            FeedCursorRequest request = createDefaultRequest();
+
+            given(feedRepository.findByCursor(
+                any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
+            )).willReturn(contents);
+            given(feedMapper.toDto(any(Feed.class))).willAnswer(inv -> FeedFixture.createFeedDto(inv.getArgument(0)));
+            given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(2L);
+
+            // when
+            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+
+            // then
+            assertThat(result.data()).hasSize(2);
+            FeedDto d1 = result.data().get(0);
+            FeedDto d2 = result.data().get(1);
+            assertThat(d1.id()).isEqualTo(f1.getId());
+            assertThat(d2.id()).isEqualTo(f2.getId());
+        }
+
+        // 헬퍼 메서드
+        private FeedCursorRequest createDefaultRequest() {
+
+            int limit = 10;
+            String sortBy = "createdAt";
+            SortDirection sortDirection = SortDirection.DESCENDING;
+
+            return FeedCursorRequest.builder()
+                .cursor(null)
+                .idAfter(null)
+                .limit(limit)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .keywordLike(null)
+                .skyStatusEqual(null)
+                .precipitationTypeEqual(null)
+                .authorIdEqual(null)
+                .build();
         }
     }
 }
