@@ -8,6 +8,8 @@ import com.samsamotot.otboo.feed.entity.FeedClothes;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
+import com.samsamotot.otboo.weather.entity.Precipitation;
+import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -71,8 +73,56 @@ public class FeedFixture {
 
     public static Feed createFeedWithKeyword(String keyword) {
         Feed feed = FeedFixture.createDefaultFeed();
-        feed.toBuilder().content(keyword).build();
+        return feed.toBuilder().content(keyword).build();
+    }
+
+    public static Feed createFeedWithSkystatus(SkyStatus skyStatus) {
+        Weather weather = Weather.builder()
+            .skyStatus(skyStatus)
+            .build();
+        Feed feed = FeedFixture.createDefaultFeed();
+        return feed.toBuilder().weather(weather).build();
+    }
+
+    public static Feed createFeedWithPrecipitation(Precipitation precipitation) {
+        Weather weather = Weather.builder()
+            .precipitationType(precipitation)
+            .build();
+        Feed feed = FeedFixture.createDefaultFeed();
+        return feed.toBuilder().weather(weather).build();
+    }
+
+    public static Feed createFeedWithAuthorId(UUID authorId) {
+        User user = User.builder().build();
+        ReflectionTestUtils.setField(user, "id", authorId);
+        Feed feed = FeedFixture.createDefaultFeed();
+        return feed.toBuilder().author(user).build();
+    }
+
+    public static Feed createFeedWithCreatedAt(Instant createdAt) {
+        Feed feed = FeedFixture.createDefaultFeed();
+        ReflectionTestUtils.setField(feed, "createdAt", createdAt);
         return feed;
+    }
+
+    public static Feed createFeedWithLikeCount(long likeCount) {
+        Feed feed = FeedFixture.createDefaultFeed();
+        return feed.toBuilder().likeCount(likeCount).build();
+    }
+
+    public static Feed createFeedWithAllConditions(
+        String keyword, SkyStatus skyStatus, Precipitation precipitation, UUID authorId
+    ) {
+        User user = User.builder().build();
+        ReflectionTestUtils.setField(user, "id", authorId);
+
+        Weather weather = Weather.builder()
+            .skyStatus(skyStatus)
+            .precipitationType(precipitation)
+            .build();
+
+        Feed feed = FeedFixture.createDefaultFeed();
+        return feed.toBuilder().weather(weather).author(user).content(keyword).build();
     }
 
     public static List<Feed> createFeedsWithSequentialCreationDate(int count) {
@@ -120,16 +170,6 @@ public class FeedFixture {
             .build();
     }
 
-    public static FeedDto createFeedDto(Feed feed, AuthorDto authorDto, WeatherDto weatherDto, List<OotdDto> ootdDtos) {
-        return FeedDto.builder()
-            .id(feed.getId())
-            .author(authorDto)
-            .weather(weatherDto)
-            .ootds(ootdDtos)
-            .content(feed.getContent())
-            .build();
-    }
-
     public static FeedDto createFeedDto(String content, AuthorDto authorDto, WeatherDto weatherDto, List<OotdDto> ootdDtos) {
         return FeedDto.builder()
             .id(UUID.randomUUID())
@@ -137,17 +177,6 @@ public class FeedFixture {
             .weather(weatherDto)
             .ootds(ootdDtos)
             .content(content)
-            .build();
-    }
-
-    public static FeedDto createFeedDtoWithCreatedAt(Instant createdAt) {
-        return FeedDto.builder()
-            .id(UUID.randomUUID())
-            .author(createDefaultAuthorDto())
-            .weather(null)
-            .ootds(List.of())
-            .content(DEFAULT_CONTENT)
-            .createdAt(createdAt)
             .build();
     }
 
