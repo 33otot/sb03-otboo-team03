@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.common.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -12,6 +13,10 @@ import software.amazon.awssdk.services.s3.S3Client;
  * S3Client를 Bean으로 등록하는 설정 클래스
  */
 @Configuration
+@ConditionalOnProperty(
+    name = "otboo.storage.type",
+    havingValue = "s3"
+)
 public class S3Config {
     @Value("${otboo.storage.s3.access-key}")
     private String accessKey;
