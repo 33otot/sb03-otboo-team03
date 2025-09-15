@@ -56,4 +56,21 @@ public class ClothesAttributeDef extends BaseEntity {
             .name(name)
             .build();
     }
+
+    // 정의 + 옵션 함께 생성
+    public static ClothesAttributeDef createClothesAttributeDef(String name, List<String> optionValues) {
+        ClothesAttributeDef def = ClothesAttributeDef.builder()
+            .name(name)
+            .build();
+
+        optionValues.forEach(value -> {
+            ClothesAttributeOption option = ClothesAttributeOption.builder()
+                .value(value)
+                .definition(def)
+                .build();
+            def.addOption(option);
+        });
+
+        return def;
+    }
 }
