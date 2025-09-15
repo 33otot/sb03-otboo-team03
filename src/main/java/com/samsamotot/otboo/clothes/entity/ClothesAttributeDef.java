@@ -17,6 +17,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.LastModifiedDate;
 
+/**
+ * 의상 속성을 정의하는 엔티티 (계절, 재질, 색상 등...)
+ */
 @Builder
 @Entity
 @Table(name = "clothes_attribute_defs")
@@ -25,7 +28,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ClothesAttributeDef extends BaseEntity {
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
 
     @LastModifiedDate
