@@ -4,6 +4,7 @@ import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
+import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
@@ -12,6 +13,8 @@ import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 /**
  * PackageName  : com.samsamotot.otboo.follow.service
@@ -96,5 +99,39 @@ public class FollowServiceImpl implements FollowService {
 
         // TODO 진짜 userSummaryDto 만들어지면 Follow package 내부 UserSummaryDto 삭제, FollowMapper 수정 필요
         return followMapper.toDto(savedFollow);
+    }
+
+    // 팔로우 요약 정보 조회
+    @Override
+    public FollowSummaryDto findFollowSummaries(UUID userId) {
+//        UUID followeeId, // 팔로우 대상 사용자 ID - given
+//        Long followerCount, // 팔로워 수 - follow
+//        Long followingCount, // 팔로잉 수 - follow
+//        boolean followedByMe, // 내가 팔로우 대상 사용자를 팔로우 하고 있는지 여부 - follow
+//        UUID followedByMeId, // 내가 팔로우 대상 사용자를 팔로우하고 있는 팔로우 ID - follow
+//        boolean followingMe // 대상 사용자가 나를 팔로우하고 있는지 여부 - follow
+
+
+        // findFollowerByFolloweeId
+        // findFolloweeByFollowerId
+        // existByFollowerAndFollowee 정방향
+        // 위에서 true 면 아이디 가져옴
+        // existByFollowerAndFollowee 역방향 조회
+
+        /**
+         * 1. 로그인 유저 id 가져온다.
+         * 2. 대상 사용자 존재 여부 확인
+         * 3. locked 여부 확인
+         * 4. 대상 사용자 기준 팔로우 수 확인
+         * 5. 대상 사용자 기준 팔로잉 수 확인
+         * 6. 내가 대상 사용자를 팔로잉 중인지 확인
+         * 6-A. 팔로잉 중이면 팔로우 id 확인
+         * 7. 대상 사용자가 나를 팔로잉 중인지 확인
+         * 8. dto로 매핑 후 return
+         */
+
+
+
+        return null;
     }
 }

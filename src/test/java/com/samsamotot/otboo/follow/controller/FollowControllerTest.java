@@ -72,4 +72,57 @@ class FollowControllerTest {
         then(followService).should(times(1)).follow(refEq(validRequest));
         then(followService).shouldHaveNoMoreInteractions();
     }
+
+//        UUID followeeId, // 팔로우 대상 사용자 ID - given
+//        Long followerCount, // 팔로워 수 - follow
+//        Long followingCount, // 팔로잉 수 - follow
+//        boolean followedByMe, // 내가 팔로우 대상 사용자를 팔로우 하고 있는지 여부 - follow
+//        UUID followedByMeId, // 내가 팔로우 대상 사용자를 팔로우하고 있는 팔로우 ID - follow
+//        boolean followingMe // 대상 사용자가 나를 팔로우하고 있는지 여부 - follow
+
+    // findFollowerByFolloweeId
+    // findFolloweeByFollowerId
+    // existByFollowerAndFollowee 정방향
+    // 위에서 true 면 아이디 가져옴
+    // existByFollowerAndFollowee 역방향 조회
+
+    @Test
+    void 유저id를_정상입력_받을경우_요약된_팔로우_리스트를_응답한다() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
+
+    @Test
+    void 정상적으로_팔로워_수를_가져온다() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
+
+    @Test
+    void 정상적으로_팔로우_수를_가져온다() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
+
+    @Test
+    void 사용자_기준_팔로우_여부_확인() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
 }

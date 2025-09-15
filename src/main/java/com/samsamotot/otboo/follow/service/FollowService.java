@@ -2,7 +2,10 @@ package com.samsamotot.otboo.follow.service;
 
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
+import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
 import org.springframework.validation.annotation.Validated;
+
+import java.util.UUID;
 
 /**
  * PackageName  : com.samsamotot.otboo.follow.service
@@ -16,5 +19,8 @@ public interface FollowService {
 
     // 팔로우 기능
     FollowDto follow(FollowCreateRequest request);
+
+    // 팔로우 요약 정보 조회
+    FollowSummaryDto findFollowSummaries(UUID userId);
 
 }
