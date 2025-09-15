@@ -105,13 +105,13 @@ public final class FollowFixture {
 
         UserSummaryDto followeeSummary = new UserSummaryDto(
             followee.getId(),
-            followee.getName(),
+            followee.getUsername(),
             /* profileImageUrl */ null    // 필요하면 채워 넣으세요
         );
 
         UserSummaryDto followerSummary = new UserSummaryDto(
             follower.getId(),
-            follower.getName(),
+            follower.getUsername(),
             /* profileImageUrl */ null
         );
 
