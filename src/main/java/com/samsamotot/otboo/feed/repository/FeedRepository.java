@@ -7,6 +7,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedRepositoryCustom {
-
-    Object countByIsDeletedFalse(boolean isDeleted);
+    long countByIsDeletedFalse();
 }
