@@ -3,6 +3,8 @@ package com.samsamotot.otboo.follow.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
+import com.samsamotot.otboo.follow.dto.FollowListResponse;
+import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
 import com.samsamotot.otboo.follow.service.FollowService;
 import com.samsamotot.otboo.user.entity.User;
@@ -89,5 +91,20 @@ public class FollowIntegrationTest {
         assertThat(response.follower().userId()).isEqualTo(follower.getId());
         assertThat(response.followee()).isNotNull();
         assertThat(response.followee().userId()).isEqualTo(followee.getId());
+    }
+
+    @Test
+    void 팔로잉_목록_조회를_한다() throws Exception {
+        User user = User.createUser("test@test.com", "tester1", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.save(user);
+
+        // given
+        FollowingRequest followingRequest = new FollowingRequest(user.getId(), null, null, 20, null);
+
+        // when
+        FollowListResponse response = followService.getFollowings(followingRequest);
+
+        // then
+
     }
 }

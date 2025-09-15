@@ -48,6 +48,10 @@ class FollowServiceImplTest {
     @Mock
     private FollowMapper followMapper;
 
+
+    /*
+        팔로우 생성 단위 테스트
+     */
     @Test
     void 팔로우_생성한다() throws Exception {
         UUID followerId = UUID.randomUUID();
@@ -184,4 +188,39 @@ class FollowServiceImplTest {
         assertThatThrownBy(() -> followService.follow(req))
             .isInstanceOf(OtbooException.class);
     }
+
+    /*
+        팔로잉 목록 조회 단위 테스트
+     */
+
+    @Test
+    void 팔로잉_목록_조회를_한다() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
+
+    @Test
+    void 유저가_있는지_확인한다() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
+
+    @Test
+    void 유저의_locked_여부를_확인한다() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
+
 }

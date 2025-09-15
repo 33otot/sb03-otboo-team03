@@ -1,10 +1,13 @@
 package com.samsamotot.otboo.follow.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.samsamotot.otboo.common.fixture.FollowFixture;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.user.UserSummaryDto;
+import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.service.FollowService;
+import com.samsamotot.otboo.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,7 @@ import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -71,5 +75,22 @@ class FollowControllerTest {
 
         then(followService).should(times(1)).follow(refEq(validRequest));
         then(followService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    void 팔로잉_목록_조회_파라미터를_정상_입력_받은경우_간단_목록을_반환한다() throws Exception {
+        // given
+        User user = FollowFixture.randomUser();
+
+
+        // when n then
+        mockMvc.perform(get("/api/follows/followings")
+                .param("cursor", "0")
+                .param("followerId",user.getId().toString())
+                .param("limit", "20"))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+
     }
 }
