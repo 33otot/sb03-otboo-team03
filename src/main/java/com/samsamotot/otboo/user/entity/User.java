@@ -28,6 +28,12 @@ public class User extends BaseEntity {
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
+    @Column(name = "provider", nullable = false, length = 50)
+    private String provider;
+    
+    @Column(name = "provider_id", nullable = true, length = 255)
+    private String providerId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
     private Role role;
@@ -39,31 +45,37 @@ public class User extends BaseEntity {
     private Instant temporaryPasswordExpiresAt;
     
     @Builder
-    private User(String email, String username, String password, Role role,
+    private User(String email, String username, String password, String provider, String providerId, Role role,
                 Boolean isLocked, Instant temporaryPasswordExpiresAt) {
     this.email = email;
     this.username = username;
     this.password = password;
+    this.provider = provider;
+    this.providerId = providerId;
     this.role = role != null ? role : Role.USER;
     this.isLocked = isLocked != null ? isLocked : false;
     this.temporaryPasswordExpiresAt = temporaryPasswordExpiresAt;
     }
     
-    public static User createUser(String email, String username, String password, PasswordEncoder passwordEncoder) {
+    public static User createUser(String email, String username, String password, String provider, String providerId, PasswordEncoder passwordEncoder) {
         return User.builder()
             .email(email)
             .username(username)
             .password(passwordEncoder.encode(password))
+            .provider(provider)
+            .providerId(providerId)
             .role(Role.USER)
             .isLocked(false)
             .build();
     }
     
-    public static User createAdminUser(String email, String username, String password, PasswordEncoder passwordEncoder) {
+    public static User createAdminUser(String email, String username, String password, String provider, String providerId, PasswordEncoder passwordEncoder) {
         return User.builder()
             .email(email)
             .username(username)
             .password(passwordEncoder.encode(password))
+            .provider(provider)
+            .providerId(providerId)
             .role(Role.ADMIN)
             .isLocked(false)
             .build();
@@ -93,9 +105,9 @@ public class User extends BaseEntity {
         this.role = newRole;
     }
 
-    public void changeLockStatus(boolean locked) {
-        this.isLocked = locked;
-    }
+    public void changeLockStatus(boolean isLocked) {
+        this.isLocked = isLocked;
+    }   
 
     public boolean isLocked() {
         return Boolean.TRUE.equals(this.isLocked);
