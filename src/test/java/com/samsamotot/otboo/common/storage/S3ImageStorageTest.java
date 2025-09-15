@@ -16,7 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @ExtendWith(MockitoExtension.class)
-class S3ImageServiceTest {
+class S3ImageStorageTest {
     @Mock
     private S3Client s3Client;
 
@@ -50,6 +50,13 @@ class S3ImageServiceTest {
     }
 
     @Test
+    void 파일이_null이면_BAD_REQUEST_예외가_발생한다() {
+        assertThatThrownBy(() -> s3ImageStorage.uploadImage(null, "profile/"))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("업로드할 파일이 없습니다.");
+    }
+
+    @Test
     void 파일이_비어있으면_BAD_REQUEST_예외를_던진다() {
         // given
         MockMultipartFile emptyFile = S3ImageFixture.createEmptyImageFile();
@@ -58,4 +65,14 @@ class S3ImageServiceTest {
             .isInstanceOf(ResponseStatusException.class)
             .hasMessageContaining("업로드할 파일이 없습니다.");
     }
+
+    @Test
+    void folderPath가_비어있으면_BAD_REQUEST_예외가_발생한다() {
+        MockMultipartFile file = S3ImageFixture.createSampleImageFile();
+
+        assertThatThrownBy(() -> s3ImageStorage.uploadImage(file, ""))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("S3 업로드 경로(folderPath)가 비어있습니다.");
+    }
+
 }

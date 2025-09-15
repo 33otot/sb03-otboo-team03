@@ -31,7 +31,6 @@ public class S3ImageFixture {
         );
     }
 
-
      // 잘못된 Content-Type의 파일 Fixture
     public static MockMultipartFile createInvalidTypeFile() {
         return new MockMultipartFile(
