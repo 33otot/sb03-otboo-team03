@@ -9,9 +9,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /**
  * S3 버킷에서 이미지를 관리하기 위한 컴포넌트
@@ -74,9 +76,14 @@ public class S3ImageStorage {
             // 업로드된 객체의 공개 URL 반환
             return generatePublicUrl(s3Key);
 
+        } catch (S3Exception | SdkClientException e) {
+            log.error("[S3ImageStorage] S3 업로드 실패 - 경로: {}, 오류: {}", s3Key, e.getMessage());
+            throw new ResponseStatusException(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "S3 업로드 중 외부 서비스 오류가 발생했습니다."
+            );
         } catch (IOException e) {
-            log.error("[S3ImageStorage] 이미지 업로드 실패 - 파일명: {}, 오류: {}", originalFileName,
-                e.getMessage());
+            log.error("[S3ImageStorage] 이미지 업로드 실패 - 파일명: {}, 오류: {}", originalFileName, e.getMessage(), e);
             throw new ResponseStatusException(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "이미지 업로드 중 오류가 발생했습니다."
