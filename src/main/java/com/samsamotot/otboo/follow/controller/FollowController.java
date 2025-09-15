@@ -1,10 +1,8 @@
 package com.samsamotot.otboo.follow.controller;
 
+import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
-import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.FollowListResponse;
-import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
+import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.service.FollowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -57,16 +55,17 @@ public class FollowController {
 //    }
 
     // 팔로잉 목록 조회
-//    @GetMapping("/followings")
-//    public ResponseEntity<FollowListResponse> getFollowings(
-//        @RequestParam UUID followerId,
-//        @RequestParam(required = false) String cursor,
-//        @RequestParam(required = false) String idAfter,
-//        @RequestParam Integer limit,
-//        @RequestParam(required = false) String nameLike
-//    ) {
-//        return ResponseEntity.ok().body(new FollowListResponse());
-//    }
+    @GetMapping("/followings")
+    public ResponseEntity<CursorResponse<FollowSummaryDto>> getFollowings(
+        @RequestParam UUID followerId,
+        @RequestParam(required = false) String cursor,
+        @RequestParam(required = false) String idAfter,
+        @RequestParam Integer limit,
+        @RequestParam(required = false) String nameLike
+    ) {
+        FollowingRequest request = new FollowingRequest(followerId, cursor, idAfter, limit, nameLike);
+        return ResponseEntity.ok().body(followService.getFollowings(request));
+    }
 
     // 팔로워 목록 조회
 //    @GetMapping("/followers")
