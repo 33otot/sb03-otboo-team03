@@ -286,8 +286,8 @@ public class FeedRepositoryTest {
         int count = 5;
 
         for (int i = 0 ; i < count; i ++) {
-            Feed feedWithSkyStatus = FeedFixture.createFeedWithSkystatus(skyStatus);
-            Feed feedWithOtherSkyStatus = FeedFixture.createFeedWithSkystatus(SkyStatus.CLOUDY);
+            Feed feedWithSkyStatus = FeedFixture.createFeedWithSkyStatus(skyStatus);
+            Feed feedWithOtherSkyStatus = FeedFixture.createFeedWithSkyStatus(SkyStatus.CLOUDY);
             em.persist(feedWithSkyStatus);
             em.persist(feedWithOtherSkyStatus);
         }
@@ -411,5 +411,71 @@ public class FeedRepositoryTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getId()).isEqualTo(targetFeed.getId());
+    }
+
+    @Test
+    void 모든_검색_조건을_일치하는_피드의_개수를_반환한다() {
+
+        // given
+        String keyword = "맑음";
+        SkyStatus skyStatus = SkyStatus.CLEAR;
+        Precipitation precipitation = Precipitation.NONE;
+        UUID authorId = UUID.randomUUID();
+
+        Feed targetFeed = FeedFixture.createFeedWithAllConditions(keyword, skyStatus, precipitation, authorId);
+        em.persist(targetFeed);
+
+        // 노이즈 데이터
+        em.persist(FeedFixture.createFeedWithAllConditions("흐림", skyStatus, precipitation, authorId));
+        em.persist(FeedFixture.createFeedWithAllConditions(keyword, SkyStatus.CLOUDY, precipitation, authorId));
+        em.persist(FeedFixture.createFeedWithAllConditions(keyword, skyStatus, Precipitation.RAIN, authorId));
+        em.persist(FeedFixture.createFeedWithAllConditions(keyword, skyStatus, precipitation, UUID.randomUUID()));
+
+        em.flush();
+        em.clear();
+
+        // when
+        Long result = feedRepository.countByFilter(
+            keyword,
+            skyStatus,
+            precipitation,
+            authorId
+        );
+
+        // then
+        assertThat(result).isEqualTo(1L);
+    }
+
+    @Test
+    void 필터가_없을_때_전체_피드_개수를_반환한다() {
+
+        // given
+        int count = 10;
+        for (int i = 0; i < count; i++) {
+            em.persist(FeedFixture.createDefaultFeed());
+        }
+        em.flush();
+        em.clear();
+
+        // when
+        Long result = feedRepository.countByFilter(null, null, null, null);
+
+        // then
+        assertThat(result).isEqualTo(count);
+    }
+
+    @Test
+    void 일치하는_피드가_없을_때_0을_반환한다() {
+
+        // given
+        em.persist(FeedFixture.createFeedWithKeyword("맑음"));
+        em.flush();
+        em.clear();
+
+        // when
+        Long result = feedRepository.countByFilter("흐림", null, null, null);
+
+        // then
+        assertThat(result).isEqualTo(0L);
     }
 }

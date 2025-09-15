@@ -76,7 +76,7 @@ public class FeedFixture {
         return feed.toBuilder().content(keyword).build();
     }
 
-    public static Feed createFeedWithSkystatus(SkyStatus skyStatus) {
+    public static Feed createFeedWithSkyStatus(SkyStatus skyStatus) {
         Weather weather = Weather.builder()
             .skyStatus(skyStatus)
             .build();
