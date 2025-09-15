@@ -14,7 +14,7 @@ import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
-import com.samsamotot.otboo.feed.fixture.FeedFixture;
+import com.samsamotot.otboo.common.fixture.FeedFixture;
 import com.samsamotot.otboo.feed.service.FeedService;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.weather.dto.WeatherDto;

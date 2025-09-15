@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.feed.fixture;
+package com.samsamotot.otboo.common.fixture;
 
 import com.samsamotot.otboo.clothes.dto.OotdDto;
 import com.samsamotot.otboo.feed.dto.FeedDto;
