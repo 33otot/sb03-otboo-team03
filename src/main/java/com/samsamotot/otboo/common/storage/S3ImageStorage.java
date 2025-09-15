@@ -66,7 +66,7 @@ public class S3ImageStorage {
         try {
             s3Client.putObject(
                 putObjectRequest,
-                RequestBody.fromBytes(file.getBytes())
+                RequestBody.fromInputStream(file.getInputStream(), file.getSize())
             );
 
             log.info("[S3ImageStorage] 이미지 업로드 성공 - 경로: {}", s3Key);
