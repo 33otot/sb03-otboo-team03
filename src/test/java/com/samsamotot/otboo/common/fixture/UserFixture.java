@@ -1,0 +1,190 @@
+package com.samsamotot.otboo.common.fixture;
+
+import com.samsamotot.otboo.user.dto.UserCreateRequest;
+import com.samsamotot.otboo.user.dto.UserDto;
+import com.samsamotot.otboo.user.entity.Role;
+import com.samsamotot.otboo.user.entity.User;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * 사용자 테스트 픽스처
+ */
+public class UserFixture {
+
+    // ========== 상수 ==========
+    
+    public static final String VALID_EMAIL = "test@example.com";
+    public static final String VALID_NAME = "테스트사용자";
+    public static final String VALID_PASSWORD = "Test123!@#";
+    public static final String INVALID_EMAIL = "invalid-email";
+    public static final String EMPTY_STRING = "";
+    public static final String SHORT_NAME = "a";
+    public static final String LONG_NAME = "a".repeat(51);
+    public static final String SHORT_PASSWORD = "Test1!";
+    public static final String INVALID_PASSWORD = "12345678";
+
+    // ========== User 엔티티 픽스처 ==========
+    
+    public static User createValidUser() {
+        return User.builder()
+            .email(VALID_EMAIL)
+            .username(VALID_NAME)
+            .password("encodedPassword")
+            .role(Role.USER)
+            .isLocked(false)
+            .build();
+    }
+    
+    public static User createUserWithEmail(String email) {
+        return User.builder()
+            .email(email)
+            .username(VALID_NAME)
+            .password("encodedPassword")
+            .role(Role.USER)
+            .isLocked(false)
+            .build();
+    }
+    
+    public static User createUserWithUsername(String username) {
+        return User.builder()
+            .email(VALID_EMAIL)
+            .username(username)
+            .password("encodedPassword")
+            .role(Role.USER)
+            .isLocked(false)
+            .build();
+    }
+    
+    public static User createAdminUser() {
+        return User.builder()
+            .email("admin@example.com")
+            .username("관리자")
+            .password("encodedPassword")
+            .role(Role.ADMIN)
+            .isLocked(false)
+            .build();
+    }
+    
+    public static User createLockedUser() {
+        return User.builder()
+            .email("locked@example.com")
+            .username("잠긴사용자")
+            .password("encodedPassword")
+            .role(Role.USER)
+            .isLocked(true)
+            .build();
+    }
+
+    // ========== DTO 픽스처 ==========
+    
+    public static UserCreateRequest createValidRequest() {
+        return UserCreateRequest.builder()
+            .name(VALID_NAME)
+            .email(VALID_EMAIL)
+            .password(VALID_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createInvalidNameRequest() {
+        return UserCreateRequest.builder()
+            .name(EMPTY_STRING)
+            .email(VALID_EMAIL)
+            .password(VALID_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createShortNameRequest() {
+        return UserCreateRequest.builder()
+            .name(SHORT_NAME)
+            .email(VALID_EMAIL)
+            .password(VALID_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createLongNameRequest() {
+        return UserCreateRequest.builder()
+            .name(LONG_NAME)
+            .email(VALID_EMAIL)
+            .password(VALID_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createInvalidEmailRequest() {
+        return UserCreateRequest.builder()
+            .name(VALID_NAME)
+            .email(INVALID_EMAIL)
+            .password(VALID_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createEmptyEmailRequest() {
+        return UserCreateRequest.builder()
+            .name(VALID_NAME)
+            .email(EMPTY_STRING)
+            .password(VALID_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createInvalidPasswordRequest() {
+        return UserCreateRequest.builder()
+            .name(VALID_NAME)
+            .email(VALID_EMAIL)
+            .password(INVALID_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createShortPasswordRequest() {
+        return UserCreateRequest.builder()
+            .name(VALID_NAME)
+            .email(VALID_EMAIL)
+            .password(SHORT_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createEmptyPasswordRequest() {
+        return UserCreateRequest.builder()
+            .name(VALID_NAME)
+            .email(VALID_EMAIL)
+            .password(EMPTY_STRING)
+            .build();
+    }
+
+    public static UserDto createValidUserDto() {
+        return UserDto.builder()
+            .id(UUID.randomUUID())
+            .createdAt(Instant.now())
+            .email(VALID_EMAIL)
+            .name(VALID_NAME)
+            .role(Role.USER)
+            .linkedOAuthProviders(List.of("google"))
+            .locked(false)
+            .build();
+    }
+    
+    public static UserDto createUserDtoWithId(UUID id) {
+        return UserDto.builder()
+            .id(id)
+            .createdAt(Instant.now())
+            .email(VALID_EMAIL)
+            .name(VALID_NAME)
+            .role(Role.USER)
+            .linkedOAuthProviders(List.of("google"))
+            .locked(false)
+            .build();
+    }
+    
+    public static UserDto createUserDtoWithEmail(String email) {
+        return UserDto.builder()
+            .id(UUID.randomUUID())
+            .createdAt(Instant.now())
+            .email(email)
+            .name(VALID_NAME)
+            .role(Role.USER)
+            .linkedOAuthProviders(List.of("google"))
+            .locked(false)
+            .build();
+    }
+}
