@@ -62,11 +62,11 @@ class FollowControllerTest {
             .andExpect(jsonPath("$.id").isNotEmpty())
             .andExpect(jsonPath("$.followee").isMap())
             .andExpect(jsonPath("$.followee.userId").value(followee.userId().toString()))
-            .andExpect(jsonPath("$.followee.name").value(followee.name()))
+            .andExpect(jsonPath("$.followee.username").value(followee.username()))
             .andExpect(jsonPath("$.followee.profileImageUrl").value(followee.profileImageUrl()))
             .andExpect(jsonPath("$.follower").isMap())
             .andExpect(jsonPath("$.follower.userId").value(follower.userId().toString()))
-            .andExpect(jsonPath("$.follower.name").value(follower.name()))
+            .andExpect(jsonPath("$.follower.username").value(follower.username()))
             .andExpect(jsonPath("$.follower.profileImageUrl").value(follower.profileImageUrl()));
 
         then(followService).should(times(1)).follow(refEq(validRequest));

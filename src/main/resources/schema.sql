@@ -1,3 +1,24 @@
+-- DROP TABLE IF EXISTS
+--     recommendation_clothes,
+--     feed_clothes,
+--     feed_likes,
+--     notifications,
+--     comments,
+--     clothes_attributes,
+--     feeds,
+--     direct_messages,
+--     profiles,
+--     recommendations,
+--     weathers,
+--     clothes,
+--     clothes_attribute_options,
+--     clothes_attribute_defs,
+--     locations,
+--     follows,
+--     users
+--     CASCADE;
+
+
 -- users 테이블
 CREATE TABLE IF NOT EXISTS users
 (
@@ -11,6 +32,7 @@ CREATE TABLE IF NOT EXISTS users
     is_locked BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    temporary_password_expires_at TIMESTAMPTZ,
 
     CONSTRAINT pk_users PRIMARY KEY (id),
     CONSTRAINT ck_users_role CHECK (role IN ('USER','ADMIN'))

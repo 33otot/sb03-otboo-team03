@@ -1,4 +1,5 @@
 package com.samsamotot.otboo.feed.entity;
+
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.common.entity.BaseEntity;
 import jakarta.persistence.Entity;

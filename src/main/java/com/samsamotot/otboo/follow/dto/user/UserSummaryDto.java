@@ -9,7 +9,7 @@ package com.samsamotot.otboo.follow.dto.user;
  */
 public record UserSummaryDto(
     java.util.UUID userId,
-    String name,
+    String username,
     String profileImageUrl
 ) {
 }
