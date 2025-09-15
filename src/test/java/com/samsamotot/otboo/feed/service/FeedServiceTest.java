@@ -25,6 +25,7 @@ import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.entity.FeedClothes;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
+import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
@@ -34,6 +35,7 @@ import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -60,6 +62,9 @@ public class FeedServiceTest {
 
     @Mock
     private ClothesRepository clothesRepository;
+
+    @Mock
+    private FeedLikeRepository feedLikeRepository;
 
     @Mock
     private FeedMapper feedMapper;
@@ -219,6 +224,8 @@ public class FeedServiceTest {
     @DisplayName("피드 목록 조회 테스트")
     class FeedListGetTest {
 
+        UUID defaultUserId = UUID.randomUUID();
+
         @Test
         void 커서없이_조회시_주어진_정렬조건으로_레포지토리를_호출한다() {
 
@@ -230,7 +237,7 @@ public class FeedServiceTest {
             given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(0L);
 
             // when
-            feedService.getFeeds(request);
+            feedService.getFeeds(request, defaultUserId);
 
             // then
             verify(feedRepository).findByCursor(
@@ -264,11 +271,12 @@ public class FeedServiceTest {
             given(feedRepository.findByCursor(
                 any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
             )).willReturn(contents);
+            given(feedLikeRepository.findFeedLikeIdsByUserIdAndFeedIdIn(any(), any())).willReturn(Set.of());
             given(feedMapper.toDto(any(Feed.class))).willAnswer(inv -> FeedFixture.createFeedDto(inv.getArgument(0)));
             given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(3L);
 
             // when
-            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+            CursorResponse<FeedDto> result = feedService.getFeeds(request, defaultUserId);
 
             // then
             assertThat(result.data()).hasSize(limit);
@@ -310,7 +318,7 @@ public class FeedServiceTest {
             given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(1L);
 
             // when
-            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+            CursorResponse<FeedDto> result = feedService.getFeeds(request, defaultUserId);
 
             // then
             assertThat(result.hasNext()).isFalse();
@@ -339,11 +347,12 @@ public class FeedServiceTest {
             given(feedRepository.findByCursor(
                 any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
             )).willReturn(contents);
+            given(feedLikeRepository.findFeedLikeIdsByUserIdAndFeedIdIn(any(), any())).willReturn(Set.of());
             given(feedMapper.toDto(any(Feed.class))).willAnswer(inv -> FeedFixture.createFeedDto(inv.getArgument(0)));
             given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(11L);
 
             // when
-            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+            CursorResponse<FeedDto> result = feedService.getFeeds(request, defaultUserId);
 
             // then
             assertThat(result.hasNext()).isTrue();
@@ -386,11 +395,12 @@ public class FeedServiceTest {
             given(feedRepository.findByCursor(
                 any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
             )).willReturn(contents);
+            given(feedLikeRepository.findFeedLikeIdsByUserIdAndFeedIdIn(any(), any())).willReturn(Set.of());
             given(feedMapper.toDto(any(Feed.class))).willAnswer(inv -> FeedFixture.createFeedDto(inv.getArgument(0)));
             given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(expectedTotalCount);
 
             // when
-            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+            CursorResponse<FeedDto> result = feedService.getFeeds(request, defaultUserId);
 
             // then
             assertThat(result.totalCount()).isEqualTo(expectedTotalCount);
@@ -420,7 +430,7 @@ public class FeedServiceTest {
                 .build();
 
             // when & then
-            assertThatThrownBy(() -> feedService.getFeeds(request))
+            assertThatThrownBy(() -> feedService.getFeeds(request, defaultUserId))
                 .isInstanceOf(OtbooException.class)
                 .extracting(e -> ((OtbooException) e).getErrorCode())
                 .isEqualTo(ErrorCode.INVALID_CURSOR_FORMAT);
@@ -440,7 +450,7 @@ public class FeedServiceTest {
             given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(0L);
 
             // when
-            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+            CursorResponse<FeedDto> result = feedService.getFeeds(request, defaultUserId);
 
             // then
             assertThat(result.data()).isEmpty();
@@ -477,7 +487,7 @@ public class FeedServiceTest {
             given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(0L);
 
             // when
-            feedService.getFeeds(request);
+            feedService.getFeeds(request, defaultUserId);
 
             // then
             verify(feedRepository).findByCursor(
@@ -505,11 +515,12 @@ public class FeedServiceTest {
             given(feedRepository.findByCursor(
                 any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
             )).willReturn(contents);
+            given(feedLikeRepository.findFeedLikeIdsByUserIdAndFeedIdIn(any(), any())).willReturn(Set.of());
             given(feedMapper.toDto(any(Feed.class))).willAnswer(inv -> FeedFixture.createFeedDto(inv.getArgument(0)));
             given(feedRepository.countByFilter(any(), any(), any(), any())).willReturn(2L);
 
             // when
-            CursorResponse<FeedDto> result = feedService.getFeeds(request);
+            CursorResponse<FeedDto> result = feedService.getFeeds(request, defaultUserId);
 
             // then
             assertThat(result.data()).hasSize(2);
