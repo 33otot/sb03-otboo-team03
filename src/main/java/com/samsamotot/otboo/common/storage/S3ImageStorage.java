@@ -48,9 +48,9 @@ public class S3ImageStorage {
 
         // 원본 파일명이 없거나 비어있으면 기본 이름 사용
         if (originalFileName == null || originalFileName.isBlank()) {
-            return "defaultImage.jpg";
+            originalFileName = "defaultImage.jpg";
         }
-        String fileName = createFileName(file.getOriginalFilename());
+        String fileName = createFileName(originalFileName);
 
         // 경로 설정
         String s3Key = folderPath + fileName;
