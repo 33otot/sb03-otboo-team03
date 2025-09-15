@@ -6,5 +6,5 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface ClothesAttributeDefService {
-    ClothesAttributeDefDto createClothesAttributeDef(ClothesAttributeDefCreateRequest request);
+    ClothesAttributeDefDto create(ClothesAttributeDefCreateRequest request);
 }

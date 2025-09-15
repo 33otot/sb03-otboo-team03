@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest;
+import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
+import com.samsamotot.otboo.clothes.repository.ClothesAttributeOptionRepository;
+import com.samsamotot.otboo.clothes.service.impl.ClothesAttributeDefServiceImpl;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,12 +38,12 @@ class ClothesAttributeDefServiceTest {
             new ClothesAttributeDefCreateRequest(name, options);
 
         // when
-        ClothesAttributeDefDto result = clothesAttributeDefService.createClothesAttributeDef(request);
+        ClothesAttributeDefDto result = clothesAttributeDefService.create(request);
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.getName()).isEqualTo("계절");
-        assertThat(result.getOptions()).hasSize(4);
+        assertThat(result.name()).isEqualTo("계절");
+        assertThat(result.selectableValues()).hasSize(4);
     }
 
 }
