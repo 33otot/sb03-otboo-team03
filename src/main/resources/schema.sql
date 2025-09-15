@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users
     is_locked BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    temporary_password_expires_at TIMESTAMPTZ,
 
     CONSTRAINT pk_users PRIMARY KEY (id),
     CONSTRAINT ck_users_role CHECK (role IN ('USER','ADMIN'))
