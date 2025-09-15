@@ -26,12 +26,14 @@ public class Notification extends BaseEntity {
     @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;
 
-    @Column(nullable = false,length = 255)
+    @Column(nullable = false, length = 255)
     private String title;
 
-    @Column(nullable = false,length = 255)
+    @Column(nullable = false, length = 255)
     private String content;
 
-    @Column(nullable = false,length = 10)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private NotificationLevel level;
+
 }
