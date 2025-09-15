@@ -54,7 +54,7 @@ class FollowServiceImplTest {
         UUID followeeId = UUID.randomUUID();
         FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
 
-        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
+        given(followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId))
             .willReturn(false);
 
         User follower = mock(User.class, Answers.RETURNS_DEFAULTS);
@@ -93,7 +93,7 @@ class FollowServiceImplTest {
         UUID followeeId = UUID.randomUUID();
         FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
 
-        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
+        given(followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId))
             .willReturn(true);
 
         // when & then
@@ -108,7 +108,7 @@ class FollowServiceImplTest {
         UUID followeeId = UUID.randomUUID();
         FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
 
-        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
+        given(followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId))
             .willReturn(false);
 
         given(userRepository.findById(followerId)).willReturn(Optional.empty());
@@ -125,7 +125,7 @@ class FollowServiceImplTest {
         UUID followeeId = UUID.randomUUID();
         FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
 
-        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
+        given(followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId))
             .willReturn(false);
 
         User follower = mock(User.class, Answers.RETURNS_DEFAULTS);
@@ -146,7 +146,7 @@ class FollowServiceImplTest {
         UUID followeeId = UUID.randomUUID();
         FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
 
-        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
+        given(followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId))
             .willReturn(false);
 
         User follower = mock(User.class, Answers.RETURNS_DEFAULTS);
@@ -169,7 +169,7 @@ class FollowServiceImplTest {
         UUID followeeId = UUID.randomUUID();
         FollowCreateRequest req = new FollowCreateRequest(followerId, followeeId);
 
-        given(followRepository.existsFollowByFollowerIdAndFolloweeId(followerId, followeeId))
+        given(followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId))
             .willReturn(false);
 
         User follower = mock(User.class, Answers.RETURNS_DEFAULTS);

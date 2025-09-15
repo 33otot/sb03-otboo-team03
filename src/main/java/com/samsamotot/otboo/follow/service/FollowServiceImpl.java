@@ -12,6 +12,7 @@ import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * PackageName  : com.samsamotot.otboo.follow.service
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class FollowServiceImpl implements FollowService {
     private static final String SERVICE = "[FollowService] ";
 
@@ -52,12 +54,13 @@ public class FollowServiceImpl implements FollowService {
      * @return 생성된 팔로우 정보를 담은 DTO
      * @throws OtbooException 중복 팔로우, 존재하지 않는 사용자, 잠금 계정인 경우
      */
+    @Transactional
     @Override
     public FollowDto follow(FollowCreateRequest request) {
 
         log.info(SERVICE + "팔로우 요청 수신: followerId={}, followeeId={}", request.followerId(), request.followeeId());
 
-        boolean isFollowExists = followRepository.existsFollowByFollowerIdAndFolloweeId(request.followerId(), request.followeeId());
+        boolean isFollowExists = followRepository.existsByFollowerIdAndFolloweeId(request.followerId(), request.followeeId());
 
         if (isFollowExists) {
             log.warn(SERVICE + "중복 팔로우 감지: followerId={}, followeeId={}", request.followerId(), request.followeeId());

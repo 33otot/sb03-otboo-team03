@@ -14,7 +14,10 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public interface FollowService {
 
-    // 팔로우 기능
+
+    /*
+        팔로우 기능
+     */
     FollowDto follow(FollowCreateRequest request);
 
 }
