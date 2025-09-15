@@ -49,7 +49,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException e) {
         log.warn("BadCredentialsException: {}", e.getMessage());
-        ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INVALID_PASSWORD);
+        ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.EMAIL_OR_PASSWORD_MISMATCH);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 
