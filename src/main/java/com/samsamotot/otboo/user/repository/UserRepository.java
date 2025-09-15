@@ -22,11 +22,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     
     boolean existsByEmail(String email);
     
-    Optional<User> findByEmailAndLocked(String email, Boolean locked);
+    Optional<User> findByEmailAndIsLocked(String email, Boolean locked);
 
     List<User> findByRole(Role role);
 
-    List<User> findByLocked(Boolean locked);
+    List<User> findByIsLocked(Boolean locked);
     
     /**
      * 이메일 패턴으로 사용자 검색(관리자-사용자 관리의 이메일 검색)
@@ -37,13 +37,13 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     /**
      * 이름 패턴으로 사용자 검색(프로필 내 팔로워, 팔로일 검색)
      */
-    @Query("SELECT u FROM User u WHERE u.name LIKE %:namePattern%")
-    List<User> findByNameContaining(@Param("namePattern") String namePattern);
+    @Query("SELECT u FROM User u WHERE u.username LIKE %:namePattern%")
+    List<User> findByUsernameContaining(@Param("namePattern") String namePattern);
     
     /**
      * 권한과 잠금 상태로 사용자 조회(관리자 - 사용자 관리의 권한과 잠금 상태로 사용자 조회)
      */
-    List<User> findByRoleAndLocked(Role role, Boolean locked);
+    List<User> findByRoleAndIsLocked(Role role, Boolean locked);
     
     /**
      * 임시 비밀번호가 만료된 사용자 조회
@@ -60,6 +60,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     /**
      * 잠금 상태별 사용자 수 조회
      */
-    @Query("SELECT u.locked, COUNT(u) FROM User u GROUP BY u.locked")
-    List<Object[]> countByLocked();
+    @Query("SELECT u.isLocked, COUNT(u) FROM User u GROUP BY u.isLocked")
+    List<Object[]> countByIsLocked();
 }
