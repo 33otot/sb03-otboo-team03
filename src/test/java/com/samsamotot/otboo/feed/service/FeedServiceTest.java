@@ -18,6 +18,9 @@ import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.fixture.FeedFixture;
+import com.samsamotot.otboo.common.fixture.LocationFixture;
+import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
@@ -27,12 +30,15 @@ import com.samsamotot.otboo.feed.entity.FeedClothes;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
+import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -72,6 +78,18 @@ public class FeedServiceTest {
     @InjectMocks
     private FeedServiceImpl feedService;
 
+    User mockUser;
+    Weather mockWeather;
+
+    @BeforeEach
+    void setUp() {
+        mockUser = UserFixture.createUser();
+        Location location = LocationFixture.createLocation();
+        mockWeather = WeatherFixture.createWeather(location);
+        ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(mockWeather, "id", UUID.randomUUID());
+    }
+
     @Nested
     @DisplayName("피드 생성 테스트")
     class FeedCreateTest {
@@ -85,8 +103,6 @@ public class FeedServiceTest {
             UUID clothesId = UUID.randomUUID();
             List<UUID> clothesIds = List.of(clothesId);
 
-            User mockUser = User.builder().build();
-            Weather mockWeather = Weather.builder().build();
             Clothes mockClothes = Clothes.builder().build();
             List<Clothes> mockClothesList = List.of(mockClothes);
             List<FeedClothes> mockFeedClothesList = List.of(FeedClothes.builder().build());
@@ -160,9 +176,6 @@ public class FeedServiceTest {
             UUID userId = UUID.randomUUID();
             UUID invalidWeatherId = UUID.randomUUID();
             List<UUID> clothesIds = List.of(UUID.randomUUID());
-
-            User mockUser = User.builder().build();
-
             String content = "피드 등록 테스트";
 
             FeedCreateRequest request = FeedCreateRequest.builder()
@@ -193,10 +206,6 @@ public class FeedServiceTest {
             UUID userId = UUID.randomUUID();
             UUID weatherId = UUID.randomUUID();
             List<UUID> invalidClothesIds = List.of(UUID.randomUUID());
-
-            User mockUser = User.builder().build();
-            Weather mockWeather = Weather.builder().build();
-
             String content = "피드 등록 테스트";
 
             FeedCreateRequest request = FeedCreateRequest.builder()
@@ -266,7 +275,14 @@ public class FeedServiceTest {
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
                 .build();
-            List<Feed> contents = FeedFixture.createFeedsWithSequentialCreationDate(limit + 1);
+
+            List<Feed> contents = new ArrayList<>();
+            for (int i = 0; i < limit + 1; i++) {
+                Feed feed = FeedFixture.createFeed(mockUser, mockWeather);
+                ReflectionTestUtils.setField(feed, "id", UUID.randomUUID());
+                ReflectionTestUtils.setField(feed, "createdAt", Instant.now().plusSeconds(i));
+                contents.add(feed);
+            }
 
             given(feedRepository.findByCursor(
                 any(), any(), anyInt(), anyString(), any(SortDirection.class), any(), any(), any(), any()
@@ -308,7 +324,7 @@ public class FeedServiceTest {
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
                 .build();
-            Feed a = FeedFixture.createDefaultFeed();
+            Feed a = FeedFixture.createFeed(mockUser, mockWeather);
             List<Feed> contents = List.of(a);
 
             given(feedRepository.findByCursor(
@@ -341,7 +357,13 @@ public class FeedServiceTest {
 
             // given
             FeedCursorRequest request = createDefaultRequest();
-            List<Feed> contents = FeedFixture.createFeedsWithSequentialCreationDate(request.limit() + 1);
+            List<Feed> contents = new ArrayList<>();
+            for (int i = 0; i < request.limit() + 1; i++) {
+                Feed feed = FeedFixture.createFeed(mockUser, mockWeather);
+                ReflectionTestUtils.setField(feed, "id", UUID.randomUUID());
+                ReflectionTestUtils.setField(feed, "createdAt", Instant.now().plusSeconds(i));
+                contents.add(feed);
+            }
             Feed lastFeed = contents.get(request.limit() - 1);
 
             given(feedRepository.findByCursor(
@@ -382,7 +404,9 @@ public class FeedServiceTest {
             long expectedTotalCount = 1L;
             String keyword = "keyword";
 
-            Feed f1 = FeedFixture.createFeedWithKeyword(keyword);
+            Feed f1 = FeedFixture.createFeedWithKeyword(mockUser, mockWeather, keyword);
+            ReflectionTestUtils.setField(f1, "id", UUID.randomUUID());
+            ReflectionTestUtils.setField(f1, "createdAt", Instant.now());
             List<Feed> contents = List.of(f1);
 
             FeedCursorRequest request = FeedCursorRequest.builder()
@@ -507,8 +531,13 @@ public class FeedServiceTest {
         void 조회결과는_DTO로_매핑된다() {
 
             // given
-            Feed f1 = FeedFixture.createDefaultFeed();
-            Feed f2 = FeedFixture.createDefaultFeed();
+            Feed f1 = FeedFixture.createFeed(mockUser, mockWeather);
+            ReflectionTestUtils.setField(f1, "id", UUID.randomUUID());
+            ReflectionTestUtils.setField(f1, "createdAt", Instant.now());
+
+            Feed f2 = FeedFixture.createFeed(mockUser, mockWeather);
+            ReflectionTestUtils.setField(f2, "id", UUID.randomUUID());
+            ReflectionTestUtils.setField(f2, "createdAt", Instant.now().plusSeconds(1));
             List<Feed> contents = List.of(f1, f2);
             FeedCursorRequest request = createDefaultRequest();
 

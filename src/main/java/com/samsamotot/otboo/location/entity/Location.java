@@ -33,6 +33,6 @@ public class Location extends BaseEntity {
     private int y;
 
     @Convert(converter = StringListJsonbConverter.class)
-    @Column(name = "location_names", columnDefinition = "jsonb", nullable = false)
+    @Column(name = "location_names", nullable = false)
     private List<String> locationNames;
 }

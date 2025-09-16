@@ -8,23 +8,36 @@ import com.samsamotot.otboo.common.config.TestJpaAuditingConfig;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.fixture.FeedFixture;
+import com.samsamotot.otboo.common.fixture.LocationFixture;
+import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.entity.Feed;
+import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
+import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
+@ActiveProfiles("test")
 @DataJpaTest
+@EntityScan("com.samsamotot.otboo")
+@TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 @Import({TestJpaAuditingConfig.class, QueryDslConfig.class})
 @DisplayName("Feed 레포지토리 슬라이스 테스트")
 public class FeedRepositoryTest {
@@ -36,6 +49,22 @@ public class FeedRepositoryTest {
     private TestEntityManager em;
 
     Instant baseTime = Instant.now().minusSeconds(3000);
+    User author;
+    Location location;
+    Weather weather;
+
+    @BeforeEach
+    void setUp() {
+        author = UserFixture.createUser();
+        em.persist(author);
+        location = LocationFixture.createLocation();
+        em.persist(location);
+        weather = WeatherFixture.createWeather(location);
+        em.persist(weather);
+
+        em.flush();
+        em.clear();
+    }
 
     @Test
     void createdAt_내림차순으로_피드를_조회한다() {
@@ -46,7 +75,7 @@ public class FeedRepositoryTest {
         SortDirection sortDirection = SortDirection.DESCENDING;
 
         for (int i = 0; i < 5; i ++) {
-            Feed feed = FeedFixture.createFeedWithCreatedAt(baseTime.plusSeconds(i * 1000));
+            Feed feed = FeedFixture.createFeed(author, weather);
             em.persist(feed);
         }
         em.flush();
@@ -81,7 +110,7 @@ public class FeedRepositoryTest {
         SortDirection sortDirection = SortDirection.ASCENDING;
 
         for (int i = 0; i < 5; i ++) {
-            Feed feed = FeedFixture.createFeedWithCreatedAt(baseTime.plusSeconds(i * 1000));
+            Feed feed = FeedFixture.createFeedWithCreatedAt(author, weather, baseTime.plusSeconds(i * 1000));
             em.persist(feed);
         }
         em.flush();
@@ -116,7 +145,7 @@ public class FeedRepositoryTest {
         SortDirection sortDirection = SortDirection.DESCENDING;
 
         for (int i = 0; i < 5; i ++) {
-            Feed feed = FeedFixture.createFeedWithLikeCount((long) i);
+            Feed feed = FeedFixture.createFeedWithLikeCount(author, weather, (long) i);
             em.persist(feed);
         }
         em.flush();
@@ -151,7 +180,7 @@ public class FeedRepositoryTest {
         SortDirection sortDirection = SortDirection.ASCENDING;
 
         for (int i = 0; i < 5; i ++) {
-            Feed feed = FeedFixture.createFeedWithLikeCount((long) i);
+            Feed feed = FeedFixture.createFeedWithLikeCount(author, weather, (long) i);
             em.persist(feed);
         }
         em.flush();
@@ -187,7 +216,7 @@ public class FeedRepositoryTest {
 
         List<Feed> allFeeds = new ArrayList<>();
         for (int i = 0; i < 5; i ++) {
-            Feed feed = FeedFixture.createFeedWithLikeCount((long) i);
+            Feed feed = FeedFixture.createFeedWithLikeCount(author, weather, (long) i);
             em.persist(feed);
             allFeeds.add(feed);
         }
@@ -254,8 +283,8 @@ public class FeedRepositoryTest {
         int count = 5;
 
         for (int i = 0 ; i < count; i ++) {
-            Feed feedWithKeyword = FeedFixture.createFeedWithKeyword(keyword + i);
-            Feed feedWithOtherKeyword = FeedFixture.createFeedWithKeyword("계절" + i);
+            Feed feedWithKeyword = FeedFixture.createFeedWithKeyword(author, weather, keyword + i);
+            Feed feedWithOtherKeyword = FeedFixture.createFeedWithKeyword(author, weather, "계절" + i);
             em.persist(feedWithKeyword);
             em.persist(feedWithOtherKeyword);
         }
@@ -271,7 +300,7 @@ public class FeedRepositoryTest {
         // then
         assertThat(result).hasSize(count);
         assertThat(result).allSatisfy(feed -> {
-           assertThat(feed.getContent()).contains(keyword);
+            assertThat(feed.getContent()).contains(keyword);
         });
     }
 
@@ -285,9 +314,17 @@ public class FeedRepositoryTest {
         SkyStatus skyStatus = SkyStatus.CLEAR;
         int count = 5;
 
+        Weather targetWeather = Weather.builder()
+            .forecastAt(Instant.now())
+            .forecastedAt(Instant.now())
+            .location(location)
+            .skyStatus(skyStatus)
+            .build();
+        em.persist(targetWeather);
+
         for (int i = 0 ; i < count; i ++) {
-            Feed feedWithSkyStatus = FeedFixture.createFeedWithSkyStatus(skyStatus);
-            Feed feedWithOtherSkyStatus = FeedFixture.createFeedWithSkyStatus(SkyStatus.CLOUDY);
+            Feed feedWithSkyStatus = FeedFixture.createFeed(author, targetWeather);
+            Feed feedWithOtherSkyStatus = FeedFixture.createFeed(author, weather);
             em.persist(feedWithSkyStatus);
             em.persist(feedWithOtherSkyStatus);
         }
@@ -317,9 +354,17 @@ public class FeedRepositoryTest {
         Precipitation precipitation = Precipitation.RAIN;
         int count = 5;
 
+        Weather targetWeather = Weather.builder()
+            .forecastAt(Instant.now())
+            .forecastedAt(Instant.now())
+            .location(location)
+            .precipitationType(precipitation)
+            .build();
+        em.persist(targetWeather);
+
         for (int i = 0 ; i < count; i ++) {
-            Feed feedWithPrecipitation = FeedFixture.createFeedWithPrecipitation(precipitation);
-            Feed feedWithOtherPrecipitation = FeedFixture.createFeedWithPrecipitation(Precipitation.NONE);
+            Feed feedWithPrecipitation = FeedFixture.createFeed(author, targetWeather);
+            Feed feedWithOtherPrecipitation = FeedFixture.createFeed(author, weather);
             em.persist(feedWithPrecipitation);
             em.persist(feedWithOtherPrecipitation);
         }
@@ -346,12 +391,18 @@ public class FeedRepositoryTest {
         int limit = 5;
         String sortBy = "createdAt";
         SortDirection sortDirection = SortDirection.DESCENDING;
-        UUID authorId = UUID.randomUUID();
         int count = 5;
 
+        User otherAuthor = User.builder()
+            .username("test")
+            .email("test@test.com")
+            .password("test1234")
+            .build();
+        em.persist(otherAuthor);
+
         for (int i = 0 ; i < count; i ++) {
-            Feed feedWithAuthorId = FeedFixture.createFeedWithAuthorId(authorId);
-            Feed feedWithOtherAuthorId = FeedFixture.createFeedWithAuthorId(UUID.randomUUID());
+            Feed feedWithAuthorId = FeedFixture.createFeed(author, weather);
+            Feed feedWithOtherAuthorId = FeedFixture.createFeed(otherAuthor, weather);
             em.persist(feedWithAuthorId);
             em.persist(feedWithOtherAuthorId);
         }
@@ -361,13 +412,13 @@ public class FeedRepositoryTest {
 
         // when
         List<Feed> result = feedRepository.findByCursor(
-            null, null, limit + 1, sortBy, sortDirection, null, null, null, authorId
+            null, null, limit + 1, sortBy, sortDirection, null, null, null, author.getId()
         );
 
         // then
         assertThat(result).hasSize(count);
         assertThat(result).allSatisfy(feed -> {
-            assertThat(feed.getAuthor().getId()).isEqualTo(authorId);
+            assertThat(feed.getAuthor().getId()).isEqualTo(author.getId());
         });
     }
 
@@ -381,16 +432,23 @@ public class FeedRepositoryTest {
         String keyword = "맑음";
         SkyStatus skyStatus = SkyStatus.CLEAR;
         Precipitation precipitation = Precipitation.NONE;
-        UUID authorId = UUID.randomUUID();
+        UUID authorId = author.getId();
 
-        Feed targetFeed = FeedFixture.createFeedWithAllConditions(keyword, skyStatus, precipitation, authorId);
+        Weather targetWeather = Weather.builder()
+            .forecastAt(Instant.now())
+            .forecastedAt(Instant.now())
+            .location(location)
+            .skyStatus(skyStatus)
+            .precipitationType(precipitation)
+            .build();
+        em.persist(targetWeather);
+
+        Feed targetFeed = FeedFixture.createFeedWithKeyword(author, targetWeather, keyword);
         em.persist(targetFeed);
 
         // 노이즈 데이터
-        em.persist(FeedFixture.createFeedWithAllConditions("흐림", skyStatus, precipitation, authorId));
-        em.persist(FeedFixture.createFeedWithAllConditions(keyword, SkyStatus.CLOUDY, precipitation, authorId));
-        em.persist(FeedFixture.createFeedWithAllConditions(keyword, skyStatus, Precipitation.RAIN, authorId));
-        em.persist(FeedFixture.createFeedWithAllConditions(keyword, skyStatus, precipitation, UUID.randomUUID()));
+        em.persist(FeedFixture.createFeedWithKeyword(author, targetWeather, "흐림"));
+        em.persist(FeedFixture.createFeedWithKeyword(author, weather, keyword));
 
         em.flush();
         em.clear();
@@ -417,19 +475,29 @@ public class FeedRepositoryTest {
     void 모든_검색_조건을_일치하는_피드의_개수를_반환한다() {
 
         // given
+        int limit = 5;
+        String sortBy = "createdAt";
+        SortDirection sortDirection = SortDirection.DESCENDING;
         String keyword = "맑음";
         SkyStatus skyStatus = SkyStatus.CLEAR;
         Precipitation precipitation = Precipitation.NONE;
-        UUID authorId = UUID.randomUUID();
+        UUID authorId = author.getId();
 
-        Feed targetFeed = FeedFixture.createFeedWithAllConditions(keyword, skyStatus, precipitation, authorId);
+        Weather targetWeather = Weather.builder()
+            .forecastAt(Instant.now())
+            .forecastedAt(Instant.now())
+            .location(location)
+            .skyStatus(skyStatus)
+            .precipitationType(precipitation)
+            .build();
+        em.persist(targetWeather);
+
+        Feed targetFeed = FeedFixture.createFeedWithKeyword(author, targetWeather, keyword);
         em.persist(targetFeed);
 
         // 노이즈 데이터
-        em.persist(FeedFixture.createFeedWithAllConditions("흐림", skyStatus, precipitation, authorId));
-        em.persist(FeedFixture.createFeedWithAllConditions(keyword, SkyStatus.CLOUDY, precipitation, authorId));
-        em.persist(FeedFixture.createFeedWithAllConditions(keyword, skyStatus, Precipitation.RAIN, authorId));
-        em.persist(FeedFixture.createFeedWithAllConditions(keyword, skyStatus, precipitation, UUID.randomUUID()));
+        em.persist(FeedFixture.createFeedWithKeyword(author, targetWeather, "흐림"));
+        em.persist(FeedFixture.createFeedWithKeyword(author, weather, keyword));
 
         em.flush();
         em.clear();
@@ -452,7 +520,7 @@ public class FeedRepositoryTest {
         // given
         int count = 10;
         for (int i = 0; i < count; i++) {
-            em.persist(FeedFixture.createDefaultFeed());
+            em.persist(FeedFixture.createFeed(author, weather));
         }
         em.flush();
         em.clear();
@@ -468,7 +536,7 @@ public class FeedRepositoryTest {
     void 일치하는_피드가_없을_때_0을_반환한다() {
 
         // given
-        em.persist(FeedFixture.createFeedWithKeyword("맑음"));
+        em.persist(FeedFixture.createFeedWithKeyword(author, weather, "맑음"));
         em.flush();
         em.clear();
 
