@@ -1,9 +1,7 @@
 package com.samsamotot.otboo.follow.service;
 
-import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
-
 import com.samsamotot.otboo.follow.dto.FollowListResponse;
 import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import jakarta.validation.Valid;

@@ -1,7 +1,5 @@
 package com.samsamotot.otboo.follow.repository;
 
-import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
 import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import com.samsamotot.otboo.follow.entity.Follow;
 

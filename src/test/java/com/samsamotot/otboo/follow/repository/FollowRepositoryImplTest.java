@@ -3,7 +3,6 @@ package com.samsamotot.otboo.follow.repository;
 import com.samsamotot.otboo.common.config.QuerydslConfig;
 import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import com.samsamotot.otboo.follow.entity.Follow;
-import com.samsamotot.otboo.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

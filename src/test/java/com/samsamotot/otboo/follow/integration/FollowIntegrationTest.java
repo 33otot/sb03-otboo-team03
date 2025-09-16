@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * FileName     : FollowIntegrationTest
  * Author       : dounguk
  * Date         : 2025. 9. 14.
+ * Description  : follow 기능을 통합 테스트 하는 테스트 클래스
  */
 
 @DisplayName("Follow 통합 테스트")
