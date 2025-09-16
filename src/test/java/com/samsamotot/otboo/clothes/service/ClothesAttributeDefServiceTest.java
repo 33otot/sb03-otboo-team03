@@ -1,7 +1,11 @@
 package com.samsamotot.otboo.clothes.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDefDto;
@@ -11,9 +15,12 @@ import com.samsamotot.otboo.clothes.entity.ClothesAttributeOption;
 import com.samsamotot.otboo.clothes.mapper.ClothesAttributeDefMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.service.impl.ClothesAttributeDefServiceImpl;
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttributeDefAlreadyExist;
 import com.samsamotot.otboo.common.fixture.ClothesAttributeDefFixture;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +75,26 @@ class ClothesAttributeDefServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.name()).isEqualTo("계절");
         assertThat(result.selectableValues()).hasSize(4);
+    }
+
+    @Test
+    void 이미_존재하는_의상_속성_정의의_경우_예외가_발생한다() {
+        // given
+        String name = "계절";
+        List<String> options = List.of("봄", "여름", "가을", "겨울");
+
+        ClothesAttributeDefCreateRequest request =
+            new ClothesAttributeDefCreateRequest(name, options);
+
+        when(defRepository.existsByName(request.name())).thenReturn(true);
+
+        // When & Then
+        assertThatThrownBy(() -> clothesAttributeDefService.create(request))
+            .isInstanceOf(ClothesAttributeDefAlreadyExist.class)
+            .hasMessage(ErrorCode.CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS.getMessage());
+
+        verify(defRepository, times(1)).existsByName(name);
+        verify(defRepository, never()).save(any());
     }
 
 }
