@@ -6,7 +6,6 @@ import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -33,6 +32,8 @@ public class UserFixture {
             .email(VALID_EMAIL)
             .username(VALID_NAME)
             .password("encodedPassword")
+            .provider("local")
+            .providerId(null)
             .role(Role.USER)
             .isLocked(false)
             .build();
@@ -43,6 +44,8 @@ public class UserFixture {
             .email(email)
             .username(VALID_NAME)
             .password("encodedPassword")
+            .provider("local")
+            .providerId(null)
             .role(Role.USER)
             .isLocked(false)
             .build();
@@ -53,6 +56,8 @@ public class UserFixture {
             .email(VALID_EMAIL)
             .username(username)
             .password("encodedPassword")
+            .provider("local")
+            .providerId(null)
             .role(Role.USER)
             .isLocked(false)
             .build();
@@ -63,6 +68,8 @@ public class UserFixture {
             .email("admin@example.com")
             .username("관리자")
             .password("encodedPassword")
+            .provider("local")
+            .providerId(null)
             .role(Role.ADMIN)
             .isLocked(false)
             .build();
@@ -73,8 +80,22 @@ public class UserFixture {
             .email("locked@example.com")
             .username("잠긴사용자")
             .password("encodedPassword")
+            .provider("local")
+            .providerId(null)
             .role(Role.USER)
             .isLocked(true)
+            .build();
+    }
+
+    public static User createUser(String email, String username, Role role, boolean locked) {
+        return User.builder()
+            .email(email)
+            .username(username)
+            .password("encodedPassword")
+            .provider("local")
+            .providerId(null)
+            .role(role)
+            .isLocked(locked)
             .build();
     }
 
@@ -83,6 +104,30 @@ public class UserFixture {
     public static UserCreateRequest createValidRequest() {
         return UserCreateRequest.builder()
             .name(VALID_NAME)
+            .email(VALID_EMAIL)
+            .password(VALID_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createValidUserCreateRequest() {
+        return UserCreateRequest.builder()
+            .name(VALID_NAME)
+            .email(VALID_EMAIL)
+            .password(VALID_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createUserCreateRequestWithEmail(String email) {
+        return UserCreateRequest.builder()
+            .name(VALID_NAME)
+            .email(email)
+            .password(VALID_PASSWORD)
+            .build();
+    }
+    
+    public static UserCreateRequest createUserCreateRequestWithName(String name) {
+        return UserCreateRequest.builder()
+            .name(name)
             .email(VALID_EMAIL)
             .password(VALID_PASSWORD)
             .build();
@@ -159,7 +204,6 @@ public class UserFixture {
             .email(VALID_EMAIL)
             .name(VALID_NAME)
             .role(Role.USER)
-            .linkedOAuthProviders(List.of("google"))
             .locked(false)
             .build();
     }
@@ -171,7 +215,6 @@ public class UserFixture {
             .email(VALID_EMAIL)
             .name(VALID_NAME)
             .role(Role.USER)
-            .linkedOAuthProviders(List.of("google"))
             .locked(false)
             .build();
     }
@@ -183,7 +226,17 @@ public class UserFixture {
             .email(email)
             .name(VALID_NAME)
             .role(Role.USER)
-            .linkedOAuthProviders(List.of("google"))
+            .locked(false)
+            .build();
+    }
+    
+    public static UserDto createUserDtoWithName(String name) {
+        return UserDto.builder()
+            .id(UUID.randomUUID())
+            .createdAt(Instant.now())
+            .email(VALID_EMAIL)
+            .name(name)
+            .role(Role.USER)
             .locked(false)
             .build();
     }
