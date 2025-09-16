@@ -193,3 +193,38 @@ SELECT gen_random_uuid(), u2.id, u1.id, NOW() FROM users u1, users u2 WHERE u1.i
 SELECT gen_random_uuid(), u3.id, u1.id, NOW() FROM users u1, users u3 WHERE u1.id = 'a0000000-0000-0000-0000-000000000004' AND u3.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
 SELECT gen_random_uuid(), u4.id, u1.id, NOW() FROM users u1, users u4 WHERE u1.id = 'a0000000-0000-0000-0000-000000000005' AND u4.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
 SELECT gen_random_uuid(), u1.id, u3.id, NOW() FROM users u1, users u3 WHERE u1.id = 'a0000000-0000-0000-0000-000000000001' AND u3.id = 'a0000000-0000-0000-0000-000000000004';
+
+
+
+-- 팔로우 테스트 관련 설정
+-- 정렬 확인용: 더 과거/더 최근 시간 섞기
+INSERT INTO follows (id, follower_id, followee_id, created_at)
+VALUES
+    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000003', NOW() - INTERVAL '15 minutes'); -- admin_one
+
+-- 타이브레이커 확인용: 두 건을 같은 타임스탬프(ts)로 삽입
+WITH t AS (SELECT NOW() - INTERVAL '1 minute' AS ts)
+INSERT INTO follows (id, follower_id, followee_id, created_at)
+SELECT gen_random_uuid(),
+       'a0000000-0000-0000-0000-000000000001'::uuid,
+       'a0000000-0000-0000-0000-000000000005'::uuid,
+       t.ts
+FROM t
+UNION ALL
+SELECT gen_random_uuid(),
+       'a0000000-0000-0000-0000-000000000001'::uuid,
+       'a0000000-0000-0000-0000-000000000002'::uuid,
+       t.ts
+FROM t;
+
+-- 실제 팔로잉 몇 개인지
+SELECT COUNT(*)
+FROM follows
+WHERE follower_id = 'a0000000-0000-0000-0000-000000000001'::uuid;
+
+-- 어떤 애들을 팔로우 중인지 (정렬 포함)
+SELECT id, followee_id, created_at
+FROM follows
+WHERE follower_id = 'a0000000-0000-0000-0000-000000000001'::uuid
+ORDER BY created_at DESC, id DESC;
+
