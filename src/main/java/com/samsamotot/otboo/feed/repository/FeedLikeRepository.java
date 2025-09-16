@@ -18,4 +18,6 @@ public interface FeedLikeRepository extends JpaRepository<FeedLike, UUID> {
           and fl.feed.id in :feedIds
     """)
     Set<UUID> findFeedLikeIdsByUserIdAndFeedIdIn(UUID userId, Collection<UUID> feedIds);
+
+    boolean existsByFeedIdAndUserId(UUID feedId, UUID userId);
 }

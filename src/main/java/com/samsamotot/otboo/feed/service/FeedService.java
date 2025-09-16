@@ -13,5 +13,5 @@ public interface FeedService {
 
     CursorResponse<FeedDto> getFeeds(FeedCursorRequest request, UUID userId);
 
-    FeedDto update(UUID feedId, UUID userId, FeedUpdateRequest feedUpdateRequest);
+    FeedDto update(UUID feedId, UUID userId, FeedUpdateRequest request);
 }

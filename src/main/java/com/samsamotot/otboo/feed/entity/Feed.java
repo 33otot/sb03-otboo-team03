@@ -77,4 +77,10 @@ public class Feed extends BaseEntity {
             .build();
         this.feedClothes.add(fc);
     }
+
+    public void updateContent(String newContent) {
+        if (newContent != null && !this.content.equals(newContent)) {
+            this.content = newContent;
+        }
+    }
 }

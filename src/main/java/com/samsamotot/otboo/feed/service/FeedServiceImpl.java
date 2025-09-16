@@ -181,8 +181,24 @@ public class FeedServiceImpl implements FeedService {
     }
 
     @Override
-    public FeedDto update(UUID feedId, UUID userId, FeedUpdateRequest feedUpdateRequest) {
-        return null;
+    public FeedDto update(UUID feedId, UUID userId, FeedUpdateRequest request) {
+
+        log.debug("[FeedServiceImpl] 피드 수정 시작: feedId = {}, userId = {}, request = {}", feedId, userId, request);
+
+        Feed feed = feedRepository.findById(feedId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
+
+        if (!feed.getAuthor().getId().equals(userId)) {
+            throw new OtbooException(ErrorCode.FORBIDDEN_FEED_MODIFICATION, Map.of("feedId", feedId.toString()));
+        }
+
+        String newContent = request.content();
+        log.debug("[FeedServiceImpl] 피드 수정 완료: feedId = {}, userId = {}", feedId, userId);
+        feed.updateContent(newContent);
+
+        FeedDto result = convertToDto(feed, userId);
+
+        return result;
     }
 
     private void validateCursorRequest(String cursor, String sortBy) {
@@ -205,6 +221,18 @@ public class FeedServiceImpl implements FeedService {
             case SORT_BY_LIKE_COUNT -> String.valueOf(feed.getLikeCount());
             default -> throw new OtbooException(ErrorCode.INVALID_SORT_FIELD);
         };
+    }
+
+    private FeedDto convertToDto(Feed feed, UUID currentUserId) {
+
+        boolean likedByMe = feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), currentUserId);
+        FeedDto feedDto = feedMapper.toDto(feed);
+
+        if (feedDto == null) {
+            throw new OtbooException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+
+        return feedDto.toBuilder().likedByMe(likedByMe).build();
     }
 
     private List<FeedDto> convertToDtos(List<Feed> feeds, UUID currentUserId) {
