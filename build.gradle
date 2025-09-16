@@ -89,18 +89,18 @@ dependencies {
 }
 
 // QueryDSL 설정
-def querydslDir = "$buildDir/generated/querydsl"
+def querydslDir = layout.buildDirectory.dir("generated/querydsl").get().asFile
 
 sourceSets {
-    main.java.srcDirs += [querydslDir]
+	main.java.srcDirs += [ querydslDir ]
 }
 
-tasks.withType(JavaCompile) {
-    options.annotationProcessorGeneratedSourcesDirectory = file(querydslDir)
+tasks.withType(JavaCompile).configureEach {
+	options.generatedSourceOutputDirectory.set(querydslDir)
 }
 
-clean {
-    delete file(querydslDir)
+clean.doLast {
+	file(querydslDir).deleteDir()
 }
 
 // 테스트 설정
@@ -141,6 +141,7 @@ jacocoTestCoverageVerification {
 	afterEvaluate {
 		classDirectories.setFrom(files(classDirectories.files.collect {
 			fileTree(dir: it, include: [
+				'**/common/storage/**',
 				'**/service/**',          // Service 레이어만 포함
 				'**/repository/**',       // Repository 레이어만 포함
 				'**/controller/**'        // Controller 레이어만 포함
