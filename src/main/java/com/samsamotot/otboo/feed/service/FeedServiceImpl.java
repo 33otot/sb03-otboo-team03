@@ -180,6 +180,15 @@ public class FeedServiceImpl implements FeedService {
         );
     }
 
+    /**
+     * 피드의 내용을 수정합니다.
+     * 수정을 요청한 사용자가 피드의 작성자인지 확인합니다.
+     *
+     * @param feedId 수정할 피드의 ID
+     * @param userId 현재 사용자의 ID
+     * @param request 피드 수정 요청 DTO
+     * @return 수정된 피드 DTO
+     */
     @Override
     public FeedDto update(UUID feedId, UUID userId, FeedUpdateRequest request) {
 
