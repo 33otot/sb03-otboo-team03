@@ -60,7 +60,7 @@ public class FeedController implements FeedApi {
      *
      * @param request 커서, 정렬 기준/방향, limit 크기, 검색 조건 등 페이징 요청 DTO
      * @param userId 현재 사용자의 ID (TODO: Spring Security 적용 후 인증 객체에서 가져오도록 수정 필요)
-     * @return 조회된 피드 목록과 다음 커서 정보를 담은 ResponseEntity (HTTP 200 OK)
+     * @return 조회된 피드 목록, 다음 커서 정보, 전체 개수 등을 포함하는 ResponseEntity (HTTP 200 OK)
      */
     @GetMapping
     @Override

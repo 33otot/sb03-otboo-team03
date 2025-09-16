@@ -28,6 +28,20 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom{
     private final JPAQueryFactory queryFactory;
     private final QFeed qFeed = QFeed.feed;
 
+    /**
+     * 커서 기반 페이지네이션을 사용하여 피드 목록을 조회합니다.
+     * 다양한 필터링 조건(키워드, 날씨 상태, 강수 형태, 작성자 ID)과 정렬 기준을 적용할 수 있습니다.
+     * @param cursor                    페이지네이션의 기준 커서 값 (createdAt 또는 likeCount)
+     * @param idAfter                   마지막으로 조회된 피드 ID
+     * @param limit                     조회할 피드의 최대 개수
+     * @param sortBy                    정렬 기준 필드 (예: "createdAt", "likeCount")
+     * @param sortDirection             정렬 방향 (ASCENDING 또는 DESCENDING)
+     * @param keywordLike               피드 내용에 포함될 키워드 (부분 일치)
+     * @param skyStatusEqual            날씨 상태 필터링 (예: SUNNY, CLOUDY)
+     * @param precipitationTypeEqual    강수 형태 필터링 (예: NONE, RAIN, SNOW)
+     * @param authorIdEqual             특정 작성자의 피드만 조회할 경우 작성자 ID
+     * @return 조회된 피드 엔티티 목록
+     */
     @Override
     public List<Feed> findByCursor(
         String cursor,
@@ -59,6 +73,15 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom{
             .fetch();
     }
 
+    /**
+     * 주어진 필터링 조건에 해당하는 피드의 총 개수를 조회합니다.
+     *
+     * @param keywordLike               피드 내용에 포함될 키워드 (부분 일치)
+     * @param skyStatusEqual            날씨 상태 필터링 (예: SUNNY, CLOUDY)
+     * @param precipitationTypeEqual    강수 형태 필터링 (예: NONE, RAIN, SNOW)
+     * @param authorIdEqual             특정 작성자의 피드만 조회할 경우 작성자 ID
+     * @return 필터링 조건에 맞는 피드의 총 개수
+     */
     @Override
     public long countByFilter(String keywordLike, SkyStatus skyStatusEqual,
         Precipitation precipitationTypeEqual, UUID authorIdEqual

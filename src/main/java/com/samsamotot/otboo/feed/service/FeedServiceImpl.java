@@ -114,11 +114,13 @@ public class FeedServiceImpl implements FeedService {
     }
 
     /**
+     * 피드 목록을 커서 기반 페이징으로 조회합니다.
+     * 다양한 검색 조건 및 정렬 조건을 사용하여 피드를 검색하고,
+     * 현재 사용자의 좋아요 여부를 포함한 FeedDto 목록을 반환합니다.
      *
-     *
-     * @param request
-     * @param userId
-     * @return
+     * @param request 커서, 정렬 기준/방향, limit 크기, 검색 조건 등 페이징 요청 DTO
+     * @param userId 현재 사용자의 ID
+     * @return 조회된 피드 목록, 다음 커서 정보, 전체 개수 등을 포함하는 CursorResponse<FeedDto>
      */
     @Override
     @Transactional(readOnly = true)
