@@ -17,7 +17,7 @@ public class WeatherController {
     private final LocationService locationService;
 
     @GetMapping("/location")
-    public WeatherAPILocation getUserLocation(
+    public WeatherAPILocation getCurrentLocation(
             @RequestParam double longitude,
             @RequestParam double latitude
     ) {

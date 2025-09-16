@@ -8,8 +8,8 @@ import java.util.List;
 public record WeatherAPILocation(
         double latitude,
         double longitude,
-        int x,
-        int y,
+        Integer x,
+        Integer y,
         List<String> locationNames
 ) {
 }
