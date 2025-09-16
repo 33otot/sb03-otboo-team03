@@ -14,6 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 /**
  * PackageName  : com.samsamotot.otboo.follow.service
  * FileName     : FollowServiceImpl
@@ -27,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class FollowServiceImpl implements FollowService {
     private static final String SERVICE = "[FollowService] ";
+    private static final String SORT_DIRECTION_DESCENDING = "DESCENDING";
+    private static final String SORT_BY = "createdAt";
 
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
@@ -102,14 +109,58 @@ public class FollowServiceImpl implements FollowService {
     }
 
 
+    /*
+        팔로잉 목록 조회
+     */
     @Override
     public FollowListResponse getFollowings(FollowingRequest request) {
         // 1. user 검색
+        User user = userRepository.findById(request.followerId()).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+
         // 2. locked 여부 확인
-        // 3. 쿼리 dsl 사용해서 유저 응답 호출
-        // 4.
+        if (user.isLocked()) {
+            log.warn(SERVICE + "잠금 계정(팔로워): followerId={}", user.getId());
+            throw new OtbooException(ErrorCode.USER_LOCKED);
+        }
 
+        // 4. FollowListResponse 변수 가공
+        // 4-1쿼리 dsl 사용 Follow 리스트
+        List<Follow> follows = followRepository.findFollowings(request);
 
-        return null;
+        // 4-2: limit
+        int limit = Math.max(1, request.limit());
+
+        // 4-3: hasNext
+        boolean hasNext = follows.size() > limit;
+
+        // 4-4. totalCount
+        long totalCount = followRepository.countTotalElements(request.followerId(), request.nameLike());
+
+        // 4-5 nextCursor n nextIdAfter
+        List<Follow> pageRows = hasNext ? follows.subList(0, limit) : follows;
+        Instant nextCreatedAt = pageRows.isEmpty() ? null : pageRows.get(pageRows.size() - 1).getCreatedAt();
+        String nextCursor = (hasNext && nextCreatedAt != null) ? nextCreatedAt.toString() : null; // nextCursor
+        UUID nextIdAfter = pageRows.isEmpty() ? null : pageRows.get(pageRows.size() - 1).getId(); // nextIdAfter
+
+        // 4-6: data
+        List<FollowDto> data = pageRows.stream().map(followMapper::toDto).toList();
+
+        // 4-7: 페이지에 맞게 null
+        if (!hasNext) {
+            nextIdAfter = null;
+        }
+
+        // 응답
+        FollowListResponse response = FollowListResponse.builder()
+            .data(data)
+            .nextCursor(nextCursor)
+            .nextIdAfter(nextIdAfter)
+            .hasNext(hasNext)
+            .totalCount(totalCount)
+            .sortBy(SORT_BY)
+            .sortDirection(SORT_DIRECTION_DESCENDING)
+            .build();
+
+        return response;
     }
 }

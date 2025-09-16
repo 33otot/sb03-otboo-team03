@@ -4,9 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.fixture.FollowFixture;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.user.UserSummaryDto;
-import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.service.FollowService;
+import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
 import java.util.UUID;
 
@@ -48,8 +48,8 @@ class FollowControllerTest {
     @Test
     void 바디를_정상입력_받을경우_팔로우를_성공한다() throws Exception {
         // given
-        UserSummaryDto followee = new UserSummaryDto(UUID.randomUUID(), "팔로위", "profileImageUrl");
-        UserSummaryDto follower = new UserSummaryDto(UUID.randomUUID(), "팔로워", "profileImageUrl");
+        AuthorDto followee = new AuthorDto(UUID.randomUUID(), "팔로위", "profileImageUrl");
+        AuthorDto follower = new AuthorDto(UUID.randomUUID(), "팔로워", "profileImageUrl");
 
         FollowCreateRequest validRequest = new FollowCreateRequest(follower.userId(), followee.userId());
         FollowDto response = new FollowDto(UUID.randomUUID(), followee, follower);
@@ -66,11 +66,11 @@ class FollowControllerTest {
             .andExpect(jsonPath("$.id").isNotEmpty())
             .andExpect(jsonPath("$.followee").isMap())
             .andExpect(jsonPath("$.followee.userId").value(followee.userId().toString()))
-            .andExpect(jsonPath("$.followee.username").value(followee.username()))
+            .andExpect(jsonPath("$.followee.username").value(followee.name()))
             .andExpect(jsonPath("$.followee.profileImageUrl").value(followee.profileImageUrl()))
             .andExpect(jsonPath("$.follower").isMap())
             .andExpect(jsonPath("$.follower.userId").value(follower.userId().toString()))
-            .andExpect(jsonPath("$.follower.username").value(follower.username()))
+            .andExpect(jsonPath("$.follower.username").value(follower.name()))
             .andExpect(jsonPath("$.follower.profileImageUrl").value(follower.profileImageUrl()));
 
         then(followService).should(times(1)).follow(refEq(validRequest));

@@ -3,10 +3,10 @@ package com.samsamotot.otboo.follow.service;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.user.UserSummaryDto;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
+import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -74,8 +74,8 @@ class FollowServiceImplTest {
         given(followMapper.toDto(any(Follow.class))).willAnswer(inv -> {
             return new FollowDto(
                 UUID.randomUUID(),
-                new UserSummaryDto(followeeId, "followeeName", null),
-                new UserSummaryDto(followerId, "followerName", null)
+                new AuthorDto(followeeId, "followeeName", null),
+                new AuthorDto(followerId, "followerName", null)
             );
         });
 

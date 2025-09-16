@@ -3,8 +3,10 @@ package com.samsamotot.otboo.follow.repository;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
 import com.samsamotot.otboo.follow.dto.FollowingRequest;
+import com.samsamotot.otboo.follow.entity.Follow;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * PackageName  : com.samsamotot.otboo.follow.repository
@@ -14,7 +16,7 @@ import java.util.List;
  */
 public interface FollowRepositoryCustom {
 
-    long countTotalElements(FollowingRequest request);
+    long countTotalElements(UUID userId, String nameLike);
 
-    List<FollowDto> findFollowings(FollowingRequest request);
+    List<Follow> findFollowings(FollowingRequest request);
 }
