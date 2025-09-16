@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -24,6 +23,5 @@ public class UserDto {
     private String email;
     private String name;
     private Role role;
-    private List<String> linkedOAuthProviders;
     private Boolean locked;
 }
