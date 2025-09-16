@@ -24,6 +24,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -95,16 +97,53 @@ public class FollowIntegrationTest {
 
     @Test
     void 팔로잉_목록_조회를_한다() throws Exception {
-        User user = User.createUser("test@test.com", "tester1", "password#A", BCRYPT_PASSWORD_ENCODER);
-        userRepository.save(user);
+        User follower = User.createUser("f1@test.com", "follower", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.save(follower);
 
-        // given
-        FollowingRequest followingRequest = new FollowingRequest(user.getId(), null, null, 20, null);
+        User followee1 = User.createUser("e1@test.com", "followee1", "password#A", BCRYPT_PASSWORD_ENCODER);
+        User followee2 = User.createUser("e2@test.com", "followee2", "password#A", BCRYPT_PASSWORD_ENCODER);
+        User followee3 = User.createUser("e3@test.com", "followee3", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.saveAll(java.util.List.of(followee1, followee2, followee3));
 
-        // when
-        FollowListResponse response = followService.getFollowings(followingRequest);
+        followService.follow(new FollowCreateRequest(follower.getId(), followee1.getId()));
+        Thread.sleep(5);
+        followService.follow(new FollowCreateRequest(follower.getId(), followee2.getId()));
+        Thread.sleep(5);
+        followService.follow(new FollowCreateRequest(follower.getId(), followee3.getId()));
 
-        // then
+        FollowingRequest page1Req = new FollowingRequest(follower.getId(), null, null, 2, null);
+        FollowListResponse page1 = followService.getFollowings(page1Req);
 
+        assertThat(page1).isNotNull();
+        assertThat(page1.data()).isNotNull();
+        assertThat(page1.data().size()).isLessThanOrEqualTo(2);
+        assertThat(page1.hasNext()).isTrue();
+        assertThat(page1.nextCursor()).isNotNull();
+        assertThat(page1.nextIdAfter()).isNotNull();
+
+        page1.data().forEach(d ->
+            assertThat(d.follower().userId()).isEqualTo(follower.getId())
+        );
+
+        FollowingRequest page2Req = new FollowingRequest(
+            follower.getId(),
+            page1.nextCursor(),          // createdAt 커서
+            page1.nextIdAfter(),         // id 보조커서
+            2,
+            null
+        );
+        FollowListResponse page2 = followService.getFollowings(page2Req);
+
+        assertThat(page2).isNotNull();
+        assertThat(page2.data()).isNotNull();
+        assertThat(page2.hasNext()).isFalse();
+        assertThat(page2.nextCursor()).isNull();
+        assertThat(page2.nextIdAfter()).isNull();
+
+        java.util.Set<UUID> p1Followees = page1.data().stream()
+            .map(d -> d.followee().userId())
+            .collect(java.util.stream.Collectors.toSet());
+        assertThat(page2.data().stream().map(d -> d.followee().userId()))
+            .doesNotContainAnyElementsOf(p1Followees);
     }
 }

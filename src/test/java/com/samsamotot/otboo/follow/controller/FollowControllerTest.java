@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.fixture.FollowFixture;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
+import com.samsamotot.otboo.follow.dto.FollowListResponse;
 import com.samsamotot.otboo.follow.service.FollowService;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
@@ -16,8 +17,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
+import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -66,11 +69,11 @@ class FollowControllerTest {
             .andExpect(jsonPath("$.id").isNotEmpty())
             .andExpect(jsonPath("$.followee").isMap())
             .andExpect(jsonPath("$.followee.userId").value(followee.userId().toString()))
-            .andExpect(jsonPath("$.followee.username").value(followee.name()))
+            .andExpect(jsonPath("$.followee.name").value(followee.name()))
             .andExpect(jsonPath("$.followee.profileImageUrl").value(followee.profileImageUrl()))
             .andExpect(jsonPath("$.follower").isMap())
             .andExpect(jsonPath("$.follower.userId").value(follower.userId().toString()))
-            .andExpect(jsonPath("$.follower.username").value(follower.name()))
+            .andExpect(jsonPath("$.follower.name").value(follower.name()))
             .andExpect(jsonPath("$.follower.profileImageUrl").value(follower.profileImageUrl()));
 
         then(followService).should(times(1)).follow(refEq(validRequest));
@@ -78,19 +81,40 @@ class FollowControllerTest {
     }
 
     @Test
-    void 팔로잉_목록_조회_파라미터를_정상_입력_받은경우_간단_목록을_반환한다() throws Exception {
+    void 팔로잉_목록_조회_파라미터_정상_입력_받을시_간단_목록_반환한다() throws Exception {
         // given
-        User user = FollowFixture.randomUser();
+        UUID followerId = UUID.randomUUID();
+        UUID followeeId = UUID.randomUUID();
+        UUID followId   = UUID.randomUUID();
 
+        FollowDto item = FollowDto.builder()
+            .id(followId)
+            .followee(new AuthorDto(followeeId, "followee", null))
+            .follower(new AuthorDto(followerId, "follower", null))
+            .build();
 
-        // when n then
+        FollowListResponse stub = FollowListResponse.builder()
+            .data(List.of(item))
+            .nextCursor(null)
+            .nextIdAfter(null)
+            .hasNext(false)
+            .sortBy("createdAt")
+            .sortDirection("DESC")
+            .totalCount(1L)
+            .build();
+
+        given(followService.getFollowings(any())).willReturn(stub);
+
         mockMvc.perform(get("/api/follows/followings")
-                .param("cursor", "0")
-                .param("followerId",user.getId().toString())
-                .param("limit", "20"))
+                .param("followerId", followerId.toString())
+                .param("limit", "20")
+                .param("cursor", "")
+            )
             .andExpect(status().isOk())
-            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.data").isArray())
+            .andExpect(jsonPath("$.hasNext").value(false));
 
-
+        then(followService).should(times(1)).getFollowings(any());
     }
 }

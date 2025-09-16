@@ -5,7 +5,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.entity.QFollow;
-import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.user.entity.QUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -26,27 +25,25 @@ import java.util.UUID;
 @Repository
 @RequiredArgsConstructor
 public class FollowRepositoryImpl implements FollowRepositoryCustom {
+
     private final JPAQueryFactory queryFactory;
-    private final FollowMapper followMapper;
 
     @Override
     public long countTotalElements(UUID userId, String nameLike) {
         QFollow follow = QFollow.follow;
         QUser followee = new QUser("followee");
 
-        BooleanBuilder where = new BooleanBuilder()
-            .and(follow.follower.id.eq(userId));
+        BooleanBuilder where = new BooleanBuilder().and(follow.follower.id.eq(userId));
 
-        if (nameLike != null && !nameLike.isBlank()) {
+        boolean hasName = nameLike != null && !nameLike.isBlank();
+        if (hasName) {
             where.and(followee.username.containsIgnoreCase(nameLike));
         }
 
-        Long result = queryFactory
-            .select(follow.count())
-            .from(follow)
-            .join(follow.followee, followee)
-            .where(where)
-            .fetchOne();
+        Long result = (hasName
+            ? queryFactory.select(follow.count()).from(follow).join(follow.followee, followee).where(where)
+            : queryFactory.select(follow.count()).from(follow).where(where)
+        ).fetchOne();
 
         return result != null ? result : 0;
     }
