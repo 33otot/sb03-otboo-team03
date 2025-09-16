@@ -5,6 +5,7 @@ import com.samsamotot.otboo.common.exception.ErrorResponse;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
+import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -73,5 +75,47 @@ public interface FeedApi {
     })
     ResponseEntity<CursorResponse<FeedDto>> getFeeds(
         @Valid @ModelAttribute FeedCursorRequest feedCursorRequest,
-        @RequestParam UUID userId);
+        @RequestParam UUID userId
+    );
+
+    @Operation(summary = "피드 수정")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "피드 수정 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = FeedDto.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "피드 미존재",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "작성자가 아님",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "피드 수정 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    ResponseEntity<FeedDto> updateFeed(
+        @PathVariable UUID feedId,
+        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest,
+        @RequestParam UUID userId
+    );
 }
