@@ -10,6 +10,7 @@ import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
+import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
@@ -177,6 +178,11 @@ public class FeedServiceImpl implements FeedService {
             sortBy,
             sortDirection
         );
+    }
+
+    @Override
+    public FeedDto update(UUID feedId, UUID userId, FeedUpdateRequest feedUpdateRequest) {
+        return null;
     }
 
     private void validateCursorRequest(String cursor, String sortBy) {
