@@ -16,8 +16,15 @@ public interface UserMapper {
     AuthorDto toAuthorDto(User user);
 
     @Mapping(source = "name", target = "username")
+    @Mapping(source = "password", target = "password")
+    @Mapping(target = "provider", constant = "local")
+    @Mapping(target = "providerId", ignore = true)
+    @Mapping(target = "role", ignore = true)
+    @Mapping(target = "isLocked", ignore = true)
+    @Mapping(target = "temporaryPasswordExpiresAt", ignore = true)
     User toEntity(UserCreateRequest request);
 
     @Mapping(source = "username", target = "name")
+    @Mapping(source = "isLocked", target = "locked")
     UserDto toDto(User user);
 }
