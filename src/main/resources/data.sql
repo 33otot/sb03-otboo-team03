@@ -216,15 +216,3 @@ SELECT gen_random_uuid(),
        'a0000000-0000-0000-0000-000000000002'::uuid,
        t.ts
 FROM t;
-
--- 실제 팔로잉 몇 개인지
-SELECT COUNT(*)
-FROM follows
-WHERE follower_id = 'a0000000-0000-0000-0000-000000000001'::uuid;
-
--- 어떤 애들을 팔로우 중인지 (정렬 포함)
-SELECT id, followee_id, created_at
-FROM follows
-WHERE follower_id = 'a0000000-0000-0000-0000-000000000001'::uuid
-ORDER BY created_at DESC, id DESC;
-
