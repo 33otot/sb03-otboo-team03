@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS locations
     longitude DOUBLE PRECISION NOT NULL,
     x INT NOT NULL,
     y INT NOT NULL,
-    location_names VARCHAR(255) NOT NULL,
+    location_names TEXT NOT NULL,
 
     CONSTRAINT pk_locations PRIMARY KEY (id),
     CONSTRAINT ck_locations_lat CHECK (latitude BETWEEN -90 AND 90),

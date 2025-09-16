@@ -56,21 +56,27 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom{
     ) {
         // 필터링 조건 적용
         BooleanBuilder where = createFilterCondition(keywordLike, skyStatusEqual, precipitationTypeEqual, authorIdEqual);
+        log.debug("[FeedRepositoryImpl] Filter condition (before cursor): {}", where);
+
         // 커서 조건 적용
         if (cursor != null && !cursor.isBlank()) {
             where.and(createCursorCondition(sortBy, sortDirection, cursor, idAfter));
+            log.debug("[FeedRepositoryImpl] Filter condition (after cursor): {}", where);
         }
         // 정렬 조건 생성
         OrderSpecifier<?> orderSpecifier = createOrderSpecifier(sortBy, sortDirection);
         // ID 정렬 조건
         OrderSpecifier<?> idOrderSpecifier = sortDirection == SortDirection.ASCENDING ? qFeed.id.asc() : qFeed.id.desc();
 
-        return queryFactory
+        List<Feed> result = queryFactory
             .selectFrom(qFeed)
             .where(where)
             .orderBy(orderSpecifier, idOrderSpecifier)
             .limit(limit)
             .fetch();
+
+        log.debug("[FeedRepositoryImpl] findByCursor result size: {}", result.size());
+        return result;
     }
 
     /**

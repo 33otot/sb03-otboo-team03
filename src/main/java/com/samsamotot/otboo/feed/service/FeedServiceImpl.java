@@ -126,7 +126,7 @@ public class FeedServiceImpl implements FeedService {
     @Transactional(readOnly = true)
     public CursorResponse<FeedDto> getFeeds(@Valid FeedCursorRequest request, UUID userId) {
 
-        log.debug("[FeedServiceImpl] 피드 목록 조회 시작");
+        log.debug("[FeedServiceImpl] 피드 목록 조회 시작: request = {}, userId = {}", request, userId);
 
         String cursor = request.cursor();
         UUID idAfter = request.idAfter();
