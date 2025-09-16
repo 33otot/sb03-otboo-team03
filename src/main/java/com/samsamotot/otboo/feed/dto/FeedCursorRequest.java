@@ -3,7 +3,7 @@ package com.samsamotot.otboo.feed.dto;
 import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.util.UUID;
@@ -19,9 +19,9 @@ import lombok.Builder;
 public record FeedCursorRequest(
     String cursor,
     UUID idAfter,
-    @Positive
+    @NotNull @Positive
     Integer limit,
-    @NotNull
+    @NotBlank
     String sortBy,
     @NotNull
     SortDirection sortDirection,

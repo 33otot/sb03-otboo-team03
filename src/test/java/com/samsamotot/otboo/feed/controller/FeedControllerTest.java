@@ -250,6 +250,7 @@ public class FeedControllerTest {
                     .param("limit", String.valueOf(10))
                     .param("sortBy", "createdAt")
                     .param("sortDirection", SortDirection.DESCENDING.toString())
+                    .param("userId", UUID.randomUUID().toString())
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)))
@@ -293,6 +294,7 @@ public class FeedControllerTest {
                     .param("limit", "10")
                     .param("sortBy", "createdAt")
                     .param("sortDirection", SortDirection.DESCENDING.name())
+                    .param("userId", UUID.randomUUID().toString())
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)))
@@ -363,6 +365,7 @@ public class FeedControllerTest {
                     .param("skyStatusEqual", skyStatus.name())
                     .param("precipitationTypeEqual", precipitation.name())
                     .param("authorIdEqual", authorId.toString())
+                    .param("userId", UUID.randomUUID().toString())
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
@@ -394,7 +397,9 @@ public class FeedControllerTest {
             mockMvc.perform(get("/api/feeds")
                     .param("limit", "10")
                     .param("sortBy", "createdAt")
-                    .param("sortDirection", SortDirection.DESCENDING.name()))
+                    .param("sortDirection", SortDirection.DESCENDING.name())
+                    .param("userId", UUID.randomUUID().toString())
+                )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(0)))
                 .andExpect(jsonPath("$.totalCount").value(0L))
@@ -406,7 +411,9 @@ public class FeedControllerTest {
 
             mockMvc.perform(get("/api/feeds")
                     .param("sortBy", "createdAt")
-                    .param("sortDirection", "DESCENDING"))
+                    .param("sortDirection", "DESCENDING")
+                    .param("userId", UUID.randomUUID().toString())
+                )
                 .andExpect(status().isBadRequest());
         }
 
@@ -415,7 +422,9 @@ public class FeedControllerTest {
 
             mockMvc.perform(get("/api/feeds")
                     .param("limit", "10")
-                    .param("sortDirection", "DESCENDING"))
+                    .param("sortDirection", "DESCENDING")
+                    .param("userId", UUID.randomUUID().toString())
+                )
                 .andExpect(status().isBadRequest());
         }
 
@@ -431,21 +440,35 @@ public class FeedControllerTest {
         @Test
         void 잘못된_정렬기준이면_400이_반환된다() throws Exception {
 
+            // given
+            given(feedService.getFeeds(any(FeedCursorRequest.class), any(UUID.class)))
+                .willThrow(new OtbooException(ErrorCode.INVALID_SORT_FIELD));
+
+            // when & then
             mockMvc.perform(get("/api/feeds")
                     .param("limit", "10")
                     .param("sortBy", "invalidSortBy")
-                    .param("sortDirection", SortDirection.DESCENDING.name()))
+                    .param("sortDirection", SortDirection.DESCENDING.name())
+                    .param("userId", UUID.randomUUID().toString())
+                )
                 .andExpect(status().isBadRequest());
         }
 
         @Test
         void 잘못된_커서포맷이면_400이_반환된다() throws Exception {
 
+            // given
+            given(feedService.getFeeds(any(FeedCursorRequest.class), any(UUID.class)))
+                .willThrow(new OtbooException(ErrorCode.INVALID_CURSOR_FORMAT));
+
+            // when & then
             mockMvc.perform(get("/api/feeds")
                     .param("cursor", "invalidCursor")
                     .param("limit", "10")
                     .param("sortBy", "createdAt")
-                    .param("sortDirection", SortDirection.DESCENDING.name()))
+                    .param("sortDirection", SortDirection.DESCENDING.name())
+                    .param("userId", UUID.randomUUID().toString())
+                )
                 .andExpect(status().isBadRequest());
         }
 
@@ -455,7 +478,9 @@ public class FeedControllerTest {
             mockMvc.perform(get("/api/feeds")
                     .param("limit", "-1")
                     .param("sortBy", "createdAt")
-                    .param("sortDirection", SortDirection.DESCENDING.name()))
+                    .param("sortDirection", SortDirection.DESCENDING.name())
+                    .param("userId", UUID.randomUUID().toString())
+                )
                 .andExpect(status().isBadRequest());
         }
     }
