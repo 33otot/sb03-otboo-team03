@@ -54,7 +54,6 @@ logging:
     org.springframework.web: DEBUG
     org.springframework.test: DEBUG
 
-
 # 테스트용 서버 설정
 server:
   port: 0  # 랜덤 포트 사용
@@ -69,3 +68,13 @@ management:
   endpoint:
     health:
       show-details: always
+
+# 테스트용 S3 버킷 설정
+otboo:
+  storage:
+    type: s3
+    s3:
+      access-key: dummy-access
+      secret-key: dummy-secret
+      region: ap-northeast-2
+      bucket: test-bucket
