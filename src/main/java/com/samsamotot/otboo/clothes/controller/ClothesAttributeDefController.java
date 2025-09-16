@@ -2,7 +2,6 @@ package com.samsamotot.otboo.clothes.controller;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest;
-import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.service.ClothesAttributeDefService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
