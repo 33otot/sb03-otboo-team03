@@ -120,14 +120,10 @@ jacocoTestReport {
 	// 특정 패키지/클래스만 커버리지 측정
 	afterEvaluate {
 		classDirectories.setFrom(files(classDirectories.files.collect {
-			fileTree(dir: it, exclude: [
-				'**/config/**',           // 설정 클래스 제외
-				'**/dto/**',              // DTO 클래스 제외
-				'**/entity/**',           // Entity 클래스 제외
-				'**/exception/**',        // 예외 클래스 제외
-				'**/util/**',             // 유틸리티 클래스 제외
-				'**/OtbooApplication.class', // 메인 애플리케이션 클래스 제외
-				'**/OtbooApplicationTests.class' // 테스트 클래스 제외
+			fileTree(dir: it, include: [
+				'**/service/**',          // Service 레이어만 포함
+				'**/repository/**',       // Repository 레이어만 포함
+				'**/controller/**'        // Controller 레이어만 포함
 			])
 		}))
 	}
