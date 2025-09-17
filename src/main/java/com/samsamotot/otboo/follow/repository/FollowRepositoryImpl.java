@@ -101,8 +101,6 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
             );
         } else if (cursorCreatedAt != null) {
             where.and(follow.createdAt.lt(cursorCreatedAt));
-        } else if (cursorId != null) {
-            where.and(follow.id.lt(cursorId));
         }
 
         int limit = Math.max(1, request.limit()) + 1;

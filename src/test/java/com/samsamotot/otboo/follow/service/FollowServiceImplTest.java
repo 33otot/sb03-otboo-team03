@@ -312,4 +312,10 @@ class FollowServiceImplTest {
             assertThat(actual).isNull();
         }
     }
+    @Test
+    void blank_null_커서는_null_반환() throws Exception {
+        assertThat(invokeParse("")).isNull();
+        assertThat(invokeParse("   ")).isNull();
+        assertThat(invokeParse(null)).isNull();
+    }
 }
