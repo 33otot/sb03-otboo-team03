@@ -32,7 +32,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom{
     /**
      * 커서 기반 페이지네이션을 사용하여 피드 목록을 조회합니다.
      * 다양한 필터링 조건(키워드, 날씨 상태, 강수 형태, 작성자 ID)과 정렬 기준을 적용할 수 있습니다.
-     * (소프트 삭제된 피드는 기본으로 제외됨)
+     * (논리 삭제된 피드는 기본으로 제외됨)
      *
      * @param cursor                    페이지네이션의 기준 커서 값 (createdAt 또는 likeCount)
      * @param idAfter                   마지막으로 조회된 피드 ID
@@ -87,6 +87,7 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom{
 
     /**
      * 주어진 필터링 조건에 해당하는 피드의 총 개수를 조회합니다.
+     * (논리 삭제된 피드는 기본으로 제외됨)
      *
      * @param keywordLike               피드 내용에 포함될 키워드 (부분 일치)
      * @param skyStatusEqual            날씨 상태 필터링 (예: SUNNY, CLOUDY)
