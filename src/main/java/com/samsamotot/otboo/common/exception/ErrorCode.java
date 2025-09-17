@@ -58,6 +58,9 @@ public enum ErrorCode {
     WEATHER_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "WE002", "날씨 API 호출에 실패했습니다."),
     INVALID_LOCATION(HttpStatus.BAD_REQUEST, "WE003", "올바르지 않은 위치 정보입니다."),
 
+    // 오픈 API 관련 에러
+    KAKAO_KEY_NOT_FOUND(HttpStatus.FORBIDDEN, "OP001", "카카오 API 키가 설정되지 않았습니다."),
+
     // 관리자 관련 에러
     ADMIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "AD001", "관리자 권한이 필요합니다."),
     USER_ROLE_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "AD002", "사용자 권한 업데이트에 실패했습니다.");

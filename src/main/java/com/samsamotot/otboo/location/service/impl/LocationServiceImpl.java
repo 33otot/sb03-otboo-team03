@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.location.service.impl;
 
+import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.location.client.KakaoApiClient;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.entity.WeatherAPILocation;
@@ -13,6 +14,25 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * 위치 정보를 관리하는 서비스 구현 클래스
+ * 
+ * <p>위치 정보 조회, 저장, 카카오 API를 통한 주소 변환 기능을 제공합니다.
+ * 좌표(경도, 위도)를 기반으로 행정구역 정보를 조회하고 관리합니다.</p>
+ * 
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>좌표 기반 위치 정보 조회</li>
+ *   <li>카카오 로컬 API를 통한 주소 변환</li>
+ *   <li>위치 정보 데이터베이스 저장</li>
+ *   <li>행정구역 정보 우선순위 처리</li>
+ * </ul>
+ * 
+ * @author HuInDoL
+ * @since 1.0
+ * @see LocationService
+ * @see KakaoApiClient
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,6 +43,33 @@ public class LocationServiceImpl implements LocationService {
     private final LocationRepository locationRepository;
     private final KakaoApiClient kakaoApiClient;
 
+    /**
+     * 좌표를 기반으로 현재 위치 정보를 조회합니다.
+     * 
+     * <p>처리 과정:</p>
+     * <ol>
+     *   <li>기존 위치 정보가 있는지 데이터베이스에서 조회</li>
+     *   <li>기존 위치가 있으면 해당 정보 반환</li>
+     *   <li>기존 위치가 없으면 새 위치 생성 및 저장</li>
+     *   <li>카카오 로컬 API를 호출하여 좌표를 행정구역 정보로 변환</li>
+     *   <li>변환된 주소 정보를 Location 엔티티에 저장</li>
+     * </ol>
+     * 
+     * <p>카카오 API 호출 시 주소 우선순위:</p>
+     * <ul>
+     *   <li>1순위: 행정동 (RegionType = "H")</li>
+     *   <li>2순위: 법정동 (RegionType = "B")</li>
+     * </ul>
+     * 
+     * <p>카카오 API 호출 실패 시 기본값("UNKNOWN")으로 설정됩니다.</p>
+     * 
+     * @param longitude 경도 (WGS84 좌표계)
+     * @param latitude  위도 (WGS84 좌표계)
+     * @return WeatherAPILocation 위치 정보 객체
+     * @throws OtbooException 카카오 API 키가 설정되지 않은 경우
+     * 
+     * @since 1.0
+     */
     @Override
     @Transactional
     public WeatherAPILocation getCurrentLocation(double longitude, double latitude) {
@@ -52,6 +99,7 @@ public class LocationServiceImpl implements LocationService {
         // 3. 카카오 API 호출로 해당 좌표 행정구역명 받아온 후 Location 엔티티로 저장
         try {
             log.info(SERVICE + "카카오 API 호출 시작: longitude={}, latitude={}", longitude, latitude);
+            
             KakaoAddressResponse response = kakaoApiClient
                     .getRegionByCoordinates(longitude, latitude)
                     .block();
@@ -74,6 +122,8 @@ public class LocationServiceImpl implements LocationService {
                 double y = document.getY();
                 log.info(SERVICE + "카카오 API x, y 좌표: x={}, y={}", x, y);
 
+                // 카카오 API 응답에서 주소 정보 추출
+                // Region1DepthName: 시/도, Region2DepthName: 시/군/구, Region3DepthName: 읍/면/동, Region4DepthName: 리/동
                 List<String> locationNames = List.of(
                         document.getRegion1DepthName(), // 시/도
                         document.getRegion2DepthName(), // 시/군/구
