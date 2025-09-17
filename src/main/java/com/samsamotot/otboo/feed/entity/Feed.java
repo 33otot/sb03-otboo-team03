@@ -83,4 +83,8 @@ public class Feed extends BaseEntity {
             this.content = newContent;
         }
     }
+
+    public void delete() {
+        this.isDeleted = true;
+    }
 }

@@ -212,7 +212,21 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     public Feed delete(UUID feedId, UUID userId) {
-        return null;
+
+        log.debug("[FeedServiceImpl] 피드 삭제 시작: feedId = {}, userId = {}", feedId, userId);
+
+        Feed feed = feedRepository.findById(feedId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
+
+        if (!feed.getAuthor().getId().equals(userId)) {
+            throw new OtbooException(ErrorCode.FORBIDDEN_FEED_DELETION, Map.of("feedId", feedId.toString()));
+        }
+
+        feed.delete();
+
+        log.debug("[FeedServiceImpl] 피드 삭제 완료: feedId = {}, userId = {}", feedId, userId);
+
+        return feed;
     }
 
     private void validateCursorRequest(String cursor, String sortBy) {
