@@ -17,7 +17,7 @@ import com.samsamotot.otboo.clothes.mapper.ClothesAttributeDefMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.service.impl.ClothesAttributeDefServiceImpl;
 import com.samsamotot.otboo.common.exception.ErrorCode;
-import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttributeDefAlreadyExist;
+import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttributeDefAlreadyExistException;
 import com.samsamotot.otboo.common.fixture.ClothesAttributeDefFixture;
 import java.time.Instant;
 import java.util.List;
@@ -97,7 +97,7 @@ class ClothesAttributeDefServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> clothesAttributeDefService.create(request))
-                .isInstanceOf(ClothesAttributeDefAlreadyExist.class)
+                .isInstanceOf(ClothesAttributeDefAlreadyExistException.class)
                 .hasMessage(ErrorCode.CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS.getMessage());
 
             verify(defRepository, times(1)).existsByName(name);

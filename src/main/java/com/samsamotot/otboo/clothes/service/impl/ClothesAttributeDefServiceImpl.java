@@ -2,13 +2,15 @@ package com.samsamotot.otboo.clothes.service.impl;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest;
+import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefUpdateRequest;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeOption;
 import com.samsamotot.otboo.clothes.mapper.ClothesAttributeDefMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.service.ClothesAttributeDefService;
 import com.samsamotot.otboo.common.exception.ErrorCode;
-import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttributeDefAlreadyExist;
+import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttributeDefAlreadyExistException;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,7 +34,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
 
         // 이미 존재하는 정의인지 확인
         if (defRepository.existsByName(request.name())) {
-            throw new ClothesAttributeDefAlreadyExist(ErrorCode.CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS);
+            throw new ClothesAttributeDefAlreadyExistException(ErrorCode.CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS);
         }
 
         // 엔티티 생성
