@@ -59,11 +59,22 @@ public class User extends BaseEntity {
     
     public static User createUser(String email, String username, String password, String provider, String providerId, PasswordEncoder passwordEncoder) {
         return User.builder()
+                .email(email)
+                .username(username)
+                .password(passwordEncoder.encode(password))
+                .provider(provider)
+                .providerId(providerId)
+                .role(Role.USER)
+                .isLocked(false)
+                .build();
+    }
+    public static User createUser(String email, String username, String password, PasswordEncoder passwordEncoder) {
+        return User.builder()
             .email(email)
             .username(username)
             .password(passwordEncoder.encode(password))
-            .provider(provider)
-            .providerId(providerId)
+            .provider("local")
+            .providerId(null)
             .role(Role.USER)
             .isLocked(false)
             .build();
@@ -76,6 +87,18 @@ public class User extends BaseEntity {
             .password(passwordEncoder.encode(password))
             .provider(provider)
             .providerId(providerId)
+            .role(Role.ADMIN)
+            .isLocked(false)
+            .build();
+    }
+
+    public static User createAdminUser(String email, String username, String password, PasswordEncoder passwordEncoder) {
+        return User.builder()
+            .email(email)
+            .username(username)
+            .password(passwordEncoder.encode(password))
+            .provider("local")
+            .providerId(null)
             .role(Role.ADMIN)
             .isLocked(false)
             .build();
