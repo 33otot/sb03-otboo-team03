@@ -210,6 +210,16 @@ public class FeedServiceImpl implements FeedService {
         return result;
     }
 
+    /**
+     * 특정 피드를 삭제 처리합니다.
+     * 삭제를 요청한 사용자가 피드의 작성자인지 확인 후, 피드를 논리적으로 삭제 처리합니다.
+     *
+     * @param feedId 삭제할 피드의 ID
+     * @param userId 현재 사용자의 ID
+     * @return 삭제 처리된 Feed 객체
+     * @throws OtbooException 피드를 찾을 수 없는 경우 (FEED_NOT_FOUND)
+     *                        삭제 권한이 없는 경우 (FORBIDDEN_FEED_DELETION)
+     */
     @Override
     public Feed delete(UUID feedId, UUID userId) {
 
