@@ -1,17 +1,26 @@
 package com.samsamotot.otboo.feed.controller;
 
+import com.samsamotot.otboo.common.dto.CursorResponse;
+import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.controller.api.FeedApi;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
+import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.service.FeedService;
+import com.samsamotot.otboo.weather.entity.Precipitation;
+import com.samsamotot.otboo.weather.entity.SkyStatus;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -44,5 +53,33 @@ public class FeedController implements FeedApi {
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(feedDto);
+    }
+
+    /**
+     * 피드 목록을 커서 기반 페이징으로 조회합니다.
+     *
+     * @param request 커서, 정렬 기준/방향, limit 크기, 검색 조건 등 페이징 요청 DTO
+     * @param userId 현재 사용자의 ID (TODO: Spring Security 적용 후 인증 객체에서 가져오도록 수정 필요)
+     * @return 조회된 피드 목록, 다음 커서 정보, 전체 개수 등을 포함하는 ResponseEntity (HTTP 200 OK)
+     */
+    @GetMapping
+    @Override
+    public ResponseEntity<CursorResponse<FeedDto>> getFeeds(
+        @Valid @ModelAttribute FeedCursorRequest request,
+        @RequestParam UUID userId
+    ) {
+        // TODO : Security 구현 후 @RequestParam userId 제거하고 인증 컨텍스트에서 조회하도록 변경
+        //  ex) @AuthenticationPrincipal CustomUserPrincipal principal → UUID userId = principal.getId()
+        //  컨트롤러 테스트도 함께 수정 필요
+
+        log.info("[FeedController] 피드 목록 조회 요청: request = {}", request);
+
+        CursorResponse<FeedDto> result = feedService.getFeeds(request, userId);
+
+        log.info("[FeedController] 피드 목록 조회 완료: {}개", result.totalCount());
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(result);
     }
 }
