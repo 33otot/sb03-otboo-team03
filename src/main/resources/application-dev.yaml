@@ -16,6 +16,7 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema.sql
+      continue-on-error: true
   devtools:
     restart:
       additional-exclude: "**/mapper/**/*MapperImpl.class"
@@ -55,6 +56,23 @@ management:
     health:
       show-details: always
       show-components: always
+
+otboo:
+  storage:
+    type: ${STORAGE_TYPE:local}
+    #    local:
+    #      root-path: ${STORAGE_LOCAL_ROOT_PATH:.otboo/storage}
+    s3:
+      access-key: ${AWS_S3_ACCESS_KEY}
+      secret-key: ${AWS_S3_SECRET_KEY}
+      region: ${AWS_S3_REGION}
+      bucket: ${AWS_S3_BUCKET}
+
+logging:
+  level:
+    org.hibernate.sql: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.samsamotot.otboo: DEBUG
 
 server:
   port: 8080
