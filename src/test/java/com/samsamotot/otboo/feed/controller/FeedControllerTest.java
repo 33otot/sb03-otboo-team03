@@ -3,10 +3,11 @@ package com.samsamotot.otboo.feed.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -615,6 +616,83 @@ public class FeedControllerTest {
                     .param("userId", userId.toString())
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 논리 삭제 테스트")
+    class FeedSoftDeleteTest {
+
+        @Test
+        void 피드를_논리삭제_하면_204가_반환된다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            User user = UserFixture.createUser();
+            Location location = LocationFixture.createLocation();
+            Weather weather = WeatherFixture.createWeather(location);
+            Feed feed = FeedFixture.createFeed(user, weather);
+
+            /* 컨트롤러 테스트이므로, 반환되는 Feed 객체의 isDeleted는 신경쓰지 않음 */
+            given(feedService.delete(eq(feedId), eq(userId))).willReturn(feed);
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{id}", feedId)
+                .param("userId", userId.toString()))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void 존재하지_않는_피드라면_404가_반환된다() throws Exception {
+
+            // given
+            UUID userId = UUID.randomUUID();
+            UUID invalidFeedId = UUID.randomUUID();
+
+            given(feedService.delete(eq(invalidFeedId), eq(userId)))
+                .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{id}", invalidFeedId)
+                .param("userId", userId.toString()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FEED_NOT_FOUND.name()));
+        }
+
+        @Test
+        void 이미_삭제_처리된_피드라면_404가_반환된다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            given(feedService.delete(eq(feedId), eq(userId)))
+                .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{id}", feedId)
+                    .param("userId", userId.toString()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FEED_NOT_FOUND.name()));
+        }
+
+        @Test
+        void 작성자가_아니라면_403이_반환된다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID otherUserId = UUID.randomUUID();
+
+            given(feedService.delete(eq(feedId), eq(otherUserId)))
+                .willThrow(new OtbooException(ErrorCode.FORBIDDEN_FEED_DELETION));
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{id}", feedId)
+                    .param("userId", otherUserId.toString()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FORBIDDEN_FEED_DELETION.name()));
         }
     }
 }
