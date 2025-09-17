@@ -75,6 +75,7 @@ public class ClothesAttributeDef extends BaseEntity {
 
     public void updateName(String name) {
         this.name = name;
+        this.updatedAt = Instant.now();
     }
 
     public void updateOptions(List<String> newValues) {
