@@ -10,6 +10,7 @@ import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.service.ClothesAttributeDefService;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttributeDefAlreadyExistException;
+import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttributeDefNotFoundException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,5 +50,20 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
         ClothesAttributeDef saved = defRepository.save(def);
 
         return defMapper.toDto(saved);
+    }
+
+//    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    @Override
+    public ClothesAttributeDefDto update(UUID defId, ClothesAttributeDefUpdateRequest request) {
+        ClothesAttributeDef def = defRepository.findById(defId)
+            .orElseThrow(() -> new ClothesAttributeDefNotFoundException(ErrorCode.CLOTHES_ATTRIBUTE_DEF_NOT_FOUND));
+
+        def.updateName(request.name());
+        def.updateOptions(request.selectableValues());
+
+        ClothesAttributeDef saved = defRepository.save(def);
+
+        return defMapper.toDto(def);
     }
 }
