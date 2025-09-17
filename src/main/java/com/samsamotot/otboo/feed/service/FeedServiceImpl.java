@@ -198,12 +198,13 @@ public class FeedServiceImpl implements FeedService {
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
 
         if (!feed.getAuthor().getId().equals(userId)) {
-            throw new OtbooException(ErrorCode.FORBIDDEN_FEED_MODIFICATION, Map.of("feedId", feedId.toString()));
+            throw new OtbooException(ErrorCode.FORBIDDEN_FEED_MODIFICATION,
+                Map.of("feedId", feedId.toString(), "userId", userId.toString()));
         }
 
         String newContent = request.content();
-        log.debug("[FeedServiceImpl] 피드 수정 완료: feedId = {}, userId = {}", feedId, userId);
         feed.updateContent(newContent);
+        log.debug("[FeedServiceImpl] 피드 수정 완료: feedId = {}, userId = {}", feedId, userId);
 
         FeedDto result = convertToDto(feed, userId);
 
@@ -234,7 +235,10 @@ public class FeedServiceImpl implements FeedService {
 
     private FeedDto convertToDto(Feed feed, UUID currentUserId) {
 
-        boolean likedByMe = feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), currentUserId);
+        boolean likedByMe = false;
+        if (currentUserId != null) {
+            feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), currentUserId);
+        }
         FeedDto feedDto = feedMapper.toDto(feed);
 
         if (feedDto == null) {
