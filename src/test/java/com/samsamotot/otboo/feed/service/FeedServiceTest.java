@@ -127,7 +127,7 @@ public class FeedServiceTest {
 
             given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(mockUser));
             given(weatherRepository.findById(any(UUID.class))).willReturn(Optional.of(mockWeather));
-            given(clothesRepository.findAllById(ArgumentMatchers.<UUID>anyList())).willReturn(mockClothesList);
+            given(clothesRepository.findAllById(any())).willReturn(mockClothesList);
             given(feedRepository.save(any(Feed.class))).willReturn(savedFeed);
             given(feedMapper.toDto(savedFeed)).willReturn(expectedDto);
 
@@ -218,7 +218,7 @@ public class FeedServiceTest {
 
             given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(mockUser));
             given(weatherRepository.findById(any(UUID.class))).willReturn(Optional.of(mockWeather));
-            given(clothesRepository.findAllById(ArgumentMatchers.<UUID>anyList())).willReturn(List.of());
+            given(clothesRepository.findAllById(any())).willReturn(List.of());
 
             // when & then
             assertThatThrownBy(() -> feedService.create(request))
