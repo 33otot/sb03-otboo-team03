@@ -196,10 +196,24 @@ ON CONFLICT (recommendation_id, clothes_id) DO NOTHING;
 
 
 -- follows 테이블 더미 데이터 (5개, users 참조)
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+WITH pairs(follower_id, followee_id, offset_sec) AS (
+    VALUES
+        ('a0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000002'::uuid, 0), -- 1 → 2
+        ('a0000000-0000-0000-0000-000000000002'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, 1), -- 2 → 1
+        ('a0000000-0000-0000-0000-000000000004'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, 2), -- 4 → 1
+        ('a0000000-0000-0000-0000-000000000005'::uuid, 'a0000000-0000-0000-0000-000000000001'::uuid, 3), -- 5 → 1
+        ('a0000000-0000-0000-0000-000000000001'::uuid, 'a0000000-0000-0000-0000-000000000004'::uuid, 4)  -- 1 → 4
+)
 INSERT INTO follows (id, follower_id, followee_id, created_at)
-SELECT gen_random_uuid(), u1.id, u2.id, NOW() FROM users u1, users u2 WHERE u1.id = 'a0000000-0000-0000-0000-000000000001' AND u2.id = 'a0000000-0000-0000-0000-000000000002' UNION ALL
-SELECT gen_random_uuid(), u2.id, u1.id, NOW() FROM users u1, users u2 WHERE u1.id = 'a0000000-0000-0000-0000-000000000002' AND u2.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
-SELECT gen_random_uuid(), u3.id, u1.id, NOW() FROM users u1, users u3 WHERE u1.id = 'a0000000-0000-0000-0000-000000000004' AND u3.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
-SELECT gen_random_uuid(), u4.id, u1.id, NOW() FROM users u1, users u4 WHERE u1.id = 'a0000000-0000-0000-0000-000000000005' AND u4.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
-SELECT gen_random_uuid(), u1.id, u3.id, NOW() FROM users u1, users u3 WHERE u1.id = 'a0000000-0000-0000-0000-000000000001' AND u3.id = 'a0000000-0000-0000-0000-000000000004'
+SELECT
+    gen_random_uuid(),
+    p.follower_id,
+    p.followee_id,
+    now() + (p.offset_sec || ' seconds')::interval
+FROM pairs p
+         JOIN users uf ON uf.id = p.follower_id
+         JOIN users ue ON ue.id = p.followee_id
+WHERE p.follower_id <> p.followee_id             -- 자기 자신 팔로우 금지 (추가 안전장치)
 ON CONFLICT (follower_id, followee_id) DO NOTHING;
