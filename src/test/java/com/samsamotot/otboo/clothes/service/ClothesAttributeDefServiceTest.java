@@ -20,8 +20,9 @@ import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttribute
 import com.samsamotot.otboo.common.fixture.ClothesAttributeDefFixture;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -42,59 +43,63 @@ class ClothesAttributeDefServiceTest {
     @InjectMocks
     private ClothesAttributeDefServiceImpl clothesAttributeDefService;
 
-    @Test
-    void 의상_속성_정의를_등록하면_ClothesAttributeDefDto를_반환한다() {
-        // given
-        String name = "계절";
-        List<String> options = List.of("봄", "여름", "가을", "겨울");
+    @Nested
+    @DisplayName("의상 속성 정의 등록 서비스 테스트")
+    class ClothesAttributeDefCreateServiceTest {
 
-        ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
+        @Test
+        void 의상_속성_정의를_등록하면_ClothesAttributeDefDto를_반환한다() {
+            // given
+            String name = "계절";
+            List<String> options = List.of("봄", "여름", "가을", "겨울");
 
-        ClothesAttributeDefCreateRequest request =
-            new ClothesAttributeDefCreateRequest(name, options);
+            ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
 
-        when(defRepository.existsByName(request.name())).thenReturn(false);
+            ClothesAttributeDefCreateRequest request =
+                new ClothesAttributeDefCreateRequest(name, options);
 
-        when(defRepository.save(any(ClothesAttributeDef.class)))
-            .thenAnswer(invocation -> defEntity);
+            when(defRepository.existsByName(request.name())).thenReturn(false);
 
-        when(defMapper.toDto(any(ClothesAttributeDef.class)))
-            .thenAnswer(invocation -> {
-                return new ClothesAttributeDefDto(
-                    UUID.randomUUID(),
-                    defEntity.getName(),
-                    defEntity.getOptions().stream().map(ClothesAttributeOption::getValue).toList(),
-                    Instant.now()
-                );
-            });
+            when(defRepository.save(any(ClothesAttributeDef.class)))
+                .thenAnswer(invocation -> defEntity);
 
-        // when
-        ClothesAttributeDefDto result = clothesAttributeDefService.create(request);
+            when(defMapper.toDto(any(ClothesAttributeDef.class)))
+                .thenAnswer(invocation -> {
+                    return new ClothesAttributeDefDto(
+                        UUID.randomUUID(),
+                        defEntity.getName(),
+                        defEntity.getOptions().stream().map(ClothesAttributeOption::getValue).toList(),
+                        Instant.now()
+                    );
+                });
 
-        // then
-        assertThat(result).isNotNull();
-        assertThat(result.name()).isEqualTo("계절");
-        assertThat(result.selectableValues()).hasSize(4);
+            // when
+            ClothesAttributeDefDto result = clothesAttributeDefService.create(request);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result.name()).isEqualTo("계절");
+            assertThat(result.selectableValues()).hasSize(4);
+        }
+
+        @Test
+        void 이미_존재하는_의상_속성_정의의_경우_예외가_발생한다() {
+            // given
+            String name = "계절";
+            List<String> options = List.of("봄", "여름", "가을", "겨울");
+
+            ClothesAttributeDefCreateRequest request =
+                new ClothesAttributeDefCreateRequest(name, options);
+
+            when(defRepository.existsByName(request.name())).thenReturn(true);
+
+            // When & Then
+            assertThatThrownBy(() -> clothesAttributeDefService.create(request))
+                .isInstanceOf(ClothesAttributeDefAlreadyExist.class)
+                .hasMessage(ErrorCode.CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS.getMessage());
+
+            verify(defRepository, times(1)).existsByName(name);
+            verify(defRepository, never()).save(any());
+        }
     }
-
-    @Test
-    void 이미_존재하는_의상_속성_정의의_경우_예외가_발생한다() {
-        // given
-        String name = "계절";
-        List<String> options = List.of("봄", "여름", "가을", "겨울");
-
-        ClothesAttributeDefCreateRequest request =
-            new ClothesAttributeDefCreateRequest(name, options);
-
-        when(defRepository.existsByName(request.name())).thenReturn(true);
-
-        // When & Then
-        assertThatThrownBy(() -> clothesAttributeDefService.create(request))
-            .isInstanceOf(ClothesAttributeDefAlreadyExist.class)
-            .hasMessage(ErrorCode.CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS.getMessage());
-
-        verify(defRepository, times(1)).existsByName(name);
-        verify(defRepository, never()).save(any());
-    }
-
 }
