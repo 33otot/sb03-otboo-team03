@@ -107,9 +107,12 @@ public class LocationServiceImpl implements LocationService {
     }
 
     private boolean isLocationStale(Location location) {
-        // UNKNOWN이 포함되어 있거나, null이 포함된 경우, x 혹은 y가 0인 경우
+        // locationNames가 null이거나, UNKNOWN이 포함되어 있거나, null이 포함된 경우, x 혹은 y가 0인 경우
+        if (location.getLocationNames() == null) {
+            return true;
+        }
+        
         return location.getLocationNames().contains("UNKNOWN") ||
-                location.getLocationNames().contains(null) ||
                 location.getLocationNames().stream().anyMatch(Objects::isNull) ||
                 location.getX() == 0 || location.getY() == 0;
     }
@@ -182,6 +185,8 @@ public class LocationServiceImpl implements LocationService {
             log.info(SERVICE + "카카오 API 호출 성공");
             return response;
             
+        } catch (OtbooException e) {
+            throw e;
         } catch (Exception e) {
             log.error("카카오 API 호출 실패", e);
             throw new OtbooException(ErrorCode.API_CALL_ERROR);

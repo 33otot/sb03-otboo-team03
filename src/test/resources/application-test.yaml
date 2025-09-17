@@ -64,3 +64,8 @@ management:
   endpoint:
     health:
       show-details: always
+
+# Kakao API 테스트용 설정
+kakao.api:
+  base-url: https://dapi.kakao.com
+  key: test-api-key

@@ -10,10 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
-
+ 
 /**
  * 날씨 관련 API를 제공하는 컨트롤러
  * 
@@ -60,10 +57,8 @@ public class WeatherController implements WeatherApi {
      */
     @Override
     public ResponseEntity<WeatherAPILocation> getCurrentLocation(
-            @RequestParam @Valid @DecimalMin(value = "125.0", message = "경도는 125.0 이상이어야 합니다 (한국 육지 서쪽)")
-            @DecimalMax(value = "131.5", message = "경도는 131.5 이하여야 합니다 (한국 육지 동쪽)") double longitude,
-            @RequestParam @Valid @DecimalMin(value = "33.2", message = "위도는 33.2 이상이어야 합니다 (제주도 육지)")
-            @DecimalMax(value = "38.3", message = "위도는 38.3 이하여야 합니다 (한국 육지 북쪽)") double latitude
+            @RequestParam double longitude,
+            @RequestParam double latitude
     ) {
         WeatherAPILocation location = locationService.getCurrentLocation(longitude, latitude);
         return ResponseEntity
