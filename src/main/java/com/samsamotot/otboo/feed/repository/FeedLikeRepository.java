@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.feed.repository;
 
 import com.samsamotot.otboo.feed.entity.FeedLike;
+import io.lettuce.core.dynamic.annotation.Param;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
@@ -17,5 +18,6 @@ public interface FeedLikeRepository extends JpaRepository<FeedLike, UUID> {
         where fl.user.id = :userId
           and fl.feed.id in :feedIds
     """)
-    Set<UUID> findFeedLikeIdsByUserIdAndFeedIdIn(UUID userId, Collection<UUID> feedIds);
+    Set<UUID> findFeedLikeIdsByUserIdAndFeedIdIn(@Param("userId") UUID userId,
+                                                 @Param("feedIds")Collection<UUID> feedIds);
 }

@@ -3,7 +3,7 @@ package com.samsamotot.otboo.feed.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.samsamotot.otboo.common.config.QueryDslConfig;
+import com.samsamotot.otboo.common.config.QuerydslConfig;
 import com.samsamotot.otboo.common.config.TestJpaAuditingConfig;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
@@ -38,7 +38,7 @@ import org.springframework.test.context.TestPropertySource;
 @DataJpaTest
 @EntityScan("com.samsamotot.otboo")
 @TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
-@Import({TestJpaAuditingConfig.class, QueryDslConfig.class})
+@Import({TestJpaAuditingConfig.class, QuerydslConfig.class})
 @DisplayName("Feed 레포지토리 슬라이스 테스트")
 public class FeedRepositoryTest {
 
