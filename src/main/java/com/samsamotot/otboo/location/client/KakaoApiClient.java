@@ -71,9 +71,9 @@ public class KakaoApiClient {
      */
     public Mono<KakaoAddressResponse> getRegionByCoordinates(double longitude, double latitude) {
         // API 키 유효성 검증
-        if (apiKey == null || apiKey.trim().isEmpty() || apiKey.equals("your_kakao_api_key_here")) {
+        if (apiKey == null || apiKey.trim().isEmpty() || apiKey.equals("invalid_api_key")) {
             log.error("카카오 API 키가 설정되지 않았습니다. apiKey: {}", apiKey);
-            return Mono.error(new OtbooException(ErrorCode.KAKAO_KEY_NOT_FOUND));
+            return Mono.error(new OtbooException(ErrorCode.NO_KAKAO_KEY));
         }
         
         // API 키 일부만 로깅 (보안을 위해 전체 키는 로깅하지 않음)

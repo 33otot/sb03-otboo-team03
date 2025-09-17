@@ -70,7 +70,7 @@ class KakaoApiClientTest {
                 kakaoApiClient.getRegionByCoordinates(longitude, latitude).block()
         )
                 .isInstanceOf(OtbooException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.KAKAO_KEY_NOT_FOUND);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NO_KAKAO_KEY);
     }
 
     @Test
@@ -87,7 +87,7 @@ class KakaoApiClientTest {
                 kakaoApiClient.getRegionByCoordinates(longitude, latitude).block()
         )
                 .isInstanceOf(OtbooException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.KAKAO_KEY_NOT_FOUND);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NO_KAKAO_KEY);
     }
 
     @Test
@@ -104,7 +104,7 @@ class KakaoApiClientTest {
                 kakaoApiClient.getRegionByCoordinates(longitude, latitude).block()
         )
                 .isInstanceOf(OtbooException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.KAKAO_KEY_NOT_FOUND);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NO_KAKAO_KEY);
     }
 
     @Test
