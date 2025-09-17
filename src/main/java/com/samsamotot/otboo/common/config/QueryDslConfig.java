@@ -7,12 +7,12 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * PackageName  : com.samsamotot.otboo.common.config
- * FileName     : QuerydslConfig
+ * FileName     : QueryDslConfig
  * Author       : dounguk
  * Date         : 2025. 9. 15.
  */
 @Configuration
-public class QuerydslConfig {
+public class QueryDslConfig {
     @Bean
     public JPAQueryFactory jpaQueryFactory(EntityManager em) {
         return new JPAQueryFactory(em);
