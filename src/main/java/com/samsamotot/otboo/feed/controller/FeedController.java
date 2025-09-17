@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -114,5 +115,33 @@ public class FeedController implements FeedApi {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(result);
+    }
+
+    /**
+     * 특정 피드를 삭제합니다. (논리 삭제)
+     *
+     * @param feedId 삭제할 피드의 ID
+     * @param userId 현재 사용자의 ID (TODO: Spring Security 적용 후 인증 객체에서 가져오도록 수정 필요)
+     * @return 내용 없이 HTTP 204 No Content 상태 코드를 담은 ResponseEntity
+     */
+    @Override
+    @DeleteMapping("/{feedId}")
+    public ResponseEntity<Void> deleteFeed(
+        @PathVariable UUID feedId,
+        @RequestParam UUID userId
+    ) {
+        // TODO : Security 구현 후 @RequestParam userId 제거하고 인증 컨텍스트에서 조회하도록 변경
+        //  ex) @AuthenticationPrincipal CustomUserPrincipal principal → UUID userId = principal.getId()
+        //  컨트롤러 테스트도 함께 수정 필요
+
+        log.info("[FeedController] 피드 삭제 요청: feedId = {}, userId = {}", feedId, userId);
+
+        feedService.delete(feedId, userId);
+
+        log.info("[FeedController] 피드 삭제 완료: feedId = {}, userId = {}", feedId, userId);
+
+        return ResponseEntity
+            .status(HttpStatus.NO_CONTENT)
+            .build();
     }
 }
