@@ -57,7 +57,7 @@ class FollowServiceImplTest {
         try {
             Method m = FollowServiceImpl.class.getDeclaredMethod("parseCursorToInstant", String.class);
             m.setAccessible(true);
-            return (Instant) m.invoke(null, cursor); // static 메서드이므로 인스턴스 null
+            return (Instant) m.invoke(null, cursor);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -308,7 +308,7 @@ class FollowServiceImplTest {
         for (String bad : bads) {
             // when
             Instant actual = invokeParse(bad);
-            // then (느슨)
+            // then
             assertThat(actual).isNull();
         }
     }

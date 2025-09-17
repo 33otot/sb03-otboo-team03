@@ -183,7 +183,6 @@ public class FollowIntegrationTest {
         assertThat(page1.hasNext()).isTrue();
         assertThat(page1.nextCursor()).isNotNull();
         assertThat(page1.nextIdAfter()).isNotNull();
-        // 각 아이템의 followee가 me인지 정도만 체크
         page1.data().forEach(d -> assertThat(d.followee().userId()).isEqualTo(me.getId()));
 
         // when: 2페이지 조회

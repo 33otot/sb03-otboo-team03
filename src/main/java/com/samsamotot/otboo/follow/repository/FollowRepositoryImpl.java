@@ -66,7 +66,6 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
 
     /**
      * 특정 사용자가 팔로우하는 목록을 페이징 조회한다.
-     * <p>
      * 커서 기반 페이지네이션(cursor, idAfter)과 이름 검색 조건을 지원한다.
      *
      * @param request 팔로잉 조회 요청 정보
@@ -119,7 +118,13 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
         return rows;
     }
 
-    // todo count total followers
+    /**
+     * 특정 사용자를 팔로우하는(=팔로워) 총 개수를 조회한다.
+     *
+     * @param userId   팔로위(대상) 사용자 ID
+     * @param nameLike 팔로워 사용자명 검색(부분 일치, 대소문자 무시) – nullable
+     * @return 팔로워 총 개수
+     */
     @Override
     public long countTotalFollowers(UUID userId, String nameLike) {
         log.info(LISTENER_NAME + "팔로워 총 개수 조회 시작: userId={}, nameLike={}", userId, nameLike);
@@ -150,7 +155,13 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
         return count;
     }
 
-    // todo find followers
+    /**
+     * 특정 사용자를 팔로우하는 목록(팔로워)을 페이징 조회한다.
+     * 커서 기반 페이지네이션(cursor, idAfter)과 이름 검색을 지원한다.
+     *
+     * @param request 팔로워 조회 요청 정보(followeeId, cursor, idAfter, limit, nameLike)
+     * @return 팔로우 엔티티 목록(limit+1개)
+     */
     @Override
     public List<Follow> findFollowers(FollowingRequest request) {
         log.info(LISTENER_NAME + "팔로워 목록 조회 시작: followeeId(target)={}, limit={}, cursor={}, idAfter={}, nameLike={}",

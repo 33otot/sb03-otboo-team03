@@ -167,7 +167,6 @@ public class FollowServiceImpl implements FollowService {
             nextIdAfter = null;
         }
 
-
         FollowListResponse response = FollowListResponse.builder()
             .data(data)
             .nextCursor(nextCursor)
@@ -184,7 +183,21 @@ public class FollowServiceImpl implements FollowService {
         return response;
     }
 
-    // todo 팔로워 목록 조회
+
+    /**
+     * 특정 사용자를 팔로우하는 사용자(팔로워) 목록을 조회한다.
+     *
+     * 1. 커서 문자열 유효성 검사(형식 불일치 시 경고 로그만 출력)
+     * 2. 대상 사용자(=followee) 존재/잠금 여부 확인
+     * 3. QueryDSL로 (limit+1)개 행 조회하여 hasNext 계산
+     * 4. totalCount, nextCursor(createdAt), nextIdAfter(UUID) 계산
+     * 5. DTO 매핑 및 응답 구성
+     *
+     * @param request 팔로워 목록 조회 요청 DTO
+     *                (followeeId → {@code request.followerId()}에 전달, cursor, idAfter, limit, nameLike 포함)
+     * @return 팔로워 목록과 페이징 정보를 담은 {@link FollowListResponse}
+     * @throws OtbooException 존재하지 않는 사용자이거나, 잠금 계정일 경우 발생
+     */
     @Override
     public FollowListResponse getFollowers(FollowingRequest request) {
         log.info(SERVICE + "팔로워 목록 조회 시작: followeeId(target)={}, limit={}, cursor={}, idAfter={}, nameLike={}",
