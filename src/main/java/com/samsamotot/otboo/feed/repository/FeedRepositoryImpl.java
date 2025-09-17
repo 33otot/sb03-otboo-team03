@@ -60,6 +60,9 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom{
 
         // 커서 조건 적용
         if (cursor != null && !cursor.isBlank()) {
+            if (idAfter == null) {
+                throw new OtbooException(ErrorCode.INVALID_CURSOR_FORMAT);
+            }
             where.and(createCursorCondition(sortBy, sortDirection, cursor, idAfter));
             log.debug("[FeedRepositoryImpl] Filter condition (after cursor): {}", where);
         }

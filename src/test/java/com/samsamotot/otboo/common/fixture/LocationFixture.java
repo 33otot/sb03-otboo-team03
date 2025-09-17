@@ -15,7 +15,7 @@ public class LocationFixture {
         return Location.builder()
             .latitude(DEFAULT_LATITUDE)
             .longitude(DEFAULT_LONGITUDE)
-            .y(DEFAULT_X)
+            .x(DEFAULT_X)
             .y(DEFAULT_Y)
             .locationNames(DEFAULT_LOCATIONS)
             .build();

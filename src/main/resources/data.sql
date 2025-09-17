@@ -100,8 +100,8 @@ INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, ge
 SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '김철수', 'MALE', CAST('1990-05-15' AS DATE), 3.5 FROM users u, locations l WHERE u.id = 'a0000000-0000-0000-0000-000000000001' AND l.id = 'b0000000-0000-0000-0000-000000000001' UNION ALL
 SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '이영희', 'FEMALE', CAST('1992-11-20' AS DATE), 4.0 FROM users u, locations l WHERE u.id = 'a0000000-0000-0000-0000-000000000002' AND l.id = 'b0000000-0000-0000-0000-000000000002' UNION ALL
 SELECT gen_random_uuid(), u.id, NULL, NOW(), NOW(), '관리자', 'OTHER', CAST('1985-01-01' AS DATE), 3.0 FROM users u WHERE u.id = 'a0000000-0000-0000-0000-000000000003' UNION ALL
-SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '박민준', 'MALE', CAST('1995-03-01' AS DATE), 2.5 FROM users u, locations l WHERE u.email = 'user3@example.com' AND l.location_names = '대전역' UNION ALL
-SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '최지우', 'FEMALE', CAST('1998-07-10' AS DATE), 4.5 FROM users u, locations l WHERE u.email = 'user4@example.com' AND l.location_names = '인천국제공항'
+SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '박민준', 'MALE', CAST('1995-03-01' AS DATE), 2.5 FROM users u, locations l WHERE u.email = 'user3@example.com' AND l.id = 'b0000000-0000-0000-0000-000000000004' UNION ALL
+SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '최지우', 'FEMALE', CAST('1998-07-10' AS DATE), 4.5 FROM users u, locations l WHERE u.email = 'user4@example.com' AND l.id = 'b0000000-0000-0000-0000-000000000005'
 ON CONFLICT (user_id) DO NOTHING;
 
 

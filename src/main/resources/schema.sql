@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS locations
 CREATE TABLE IF NOT EXISTS clothes_attribute_defs
 (
     id UUID NOT NULL,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ,
 
@@ -310,8 +310,13 @@ CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_ca_clothes ON clothes_attributes (clothes_id);
 CREATE INDEX IF NOT EXISTS idx_cao_definition ON clothes_attribute_options (definition_id);
 
+-- follows index
+CREATE INDEX IF NOT EXISTS idx_follows_follower_created_id_desc ON follows (follower_id, created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_follows_followee ON follows (followee_id);
 CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows (follower_id);
 
+-- notification index
 CREATE INDEX IF NOT EXISTS idx_notifications_receiver_created_at ON notifications (receiver_id, created_at DESC); --알림
+
+-- DM index
 CREATE INDEX IF NOT EXISTS idx_dm_pair_created_at ON direct_messages (sender_id, receiver_id, created_at DESC); --대화

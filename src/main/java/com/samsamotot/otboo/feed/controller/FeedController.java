@@ -75,7 +75,7 @@ public class FeedController implements FeedApi {
         //  ex) @AuthenticationPrincipal CustomUserPrincipal principal → UUID userId = principal.getId()
         //  컨트롤러 테스트도 함께 수정 필요
 
-        log.info("[FeedController] 피드 목록 조회 요청: request = {}, userId = {}", request, userId);
+        log.info("[FeedController] 피드 목록 조회 요청: request = {}", request);
 
         CursorResponse<FeedDto> result = feedService.getFeeds(request, userId);
 
