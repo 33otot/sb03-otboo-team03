@@ -16,13 +16,4 @@ public class ClothesAttributeDefFixture {
     public static ClothesAttributeDef createClothesAttributeDef(){
         return ClothesAttributeDef.createClothesAttributeDef(name, options);
     }
-
-    public static ClothesAttributeDefDto createClothesAttributeDefDto(ClothesAttributeDef def){
-        return ClothesAttributeDefDto.builder()
-            .id(def.getId())
-            .name(name)
-            .selectableValues(options)
-            .createdAt(Instant.now())
-            .build();
-    }
 }
