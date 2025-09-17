@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -79,7 +80,8 @@ public class Feed extends BaseEntity {
     }
 
     public void updateContent(String newContent) {
-        if (newContent != null && !this.content.equals(newContent)) {
+        if (newContent == null) return;
+        if (!Objects.equals(this.content, newContent)) {
             this.content = newContent;
         }
     }

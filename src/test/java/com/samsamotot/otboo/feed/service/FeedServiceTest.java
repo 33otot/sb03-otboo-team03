@@ -49,6 +49,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -127,7 +128,7 @@ public class FeedServiceTest {
 
             given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(mockUser));
             given(weatherRepository.findById(any(UUID.class))).willReturn(Optional.of(mockWeather));
-            given(clothesRepository.findAllById(any(Iterable.class))).willReturn(mockClothesList);
+            given(clothesRepository.findAllById(any())).willReturn(mockClothesList);
             given(feedRepository.save(any(Feed.class))).willReturn(savedFeed);
             given(feedMapper.toDto(savedFeed)).willReturn(expectedDto);
 
@@ -218,7 +219,7 @@ public class FeedServiceTest {
 
             given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(mockUser));
             given(weatherRepository.findById(any(UUID.class))).willReturn(Optional.of(mockWeather));
-            given(clothesRepository.findAllById(any(Iterable.class))).willReturn(List.of());
+            given(clothesRepository.findAllById(any())).willReturn(List.of());
 
             // when & then
             assertThatThrownBy(() -> feedService.create(request))

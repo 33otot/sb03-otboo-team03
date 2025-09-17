@@ -157,3 +157,10 @@ jacocoTestCoverageVerification {
 		}
 	}
 }
+
+// 테스트 소스 컴파일 시 경고를 자세히 보기 위해 추가
+//  -Xlint:unchecked   : 제네릭 미지정/Raw 타입 등 'unchecked' 경고 상세 출력
+//  -Xlint:deprecation : 사용 중단(Deprecated) API 사용 경고 출력
+tasks.named('compileTestJava', JavaCompile).configure {
+    options.compilerArgs += ['-Xlint:unchecked','-Xlint:deprecation']
+}

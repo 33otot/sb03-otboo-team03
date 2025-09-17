@@ -3,8 +3,10 @@ package com.samsamotot.otboo.feed.dto;
 import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import java.util.UUID;
 import lombok.Builder;
@@ -19,9 +21,10 @@ import lombok.Builder;
 public record FeedCursorRequest(
     String cursor,
     UUID idAfter,
-    @NotNull @Positive
+    @NotNull @Positive @Max(50)
     Integer limit,
     @NotBlank
+    @Pattern(regexp = "createdAt|likeCount", message = "sortBy는 createdAt 또는 likeCount만 허용됩니다.")
     String sortBy,
     @NotNull
     SortDirection sortDirection,
