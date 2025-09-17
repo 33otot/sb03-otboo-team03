@@ -59,8 +59,7 @@ management:
 
 otboo:
   storage:
-    type: s3
-#    type: ${STORAGE_TYPE:local}
+    type: ${STORAGE_TYPE:local}
     #    local:
     #      root-path: ${STORAGE_LOCAL_ROOT_PATH:.otboo/storage}
     s3:
