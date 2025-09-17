@@ -15,6 +15,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.LastModifiedDate;
 
+/**
+ * 의상 속성 정의의 선택 가능한 옵션 엔티티 (계절 정의 - > 옵션: 봄, 여름, 가을 등...)
+ */
 @Builder
 @Entity
 @Table(

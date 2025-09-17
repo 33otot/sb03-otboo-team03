@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS locations
 CREATE TABLE IF NOT EXISTS clothes_attribute_defs
 (
     id UUID NOT NULL,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ,
 
