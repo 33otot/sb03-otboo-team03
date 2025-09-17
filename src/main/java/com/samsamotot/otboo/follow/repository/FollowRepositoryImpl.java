@@ -40,7 +40,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
      * @return 팔로잉 총 개수
      */
     @Override
-    public long countTotalElements(UUID userId, String nameLike) {
+    public long countTotalFollowings(UUID userId, String nameLike) {
         log.info(LISTENER_NAME + "총 개수 조회 시작: userId={}, nameLike={}", userId, nameLike);
 
         QFollow follow = QFollow.follow;
@@ -116,6 +116,83 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
 
         log.info(LISTENER_NAME + "팔로잉 목록 조회 완료: followerId={}, 결과 수={}", request.followerId(), rows.size());
 
+        return rows;
+    }
+
+    // todo count total followers
+    @Override
+    public long countTotalFollowers(UUID userId, String nameLike) {
+        log.info(LISTENER_NAME + "팔로워 총 개수 조회 시작: userId={}, nameLike={}", userId, nameLike);
+
+        QFollow follow = QFollow.follow;
+        QUser follower = new QUser("follower"); // 나를 팔로우하는 쪽(사람)
+
+        BooleanBuilder where = new BooleanBuilder()
+            .and(follow.followee.id.eq(userId)); // 나를(target) 기준
+
+        boolean hasName = nameLike != null && !nameLike.isBlank();
+        if (hasName) {
+            where.and(follower.username.containsIgnoreCase(nameLike));
+        }
+
+        Long result = (hasName
+            ? queryFactory.select(follow.count())
+            .from(follow)
+            .join(follow.follower, follower)
+            .where(where)
+            : queryFactory.select(follow.count())
+            .from(follow)
+            .where(where)
+        ).fetchOne();
+
+        long count = result != null ? result : 0L;
+        log.info(LISTENER_NAME + "팔로워 총 개수 조회 완료: userId={}, count={}", userId, count);
+        return count;
+    }
+
+    // todo find followers
+    @Override
+    public List<Follow> findFollowers(FollowingRequest request) {
+        log.info(LISTENER_NAME + "팔로워 목록 조회 시작: followeeId(target)={}, limit={}, cursor={}, idAfter={}, nameLike={}",
+            request.followerId(), request.limit(), request.cursor(), request.idAfter(), request.nameLike());
+
+        QFollow follow = QFollow.follow;
+        QUser followee = new QUser("followee");
+        QUser follower = new QUser("follower");
+
+        // 나를 팔로우하는 사람들을 찾는다
+        BooleanBuilder baseWhere = new BooleanBuilder()
+            .and(follow.followee.id.eq(request.followerId()));
+
+        // 이름 검색은 '팔로워'의 username 에 적용
+        if (request.nameLike() != null && !request.nameLike().isBlank()) {
+            baseWhere.and(follow.follower.username.containsIgnoreCase(request.nameLike()));
+        }
+
+        BooleanBuilder where = new BooleanBuilder().and(baseWhere);
+        Instant cursorCreatedAt = parseCursorToInstant(request.cursor());
+        UUID cursorId = request.idAfter();
+        if (cursorCreatedAt != null && cursorId != null) {
+            where.and(
+                follow.createdAt.lt(cursorCreatedAt)
+                    .or(follow.createdAt.eq(cursorCreatedAt).and(follow.id.lt(cursorId)))
+            );
+        } else if (cursorCreatedAt != null) {
+            where.and(follow.createdAt.lt(cursorCreatedAt));
+        }
+
+        int limit = Math.max(1, request.limit()) + 1;
+
+        List<Follow> rows = queryFactory
+            .selectFrom(follow)
+            .join(follow.followee, followee).fetchJoin() // 대상 사용자
+            .join(follow.follower, follower).fetchJoin() // 팔로워 사용자
+            .where(where)
+            .orderBy(follow.createdAt.desc(), follow.id.desc())
+            .limit(limit)
+            .fetch();
+
+        log.info(LISTENER_NAME + "팔로워 목록 조회 완료: followeeId={}, 결과 수={}", request.followerId(), rows.size());
         return rows;
     }
 

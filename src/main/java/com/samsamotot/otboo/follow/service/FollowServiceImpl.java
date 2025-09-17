@@ -152,7 +152,7 @@ public class FollowServiceImpl implements FollowService {
         boolean hasNext = follows.size() > limit;
 
         /* 3-4. totalCount*/
-        long totalCount = followRepository.countTotalElements(request.followerId(), request.nameLike());
+        long totalCount = followRepository.countTotalFollowings(request.followerId(), request.nameLike());
 
         /*3-5 nextCursor n nextIdAfter*/
         List<Follow> pageRows = hasNext ? follows.subList(0, limit) : follows;
@@ -184,6 +184,66 @@ public class FollowServiceImpl implements FollowService {
 
         return response;
     }
+
+    // todo 팔로워 목록 조회
+    @Override
+    public FollowListResponse getFollowers(FollowingRequest request) {
+        log.info(SERVICE + "팔로워 목록 조회 시작: followeeId(target)={}, limit={}, cursor={}, idAfter={}, nameLike={}",
+            request.followerId(), request.limit(), request.cursor(), request.idAfter(), request.nameLike());
+
+        /* 0. cursor 유효성 확인 */
+        if (request.cursor() != null && parseCursorToInstant(request.cursor()) == null) {
+            log.warn(SERVICE + "유효하지 않은 커서 타입: cursor={}", request.cursor());
+        }
+
+        /* 1. 대상 사용자(=followee) 조회 및 잠금 체크 */
+        User user = userRepository.findById(request.followerId())
+            .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.isLocked()) {
+            log.warn(SERVICE + "잠금 계정(팔로위/대상): followeeId={}", user.getId());
+            throw new OtbooException(ErrorCode.USER_LOCKED);
+        }
+
+        /* 2. 목록 조회 (limit+1) */
+        List<Follow> follows = followRepository.findFollowers(request);
+
+        /* 3. 페이징 계산 */
+        int limit = Math.max(1, request.limit());
+        boolean hasNext = follows.size() > limit;
+
+        long totalCount = followRepository.countTotalFollowers(request.followerId(), request.nameLike());
+
+        List<Follow> pageRows = hasNext ? follows.subList(0, limit) : follows;
+
+        Instant nextCreatedAt = pageRows.isEmpty() ? null : pageRows.get(pageRows.size() - 1).getCreatedAt();
+        String nextCursor = (hasNext && nextCreatedAt != null) ? nextCreatedAt.toString() : null;
+
+        UUID nextIdAfter = pageRows.isEmpty() ? null : pageRows.get(pageRows.size() - 1).getId();
+        if (!hasNext) {
+            nextIdAfter = null;
+        }
+
+        /* 4. DTO 매핑 */
+        List<FollowDto> data = pageRows.stream().map(followMapper::toDto).toList();
+
+        FollowListResponse response = FollowListResponse.builder()
+            .data(data)
+            .nextCursor(nextCursor)
+            .nextIdAfter(nextIdAfter)
+            .hasNext(hasNext)
+            .totalCount(totalCount)
+            .sortBy(SORT_BY)
+            .sortDirection(SORT_DIRECTION_DESCENDING)
+            .build();
+
+        log.info(SERVICE + "팔로워 목록 조회 완료: followeeId={}, 반환 데이터 개수={}, hasNext={}",
+            request.followerId(), data.size(), hasNext);
+
+        return response;
+    }
+
+
 
     private static Instant parseCursorToInstant(String cursor) {
         if (cursor == null || cursor.isBlank()) {

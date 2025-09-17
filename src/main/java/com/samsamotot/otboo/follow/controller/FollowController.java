@@ -93,16 +93,17 @@ public class FollowController {
     }
 
     // 팔로워 목록 조회
-//    @GetMapping("/followers")
-//    public ResponseEntity<FollowListResponse> getFollowers(
-//        @RequestParam UUID followeeId,
-//        @RequestParam(required = false) String cursor,
-//        @RequestParam(required = false) String idAfter,
-//        @RequestParam Integer limit,
-//        @RequestParam(required = false) String nameLike
-//    ) {
-//        return ResponseEntity.ok().body(new FollowListResponse());
-//    }
+    @GetMapping("/followers")
+    public ResponseEntity<FollowListResponse> getFollowers(
+        @RequestParam UUID followeeId,
+        @RequestParam(required = false) String cursor,
+        @RequestParam(required = false) UUID idAfter,
+        @RequestParam Integer limit,
+        @RequestParam(required = false) String nameLike
+    ) {
+        FollowingRequest request = new FollowingRequest(followeeId, cursor, idAfter, limit, nameLike);
+        return ResponseEntity.ok().body(followService.getFollowers(request));
+    }
 
 
     // 팔로우 취소

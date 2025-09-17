@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -35,7 +36,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({FollowRepositoryImpl.class, QuerydslConfig.class})
-@DisplayName("팔로우 레포지토리 QueryDSL 슬라이스 테스트")
+@DisplayName("Follow 레포지토리 QueryDSL 슬라이스 테스트")
+@Transactional
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = {
@@ -92,8 +94,9 @@ class FollowRepositoryImplTest {
         return new FollowingRequest(followerId, cursor, idAfter, limit, nameLike);
     }
 
+
     @Test
-    void 팔로우_목록을_DESC로_정렬해_응답한다() throws Exception {
+    void 팔로잉_목록을_DESC로_정렬해_응답한다() throws Exception {
         // given
         UUID follower = UUID.randomUUID();
         UUID u1 = UUID.randomUUID();
@@ -124,7 +127,7 @@ class FollowRepositoryImplTest {
     }
 
     @Test
-    void limit_만큼의_응답을_반환합니다() throws Exception {
+    void 팔로잉_limit_만큼의_응답을_반환합니다() throws Exception {
         // given
         UUID follower = UUID.randomUUID();
         UUID u1 = UUID.randomUUID();
@@ -151,7 +154,7 @@ class FollowRepositoryImplTest {
     }
 
     @Test
-    void 팔로우_생성_기준으로_정렬한다() throws Exception {
+    void 팔로잉한_시간_기준으로_정렬한다() throws Exception {
         // given
         UUID follower = UUID.randomUUID();
         UUID uOld = UUID.randomUUID();
@@ -178,7 +181,7 @@ class FollowRepositoryImplTest {
 
 
     @Test
-    void 같은_커서값을_가진_객체가_여러개일_경우_보조커서_기준으로_조회한다() throws Exception {
+    void 팔로잉_조회_같은_커서값을_가진_객체가_여러개일_경우_보조커서_기준으로_조회한다() throws Exception {
         // given
         UUID follower = UUID.randomUUID();
         UUID u1 = UUID.randomUUID();
@@ -219,7 +222,7 @@ class FollowRepositoryImplTest {
     }
 
     @Test
-    void nameLike_조건이_있으면_일치하는_값을_반환한다() throws Exception {
+    void 팔로잉_조회_nameLike_조건이_있으면_일치하는_값을_반환한다() throws Exception {
         // given
         UUID follower = UUID.randomUUID();
         UUID ukim1 = UUID.randomUUID();
@@ -249,7 +252,7 @@ class FollowRepositoryImplTest {
     }
 
     @Test
-    void 조건이_없으면_모든_팔로잉_유저를_반환한다() throws Exception {
+    void 팔로잉_조회_조건이_없으면_모든_팔로잉_유저를_반환한다() throws Exception {
         // given
         UUID follower = UUID.randomUUID();
         UUID u1 = UUID.randomUUID();
@@ -274,7 +277,7 @@ class FollowRepositoryImplTest {
     }
 
     @Test
-    void nameLike_조건에_맞는_수를_카운트한다() throws Exception {
+    void 팔로잉_조회_nameLike_조건에_맞는_수를_카운트한다() throws Exception {
         // given
         UUID follower = UUID.randomUUID();
         Instant base = Instant.parse("2025-09-15T17:00:00Z");
@@ -295,8 +298,8 @@ class FollowRepositoryImplTest {
         em.flush(); em.clear();
 
         // when
-        long total = followRepository.countTotalElements(follower, null);
-        long likeCount = followRepository.countTotalElements(follower, "테스트");
+        long total = followRepository.countTotalFollowings(follower, null);
+        long likeCount = followRepository.countTotalFollowings(follower, "테스트");
 
         assertThat(total).isGreaterThanOrEqualTo(3);
         assertThat(likeCount).isGreaterThan(0);
@@ -354,5 +357,255 @@ class FollowRepositoryImplTest {
         assertThat(r1).noneMatch(f -> !f.getCreatedAt().isBefore(t11));
         assertThat(r2).noneMatch(f -> !f.getCreatedAt().isBefore(t11));
         assertThat(r3).noneMatch(f -> !f.getCreatedAt().isBefore(t11));
+    }
+
+    /*
+        팔로워 조회
+     */
+    @Test
+    void 팔로워_목록을_DESC로_정렬해_응답한다() throws Exception {
+        // given
+        UUID followee = UUID.randomUUID();
+        UUID f1 = UUID.randomUUID();
+        UUID f2 = UUID.randomUUID();
+        UUID f3 = UUID.randomUUID();
+
+        Instant t1 = Instant.parse("2025-09-15T09:00:00Z");
+        Instant t2 = Instant.parse("2025-09-15T10:00:00Z");
+        Instant t3 = Instant.parse("2025-09-15T11:00:00Z");
+
+        insertUser(followee, "me@example.com", "me", false, t1);
+        insertUser(f1, "f1@example.com", "f1", false, t1);
+        insertUser(f2, "f2@example.com", "f2", false, t1);
+        insertUser(f3, "f3@example.com", "f3", false, t1);
+
+        insertFollow(UUID.randomUUID(), f1, followee, t1);
+        insertFollow(UUID.randomUUID(), f2, followee, t2);
+        insertFollow(UUID.randomUUID(), f3, followee, t3);
+
+        em.flush(); em.clear();
+
+        // when
+        List<Follow> rows = followRepository.findFollowers(req(followee, null, null, 10, null));
+
+        // then
+        assertThat(rows).isNotEmpty();
+        assertThat(rows.stream().map(Follow::getCreatedAt).toList())
+            .isSortedAccordingTo(Comparator.reverseOrder());
+
+    }
+
+    @Test
+    void 팔로워_조회_limit_만큼의_응답을_반환합니다() throws Exception {
+        // given
+        UUID followee = UUID.randomUUID();
+        UUID f1 = UUID.randomUUID();
+        UUID f2 = UUID.randomUUID();
+        UUID f3 = UUID.randomUUID();
+        Instant base = Instant.parse("2025-09-15T12:00:00Z");
+
+        insertUser(followee, "me2@example.com", "me2", false, base);
+        insertUser(f1, "1@example.com", "u1", false, base);
+        insertUser(f2, "2@example.com", "u2", false, base);
+        insertUser(f3, "3@example.com", "u3", false, base);
+
+        insertFollow(UUID.randomUUID(), f1, followee, base.plusSeconds(10));
+        insertFollow(UUID.randomUUID(), f2, followee, base.plusSeconds(20));
+        insertFollow(UUID.randomUUID(), f3, followee, base.plusSeconds(30));
+
+        em.flush(); em.clear();
+
+        int limit = 2;
+
+        // when
+        List<Follow> rows = followRepository.findFollowers(req(followee, null, null, limit, null));
+
+        // then
+        assertThat(rows.size()).isBetween(Math.min(1, limit), limit + 1);
+    }
+
+    @Test
+    void 팔로워_생성_기준으로_정렬한다() throws Exception {
+        // given
+        UUID followee = UUID.randomUUID();
+        UUID fOld = UUID.randomUUID();
+        UUID fNew = UUID.randomUUID();
+        Instant tOld = Instant.parse("2025-09-15T08:00:00Z");
+        Instant tNew = Instant.parse("2025-09-15T13:00:00Z");
+
+        insertUser(followee, "me3@example.com", "me3", false, tOld);
+        insertUser(fOld, "old@example.com", "old", false, tOld);
+        insertUser(fNew, "new@example.com", "new", false, tOld);
+
+        insertFollow(UUID.randomUUID(), fNew, followee, tNew); // 최신
+        insertFollow(UUID.randomUUID(), fOld, followee, tOld); // 과거
+
+        em.flush(); em.clear();
+
+        // when
+        List<Follow> rows = followRepository.findFollowers(req(followee, null, null, 10, null));
+
+        // then
+        Instant maxCreatedAt = rows.stream().map(Follow::getCreatedAt).max(Comparator.naturalOrder()).orElse(tOld);
+        assertThat(rows.get(0).getCreatedAt()).isEqualTo(maxCreatedAt);
+    }
+
+
+    @Test
+    void 팔로워_조회_같은_커서값_가진_객체가_여러개일_경우_보조커서_기준으로_조회한다() throws Exception {
+        // given
+        UUID followee = UUID.randomUUID();
+        UUID f1 = UUID.randomUUID();
+        UUID f2 = UUID.randomUUID();
+        UUID f3 = UUID.randomUUID();
+
+        Instant tie = Instant.parse("2025-09-15T14:00:00Z");
+        Instant older = Instant.parse("2025-09-15T13:00:00Z");
+
+        insertUser(followee, "me4@example.com", "me4", false, older);
+        insertUser(f1, "c1@example.com", "x1", false, older);
+        insertUser(f2, "c2@example.com", "x2", false, older);
+        insertUser(f3, "c3@example.com", "x3", false, older);
+
+        UUID idTieA = UUID.randomUUID();
+        UUID idTieB = UUID.randomUUID();
+        UUID idOlder = UUID.randomUUID();
+
+        insertFollow(idTieA, f1, followee, tie);
+        insertFollow(idTieB, f2, followee, tie);
+        insertFollow(idOlder, f3, followee, older);
+
+        em.flush(); em.clear();
+
+        // when
+        List<Follow> rows = followRepository.findFollowers(req(followee, tie, idTieA, 10, null));
+
+        // then
+        assertThat(rows).extracting(Follow::getId).doesNotContain(idTieA);
+        assertThat(rows.stream().map(Follow::getCreatedAt).toList())
+            .isSortedAccordingTo(Comparator.reverseOrder());
+    }
+
+    @Test
+    void 팔로워_조회_nameLike_조건_있으면_일치_값을_반환한다() throws Exception {
+        // given
+        UUID followee = UUID.randomUUID();
+        UUID fk1 = UUID.randomUUID();
+        UUID fEtc = UUID.randomUUID();
+        UUID fk2 = UUID.randomUUID();
+
+        Instant base = Instant.parse("2025-09-15T15:00:00Z");
+        insertUser(followee, "me5@example.com", "me5", false, base);
+        insertUser(fk1, "k1@example.com", "KimSun", false, base);
+        insertUser(fEtc, "e2@example.com", "Park", false, base);
+        insertUser(fk2, "k3@example.com", "vintageKIM", false, base);
+
+        insertFollow(UUID.randomUUID(), fk1, followee, base.plusSeconds(10));
+        insertFollow(UUID.randomUUID(), fEtc, followee, base.plusSeconds(20));
+        insertFollow(UUID.randomUUID(), fk2, followee, base.plusSeconds(30));
+
+        em.flush(); em.clear();
+
+        // when
+        List<Follow> rows = followRepository.findFollowers(req(followee, null, null, 10, "kim"));
+
+        // then
+        assertThat(rows).isNotEmpty();
+        assertThat(rows).allSatisfy(f ->
+            assertThat(f.getFollower().getUsername().toLowerCase()).contains("kim")
+        );
+    }
+
+    @Test
+    void 팔로워_조회_조건_없으면_모든_팔로워를_반환한다() throws Exception {
+        // given
+        UUID followee = UUID.randomUUID();
+        UUID f1 = UUID.randomUUID();
+        UUID f2 = UUID.randomUUID();
+        Instant base = Instant.parse("2025-09-15T16:00:00Z");
+
+        insertUser(followee, "me6@example.com", "me6", false, base);
+        insertUser(f1, "e1@example.com", "e1", false, base);
+        insertUser(f2, "e2@example.com", "e2", false, base);
+
+        insertFollow(UUID.randomUUID(), f1, followee, base.plusSeconds(10));
+        insertFollow(UUID.randomUUID(), f2, followee, base.plusSeconds(20));
+
+        em.flush(); em.clear();
+
+        // when
+        List<Follow> rows = followRepository.findFollowers(req(followee, null, null, 100, null));
+
+        // then
+        assertThat(rows.size()).isGreaterThanOrEqualTo(2);
+        assertThat(rows).extracting(Follow::getFollowee).extracting("id").contains(followee);
+    }
+
+    @Test
+    void 팔로워_조회_nameLike_조건에_맞는_수를_카운트한다() throws Exception {
+        // given
+        UUID followee = UUID.randomUUID();
+        Instant base = Instant.parse("2025-09-15T17:00:00Z");
+
+        UUID fk1 = UUID.randomUUID(); // 매칭
+        UUID fk2 = UUID.randomUUID(); // 매칭
+        UUID fk3 = UUID.randomUUID(); // 매칭(x)
+
+        insertUser(followee, "me7@example.com", "me7", false, base);
+        insertUser(fk1, "1@example.com", "테스트A", false, base);
+        insertUser(fk2, "2@example.com", "ZZ테스트zz", false, base);
+        insertUser(fk3, "3@example.com", "nothing", false, base);
+
+        insertFollow(UUID.randomUUID(), fk1, followee, base.plusSeconds(10));
+        insertFollow(UUID.randomUUID(), fk2, followee, base.plusSeconds(20));
+        insertFollow(UUID.randomUUID(), fk3, followee, base.plusSeconds(30));
+
+        em.flush(); em.clear();
+
+        // when
+        long total = followRepository.countTotalFollowers(followee, null);
+        long likeCount = followRepository.countTotalFollowers(followee, "테스트");
+
+        // then
+        assertThat(total).isGreaterThanOrEqualTo(3);
+        assertThat(likeCount).isGreaterThan(0);
+        assertThat(likeCount).isLessThanOrEqualTo(total);
+    }
+
+    @Test
+    void 팔로워_조회_cursor만_있으면_createdAt_lt_cursor_조건_적용된다() throws Exception {
+        // given
+        UUID followee = UUID.randomUUID();
+        UUID fOld = UUID.randomUUID();
+        UUID fTie = UUID.randomUUID();
+        UUID fNew = UUID.randomUUID();
+
+        Instant tOld   = Instant.parse("2025-09-15T09:00:00Z"); // 포함되어야 함 (< cursor)
+        Instant tCursor= Instant.parse("2025-09-15T10:00:00Z"); // 제외되어야 함 (== cursor)
+        Instant tNew   = Instant.parse("2025-09-15T11:00:00Z"); // 제외되어야 함 (> cursor)
+
+        insertUser(followee, "me8@example.com", "me8", false, tOld);
+        insertUser(fOld,     "old@example.com", "old", false, tOld);
+        insertUser(fTie,     "tie@example.com", "tie", false, tOld);
+        insertUser(fNew,     "new@example.com", "new", false, tOld);
+
+        insertFollow(UUID.randomUUID(), fOld, followee, tOld);
+        insertFollow(UUID.randomUUID(), fTie, followee, tCursor);
+        insertFollow(UUID.randomUUID(), fNew, followee, tNew);
+
+        em.flush(); em.clear();
+
+        // when
+        List<Follow> rows = followRepository.findFollowers(
+            req(followee, tCursor, null, 100, null)
+        );
+
+        // then
+        assertThat(rows).isNotEmpty();
+        assertThat(rows).allSatisfy(f -> assertThat(f.getCreatedAt()).isBefore(tCursor));
+        assertThat(rows).noneMatch(f -> f.getCreatedAt().equals(tCursor));
+        assertThat(rows).noneMatch(f -> f.getCreatedAt().isAfter(tCursor));
+        assertThat(rows.stream().map(Follow::getCreatedAt).toList())
+            .isSortedAccordingTo(Comparator.reverseOrder());
     }
 }
