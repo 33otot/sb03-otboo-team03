@@ -602,7 +602,7 @@ public class FeedServiceTest {
 
             FeedDto expectedFeedDto = FeedFixture.createFeedDtoWithContent(originFeed, updateContent);
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(originFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(originFeed));
             given(feedMapper.toDto(any(Feed.class))).willReturn(expectedFeedDto);
 
             // when
@@ -627,7 +627,7 @@ public class FeedServiceTest {
                 .content(updateContent)
                 .build();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.empty());
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() ->
@@ -652,7 +652,7 @@ public class FeedServiceTest {
             Feed feed = FeedFixture.createFeed(mockUser, mockWeather);
             ReflectionTestUtils.setField(feed, "id", feedId);
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(feed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(feed));
 
             // when & then
             assertThatThrownBy(() -> feedService.update(feedId, invalidAuthorId, request))
@@ -675,7 +675,7 @@ public class FeedServiceTest {
             ReflectionTestUtils.setField(feed, "id", feedId);
             UUID userId = mockUser.getId();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(feed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(feed));
 
             // when
             Feed result = feedService.delete(feedId, userId);
@@ -692,7 +692,7 @@ public class FeedServiceTest {
             UUID invalidFeedId = UUID.randomUUID();
             UUID userId = mockUser.getId();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.empty());
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> feedService.delete(invalidFeedId, userId))
@@ -714,7 +714,7 @@ public class FeedServiceTest {
             ReflectionTestUtils.setField(feed, "id", feedId);
             UUID userId = mockUser.getId();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.empty());
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> feedService.delete(feedId, userId))
@@ -732,7 +732,7 @@ public class FeedServiceTest {
             ReflectionTestUtils.setField(feed, "id", feedId);
             UUID otherUserId = UUID.randomUUID();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(feed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(feed));
 
             // when & then
             assertThatThrownBy(() -> feedService.delete(feedId, otherUserId))

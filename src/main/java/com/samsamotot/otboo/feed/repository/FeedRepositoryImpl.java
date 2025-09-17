@@ -13,6 +13,7 @@ import com.samsamotot.otboo.feed.entity.QFeed;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,8 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom{
     /**
      * 커서 기반 페이지네이션을 사용하여 피드 목록을 조회합니다.
      * 다양한 필터링 조건(키워드, 날씨 상태, 강수 형태, 작성자 ID)과 정렬 기준을 적용할 수 있습니다.
+     * (소프트 삭제된 피드는 기본으로 제외됨)
+     *
      * @param cursor                    페이지네이션의 기준 커서 값 (createdAt 또는 likeCount)
      * @param idAfter                   마지막으로 조회된 피드 ID
      * @param limit                     조회할 피드의 최대 개수
@@ -143,7 +146,13 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom{
     }
 
     private BooleanExpression buildCreatedAtCondition(SortDirection sortDirection, String cursor, UUID idAfter) {
-        Instant createdAt = Instant.parse(cursor);
+
+        Instant createdAt;
+        try {
+            createdAt = Instant.parse(cursor);
+        } catch(DateTimeParseException e) {
+            throw new OtbooException(ErrorCode.INVALID_CURSOR_FORMAT);
+        }
 
         if (sortDirection == SortDirection.ASCENDING) {
             return qFeed.createdAt.gt(createdAt)

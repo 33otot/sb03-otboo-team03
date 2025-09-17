@@ -194,7 +194,7 @@ public class FeedServiceImpl implements FeedService {
 
         log.debug("[FeedServiceImpl] 피드 수정 시작: feedId = {}, userId = {}, request = {}", feedId, userId, request);
 
-        Feed feed = feedRepository.findById(feedId)
+        Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
 
         if (!feed.getAuthor().getId().equals(userId)) {
@@ -226,7 +226,7 @@ public class FeedServiceImpl implements FeedService {
 
         log.debug("[FeedServiceImpl] 피드 삭제 시작: feedId = {}, userId = {}", feedId, userId);
 
-        Feed feed = feedRepository.findById(feedId)
+        Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
 
         if (!feed.getAuthor().getId().equals(userId)) {

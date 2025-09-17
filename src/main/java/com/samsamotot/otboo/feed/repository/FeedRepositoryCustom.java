@@ -5,6 +5,7 @@ import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface FeedRepositoryCustom {
@@ -27,4 +28,6 @@ public interface FeedRepositoryCustom {
         Precipitation precipitationTypeEqual,
         UUID authorIdEqual
     );
+
+
 }
