@@ -8,6 +8,7 @@ import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.entity.Weather;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

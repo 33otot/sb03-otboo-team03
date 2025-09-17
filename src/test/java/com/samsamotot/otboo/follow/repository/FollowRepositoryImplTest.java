@@ -1,6 +1,6 @@
 package com.samsamotot.otboo.follow.repository;
 
-import com.samsamotot.otboo.common.config.QuerydslConfig;
+import com.samsamotot.otboo.common.config.QueryDslConfig;
 import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import com.samsamotot.otboo.follow.entity.Follow;
 import jakarta.persistence.EntityManager;
@@ -34,7 +34,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
  */
 @DataJpaTest
 @ActiveProfiles("test")
-@Import({FollowRepositoryImpl.class, QuerydslConfig.class})
+@Import({FollowRepositoryImpl.class, QueryDslConfig.class})
 @DisplayName("팔로우 레포지토리 QueryDSL 슬라이스 테스트")
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)

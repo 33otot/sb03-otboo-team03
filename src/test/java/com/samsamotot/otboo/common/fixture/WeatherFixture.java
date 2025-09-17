@@ -1,3 +1,6 @@
+package com.samsamotot.otboo.common.fixture;
+
+import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
