@@ -193,3 +193,4 @@ SELECT gen_random_uuid(), u2.id, u1.id, NOW() FROM users u1, users u2 WHERE u1.i
 SELECT gen_random_uuid(), u3.id, u1.id, NOW() FROM users u1, users u3 WHERE u1.id = 'a0000000-0000-0000-0000-000000000004' AND u3.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
 SELECT gen_random_uuid(), u4.id, u1.id, NOW() FROM users u1, users u4 WHERE u1.id = 'a0000000-0000-0000-0000-000000000005' AND u4.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
 SELECT gen_random_uuid(), u1.id, u3.id, NOW() FROM users u1, users u3 WHERE u1.id = 'a0000000-0000-0000-0000-000000000001' AND u3.id = 'a0000000-0000-0000-0000-000000000004';
+
