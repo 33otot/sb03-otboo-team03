@@ -38,7 +38,7 @@ import org.springframework.test.context.TestPropertySource;
 @DataJpaTest
 @EntityScan("com.samsamotot.otboo")
 @TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
-@Import({TestJpaAuditingConfig.class, QuerydslConfig.class})
+@Import({TestJpaAuditingConfig.class, QueryDslConfig.class})
 @DisplayName("Feed 레포지토리 슬라이스 테스트")
 public class FeedRepositoryTest {
 

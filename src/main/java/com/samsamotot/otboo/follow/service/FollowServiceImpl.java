@@ -102,7 +102,6 @@ public class FollowServiceImpl implements FollowService {
         Follow savedFollow = followRepository.save(follow);
         log.info(SERVICE + "팔로우 생성 완료: followId={}, followerId={}, followeeId={}", savedFollow.getId(), follower.getId(), followee.getId());
 
-        // TODO 진짜 userSummaryDto 만들어지면 Follow package 내부 UserSummaryDto 삭제, FollowMapper 수정 필요
         return followMapper.toDto(savedFollow);
     }
 
