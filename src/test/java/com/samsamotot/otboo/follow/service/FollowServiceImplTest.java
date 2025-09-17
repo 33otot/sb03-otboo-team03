@@ -19,6 +19,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Method;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,6 +53,15 @@ class FollowServiceImplTest {
     @Mock
     private FollowMapper followMapper;
 
+    private static Instant invokeParse(String cursor) {
+        try {
+            Method m = FollowServiceImpl.class.getDeclaredMethod("parseCursorToInstant", String.class);
+            m.setAccessible(true);
+            return (Instant) m.invoke(null, cursor); // static 메서드이므로 인스턴스 null
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /*
         팔로우 생성 단위 테스트
@@ -257,5 +268,48 @@ class FollowServiceImplTest {
         // when n then
         assertThatThrownBy(() -> followService.getFollowings(req))
             .isInstanceOf(OtbooException.class);
+    }
+
+    @Test
+    void OffsetDateTime_으로_cursor_입력_받을수_있다() throws Exception {
+        // given
+        String cursor = "2025-09-16T12:34:56+09:00";
+
+        // when
+        Instant actual = invokeParse(cursor);
+
+        // then
+        assertThat(actual).isNotNull();
+        assertThat(actual).isEqualTo(Instant.parse("2025-09-16T03:34:56Z"));
+    }
+
+    @Test
+    void LocalDateTime_UTC_로_입력_받을수_있다() throws Exception {
+        // given
+        String cursor = "2025-09-16T12:34:56";
+
+        // when
+        Instant actual = invokeParse(cursor);
+
+        // then
+        assertThat(actual).isNotNull();
+        assertThat(actual).isEqualTo(Instant.parse("2025-09-16T12:34:56Z"));
+    }
+
+    @Test
+    void cursor가_날짜가_아니면_null_반환() throws Exception {
+        // given
+        String[] bads = {
+            "not-a-date",
+            "2025-13-40T99:99:99Z",
+            "2025/09/16 12:34:56"
+        };
+
+        for (String bad : bads) {
+            // when
+            Instant actual = invokeParse(bad);
+            // then (느슨)
+            assertThat(actual).isNull();
+        }
     }
 }

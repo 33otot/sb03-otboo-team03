@@ -127,6 +127,11 @@ public class FollowServiceImpl implements FollowService {
         log.info(SERVICE + "팔로잉 목록 조회 시작: followerId={}, limit={}, cursor={}, idAfter={}, nameLike={}",
             request.followerId(), request.limit(), request.cursor(), request.idAfter(), request.nameLike());
 
+        /* 0. cursor 유효성 확인 */
+        if (request.cursor() != null && parseCursorToInstant(request.cursor()) == null) {
+            log.warn(SERVICE + "유효하지 않은 커서 타입: cursor={}", request.cursor());
+        }
+
         /* 1. user 검색*/
         User user = userRepository.findById(request.followerId()).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
 
@@ -178,5 +183,21 @@ public class FollowServiceImpl implements FollowService {
             request.followerId(), data.size(), hasNext);
 
         return response;
+    }
+
+    private static Instant parseCursorToInstant(String cursor) {
+        if (cursor == null || cursor.isBlank()) {
+            return null;
+        }
+        try {
+            return Instant.parse(cursor);
+        } catch (Exception ignore) {}
+        try {
+            return java.time.OffsetDateTime.parse(cursor).toInstant();
+        } catch (Exception ignore) {}
+        try {
+            return java.time.LocalDateTime.parse(cursor).toInstant(java.time.ZoneOffset.UTC);
+        } catch (Exception ignore) {}
+        return null;
     }
 }
