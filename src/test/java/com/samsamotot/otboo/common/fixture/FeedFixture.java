@@ -95,4 +95,19 @@ public class FeedFixture {
             .createdAt(createdAt)
             .build();
     }
+
+    public static FeedDto createFeedDtoWithContent(Feed feed, String content) {
+        return FeedDto.builder()
+            .id(feed.getId())
+            .author(UserFixture.createAuthorDto(feed.getAuthor()))
+            .content(content)
+            .likeCount(feed.getLikeCount())
+            .commentCount(feed.getCommentCount())
+            .ootds(List.of())
+            .weather(WeatherFixture.createWeatherDto(feed.getWeather()))
+            .likedByMe(false)
+            .createdAt(feed.getCreatedAt())
+            .updatedAt(feed.getUpdatedAt())
+            .build();
+    }
 }

@@ -25,6 +25,7 @@ import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
+import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.entity.FeedClothes;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
@@ -578,6 +579,86 @@ public class FeedServiceTest {
                 .precipitationTypeEqual(null)
                 .authorIdEqual(null)
                 .build();
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 수정 테스트")
+    class FeedUpdateTest {
+
+        @Test
+        void 피드를_수정하면_수정된_FeedDto를_반환해야_한다() {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            Feed originFeed = FeedFixture.createFeed(mockUser, mockWeather);
+            ReflectionTestUtils.setField(originFeed, "id", feedId);
+            UUID authorId = mockUser.getId();
+            String updateContent = "피드 수정 테스트";
+
+            FeedUpdateRequest request = FeedUpdateRequest.builder()
+                .content(updateContent)
+                .build();
+
+            FeedDto expectedFeedDto = FeedFixture.createFeedDtoWithContent(originFeed, updateContent);
+
+            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(originFeed));
+            given(feedMapper.toDto(any(Feed.class))).willReturn(expectedFeedDto);
+
+            // when
+            FeedDto result = feedService.update(feedId, authorId, request);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result.id()).isEqualTo(feedId);
+            assertThat(result.content()).isEqualTo(updateContent);
+            assertThat(result.author().userId()).isEqualTo(authorId);
+        }
+
+        @Test
+        void 존재하지_않는_피드라면_예외가_발생한다() {
+
+            // given
+            UUID invalidFeedId = UUID.randomUUID();
+            UUID userId = mockUser.getId();
+            String updateContent = "피드 수정 테스트";
+
+            FeedUpdateRequest request = FeedUpdateRequest.builder()
+                .content(updateContent)
+                .build();
+
+            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() ->
+                feedService.update(invalidFeedId, userId, request))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FEED_NOT_FOUND);
+        }
+
+        @Test
+        void 피드를_수정할_때_작성자가_아니라면_예외가_발생한다() {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID invalidAuthorId = UUID.randomUUID();
+            String updateContent = "피드 수정 테스트";
+
+            FeedUpdateRequest request = FeedUpdateRequest.builder()
+                .content(updateContent)
+                .build();
+
+            Feed feed = FeedFixture.createFeed(mockUser, mockWeather);
+            ReflectionTestUtils.setField(feed, "id", feedId);
+
+            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(feed));
+
+            // when & then
+            assertThatThrownBy(() -> feedService.update(feedId, invalidAuthorId, request))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FORBIDDEN_FEED_MODIFICATION);
         }
     }
 }

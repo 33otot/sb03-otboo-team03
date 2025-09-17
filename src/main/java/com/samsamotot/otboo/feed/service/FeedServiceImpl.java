@@ -10,6 +10,7 @@ import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
+import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
@@ -179,6 +180,37 @@ public class FeedServiceImpl implements FeedService {
         );
     }
 
+    /**
+     * 피드의 내용을 수정합니다.
+     * 수정을 요청한 사용자가 피드의 작성자인지 확인합니다.
+     *
+     * @param feedId 수정할 피드의 ID
+     * @param userId 현재 사용자의 ID
+     * @param request 피드 수정 요청 DTO
+     * @return 수정된 피드 DTO
+     */
+    @Override
+    public FeedDto update(UUID feedId, UUID userId, FeedUpdateRequest request) {
+
+        log.debug("[FeedServiceImpl] 피드 수정 시작: feedId = {}, userId = {}, request = {}", feedId, userId, request);
+
+        Feed feed = feedRepository.findById(feedId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
+
+        if (!feed.getAuthor().getId().equals(userId)) {
+            throw new OtbooException(ErrorCode.FORBIDDEN_FEED_MODIFICATION,
+                Map.of("feedId", feedId.toString(), "userId", userId.toString()));
+        }
+
+        String newContent = request.content();
+        feed.updateContent(newContent);
+        log.debug("[FeedServiceImpl] 피드 수정 완료: feedId = {}, userId = {}", feedId, userId);
+
+        FeedDto result = convertToDto(feed, userId);
+
+        return result;
+    }
+
     private void validateCursorRequest(String cursor, String sortBy) {
 
         if (!sortBy.equals(SORT_BY_CREATED_AT) && !sortBy.equals(SORT_BY_LIKE_COUNT)) {
@@ -199,6 +231,21 @@ public class FeedServiceImpl implements FeedService {
             case SORT_BY_LIKE_COUNT -> String.valueOf(feed.getLikeCount());
             default -> throw new OtbooException(ErrorCode.INVALID_SORT_FIELD);
         };
+    }
+
+    private FeedDto convertToDto(Feed feed, UUID currentUserId) {
+
+        boolean likedByMe = false;
+        if (currentUserId != null) {
+            feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), currentUserId);
+        }
+        FeedDto feedDto = feedMapper.toDto(feed);
+
+        if (feedDto == null) {
+            throw new OtbooException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+
+        return feedDto.toBuilder().likedByMe(likedByMe).build();
     }
 
     private List<FeedDto> convertToDtos(List<Feed> feeds, UUID currentUserId) {

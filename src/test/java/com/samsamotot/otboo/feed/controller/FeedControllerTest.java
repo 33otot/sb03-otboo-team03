@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -18,12 +20,16 @@ import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.fixture.FeedFixture;
 import com.samsamotot.otboo.common.fixture.LocationFixture;
+import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
+import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.service.FeedService;
+import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
@@ -481,6 +487,133 @@ public class FeedControllerTest {
                     .param("sortDirection", SortDirection.DESCENDING.name())
                     .param("userId", UUID.randomUUID().toString())
                 )
+                .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 수정 테스트")
+    class FeedUpdateTest {
+
+        @Test
+        void 피드를_수정하면_200과_수정된_피드_DTO가_반환된다() throws Exception {
+
+            // given
+            UUID userId = UUID.randomUUID();
+            User user = UserFixture.createUser();
+            ReflectionTestUtils.setField(user, "id", userId);
+
+            Location location = LocationFixture.createLocation();
+            Weather weather = WeatherFixture.createWeather(location);
+
+            UUID feedId = UUID.randomUUID();
+            Feed originFeed = FeedFixture.createFeed(user, weather);
+            ReflectionTestUtils.setField(originFeed, "id", feedId);
+
+            String newContent = "피드 수정 테스트";
+
+            FeedUpdateRequest request = FeedUpdateRequest.builder()
+                .content(newContent)
+                .build();
+
+            FeedDto expected = FeedFixture.createFeedDtoWithContent(originFeed, newContent);
+
+            given(feedService.update(any(UUID.class), any(UUID.class), any(FeedUpdateRequest.class)))
+                .willReturn(expected);
+
+            // when & then
+            mockMvc.perform(patch("/api/feeds/{id}", feedId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .param("userId", userId.toString())
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(feedId.toString()))
+                .andExpect(jsonPath("$.content").value(newContent))
+                .andExpect(jsonPath("$.author.userId").value(userId.toString()));
+        }
+
+        @Test
+        void 존재하지_않는_피드라면_404가_반환된다() throws Exception {
+
+            // given
+            UUID invalidFeedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+            String newContent = "피드 수정 테스트";
+
+            FeedUpdateRequest request = FeedUpdateRequest.builder()
+                .content(newContent)
+                .build();
+
+            given(feedService.update(any(UUID.class), any(UUID.class), any(FeedUpdateRequest.class)))
+                .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(patch("/api/feeds/{id}", invalidFeedId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .param("userId", userId.toString())
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FEED_NOT_FOUND.name()));
+        }
+
+        @Test
+        void 작성자가_아니라면_403이_반환된다() throws Exception {
+
+            // given
+            UUID invalidUserId = UUID.randomUUID();
+            User user = UserFixture.createUser();
+
+            Location location = LocationFixture.createLocation();
+            Weather weather = WeatherFixture.createWeather(location);
+
+            UUID feedId = UUID.randomUUID();
+            Feed originFeed = FeedFixture.createFeed(user, weather);
+            ReflectionTestUtils.setField(originFeed, "id", feedId);
+
+            String newContent = "피드 수정 테스트";
+
+            FeedUpdateRequest request = FeedUpdateRequest.builder()
+                .content(newContent)
+                .build();
+
+            given(feedService.update(any(UUID.class), any(UUID.class), any(FeedUpdateRequest.class)))
+                .willThrow(new OtbooException(ErrorCode.FORBIDDEN_FEED_MODIFICATION));
+
+            // when & then
+            mockMvc.perform(patch("/api/feeds/{id}", feedId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .param("userId", invalidUserId.toString())
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FORBIDDEN_FEED_MODIFICATION.name()));
+        }
+
+        @Test
+        void 내용이_빈값이면_400이_반환된다() throws Exception {
+
+            // given
+            UUID userId = UUID.randomUUID();
+            User user = UserFixture.createUser();
+            ReflectionTestUtils.setField(user, "id", userId);
+
+            Location location = LocationFixture.createLocation();
+            Weather weather = WeatherFixture.createWeather(location);
+
+            UUID feedId = UUID.randomUUID();
+            Feed originFeed = FeedFixture.createFeed(user, weather);
+            ReflectionTestUtils.setField(originFeed, "id", feedId);
+
+            String newContent = " ";
+
+            FeedUpdateRequest request = FeedUpdateRequest.builder()
+                .content(newContent)
+                .build();
+
+            // when & then
+            mockMvc.perform(patch("/api/feeds/{id}", feedId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .param("userId", userId.toString())
+                    .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
         }
     }
