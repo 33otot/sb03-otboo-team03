@@ -4,6 +4,8 @@ import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
+import com.samsamotot.otboo.follow.dto.FollowListResponse;
+import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
@@ -13,6 +15,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * PackageName  : com.samsamotot.otboo.follow.service
@@ -27,6 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class FollowServiceImpl implements FollowService {
     private static final String SERVICE = "[FollowService] ";
+    private static final String SORT_DIRECTION_DESCENDING = "DESCENDING";
+    private static final String SORT_BY = "createdAt";
 
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
@@ -34,25 +42,22 @@ public class FollowServiceImpl implements FollowService {
 
     /**
      * 새로운 팔로우 관계를 생성한다.
-     * <p>
-     * 이 메서드는 다음 단계를 수행한다:
-     * <ol>
-     *   <li>요청으로 전달된 followerId, followeeId에 대한 중복 팔로우 여부를 확인한다.</li>
-     *   <li>팔로워(follower)와 팔로위(followee) 사용자가 존재하는지 조회한다.</li>
-     *   <li>두 사용자 중 하나라도 잠금 상태(locked)라면 예외를 발생시킨다.</li>
-     *   <li>팔로우 엔티티를 생성하고 DB에 저장한다.</li>
-     *   <li>저장된 팔로우 엔티티를 {@link FollowDto}로 변환하여 반환한다.</li>
-     * </ol>
      *
-     * <p><b>예외 처리</b></p>
-     * <ul>
-     *   <li>{@link OtbooException} - 중복 팔로우 요청, 존재하지 않는 사용자,
-     *       혹은 잠금 계정에 대한 요청일 경우 발생</li>
-     * </ul>
+     * 이 메서드는 다음 단계를 수행한다:
+     * 1. followerId와 followeeId를 기반으로 중복 팔로우 여부를 확인한다.
+     * 2. 팔로워(follower)와 팔로위(followee) 사용자가 실제로 존재하는지 조회한다.
+     * 3. 두 사용자 중 하나라도 잠금 상태(locked)라면 예외를 발생시킨다.
+     * 4. 팔로우 엔티티를 생성하여 DB에 저장한다.
+     * 5. 저장된 팔로우 엔티티를 DTO로 변환하여 반환한다.
+     *
+     * 예외 처리:
+     * - 중복 팔로우 요청
+     * - 존재하지 않는 사용자
+     * - 잠금 계정에 대한 요청
      *
      * @param request 팔로우 요청 정보 (팔로워 ID, 팔로위 ID)
      * @return 생성된 팔로우 정보를 담은 DTO
-     * @throws OtbooException 중복 팔로우, 존재하지 않는 사용자, 잠금 계정인 경우
+     * @throws OtbooException 위 예외 상황이 발생할 경우
      */
     @Transactional
     @Override
@@ -99,5 +104,100 @@ public class FollowServiceImpl implements FollowService {
 
         // TODO 진짜 userSummaryDto 만들어지면 Follow package 내부 UserSummaryDto 삭제, FollowMapper 수정 필요
         return followMapper.toDto(savedFollow);
+    }
+
+
+    /**
+     * 특정 사용자가 팔로우하고 있는 사용자 목록을 조회한다.
+     *
+     *
+     * 1. followerId에 해당하는 사용자를 조회하고 존재하지 않으면 {@link OtbooException}을 발생시킨다.
+     * 2. 해당 사용자가 잠금 계정일 경우 예외를 발생시킨다.
+     * 3. QueryDSL 기반으로 팔로잉 목록을 조회하고, limit + 1 방식으로 다음 페이지 여부(hasNext)를 판별한다.
+     * 4. 조회 결과를 기반으로 totalCount, nextCursor, nextIdAfter 등을 계산하여 응답 객체를 구성한다.
+     * 5. DTO 매핑을 통해 클라이언트에 반환할 데이터를 생성한다.
+     *
+     * @param request 팔로잉 목록 조회 요청 DTO
+     *                (followerId, cursor, idAfter, limit, nameLike 포함)
+     * @return 팔로잉 목록과 페이징 정보를 담은 {@link FollowListResponse}
+     * @throws OtbooException 존재하지 않는 사용자이거나, 잠금 계정일 경우 발생
+     */
+    @Override
+    public FollowListResponse getFollowings(FollowingRequest request) {
+        log.info(SERVICE + "팔로잉 목록 조회 시작: followerId={}, limit={}, cursor={}, idAfter={}, nameLike={}",
+            request.followerId(), request.limit(), request.cursor(), request.idAfter(), request.nameLike());
+
+        /* 0. cursor 유효성 확인 */
+        if (request.cursor() != null && parseCursorToInstant(request.cursor()) == null) {
+            log.warn(SERVICE + "유효하지 않은 커서 타입: cursor={}", request.cursor());
+        }
+
+        /* 1. user 검색*/
+        User user = userRepository.findById(request.followerId()).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+
+        /* 2. locked 여부 확인*/
+        if (user.isLocked()) {
+            log.warn(SERVICE + "잠금 계정(팔로워): followerId={}", user.getId());
+            throw new OtbooException(ErrorCode.USER_LOCKED);
+        }
+
+         /* 3. FollowListResponse 변수 가공
+            3-1쿼리 dsl 사용 Follow 리스트 */
+        List<Follow> follows = followRepository.findFollowings(request);
+
+        /* 3-2: limit*/
+        int limit = Math.max(1, request.limit());
+
+        /* 3-3: hasNext*/
+        boolean hasNext = follows.size() > limit;
+
+        /* 3-4. totalCount*/
+        long totalCount = followRepository.countTotalElements(request.followerId(), request.nameLike());
+
+        /*3-5 nextCursor n nextIdAfter*/
+        List<Follow> pageRows = hasNext ? follows.subList(0, limit) : follows;
+        Instant nextCreatedAt = pageRows.isEmpty() ? null : pageRows.get(pageRows.size() - 1).getCreatedAt();
+        String nextCursor = (hasNext && nextCreatedAt != null) ? nextCreatedAt.toString() : null; // nextCursor
+        UUID nextIdAfter = pageRows.isEmpty() ? null : pageRows.get(pageRows.size() - 1).getId(); // nextIdAfter
+
+        /* 3-6: data*/
+        List<FollowDto> data = pageRows.stream().map(followMapper::toDto).toList();
+
+        /* 3-7: 페이지에 맞게 null*/
+        if (!hasNext) {
+            nextIdAfter = null;
+        }
+
+
+        FollowListResponse response = FollowListResponse.builder()
+            .data(data)
+            .nextCursor(nextCursor)
+            .nextIdAfter(nextIdAfter)
+            .hasNext(hasNext)
+            .totalCount(totalCount)
+            .sortBy(SORT_BY)
+            .sortDirection(SORT_DIRECTION_DESCENDING)
+            .build();
+
+        log.info(SERVICE + "팔로잉 목록 조회 완료: followerId={}, 반환 데이터 개수={}, hasNext={}",
+            request.followerId(), data.size(), hasNext);
+
+        return response;
+    }
+
+    private static Instant parseCursorToInstant(String cursor) {
+        if (cursor == null || cursor.isBlank()) {
+            return null;
+        }
+        try {
+            return Instant.parse(cursor);
+        } catch (Exception ignore) {}
+        try {
+            return java.time.OffsetDateTime.parse(cursor).toInstant();
+        } catch (Exception ignore) {}
+        try {
+            return java.time.LocalDateTime.parse(cursor).toInstant(java.time.ZoneOffset.UTC);
+        } catch (Exception ignore) {}
+        return null;
     }
 }
