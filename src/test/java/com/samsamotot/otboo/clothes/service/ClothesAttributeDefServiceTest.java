@@ -111,21 +111,17 @@ class ClothesAttributeDefServiceTest {
         @Test
         void 의상_속성_정의를_수정하면_dto를_반환한다() {
             // given
-
-            // 수정될 객체
-            ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
-
             // 수정할 정보
             String newName = "계절";
             List<String> newOptions = List.of("봄", "여름", "겨울");
+
+            // 수정될 객체
+            ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
 
             ClothesAttributeDefUpdateRequest request =
                 new ClothesAttributeDefUpdateRequest(newName, newOptions);
 
             when(defRepository.findById(defEntity.getId())).thenReturn(Optional.of(defEntity));
-
-            when(defRepository.save(any(ClothesAttributeDef.class)))
-                .thenAnswer(invocation -> defEntity);
 
             // 변경 후 dto
             ClothesAttributeDefDto expectedDto = new ClothesAttributeDefDto(
@@ -145,7 +141,6 @@ class ClothesAttributeDefServiceTest {
             assertThat(result.selectableValues()).containsExactlyInAnyOrderElementsOf(newOptions);
 
             verify(defRepository, times(1)).findById(defEntity.getId());
-            verify(defRepository, times(1)).save(defEntity);
             verify(defMapper, times(1)).toDto(defEntity);
         }
     }
