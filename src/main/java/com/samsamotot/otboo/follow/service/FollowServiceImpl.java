@@ -136,34 +136,34 @@ public class FollowServiceImpl implements FollowService {
             throw new OtbooException(ErrorCode.USER_LOCKED);
         }
 
-         /* 4. FollowListResponse 변수 가공*/
-         /* 4-1쿼리 dsl 사용 Follow 리스트*/
+         /* 3. FollowListResponse 변수 가공
+            3-1쿼리 dsl 사용 Follow 리스트 */
         List<Follow> follows = followRepository.findFollowings(request);
 
-        /* 4-2: limit*/
+        /* 3-2: limit*/
         int limit = Math.max(1, request.limit());
 
-        /* 4-3: hasNext*/
+        /* 3-3: hasNext*/
         boolean hasNext = follows.size() > limit;
 
-        /* 4-4. totalCount*/
+        /* 3-4. totalCount*/
         long totalCount = followRepository.countTotalElements(request.followerId(), request.nameLike());
 
-        /*4-5 nextCursor n nextIdAfter*/
+        /*3-5 nextCursor n nextIdAfter*/
         List<Follow> pageRows = hasNext ? follows.subList(0, limit) : follows;
         Instant nextCreatedAt = pageRows.isEmpty() ? null : pageRows.get(pageRows.size() - 1).getCreatedAt();
         String nextCursor = (hasNext && nextCreatedAt != null) ? nextCreatedAt.toString() : null; // nextCursor
         UUID nextIdAfter = pageRows.isEmpty() ? null : pageRows.get(pageRows.size() - 1).getId(); // nextIdAfter
 
-        /* 4-6: data*/
+        /* 3-6: data*/
         List<FollowDto> data = pageRows.stream().map(followMapper::toDto).toList();
 
-        /* 4-7: 페이지에 맞게 null*/
+        /* 3-7: 페이지에 맞게 null*/
         if (!hasNext) {
             nextIdAfter = null;
         }
 
-        /*응답*/
+
         FollowListResponse response = FollowListResponse.builder()
             .data(data)
             .nextCursor(nextCursor)

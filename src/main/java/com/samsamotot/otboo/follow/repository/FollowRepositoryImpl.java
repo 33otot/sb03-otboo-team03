@@ -28,7 +28,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FollowRepositoryImpl implements FollowRepositoryCustom {
 
-    private static final String LISTENER_NAME = "[NotificationRequiredTopicListener] ";
+    private static final String LISTENER_NAME = "[FollowRepositoryImpl] ";
 
     private final JPAQueryFactory queryFactory;
 
