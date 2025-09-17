@@ -5,7 +5,7 @@ import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.entity.WeatherAPILocation;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.location.service.LocationService;
-import com.samsamotot.otboo.weather.dto.KakaoAddressResponse;
+import com.samsamotot.otboo.location.dto.KakaoAddressResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LocationServiceImpl implements LocationService {
 
-    private static final String SERVICE = "LocationServiceImpl";
+    private static final String SERVICE = "[LocationServiceImpl] ";
 
     private final LocationRepository locationRepository;
     private final KakaoApiClient kakaoApiClient;
@@ -57,10 +57,10 @@ public class LocationServiceImpl implements LocationService {
                     .block();
 
             log.info(SERVICE + "카카오 API 응답: {}", response);
-            
+
             if (response != null && response.getDocuments() != null && !response.getDocuments().isEmpty()) {
                 log.info(SERVICE + "카카오 API 문서 개수: {}", response.getDocuments().size());
-                
+
                 // 행정동 우선, 없으면 법정동 사용
                 var document = response.getDocuments().stream()
                         .filter(doc -> "H".equals(doc.getRegionType())) // 행정동 우선
@@ -68,6 +68,11 @@ public class LocationServiceImpl implements LocationService {
                         .orElse(response.getDocuments().get(0)); // 없으면 첫 번째
 
                 log.info(SERVICE + "선택된 문서: {}", document);
+
+                // 카카오 API에서 받아온 x, y 좌표 추출
+                double x = document.getX();
+                double y = document.getY();
+                log.info(SERVICE + "카카오 API x, y 좌표: x={}, y={}", x, y);
 
                 List<String> locationNames = List.of(
                         document.getRegion1DepthName(), // 시/도
@@ -78,7 +83,9 @@ public class LocationServiceImpl implements LocationService {
 
                 log.info(SERVICE + "파싱된 주소: {}", locationNames);
 
-                // 주소 정보 업데이트
+                // 주소 정보 및 좌표 업데이트
+                savedLocation.setX((int) x);
+                savedLocation.setY((int) y);
                 savedLocation.setLocationNames(locationNames);
                 savedLocation = locationRepository.save(savedLocation);
 
