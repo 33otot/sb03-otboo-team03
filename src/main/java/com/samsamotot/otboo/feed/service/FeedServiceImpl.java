@@ -210,6 +210,11 @@ public class FeedServiceImpl implements FeedService {
         return result;
     }
 
+    @Override
+    public Feed delete(UUID feedId, UUID userId) {
+        return null;
+    }
+
     private void validateCursorRequest(String cursor, String sortBy) {
 
         if (!sortBy.equals(SORT_BY_CREATED_AT) && !sortBy.equals(SORT_BY_LIKE_COUNT)) {
