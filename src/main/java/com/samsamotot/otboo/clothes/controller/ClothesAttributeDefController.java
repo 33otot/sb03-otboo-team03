@@ -5,7 +5,6 @@ import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefUpdateRequest;
 import com.samsamotot.otboo.clothes.service.ClothesAttributeDefService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
