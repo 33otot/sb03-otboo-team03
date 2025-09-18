@@ -8,6 +8,7 @@ import com.samsamotot.otboo.location.entity.WeatherAPILocation;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.location.dto.KakaoAddressResponse;
+import com.samsamotot.otboo.weather.util.KmaGridConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -126,9 +127,12 @@ public class LocationServiceImpl implements LocationService {
                 .findFirst()
                 .orElse(response.getDocuments().get(0));
 
+        // WGS84 좌표를 기상청 격자 좌표로 변환
+        KmaGridConverter.GridPoint gridPoint = KmaGridConverter.toGrid(latitude, longitude);
+        
         // 기존 위치 업데이트
-        location.setX((int) document.getX());
-        location.setY((int) document.getY());
+        location.setX(gridPoint.nx());  // 기상청 격자 X 좌표
+        location.setY(gridPoint.ny());  // 기상청 격자 Y 좌표
         location.setLocationNames(List.of(
                 document.getRegion1DepthName(),
                 document.getRegion2DepthName(),
@@ -150,12 +154,15 @@ public class LocationServiceImpl implements LocationService {
                 .findFirst()
                 .orElse(response.getDocuments().get(0));
 
+        // WGS84 좌표를 기상청 격자 좌표로 변환
+        KmaGridConverter.GridPoint gridPoint = KmaGridConverter.toGrid(latitude, longitude);
+        
         // 새 위치 생성
         Location newLocation = Location.builder()
                 .latitude(latitude)
                 .longitude(longitude)
-                .x((int) document.getX())
-                .y((int) document.getY())
+                .x(gridPoint.nx())  // 기상청 격자 X 좌표
+                .y(gridPoint.ny())  // 기상청 격자 Y 좌표
                 .locationNames(List.of(
                         document.getRegion1DepthName(),
                         document.getRegion2DepthName(),

@@ -129,6 +129,7 @@ jacocoTestReport {
 				'**/entity/**',           // Entity 클래스 제외
 				'**/exception/**',        // 예외 클래스 제외
 				'**/util/**',             // 유틸리티 클래스 제외
+				'**/client/**',			  // 연동 설정 클래스 제외(연동은 서비스 로직에서 검증 가능)
 				'**/OtbooApplication.class', // 메인 애플리케이션 클래스 제외
 				'**/OtbooApplicationTests.class' // 테스트 클래스 제외
 			])
