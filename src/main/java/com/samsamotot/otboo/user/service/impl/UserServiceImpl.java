@@ -3,6 +3,7 @@ package com.samsamotot.otboo.user.service.impl;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.user.exception.DuplicateEmailException;
 import com.samsamotot.otboo.user.mapper.UserMapper;
 import com.samsamotot.otboo.user.repository.UserRepository;
@@ -22,17 +23,19 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class UserServiceImpl implements UserService {
     
+    private final String SERVICE = "[UserServiceImpl] ";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     
     @Override
     public UserDto createUser(UserCreateRequest request) {
-        log.info("회원가입 시도 - 이메일: {}", request.getEmail());
+        log.info(SERVICE + "회원가입 시도 - 이메일: {}", request.getEmail());
         
         // 이메일 중복 검사
         if (userRepository.existsByEmail(request.getEmail())) {
-            log.warn("이메일 중복 - 이메일: {}", request.getEmail());
+            log.warn(SERVICE + "이메일 중복 - 이메일: {}", request.getEmail());
             throw new DuplicateEmailException(request.getEmail());
         }
         
@@ -41,7 +44,7 @@ public class UserServiceImpl implements UserService {
             .email(request.getEmail())
             .username(request.getName())
             .password(passwordEncoder.encode(request.getPassword()))
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(com.samsamotot.otboo.user.entity.Role.USER)
             .isLocked(false)
@@ -50,7 +53,7 @@ public class UserServiceImpl implements UserService {
         // 사용자 저장
         User savedUser = userRepository.save(user);
         
-        log.info("회원가입 성공 - 사용자 ID: {}, 이메일: {}", savedUser.getId(), savedUser.getEmail());
+        log.info(SERVICE + "회원가입 성공 - 사용자 ID: {}, 이메일: {}", savedUser.getId(), savedUser.getEmail());
         
         // DTO 변환하여 반환 (매퍼 사용)
         return userMapper.toDto(savedUser);

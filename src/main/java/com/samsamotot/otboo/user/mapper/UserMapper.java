@@ -17,7 +17,7 @@ public interface UserMapper {
 
     @Mapping(source = "name", target = "username")
     @Mapping(source = "password", target = "password")
-    @Mapping(target = "provider", constant = "local")
+    @Mapping(target = "provider", expression = "java(com.samsamotot.otboo.user.entity.Provider.LOCAL)")
     @Mapping(target = "providerId", ignore = true)
     @Mapping(target = "role", ignore = true)
     @Mapping(target = "isLocked", ignore = true)

@@ -28,8 +28,9 @@ public class User extends BaseEntity {
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "provider", nullable = false, length = 50)
-    private String provider;
+    private Provider provider;
     
     @Column(name = "provider_id", nullable = true, length = 255)
     private String providerId;
@@ -45,7 +46,7 @@ public class User extends BaseEntity {
     private Instant temporaryPasswordExpiresAt;
     
     @Builder
-    private User(String email, String username, String password, String provider, String providerId, Role role,
+    private User(String email, String username, String password, Provider provider, String providerId, Role role,
                 Boolean isLocked, Instant temporaryPasswordExpiresAt) {
     this.email = email;
     this.username = username;
@@ -57,7 +58,7 @@ public class User extends BaseEntity {
     this.temporaryPasswordExpiresAt = temporaryPasswordExpiresAt;
     }
     
-    public static User createUser(String email, String username, String password, String provider, String providerId, PasswordEncoder passwordEncoder) {
+    public static User createUser(String email, String username, String password, Provider provider, String providerId, PasswordEncoder passwordEncoder) {
         return User.builder()
                 .email(email)
                 .username(username)
@@ -73,14 +74,14 @@ public class User extends BaseEntity {
             .email(email)
             .username(username)
             .password(passwordEncoder.encode(password))
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(Role.USER)
             .isLocked(false)
             .build();
     }
     
-    public static User createAdminUser(String email, String username, String password, String provider, String providerId, PasswordEncoder passwordEncoder) {
+    public static User createAdminUser(String email, String username, String password, Provider provider, String providerId, PasswordEncoder passwordEncoder) {
         return User.builder()
             .email(email)
             .username(username)
@@ -97,7 +98,7 @@ public class User extends BaseEntity {
             .email(email)
             .username(username)
             .password(passwordEncoder.encode(password))
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(Role.ADMIN)
             .isLocked(false)

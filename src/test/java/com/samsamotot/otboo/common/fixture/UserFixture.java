@@ -3,6 +3,7 @@ package com.samsamotot.otboo.common.fixture;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.entity.Role;
+import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 
@@ -34,7 +35,7 @@ public class UserFixture {
             .email(VALID_EMAIL)
             .username(VALID_NAME)
             .password("encodedPassword")
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(Role.USER)
             .isLocked(false)
@@ -46,7 +47,7 @@ public class UserFixture {
             .email(email)
             .username(VALID_NAME)
             .password("encodedPassword")
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(Role.USER)
             .isLocked(false)
@@ -58,7 +59,7 @@ public class UserFixture {
             .email(VALID_EMAIL)
             .username(username)
             .password("encodedPassword")
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(Role.USER)
             .isLocked(false)
@@ -70,7 +71,7 @@ public class UserFixture {
             .email("admin@example.com")
             .username("관리자")
             .password("encodedPassword")
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(Role.ADMIN)
             .isLocked(false)
@@ -82,7 +83,7 @@ public class UserFixture {
             .email("locked@example.com")
             .username("잠긴사용자")
             .password("encodedPassword")
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(Role.USER)
             .isLocked(true)
@@ -94,7 +95,7 @@ public class UserFixture {
             .email(DEFAULT_USER_EMAIL)
             .username(DEFAULT_USER_NAME)
             .password(DEFAULT_USER_PASSWORD)
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(Role.USER)
             .isLocked(false)
@@ -106,7 +107,7 @@ public class UserFixture {
             .email(email)
             .username(username)
             .password("encodedPassword")
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(role)
             .isLocked(locked)

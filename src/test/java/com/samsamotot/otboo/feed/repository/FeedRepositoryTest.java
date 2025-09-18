@@ -16,6 +16,7 @@ import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
@@ -421,7 +422,7 @@ public class FeedRepositoryTest {
             .username("test")
             .email("test@test.com")
             .password("test1234")
-            .provider("local")
+            .provider(Provider.LOCAL)
             .providerId(null)
             .role(Role.USER)
             .isLocked(false)
