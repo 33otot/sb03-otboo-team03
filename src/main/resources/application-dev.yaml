@@ -68,5 +68,11 @@ otboo:
       region: ${AWS_S3_REGION}
       bucket: ${AWS_S3_BUCKET}
 
+logging:
+  level:
+    org.hibernate.sql: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.samsamotot.otboo: DEBUG
+
 server:
   port: 8080

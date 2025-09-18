@@ -3,6 +3,7 @@ package com.samsamotot.otboo.common.fixture;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.entity.Role;
+import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 
 import java.time.Instant;
@@ -13,8 +14,11 @@ import java.util.UUID;
  */
 public class UserFixture {
 
-    // ========== 상수 ==========
-    
+    public static final String DEFAULT_USER_EMAIL = "testUser@test.com";
+    public static final String DEFAULT_USER_NAME = "testUser";
+    public static final String DEFAULT_USER_PASSWORD = "testPassword";
+    public static final String DEFAULT_USER_IMAGE_URL = "http://example.com/profile.jpg";
+
     public static final String VALID_EMAIL = "test@example.com";
     public static final String VALID_NAME = "테스트사용자";
     public static final String VALID_PASSWORD = "Test123!@#";
@@ -25,8 +29,6 @@ public class UserFixture {
     public static final String SHORT_PASSWORD = "Test1!";
     public static final String INVALID_PASSWORD = "12345678";
 
-    // ========== User 엔티티 픽스처 ==========
-    
     public static User createValidUser() {
         return User.builder()
             .email(VALID_EMAIL)
@@ -38,7 +40,7 @@ public class UserFixture {
             .isLocked(false)
             .build();
     }
-    
+
     public static User createUserWithEmail(String email) {
         return User.builder()
             .email(email)
@@ -50,7 +52,7 @@ public class UserFixture {
             .isLocked(false)
             .build();
     }
-    
+
     public static User createUserWithUsername(String username) {
         return User.builder()
             .email(VALID_EMAIL)
@@ -62,7 +64,7 @@ public class UserFixture {
             .isLocked(false)
             .build();
     }
-    
+
     public static User createAdminUser() {
         return User.builder()
             .email("admin@example.com")
@@ -74,7 +76,7 @@ public class UserFixture {
             .isLocked(false)
             .build();
     }
-    
+
     public static User createLockedUser() {
         return User.builder()
             .email("locked@example.com")
@@ -84,6 +86,14 @@ public class UserFixture {
             .providerId(null)
             .role(Role.USER)
             .isLocked(true)
+            .build();
+    }
+
+    public static User createUser() {
+        return User.builder()
+            .email(DEFAULT_USER_EMAIL)
+            .username(DEFAULT_USER_NAME)
+            .password(DEFAULT_USER_PASSWORD)
             .build();
     }
 
@@ -100,7 +110,7 @@ public class UserFixture {
     }
 
     // ========== DTO 픽스처 ==========
-    
+
     public static UserCreateRequest createValidRequest() {
         return UserCreateRequest.builder()
             .name(VALID_NAME)
@@ -108,7 +118,7 @@ public class UserFixture {
             .password(VALID_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createValidUserCreateRequest() {
         return UserCreateRequest.builder()
             .name(VALID_NAME)
@@ -116,7 +126,7 @@ public class UserFixture {
             .password(VALID_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createUserCreateRequestWithEmail(String email) {
         return UserCreateRequest.builder()
             .name(VALID_NAME)
@@ -124,7 +134,7 @@ public class UserFixture {
             .password(VALID_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createUserCreateRequestWithName(String name) {
         return UserCreateRequest.builder()
             .name(name)
@@ -132,7 +142,7 @@ public class UserFixture {
             .password(VALID_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createInvalidNameRequest() {
         return UserCreateRequest.builder()
             .name(EMPTY_STRING)
@@ -140,7 +150,7 @@ public class UserFixture {
             .password(VALID_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createShortNameRequest() {
         return UserCreateRequest.builder()
             .name(SHORT_NAME)
@@ -148,7 +158,7 @@ public class UserFixture {
             .password(VALID_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createLongNameRequest() {
         return UserCreateRequest.builder()
             .name(LONG_NAME)
@@ -156,7 +166,7 @@ public class UserFixture {
             .password(VALID_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createInvalidEmailRequest() {
         return UserCreateRequest.builder()
             .name(VALID_NAME)
@@ -164,7 +174,7 @@ public class UserFixture {
             .password(VALID_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createEmptyEmailRequest() {
         return UserCreateRequest.builder()
             .name(VALID_NAME)
@@ -172,7 +182,7 @@ public class UserFixture {
             .password(VALID_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createInvalidPasswordRequest() {
         return UserCreateRequest.builder()
             .name(VALID_NAME)
@@ -180,7 +190,7 @@ public class UserFixture {
             .password(INVALID_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createShortPasswordRequest() {
         return UserCreateRequest.builder()
             .name(VALID_NAME)
@@ -188,7 +198,7 @@ public class UserFixture {
             .password(SHORT_PASSWORD)
             .build();
     }
-    
+
     public static UserCreateRequest createEmptyPasswordRequest() {
         return UserCreateRequest.builder()
             .name(VALID_NAME)
@@ -207,7 +217,7 @@ public class UserFixture {
             .locked(false)
             .build();
     }
-    
+
     public static UserDto createUserDtoWithId(UUID id) {
         return UserDto.builder()
             .id(id)
@@ -218,7 +228,7 @@ public class UserFixture {
             .locked(false)
             .build();
     }
-    
+
     public static UserDto createUserDtoWithEmail(String email) {
         return UserDto.builder()
             .id(UUID.randomUUID())
@@ -229,7 +239,7 @@ public class UserFixture {
             .locked(false)
             .build();
     }
-    
+
     public static UserDto createUserDtoWithName(String name) {
         return UserDto.builder()
             .id(UUID.randomUUID())
@@ -238,6 +248,13 @@ public class UserFixture {
             .name(name)
             .role(Role.USER)
             .locked(false)
+            .build();
+    }
+    public static AuthorDto createAuthorDto(User user) {
+        return AuthorDto.builder()
+            .userId(user.getId())
+            .name(user.getUsername())
+            .profileImageUrl(DEFAULT_USER_IMAGE_URL)
             .build();
     }
 }

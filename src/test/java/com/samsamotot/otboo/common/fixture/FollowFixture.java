@@ -2,9 +2,9 @@ package com.samsamotot.otboo.common.fixture;
 
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.user.UserSummaryDto; // 임시
 import com.samsamotot.otboo.follow.entity.Follow;
 
+import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -103,13 +103,13 @@ public final class FollowFixture {
         User followee = follow.getFollowee();
         User follower = follow.getFollower();
 
-        UserSummaryDto followeeSummary = new UserSummaryDto(
+        AuthorDto followeeSummary = new AuthorDto(
             followee.getId(),
             followee.getUsername(),
             /* profileImageUrl */ null    // 필요하면 채워 넣으세요
         );
 
-        UserSummaryDto followerSummary = new UserSummaryDto(
+        AuthorDto followerSummary = new AuthorDto(
             follower.getId(),
             follower.getUsername(),
             /* profileImageUrl */ null

@@ -4,14 +4,14 @@ spring:
       on-profile: test
   main:
     allow-bean-definition-overriding: true
-  
+
   # 테스트용 인메모리 DB 설정
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
     username: sa
-    password: 
+    password:
     driver-class-name: org.h2.Driver
-  
+
   # JPA 설정
   jpa:
     open-in-view: false
@@ -26,20 +26,24 @@ spring:
         # H2에서 UUID 타입 지원을 위한 설정
         type:
           uuid: org.hibernate.type.UUIDCharType
-  
+        # columnDefinition 인용 X
+        globally_quoted_identifiers_skip_column_definitions: true
+        # 키워드 "로 감싸는 설정
+        auto_quote_keyword: true
+
   # H2 콘솔 활성화 (테스트용)
   h2:
     console:
       enabled: true
       path: /h2-console
-  
+
   # SQL 초기화 비활성화 (PostgreSQL 스키마 사용 안함)
   sql:
     init:
       mode: never
       schema-locations: ""
       data-locations: ""
-  
+
   # Batch 설정
   batch:
     jdbc:
