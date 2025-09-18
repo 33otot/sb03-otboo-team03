@@ -31,10 +31,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = {
     "spring.datasource.driver-class-name=org.postgresql.Driver",
-    "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"
+    "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect",
+    "spring.datasource.hikari.max-lifetime=30000",
+    "spring.datasource.hikari.connection-timeout=5000",
+    "spring.datasource.hikari.validation-timeout=3000"
 })
 @ActiveProfiles("test")
-@Transactional
 @DisplayName("위치 서비스 핵심 로직 통합 테스트")
 class LocationIntegrationTest {
 
