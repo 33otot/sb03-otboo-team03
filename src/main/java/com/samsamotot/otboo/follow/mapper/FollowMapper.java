@@ -2,8 +2,6 @@ package com.samsamotot.otboo.follow.mapper;
 
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.entity.Follow;
-import com.samsamotot.otboo.user.dto.AuthorDto;
-import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.mapper.UserMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -17,7 +15,7 @@ import org.mapstruct.ReportingPolicy;
  */
 @Mapper(
     componentModel = "spring",
-      uses = UserMapper.class,
+    uses = UserMapper.class,
     unmappedTargetPolicy = ReportingPolicy.ERROR
 )
 public interface FollowMapper {
