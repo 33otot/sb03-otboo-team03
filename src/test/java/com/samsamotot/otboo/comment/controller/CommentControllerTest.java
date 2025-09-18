@@ -13,7 +13,6 @@ import com.samsamotot.otboo.comment.dto.CommentDto;
 import com.samsamotot.otboo.comment.service.CommentService;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.feed.controller.FeedController;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(FeedController.class)
+@WebMvcTest(CommentController.class)
 @DisplayName("Comment 컨트롤러 슬라이스 테스트")
 public class CommentControllerTest {
 
@@ -69,7 +68,7 @@ public class CommentControllerTest {
             given(commentService.create(any(CommentCreateRequest.class))).willReturn(commentDto);
 
             // when & then
-            mockMvc.perform(post("/api/feeds/{feedId}/comments}", feedId)
+            mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -96,7 +95,7 @@ public class CommentControllerTest {
                 .willThrow(new OtbooException(ErrorCode.USER_NOT_FOUND));
 
             // when & then
-            mockMvc.perform(post("/api/feeds/{feedId}/comments}", feedId)
+            mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
@@ -123,7 +122,7 @@ public class CommentControllerTest {
                 .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
             // when & then
-            mockMvc.perform(post("/api/feeds/{feedId}/comments}", invalidFeedId)
+            mockMvc.perform(post("/api/feeds/{feedId}/comments", invalidFeedId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
@@ -147,7 +146,7 @@ public class CommentControllerTest {
                 .build();
 
             // when & then
-            mockMvc.perform(post("/api/feeds/{feedId}/comments}", feedId)
+            mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
