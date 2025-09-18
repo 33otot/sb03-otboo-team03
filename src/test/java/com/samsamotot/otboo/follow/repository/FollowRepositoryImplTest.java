@@ -69,7 +69,7 @@ class FollowRepositoryImplTest {
             .setParameter(2, email)
             .setParameter(3, username)
             .setParameter(4, "{noop}pw")
-            .setParameter(5, "local")
+            .setParameter(5, "LOCAL")
             .setParameter(6, null)
             .setParameter(7, "USER")
             .setParameter(8, locked)
