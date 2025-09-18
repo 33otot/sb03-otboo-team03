@@ -28,7 +28,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FollowRepositoryImpl implements FollowRepositoryCustom {
 
-    private static final String LISTENER_NAME = "[FollowRepositoryImpl] ";
+    private static final String FOLLOW_REPOSITORY_IMPL = "[FollowRepositoryImpl] ";
 
     private final JPAQueryFactory queryFactory;
 
@@ -41,7 +41,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
      */
     @Override
     public long countTotalFollowings(UUID userId, String nameLike) {
-        log.info(LISTENER_NAME + "총 개수 조회 시작: userId={}, nameLike={}", userId, nameLike);
+        log.info(FOLLOW_REPOSITORY_IMPL + "총 개수 조회 시작: userId={}, nameLike={}", userId, nameLike);
 
         QFollow follow = QFollow.follow;
         QUser followee = new QUser("followee");
@@ -59,7 +59,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
         ).fetchOne();
 
         long count = result != null ? result : 0;
-        log.info(LISTENER_NAME + "총 개수 조회 완료: userId={}, count={}", userId, count);
+        log.info(FOLLOW_REPOSITORY_IMPL + "총 개수 조회 완료: userId={}, count={}", userId, count);
 
         return count;
     }
@@ -73,7 +73,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
      */
     @Override
     public List<Follow> findFollowings(FollowingRequest request) {
-        log.info(LISTENER_NAME + "팔로잉 목록 조회 시작: followerId={}, limit={}, cursor={}, idAfter={}, nameLike={}",
+        log.info(FOLLOW_REPOSITORY_IMPL + "팔로잉 목록 조회 시작: followerId={}, limit={}, cursor={}, idAfter={}, nameLike={}",
             request.followerId(), request.limit(), request.cursor(), request.idAfter(), request.nameLike());
 
         QFollow follow = QFollow.follow;
@@ -113,7 +113,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
             .limit(limit)
             .fetch();
 
-        log.info(LISTENER_NAME + "팔로잉 목록 조회 완료: followerId={}, 결과 수={}", request.followerId(), rows.size());
+        log.info(FOLLOW_REPOSITORY_IMPL + "팔로잉 목록 조회 완료: followerId={}, 결과 수={}", request.followerId(), rows.size());
 
         return rows;
     }
@@ -127,7 +127,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
      */
     @Override
     public long countTotalFollowers(UUID userId, String nameLike) {
-        log.info(LISTENER_NAME + "팔로워 총 개수 조회 시작: userId={}, nameLike={}", userId, nameLike);
+        log.info(FOLLOW_REPOSITORY_IMPL + "팔로워 총 개수 조회 시작: userId={}, nameLike={}", userId, nameLike);
 
         QFollow follow = QFollow.follow;
         QUser follower = new QUser("follower"); // 나를 팔로우하는 쪽(사람)
@@ -151,7 +151,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
         ).fetchOne();
 
         long count = result != null ? result : 0L;
-        log.info(LISTENER_NAME + "팔로워 총 개수 조회 완료: userId={}, count={}", userId, count);
+        log.info(FOLLOW_REPOSITORY_IMPL + "팔로워 총 개수 조회 완료: userId={}, count={}", userId, count);
         return count;
     }
 
@@ -164,7 +164,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
      */
     @Override
     public List<Follow> findFollowers(FollowingRequest request) {
-        log.info(LISTENER_NAME + "팔로워 목록 조회 시작: followeeId(target)={}, limit={}, cursor={}, idAfter={}, nameLike={}",
+        log.info(FOLLOW_REPOSITORY_IMPL + "팔로워 목록 조회 시작: followeeId(target)={}, limit={}, cursor={}, idAfter={}, nameLike={}",
             request.followerId(), request.limit(), request.cursor(), request.idAfter(), request.nameLike());
 
         QFollow follow = QFollow.follow;
@@ -203,7 +203,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
             .limit(limit)
             .fetch();
 
-        log.info(LISTENER_NAME + "팔로워 목록 조회 완료: followeeId={}, 결과 수={}", request.followerId(), rows.size());
+        log.info(FOLLOW_REPOSITORY_IMPL + "팔로워 목록 조회 완료: followeeId={}, 결과 수={}", request.followerId(), rows.size());
         return rows;
     }
 

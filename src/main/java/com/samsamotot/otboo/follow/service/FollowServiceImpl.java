@@ -32,7 +32,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class FollowServiceImpl implements FollowService {
-    private static final String SERVICE = "[FollowService] ";
+    private static final String FOLLOW_SERVICE = "[FollowService] ";
     private static final String SORT_DIRECTION_DESCENDING = "DESCENDING";
     private static final String SORT_BY = "createdAt";
 
@@ -63,34 +63,34 @@ public class FollowServiceImpl implements FollowService {
     @Override
     public FollowDto follow(FollowCreateRequest request) {
 
-        log.info(SERVICE + "팔로우 요청 수신: followerId={}, followeeId={}", request.followerId(), request.followeeId());
+        log.info(FOLLOW_SERVICE + "팔로우 요청 수신: followerId={}, followeeId={}", request.followerId(), request.followeeId());
 
         boolean isFollowExists = followRepository.existsByFollowerIdAndFolloweeId(request.followerId(), request.followeeId());
 
         if (isFollowExists) {
-            log.warn(SERVICE + "중복 팔로우 감지: followerId={}, followeeId={}", request.followerId(), request.followeeId());
+            log.warn(FOLLOW_SERVICE + "중복 팔로우 감지: followerId={}, followeeId={}", request.followerId(), request.followeeId());
             throw new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST);
         }
 
         User follower = userRepository.findById(request.followerId())
             .orElseThrow(() -> {
-                log.warn(SERVICE + "팔로워 사용자 없음: followerId={}", request.followerId());
+                log.warn(FOLLOW_SERVICE + "팔로워 사용자 없음: followerId={}", request.followerId());
                 return new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST);
             });
 
         if (follower.isLocked()) {
-            log.warn(SERVICE + "잠금 계정(팔로워): followerId={}", follower.getId());
+            log.warn(FOLLOW_SERVICE + "잠금 계정(팔로워): followerId={}", follower.getId());
             throw new OtbooException(ErrorCode.USER_LOCKED);
         }
 
         User followee = userRepository.findById(request.followeeId())
             .orElseThrow(() -> {
-                log.warn(SERVICE + "팔로우 대상 사용자 없음: followeeId={}", request.followeeId());
+                log.warn(FOLLOW_SERVICE + "팔로우 대상 사용자 없음: followeeId={}", request.followeeId());
                 return new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST);
             });
 
         if (followee.isLocked()) {
-            log.warn(SERVICE + "잠금 계정(팔로위): followeeId={}", followee.getId());
+            log.warn(FOLLOW_SERVICE + "잠금 계정(팔로위): followeeId={}", followee.getId());
             throw new OtbooException(ErrorCode.USER_LOCKED);
         }
 
@@ -100,7 +100,7 @@ public class FollowServiceImpl implements FollowService {
             .build();
 
         Follow savedFollow = followRepository.save(follow);
-        log.info(SERVICE + "팔로우 생성 완료: followId={}, followerId={}, followeeId={}", savedFollow.getId(), follower.getId(), followee.getId());
+        log.info(FOLLOW_SERVICE + "팔로우 생성 완료: followId={}, followerId={}, followeeId={}", savedFollow.getId(), follower.getId(), followee.getId());
 
         return followMapper.toDto(savedFollow);
     }
@@ -123,12 +123,12 @@ public class FollowServiceImpl implements FollowService {
      */
     @Override
     public FollowListResponse getFollowings(FollowingRequest request) {
-        log.info(SERVICE + "팔로잉 목록 조회 시작: followerId={}, limit={}, cursor={}, idAfter={}, nameLike={}",
+        log.info(FOLLOW_SERVICE + "팔로잉 목록 조회 시작: followerId={}, limit={}, cursor={}, idAfter={}, nameLike={}",
             request.followerId(), request.limit(), request.cursor(), request.idAfter(), request.nameLike());
 
         /* 0. cursor 유효성 확인 */
         if (request.cursor() != null && parseCursorToInstant(request.cursor()) == null) {
-            log.warn(SERVICE + "유효하지 않은 커서 타입: cursor={}", request.cursor());
+            log.warn(FOLLOW_SERVICE + "유효하지 않은 커서 타입: cursor={}", request.cursor());
         }
 
         /* 1. user 검색*/
@@ -136,7 +136,7 @@ public class FollowServiceImpl implements FollowService {
 
         /* 2. locked 여부 확인*/
         if (user.isLocked()) {
-            log.warn(SERVICE + "잠금 계정(팔로워): followerId={}", user.getId());
+            log.warn(FOLLOW_SERVICE + "잠금 계정(팔로워): followerId={}", user.getId());
             throw new OtbooException(ErrorCode.USER_LOCKED);
         }
 
@@ -177,7 +177,7 @@ public class FollowServiceImpl implements FollowService {
             .sortDirection(SORT_DIRECTION_DESCENDING)
             .build();
 
-        log.info(SERVICE + "팔로잉 목록 조회 완료: followerId={}, 반환 데이터 개수={}, hasNext={}",
+        log.info(FOLLOW_SERVICE + "팔로잉 목록 조회 완료: followerId={}, 반환 데이터 개수={}, hasNext={}",
             request.followerId(), data.size(), hasNext);
 
         return response;
@@ -200,12 +200,12 @@ public class FollowServiceImpl implements FollowService {
      */
     @Override
     public FollowListResponse getFollowers(FollowingRequest request) {
-        log.info(SERVICE + "팔로워 목록 조회 시작: followeeId(target)={}, limit={}, cursor={}, idAfter={}, nameLike={}",
+        log.info(FOLLOW_SERVICE + "팔로워 목록 조회 시작: followeeId(target)={}, limit={}, cursor={}, idAfter={}, nameLike={}",
             request.followerId(), request.limit(), request.cursor(), request.idAfter(), request.nameLike());
 
         /* 0. cursor 유효성 확인 */
         if (request.cursor() != null && parseCursorToInstant(request.cursor()) == null) {
-            log.warn(SERVICE + "유효하지 않은 커서 타입: cursor={}", request.cursor());
+            log.warn(FOLLOW_SERVICE + "유효하지 않은 커서 타입: cursor={}", request.cursor());
         }
 
         /* 1. 대상 사용자(=followee) 조회 및 잠금 체크 */
@@ -213,7 +213,7 @@ public class FollowServiceImpl implements FollowService {
             .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
 
         if (user.isLocked()) {
-            log.warn(SERVICE + "잠금 계정(팔로위/대상): followeeId={}", user.getId());
+            log.warn(FOLLOW_SERVICE + "잠금 계정(팔로위/대상): followeeId={}", user.getId());
             throw new OtbooException(ErrorCode.USER_LOCKED);
         }
 
@@ -249,7 +249,7 @@ public class FollowServiceImpl implements FollowService {
             .sortDirection(SORT_DIRECTION_DESCENDING)
             .build();
 
-        log.info(SERVICE + "팔로워 목록 조회 완료: followeeId={}, 반환 데이터 개수={}, hasNext={}",
+        log.info(FOLLOW_SERVICE + "팔로워 목록 조회 완료: followeeId={}, 반환 데이터 개수={}, hasNext={}",
             request.followerId(), data.size(), hasNext);
 
         return response;
