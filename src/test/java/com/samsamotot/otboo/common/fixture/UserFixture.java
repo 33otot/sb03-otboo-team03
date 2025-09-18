@@ -18,7 +18,6 @@ public class UserFixture {
     public static final String DEFAULT_USER_NAME = "testUser";
     public static final String DEFAULT_USER_PASSWORD = "testPassword";
     public static final String DEFAULT_USER_IMAGE_URL = "http://example.com/profile.jpg";
-
     public static final String VALID_EMAIL = "test@example.com";
     public static final String VALID_NAME = "테스트사용자";
     public static final String VALID_PASSWORD = "Test123!@#";
@@ -94,6 +93,7 @@ public class UserFixture {
             .email(DEFAULT_USER_EMAIL)
             .username(DEFAULT_USER_NAME)
             .password(DEFAULT_USER_PASSWORD)
+
             .provider("local")
             .providerId(null)
             .role(Role.USER)
@@ -254,6 +254,7 @@ public class UserFixture {
             .locked(false)
             .build();
     }
+
     public static AuthorDto createAuthorDto(User user) {
         return AuthorDto.builder()
             .userId(user.getId())
