@@ -4,7 +4,7 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowListResponse;
-import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
+import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import com.samsamotot.otboo.follow.service.FollowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,17 +56,41 @@ public class FollowController {
 //        return ResponseEntity.ok().body(new FollowSummaryDto());
 //    }
 
-    // 팔로잉 목록 조회
-//    @GetMapping("/followings")
-//    public ResponseEntity<FollowListResponse> getFollowings(
-//        @RequestParam UUID followerId,
-//        @RequestParam(required = false) String cursor,
-//        @RequestParam(required = false) String idAfter,
-//        @RequestParam Integer limit,
-//        @RequestParam(required = false) String nameLike
-//    ) {
-//        return ResponseEntity.ok().body(new FollowListResponse());
-//    }
+
+    /**
+     * 특정 사용자가 팔로우하고 있는 사용자 목록을 조회한다.
+     *
+     * 요청 파라미터로 전달된 followerId(팔로워 ID)를 기준으로
+     * 해당 사용자가 팔로우 중인 사용자 목록을 페이징 처리하여 반환한다.
+     *
+     * 요청 파라미터는 다음과 같다:
+     * <ul>
+     *   <li>followerId: 조회 대상 팔로워의 사용자 ID (필수)</li>
+     *   <li>cursor: 커서 기반 페이지네이션을 위한 문자열 (선택)</li>
+     *   <li>idAfter: 특정 ID 이후의 데이터를 조회하기 위한 UUID (선택)</li>
+     *   <li>limit: 조회할 데이터 개수 제한 (필수)</li>
+     *   <li>nameLike: 사용자 이름 검색 조건 (부분 일치, 선택)</li>
+     * </ul>
+     *
+     * @param followerId 팔로잉 목록을 조회할 사용자 ID
+     * @param cursor     커서 기반 페이지네이션을 위한 커서 값 (nullable)
+     * @param idAfter    특정 ID 이후의 데이터를 조회하기 위한 UUID (nullable)
+     * @param limit      한 번에 조회할 데이터 개수
+     * @param nameLike   사용자 이름 검색 조건 (nullable, 부분 일치)
+     * @return 팔로잉 사용자 목록과 페이징 정보를 담은 ResponseEntity (HTTP 200 OK)
+     * @throws OtbooException 잘못된 사용자 ID, 유효하지 않은 파라미터 값 등이 전달될 경우
+     */
+    @GetMapping("/followings")
+    public ResponseEntity<FollowListResponse> getFollowings(
+        @RequestParam UUID followerId,
+        @RequestParam(required = false) String cursor,
+        @RequestParam(required = false) UUID idAfter, //
+        @RequestParam Integer limit,
+        @RequestParam(required = false) String nameLike
+    ) {
+        FollowingRequest request = new FollowingRequest(followerId, cursor, idAfter, limit, nameLike);
+        return ResponseEntity.ok().body(followService.getFollowings(request));
+    }
 
     // 팔로워 목록 조회
 //    @GetMapping("/followers")

@@ -3,10 +3,12 @@ package com.samsamotot.otboo.follow.service;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.user.UserSummaryDto;
+import com.samsamotot.otboo.follow.dto.FollowListResponse;
+import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
+import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +19,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Method;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -48,6 +53,19 @@ class FollowServiceImplTest {
     @Mock
     private FollowMapper followMapper;
 
+    private static Instant invokeParse(String cursor) {
+        try {
+            Method m = FollowServiceImpl.class.getDeclaredMethod("parseCursorToInstant", String.class);
+            m.setAccessible(true);
+            return (Instant) m.invoke(null, cursor); // static 메서드이므로 인스턴스 null
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /*
+        팔로우 생성 단위 테스트
+     */
     @Test
     void 팔로우_생성한다() throws Exception {
         UUID followerId = UUID.randomUUID();
@@ -70,8 +88,8 @@ class FollowServiceImplTest {
         given(followMapper.toDto(any(Follow.class))).willAnswer(inv -> {
             return new FollowDto(
                 UUID.randomUUID(),
-                new UserSummaryDto(followeeId, "followeeName", null),
-                new UserSummaryDto(followerId, "followerName", null)
+                new AuthorDto(followeeId, "followeeName", null),
+                new AuthorDto(followerId, "followerName", null)
             );
         });
 
@@ -183,5 +201,121 @@ class FollowServiceImplTest {
         // when & then
         assertThatThrownBy(() -> followService.follow(req))
             .isInstanceOf(OtbooException.class);
+    }
+
+
+    /*
+        팔로잉 목록 조회 단위 테스트
+     */
+
+    @Test
+    void 팔로잉_목록_조회를_한다() throws Exception {
+        // given
+        UUID followerId = UUID.randomUUID();
+        FollowingRequest req = new FollowingRequest(followerId, null, null, 10, null);
+
+        User follower = mock(User.class, Answers.RETURNS_DEFAULTS);
+        given(userRepository.findById(followerId)).willReturn(Optional.of(follower));
+        lenient().when(follower.isLocked()).thenReturn(false);
+
+        Follow f1 = mock(Follow.class, Answers.RETURNS_DEFAULTS);
+        Follow f2 = mock(Follow.class, Answers.RETURNS_DEFAULTS);
+        given(followRepository.findFollowings(any(FollowingRequest.class)))
+            .willReturn(List.of(f1, f2));
+
+        given(followRepository.countTotalElements(followerId, null))
+            .willReturn(2L);
+
+        given(followMapper.toDto(any(Follow.class))).willAnswer(inv ->
+            new FollowDto(
+                UUID.randomUUID(),
+                new AuthorDto(UUID.randomUUID(), "followee", null),
+                new AuthorDto(followerId, "follower", null)
+            )
+        );
+
+        // when
+        FollowListResponse res = followService.getFollowings(req);
+
+        // then
+        assertThat(res).isNotNull();
+        assertThat(res.data()).isNotNull();
+    }
+
+    @Test
+    void 유저가_있는지_확인한다() throws Exception {
+        /// given
+        UUID followerId = UUID.randomUUID();
+        FollowingRequest req = new FollowingRequest(followerId, null, null, 10, null);
+
+        given(userRepository.findById(followerId)).willReturn(Optional.empty());
+
+        // when n then
+        assertThatThrownBy(() -> followService.getFollowings(req))
+            .isInstanceOf(OtbooException.class);
+    }
+
+    @Test
+    void 유저의_locked_여부를_확인한다() throws Exception {
+        // given
+        UUID followerId = UUID.randomUUID();
+        FollowingRequest req = new FollowingRequest(followerId, null, null, 10, null);
+
+        User follower = mock(User.class, Answers.RETURNS_DEFAULTS);
+        given(userRepository.findById(followerId)).willReturn(Optional.of(follower));
+        given(follower.isLocked()).willReturn(true); // 잠금
+
+        // when n then
+        assertThatThrownBy(() -> followService.getFollowings(req))
+            .isInstanceOf(OtbooException.class);
+    }
+
+    @Test
+    void OffsetDateTime_으로_cursor_입력_받을수_있다() throws Exception {
+        // given
+        String cursor = "2025-09-16T12:34:56+09:00";
+
+        // when
+        Instant actual = invokeParse(cursor);
+
+        // then
+        assertThat(actual).isNotNull();
+        assertThat(actual).isEqualTo(Instant.parse("2025-09-16T03:34:56Z"));
+    }
+
+    @Test
+    void LocalDateTime_UTC_로_입력_받을수_있다() throws Exception {
+        // given
+        String cursor = "2025-09-16T12:34:56";
+
+        // when
+        Instant actual = invokeParse(cursor);
+
+        // then
+        assertThat(actual).isNotNull();
+        assertThat(actual).isEqualTo(Instant.parse("2025-09-16T12:34:56Z"));
+    }
+
+    @Test
+    void cursor가_날짜가_아니면_null_반환() throws Exception {
+        // given
+        String[] bads = {
+            "not-a-date",
+            "2025-13-40T99:99:99Z",
+            "2025/09/16 12:34:56"
+        };
+
+        for (String bad : bads) {
+            // when
+            Instant actual = invokeParse(bad);
+            // then (느슨)
+            assertThat(actual).isNull();
+        }
+    }
+    @Test
+    void blank_null_커서는_null_반환() throws Exception {
+        assertThat(invokeParse("")).isNull();
+        assertThat(invokeParse("   ")).isNull();
+        assertThat(invokeParse(null)).isNull();
     }
 }
