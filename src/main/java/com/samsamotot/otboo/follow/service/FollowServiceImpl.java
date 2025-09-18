@@ -13,6 +13,7 @@ import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -99,10 +100,15 @@ public class FollowServiceImpl implements FollowService {
             .followee(followee)
             .build();
 
-        Follow savedFollow = followRepository.save(follow);
-        log.info(FOLLOW_SERVICE + "팔로우 생성 완료: followId={}, followerId={}, followeeId={}", savedFollow.getId(), follower.getId(), followee.getId());
+        try {
+            Follow savedFollow = followRepository.save(follow);
+            log.info(FOLLOW_SERVICE + "팔로우 생성 완료: followId={}, followerId={}, followeeId={}", savedFollow.getId(), follower.getId(), followee.getId());
+            return followMapper.toDto(savedFollow);
+        } catch (DataIntegrityViolationException e) {
+            log.warn(FOLLOW_SERVICE + "동시성 중복 팔로우 감지: followerId={}, followeeId={}", follower.getId(), followee.getId());
+            throw new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST);
+        }
 
-        return followMapper.toDto(savedFollow);
     }
 
 
