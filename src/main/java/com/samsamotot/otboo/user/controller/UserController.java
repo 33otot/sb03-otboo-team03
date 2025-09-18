@@ -23,16 +23,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserController implements UserApi {
     
+    private final String CONTROLLER = "[UserController] ";
+
     private final UserService userService;
     
     @Override
     @PostMapping
     public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserCreateRequest request) {
-        log.info("회원가입 요청 - 이메일: {}", request.getEmail());
+        log.info(CONTROLLER + "회원가입 요청 - 이메일: {}", request.getEmail());
         
         UserDto userDto = userService.createUser(request);
         
-        log.info("회원가입 완료 - 사용자 ID: {}", userDto.getId());
+        log.info(CONTROLLER + "회원가입 완료 - 사용자 ID: {}", userDto.getId());
         
         return ResponseEntity.status(HttpStatus.CREATED).body(userDto);
     }
