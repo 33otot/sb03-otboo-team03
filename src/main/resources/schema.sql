@@ -1,22 +1,22 @@
--- DROP TABLE IF EXISTS
---     recommendation_clothes,
---     feed_clothes,
---     feed_likes,
---     notifications,
---     comments,
---     clothes_attributes,
---     feeds,
---     direct_messages,
---     profiles,
---     recommendations,
---     weathers,
---     clothes,
---     clothes_attribute_options,
---     clothes_attribute_defs,
---     locations,
---     follows,
---     users
---     CASCADE;
+DROP TABLE IF EXISTS
+    recommendation_clothes,
+    feed_clothes,
+    feed_likes,
+    notifications,
+    comments,
+    clothes_attributes,
+    feeds,
+    direct_messages,
+    profiles,
+    recommendations,
+    weathers,
+    clothes,
+    clothes_attribute_options,
+    clothes_attribute_defs,
+    locations,
+    follows,
+    users
+    CASCADE;
 
 
 -- users 테이블
