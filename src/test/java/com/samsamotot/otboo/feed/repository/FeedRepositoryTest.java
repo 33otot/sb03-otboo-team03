@@ -3,7 +3,7 @@ package com.samsamotot.otboo.feed.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.samsamotot.otboo.common.config.QuerydslConfig;
+import com.samsamotot.otboo.common.config.QueryDslConfig;
 import com.samsamotot.otboo.common.config.TestJpaAuditingConfig;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
@@ -47,7 +47,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @EntityScan("com.samsamotot.otboo")
-@Import({TestJpaAuditingConfig.class, QuerydslConfig.class})
+@Import({TestJpaAuditingConfig.class, QueryDslConfig.class})
 @Testcontainers
 @TestPropertySource(properties = {
     "spring.datasource.driver-class-name=org.postgresql.Driver",

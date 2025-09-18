@@ -86,6 +86,9 @@ dependencies {
     testImplementation 'org.mockito:mockito-junit-jupiter' // JUnit 5 통합
 	
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // JUnit 플랫폼 런처
+
+	// WebClient
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 }
 
 // QueryDSL 설정

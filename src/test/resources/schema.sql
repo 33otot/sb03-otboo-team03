@@ -316,7 +316,10 @@ CREATE INDEX IF NOT EXISTS idx_follows_followee ON follows (followee_id);
 CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows (follower_id);
 
 -- notification index
-CREATE INDEX IF NOT EXISTS idx_notifications_receiver_created_at ON notifications (receiver_id, created_at DESC); --알림
+CREATE INDEX IF NOT EXISTS idx_notifications_receiver_created_at ON notifications (receiver_id, created_at DESC); -- 알림
 
 -- DM index
-CREATE INDEX IF NOT EXISTS idx_dm_pair_created_at ON direct_messages (sender_id, receiver_id, created_at DESC); --대화
+CREATE INDEX IF NOT EXISTS idx_dm_pair_created_at ON direct_messages (sender_id, receiver_id, created_at DESC); -- 대화
+
+-- Location index
+CREATE INDEX IF NOT EXISTS idx_locations_coordinates ON locations (longitude, latitude); -- 경도/위도
