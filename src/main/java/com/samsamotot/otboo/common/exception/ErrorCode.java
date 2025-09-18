@@ -16,11 +16,10 @@ public enum ErrorCode {
 
     // 사용자 관련 에러
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "US001", "사용자를 찾을 수 없습니다."),
-    USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "US002", "이미 존재하는 사용자입니다."),
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "US002", "이미 사용 중인 이메일입니다."),
     INVALID_EMAIL_FORMAT(HttpStatus.BAD_REQUEST, "US003", "올바르지 않은 이메일 형식입니다."),
-    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "US004", "비밀번호가 올바르지 않습니다."),
-    PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "US005", "비밀번호가 일치하지 않습니다."),
-    USER_LOCKED(HttpStatus.LOCKED, "US006", "계정이 잠겨있습니다."),
+    EMAIL_OR_PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, "US004", "이메일 혹은 비밀번호가 일치하지 않습니다."),
+    USER_LOCKED(HttpStatus.LOCKED, "US005", "계정을 이용할 수 없습니다."),
 
     // 인증 관련 에러
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "AU001", "토큰이 만료되었습니다."),
@@ -62,6 +61,11 @@ public enum ErrorCode {
     WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "WE001", "날씨 정보를 찾을 수 없습니다."),
     WEATHER_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "WE002", "날씨 API 호출에 실패했습니다."),
     INVALID_LOCATION(HttpStatus.BAD_REQUEST, "WE003", "올바르지 않은 위치 정보입니다."),
+
+    // KAKAO API 관련 에러
+    NO_KAKAO_KEY(HttpStatus.INTERNAL_SERVER_ERROR, "KA001", "KAKAO API 키가 설정되지 않았습니다."),
+    API_NO_RESPONSE(HttpStatus.GATEWAY_TIMEOUT, "KA002", "KAKAO API 응답이 없습니다."),
+    API_CALL_ERROR(HttpStatus.BAD_GATEWAY, "KA003", "KAKAO API 호출을 실패했습니다."),
 
     // 관리자 관련 에러
     ADMIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "AD001", "관리자 권한이 필요합니다."),

@@ -1,7 +1,9 @@
 package com.samsamotot.otboo.comment.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -51,7 +53,6 @@ public class CommentControllerTest {
 
             CommentCreateRequest request = CommentCreateRequest.builder()
                 .authorId(authorId)
-                .feedId(feedId)
                 .content(content)
                 .build();
 
@@ -65,7 +66,7 @@ public class CommentControllerTest {
                 .content(content)
                 .build();
 
-            given(commentService.create(any(CommentCreateRequest.class))).willReturn(commentDto);
+            given(commentService.create(any(UUID.class),any(CommentCreateRequest.class))).willReturn(commentDto);
 
             // when & then
             mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
@@ -75,6 +76,8 @@ public class CommentControllerTest {
                 .andExpect(jsonPath("$.author.userId").value(authorId.toString()))
                 .andExpect(jsonPath("$.feedId").value(feedId.toString()))
                 .andExpect(jsonPath("$.content").value(content));
+
+            verify(commentService).create(eq(feedId),any(CommentCreateRequest.class));
         }
 
         @Test
@@ -87,11 +90,10 @@ public class CommentControllerTest {
 
             CommentCreateRequest request = CommentCreateRequest.builder()
                 .authorId(invalidUserId)
-                .feedId(feedId)
                 .content(content)
                 .build();
 
-            given(commentService.create(any(CommentCreateRequest.class)))
+            given(commentService.create(any(UUID.class), any(CommentCreateRequest.class)))
                 .willThrow(new OtbooException(ErrorCode.USER_NOT_FOUND));
 
             // when & then
@@ -102,6 +104,8 @@ public class CommentControllerTest {
                 .andExpect(jsonPath("$.exceptionName").value(ErrorCode.USER_NOT_FOUND.toString()))
                 .andExpect(jsonPath("$.message").value(ErrorCode.USER_NOT_FOUND.getMessage()))
                 .andExpect(jsonPath("$.code").value(ErrorCode.USER_NOT_FOUND.getCode()));
+
+            verify(commentService).create(eq(feedId),any(CommentCreateRequest.class));
         }
 
         @Test
@@ -114,11 +118,10 @@ public class CommentControllerTest {
 
             CommentCreateRequest request = CommentCreateRequest.builder()
                 .authorId(authorId)
-                .feedId(invalidFeedId)
                 .content(content)
                 .build();
 
-            given(commentService.create(any(CommentCreateRequest.class)))
+            given(commentService.create(any(UUID.class), any(CommentCreateRequest.class)))
                 .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
             // when & then
@@ -129,6 +132,8 @@ public class CommentControllerTest {
                 .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FEED_NOT_FOUND.toString()))
                 .andExpect(jsonPath("$.message").value(ErrorCode.FEED_NOT_FOUND.getMessage()))
                 .andExpect(jsonPath("$.code").value(ErrorCode.FEED_NOT_FOUND.getCode()));
+
+            verify(commentService).create(eq(invalidFeedId),any(CommentCreateRequest.class));
         }
 
         @Test
@@ -141,7 +146,6 @@ public class CommentControllerTest {
 
             CommentCreateRequest request = CommentCreateRequest.builder()
                 .authorId(authorId)
-                .feedId(feedId)
                 .content(over)
                 .build();
 

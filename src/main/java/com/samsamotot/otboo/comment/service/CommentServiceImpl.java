@@ -38,15 +38,15 @@ public class CommentServiceImpl implements CommentService {
     /**
      * 새로운 댓글을 생성합니다.
      *
+     * @param feedId  댓글을 생성할 피드 ID
      * @param request 댓글 생성 요청 DTO
      * @return 생성된 댓글의 정보를 담은 DTO
      * @throws OtbooException 사용자를 찾을 수 없거나 피드를 찾을 수 없는 경우
      */
     @Override
-    public CommentDto create(CommentCreateRequest request) {
+    public CommentDto create(UUID feedId, CommentCreateRequest request) {
 
         UUID authorId = request.authorId();
-        UUID feedId = request.feedId();
         String content = request.content();
 
         log.debug(SERVICE + "댓글 생성 시작: authorId = {}, feedId = {}", authorId, feedId);

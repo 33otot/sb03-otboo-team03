@@ -92,7 +92,6 @@ public class CommentServiceTest {
 
             CommentCreateRequest request = CommentCreateRequest.builder()
                 .authorId(authorId)
-                .feedId(feedId)
                 .content(content)
                 .build();
             UUID commentId = UUID.randomUUID();
@@ -107,7 +106,7 @@ public class CommentServiceTest {
             given(commentMapper.toDto(any(Comment.class))).willReturn(expectedDto);
 
             // when
-            CommentDto result = commentService.create(request);
+            CommentDto result = commentService.create(feedId, request);
 
             // then
             assertThat(result).isNotNull();
@@ -127,14 +126,13 @@ public class CommentServiceTest {
 
             CommentCreateRequest request = CommentCreateRequest.builder()
                 .authorId(invalidUserId)
-                .feedId(feedId)
                 .content(content)
                 .build();
 
             given(userRepository.findById(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> commentService.create(request))
+            assertThatThrownBy(() -> commentService.create(feedId, request))
                 .isInstanceOf(OtbooException.class)
                 .extracting(e -> ((OtbooException) e).getErrorCode())
                 .isEqualTo(ErrorCode.USER_NOT_FOUND);
@@ -150,7 +148,6 @@ public class CommentServiceTest {
 
             CommentCreateRequest request = CommentCreateRequest.builder()
                 .authorId(userId)
-                .feedId(invalidFeedId)
                 .content(content)
                 .build();
 
@@ -158,7 +155,7 @@ public class CommentServiceTest {
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> commentService.create(request))
+            assertThatThrownBy(() -> commentService.create(invalidFeedId, request))
                 .isInstanceOf(OtbooException.class)
                 .extracting(e -> ((OtbooException) e).getErrorCode())
                 .isEqualTo(ErrorCode.FEED_NOT_FOUND);

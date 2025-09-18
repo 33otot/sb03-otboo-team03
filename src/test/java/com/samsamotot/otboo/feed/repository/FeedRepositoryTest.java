@@ -3,7 +3,7 @@ package com.samsamotot.otboo.feed.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.samsamotot.otboo.common.config.QuerydslConfig;
+import com.samsamotot.otboo.common.config.QueryDslConfig;
 import com.samsamotot.otboo.common.config.TestJpaAuditingConfig;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
@@ -14,7 +14,9 @@ import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
@@ -45,7 +47,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @EntityScan("com.samsamotot.otboo")
-@Import({TestJpaAuditingConfig.class, QuerydslConfig.class})
+@Import({TestJpaAuditingConfig.class, QueryDslConfig.class})
 @Testcontainers
 @TestPropertySource(properties = {
     "spring.datasource.driver-class-name=org.postgresql.Driver",
@@ -420,6 +422,10 @@ public class FeedRepositoryTest {
             .username("test")
             .email("test@test.com")
             .password("test1234")
+            .provider(Provider.LOCAL)
+            .providerId(null)
+            .role(Role.USER)
+            .isLocked(false)
             .build();
         em.persist(otherAuthor);
 

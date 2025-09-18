@@ -5,11 +5,12 @@ import com.samsamotot.otboo.comment.dto.CommentCursorRequest;
 import com.samsamotot.otboo.comment.dto.CommentDto;
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import jakarta.validation.Valid;
+
 import java.util.UUID;
 
 public interface CommentService {
 
-    CommentDto create(CommentCreateRequest request);
+    CommentDto create(UUID feedId, CommentCreateRequest request);
 
     CursorResponse<CommentDto> getComments(@Valid CommentCursorRequest request, UUID feedId);
 }
