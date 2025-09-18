@@ -6,7 +6,7 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 public class UserNotFoundException extends OtbooException {
 
     public UserNotFoundException(String email) {
-        super(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다: " + email);
+        super(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다: ");
     }
 
     public UserNotFoundException() {
