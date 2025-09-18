@@ -52,7 +52,7 @@ public class CommentServiceTest {
     private CommentMapper commentMapper;
 
     @InjectMocks
-    private CommentService commentService;
+    private CommentServiceImpl commentService;
 
     User mockUser;
     Feed mockFeed;
