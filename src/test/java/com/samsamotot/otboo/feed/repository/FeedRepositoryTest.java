@@ -28,19 +28,42 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 @ActiveProfiles("test")
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @EntityScan("com.samsamotot.otboo")
-@TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 @Import({TestJpaAuditingConfig.class, QueryDslConfig.class})
+@Testcontainers
+@TestPropertySource(properties = {
+    "spring.datasource.driver-class-name=org.postgresql.Driver",
+    "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"
+})
 @DisplayName("Feed 레포지토리 슬라이스 테스트")
 public class FeedRepositoryTest {
+
+    @Container
+    static PostgreSQLContainer<?> postgres =
+        new PostgreSQLContainer<>("postgres:17");
+
+    @DynamicPropertySource
+    static void overrideProps(DynamicPropertyRegistry reg) {
+        reg.add("spring.datasource.url",      postgres::getJdbcUrl);
+        reg.add("spring.datasource.username", postgres::getUsername);
+        reg.add("spring.datasource.password", postgres::getPassword);
+    }
 
     @Autowired
     private FeedRepository feedRepository;
@@ -545,5 +568,28 @@ public class FeedRepositoryTest {
 
         // then
         assertThat(result).isEqualTo(0L);
+    }
+
+    @Test
+    void 삭제된_피드는_조회_및_집계에서_제외된다() {
+
+        // given
+        Feed alive = FeedFixture.createFeed(author, weather);
+        em.persist(alive);
+        Feed deleted = FeedFixture.createFeed(author, weather);
+        ReflectionTestUtils.setField(deleted, "isDeleted", true);
+        em.persist(deleted);
+        em.flush();
+        em.clear();
+
+        // when
+        List<Feed> result = feedRepository.findByCursor(null, null, 10, "createdAt", SortDirection.DESCENDING, null, null, null, null);
+        Long count = feedRepository.countByFilter(null, null, null, null);
+
+        // then
+        assertThat(result).extracting(Feed::getId)
+            .contains(alive.getId())
+            .doesNotContain(deleted.getId());
+        assertThat(count).isEqualTo(1L);
     }
 }
