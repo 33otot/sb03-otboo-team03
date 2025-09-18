@@ -94,6 +94,10 @@ public class UserFixture {
             .email(DEFAULT_USER_EMAIL)
             .username(DEFAULT_USER_NAME)
             .password(DEFAULT_USER_PASSWORD)
+            .provider("local")
+            .providerId(null)
+            .role(Role.USER)
+            .isLocked(false)
             .build();
     }
 

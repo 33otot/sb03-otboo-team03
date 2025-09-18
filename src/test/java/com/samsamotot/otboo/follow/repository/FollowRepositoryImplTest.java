@@ -62,16 +62,18 @@ class FollowRepositoryImplTest {
 
     private void insertUser(UUID id, String email, String username, boolean locked, Instant createdAt) {
         em.createNativeQuery("""
-        INSERT INTO users (id, email, username, password, role, is_locked, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO users (id, email, username, password, provider, provider_id, role, is_locked, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """)
             .setParameter(1, id)
             .setParameter(2, email)
             .setParameter(3, username)
             .setParameter(4, "{noop}pw")
-            .setParameter(5, "USER")
-            .setParameter(6, locked)
-            .setParameter(7, Timestamp.from(createdAt))
+            .setParameter(5, "local")
+            .setParameter(6, null)
+            .setParameter(7, "USER")
+            .setParameter(8, locked)
+            .setParameter(9, Timestamp.from(createdAt))
             .executeUpdate();
     }
 
