@@ -1,10 +1,12 @@
 package com.samsamotot.otboo.comment.service;
 
 import com.samsamotot.otboo.comment.dto.CommentCreateRequest;
+import com.samsamotot.otboo.comment.dto.CommentCursorRequest;
 import com.samsamotot.otboo.comment.dto.CommentDto;
 import com.samsamotot.otboo.comment.entity.Comment;
 import com.samsamotot.otboo.comment.mapper.CommentMapper;
 import com.samsamotot.otboo.comment.repository.CommentRepository;
+import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.feed.entity.Feed;
@@ -66,5 +68,11 @@ public class CommentServiceImpl implements CommentService {
         log.debug(SERVICE + "댓글 생성 완료: commentId = {}", saved.getId());
 
         return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CursorResponse<CommentDto> getComments(CommentCursorRequest request, UUID feedId) {
+        return null;
     }
 }
