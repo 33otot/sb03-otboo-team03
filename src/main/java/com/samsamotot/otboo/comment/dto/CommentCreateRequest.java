@@ -11,10 +11,6 @@ import lombok.Builder;
 @Builder
 public record CommentCreateRequest(
 
-    @JsonIgnore                         // JSON 입출력 모두 제외
-    @Schema(hidden = true)              // Swagger 문서에도 숨김
-    UUID feedId,
-
     @NotNull
     UUID authorId,
 

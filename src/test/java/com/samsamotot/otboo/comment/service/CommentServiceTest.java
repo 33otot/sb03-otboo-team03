@@ -83,7 +83,6 @@ public class CommentServiceTest {
 
             CommentCreateRequest request = CommentCreateRequest.builder()
                 .authorId(authorId)
-                .feedId(feedId)
                 .content(content)
                 .build();
             UUID commentId = UUID.randomUUID();
@@ -118,7 +117,6 @@ public class CommentServiceTest {
 
             CommentCreateRequest request = CommentCreateRequest.builder()
                 .authorId(invalidUserId)
-                .feedId(feedId)
                 .content(content)
                 .build();
 
@@ -141,7 +139,6 @@ public class CommentServiceTest {
 
             CommentCreateRequest request = CommentCreateRequest.builder()
                 .authorId(userId)
-                .feedId(invalidFeedId)
                 .content(content)
                 .build();
 
