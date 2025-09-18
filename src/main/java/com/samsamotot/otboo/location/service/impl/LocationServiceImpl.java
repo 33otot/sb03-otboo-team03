@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 
@@ -182,7 +183,7 @@ public class LocationServiceImpl implements LocationService {
             
             KakaoAddressResponse response = kakaoApiClient
                     .getRegionByCoordinates(longitude, latitude)
-                    .block();
+                    .block(Duration.ofSeconds(5));
 
             if (response == null || response.getDocuments() == null || response.getDocuments().isEmpty()) {
                 log.warn(SERVICE + "카카오 API 응답이 비어있음");

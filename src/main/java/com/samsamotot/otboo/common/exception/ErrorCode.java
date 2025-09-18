@@ -64,9 +64,9 @@ public enum ErrorCode {
     INVALID_LOCATION(HttpStatus.BAD_REQUEST, "WE003", "올바르지 않은 위치 정보입니다."),
 
     // KAKAO API 관련 에러
-    NO_KAKAO_KEY(HttpStatus.FORBIDDEN, "KA001", "KAKAO API 키가 설정되지 않았습니다."),
-    API_NO_RESPONSE(HttpStatus.NOT_FOUND, "KA002", "KAKAO API 응답이 없습니다."),
-    API_CALL_ERROR(HttpStatus.BAD_REQUEST, "KA003", "KAKAO API 호출을 실패했습니다."),
+    NO_KAKAO_KEY(HttpStatus.INTERNAL_SERVER_ERROR, "KA001", "KAKAO API 키가 설정되지 않았습니다."),
+    API_NO_RESPONSE(HttpStatus.GATEWAY_TIMEOUT, "KA002", "KAKAO API 응답이 없습니다."),
+    API_CALL_ERROR(HttpStatus.BAD_GATEWAY, "KA003", "KAKAO API 호출을 실패했습니다."),
 
     // 관리자 관련 에러
     ADMIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "AD001", "관리자 권한이 필요합니다."),
