@@ -65,7 +65,7 @@ public class CommentControllerTest {
                 .content(content)
                 .build();
 
-            given(commentService.create(any(CommentCreateRequest.class))).willReturn(commentDto);
+            given(commentService.create(any(UUID.class),any(CommentCreateRequest.class))).willReturn(commentDto);
 
             // when & then
             mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
@@ -91,7 +91,7 @@ public class CommentControllerTest {
                 .content(content)
                 .build();
 
-            given(commentService.create(any(CommentCreateRequest.class)))
+            given(commentService.create(any(UUID.class), any(CommentCreateRequest.class)))
                 .willThrow(new OtbooException(ErrorCode.USER_NOT_FOUND));
 
             // when & then
@@ -118,7 +118,7 @@ public class CommentControllerTest {
                 .content(content)
                 .build();
 
-            given(commentService.create(any(CommentCreateRequest.class)))
+            given(commentService.create(any(UUID.class), any(CommentCreateRequest.class)))
                 .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
             // when & then

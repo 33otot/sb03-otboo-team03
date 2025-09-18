@@ -98,7 +98,7 @@ public class CommentServiceTest {
             given(commentMapper.toDto(any(Comment.class))).willReturn(expectedDto);
 
             // when
-            CommentDto result = commentService.create(request);
+            CommentDto result = commentService.create(feedId, request);
 
             // then
             assertThat(result).isNotNull();
@@ -125,7 +125,7 @@ public class CommentServiceTest {
             given(userRepository.findById(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> commentService.create(request))
+            assertThatThrownBy(() -> commentService.create(feedId, request))
                 .isInstanceOf(OtbooException.class)
                 .extracting(e ->  ((OtbooException) e).getErrorCode())
                 .isEqualTo(ErrorCode.USER_NOT_FOUND);
@@ -149,7 +149,7 @@ public class CommentServiceTest {
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> commentService.create(request))
+            assertThatThrownBy(() -> commentService.create(invalidFeedId, request))
                 .isInstanceOf(OtbooException.class)
                 .extracting(e ->  ((OtbooException) e).getErrorCode())
                 .isEqualTo(ErrorCode.FEED_NOT_FOUND);

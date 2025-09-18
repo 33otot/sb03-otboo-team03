@@ -10,7 +10,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "피드", description = "피드 관련 API")
@@ -44,6 +46,7 @@ public interface CommentApi {
         )
     })
     ResponseEntity<CommentDto> createComment(
+        @PathVariable("feedId") UUID feedId,
         @Valid @RequestBody CommentCreateRequest commentCreateRequest
     );
 }

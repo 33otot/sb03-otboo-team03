@@ -5,10 +5,12 @@ import com.samsamotot.otboo.comment.dto.CommentCreateRequest;
 import com.samsamotot.otboo.comment.dto.CommentDto;
 import com.samsamotot.otboo.comment.service.CommentService;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,10 +41,11 @@ public class CommentController implements CommentApi {
     @Override
     @PostMapping("/comments")
     public ResponseEntity<CommentDto> createComment(
+        @PathVariable("feedId") UUID feedId,
         @Valid @RequestBody CommentCreateRequest commentCreateRequest
     ) {
-        log.info(CONTROLLER + "피드 댓글 등록 요청: {}", commentCreateRequest);
-        CommentDto result = commentService.create(commentCreateRequest);
+        log.info(CONTROLLER + "피드 댓글 등록 요청: feedId = {}", feedId);
+        CommentDto result = commentService.create(feedId, commentCreateRequest);
         log.info(CONTROLLER + "피드 댓글 등록 완료: {}", result);
 
         return ResponseEntity
