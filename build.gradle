@@ -86,6 +86,9 @@ dependencies {
     testImplementation 'org.mockito:mockito-junit-jupiter' // JUnit 5 통합
 	
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // JUnit 플랫폼 런처
+
+	// WebClient
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 }
 
 // QueryDSL 설정
@@ -126,6 +129,7 @@ jacocoTestReport {
 				'**/entity/**',           // Entity 클래스 제외
 				'**/exception/**',        // 예외 클래스 제외
 				'**/util/**',             // 유틸리티 클래스 제외
+				'**/client/**',			  // 연동 설정 클래스 제외(연동은 서비스 로직에서 검증 가능)
 				'**/OtbooApplication.class', // 메인 애플리케이션 클래스 제외
 				'**/OtbooApplicationTests.class' // 테스트 클래스 제외
 			])

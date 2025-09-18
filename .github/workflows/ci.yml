@@ -39,10 +39,10 @@ jobs:
         run: |
             echo "Checking coverage threshold..."
             if [ -f "build/reports/jacoco/test/jacocoTestReport.xml" ]; then
-            echo "Coverage report found"
+              echo "Coverage report found"
             else
-            echo "Coverage report not found"
-            exit 1
+              echo "Coverage report not found"
+              exit 1
             fi
 
       # JaCoCo 커버리지 리포트를 아티팩트로 업로드
