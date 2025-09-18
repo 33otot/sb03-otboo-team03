@@ -6,10 +6,10 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 public class InvalidEmailOrPasswordException extends OtbooException {
 
     public InvalidEmailOrPasswordException() {
-        super(ErrorCode.EMAIL_OR_PASSWORD_MISMATCH);
+        super(ErrorCode.UNAUTHORIZED);
     }
 
     public InvalidEmailOrPasswordException(String message) {
-        super(ErrorCode.EMAIL_OR_PASSWORD_MISMATCH, message);
+        super(ErrorCode.UNAUTHORIZED, message);
     }
 }

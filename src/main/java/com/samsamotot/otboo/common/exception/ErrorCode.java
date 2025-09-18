@@ -18,7 +18,7 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "US001", "사용자를 찾을 수 없습니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "US002", "이미 사용 중인 이메일입니다."),
     INVALID_EMAIL_FORMAT(HttpStatus.BAD_REQUEST, "US003", "올바르지 않은 이메일 형식입니다."),
-    EMAIL_OR_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "US004", "이메일 혹은 비밀번호가 일치하지 않습니다."),
+    EMAIL_OR_PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, "US004", "이메일 혹은 비밀번호가 일치하지 않습니다."),
     USER_LOCKED(HttpStatus.LOCKED, "US005", "계정을 이용할 수 없습니다."),
 
     // 인증 관련 에러
