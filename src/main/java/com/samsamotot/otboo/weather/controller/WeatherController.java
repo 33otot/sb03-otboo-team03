@@ -4,6 +4,7 @@ import com.samsamotot.otboo.location.entity.WeatherAPILocation;
 import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.weather.controller.api.WeatherApi;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,10 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
  * @see LocationService
  * @see WeatherAPILocation
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/weathers")
 @RequiredArgsConstructor
 public class WeatherController implements WeatherApi {
+
+    private static final String CONTROLLER = "[WeatherController] ";
 
     private final LocationService locationService;
 
@@ -62,7 +66,12 @@ public class WeatherController implements WeatherApi {
             @RequestParam double longitude,
             @RequestParam double latitude
     ) {
+        log.info(CONTROLLER + "현재 위치 정보 조회: longitude={}, latitude={}", longitude, latitude);
         WeatherAPILocation location = locationService.getCurrentLocation(longitude, latitude);
+
+        log.info(CONTROLLER + "위치 정보 조회 완료: longitude={}, latutude={}, 행정구역명= {}",
+                longitude, latitude, location.locationNames());
+
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(location);

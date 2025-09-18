@@ -53,8 +53,8 @@ public final class KmaGridConverter {
         if (theta < -Math.PI) theta += 2.0 * Math.PI;
         theta *= sn;
 
-        int nx = (int) Math.floor(ra * Math.sin(theta) + XO + 0.5);
-        int ny = (int) Math.floor(ro - ra * Math.cos(theta) + YO + 0.5);
+        int nx = (int) (ra * Math.sin(theta) + XO + 1.5);
+        int ny = (int) (ro - ra * Math.cos(theta) + YO + 1.5);
         return new GridPoint(nx, ny);
     }
 
