@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * PackageName  : com.samsamotot.otboo.common.config
- * FileName     : QuerydslConfig
+ * FileName     : QueryDslConfig
  * Author       : dounguk
  * Date         : 2025. 9. 15.
  */
