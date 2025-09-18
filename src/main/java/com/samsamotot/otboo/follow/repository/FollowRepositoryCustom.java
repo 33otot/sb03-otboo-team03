@@ -14,7 +14,12 @@ import java.util.UUID;
  */
 public interface FollowRepositoryCustom {
 
-    long countTotalElements(UUID userId, String nameLike);
+    long countTotalFollowings(UUID userId, String nameLike);
 
     List<Follow> findFollowings(FollowingRequest request);
+
+    long countTotalFollowers(UUID userId, String nameLike);
+
+    List<Follow> findFollowers(FollowingRequest request);
+
 }
