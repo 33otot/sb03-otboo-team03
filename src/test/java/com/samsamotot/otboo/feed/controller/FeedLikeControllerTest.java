@@ -2,11 +2,13 @@ package com.samsamotot.otboo.feed.controller;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.feed.entity.FeedLike;
 import com.samsamotot.otboo.feed.service.FeedLikeService;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -37,6 +40,10 @@ public class FeedLikeControllerTest {
             // given
             UUID feedId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
+
+            FeedLike mockFeedLike = mock(FeedLike.class);
+            given(mockFeedLike.getId()).willReturn(UUID.randomUUID());
+            given(feedLikeService.create(eq(feedId), eq(userId))).willReturn(mockFeedLike);
 
             // when & then
             mockMvc.perform(post("/api/feeds/{feedId}/like", feedId)
