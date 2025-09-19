@@ -6,5 +6,5 @@ import java.util.UUID;
 
 public interface CommentRepositoryCustom {
 
-    List<Comment> findByCursor(String cursor, UUID idAfter, int limit);
+    List<Comment> findByFeedIdWithCursor(UUID feedId, String cursor, UUID idAfter, int limit);
 }

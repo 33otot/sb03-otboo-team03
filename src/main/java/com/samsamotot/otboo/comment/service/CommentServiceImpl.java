@@ -9,10 +9,15 @@ import com.samsamotot.otboo.comment.repository.CommentRepository;
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +78,62 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(readOnly = true)
     public CursorResponse<CommentDto> getComments(CommentCursorRequest request, UUID feedId) {
-        return null;
+
+        log.debug(SERVICE + "댓글 목록 조회 시작: request = {}, feedId = {}", request, feedId);
+
+        Feed feed = feedRepository.findById(feedId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
+
+        String cursor = request.cursor();
+        UUID idAfter = request.idAfter();
+        Integer limit = request.limit();
+        String sortBy = "createdAt";
+        SortDirection sortDirection = SortDirection.DESCENDING;
+
+        validateCursorFormat(cursor);
+
+        List<Comment> comments = commentRepository.findByFeedIdWithCursor(feedId, cursor, idAfter, limit + 1);
+
+        boolean hasNext = comments.size() > limit;
+        String nextCursor = null;
+        UUID nextIdAfter =null;
+
+        if (hasNext) {
+            Comment lastComment = comments.get(limit - 1);
+            nextCursor = lastComment.getCreatedAt().toString();
+            nextIdAfter = lastComment.getId();
+            comments = comments.subList(0, limit);
+        }
+
+        long totalCount = commentRepository.countByFeed(feed);
+
+        List<CommentDto> commentDtos = comments.stream()
+            .map(commentMapper::toDto)
+            .toList();
+
+        log.info(SERVICE + "댓글 목록 조회 완료 - 조회된 댓글 수: {}, hasNext: {}", commentDtos.size(), hasNext);
+
+        return new CursorResponse<>(
+            commentDtos,
+            nextCursor,
+            nextIdAfter,
+            hasNext,
+            totalCount,
+            sortBy,
+            sortDirection
+        );
+    }
+
+    private void validateCursorFormat(String cursorValue) {
+
+        if (cursorValue == null) {
+            return;
+        }
+
+        try {
+            Instant.parse(cursorValue);
+        } catch (DateTimeParseException e) {
+            throw new OtbooException(ErrorCode.INVALID_CURSOR_FORMAT, Map.of("cursor", cursorValue));
+        }
     }
 }

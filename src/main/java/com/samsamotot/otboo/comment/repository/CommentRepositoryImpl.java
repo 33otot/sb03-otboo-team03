@@ -13,7 +13,8 @@ import org.springframework.stereotype.Repository;
 public class CommentRepositoryImpl implements CommentRepositoryCustom {
 
     @Override
-    public List<Comment> findByCursor(String cursor, UUID idAfter, int limit) {
+    public List<Comment> findByFeedIdWithCursor(UUID feedId, String cursor, UUID idAfter,
+        int limit) {
         return List.of();
     }
 }
