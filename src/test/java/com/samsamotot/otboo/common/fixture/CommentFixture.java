@@ -7,12 +7,13 @@ import com.samsamotot.otboo.user.entity.User;
 
 public class CommentFixture {
 
-    private final String DEFAULT_CONTENT = "기본 댓글 내용입니다.";
+    private static final String DEFAULT_CONTENT = "기본 댓글 내용입니다.";
 
     public static Comment createComment(Feed feed, User author) {
         return Comment.builder()
             .feed(feed)
             .author(author)
+            .content(DEFAULT_CONTENT)
             .build();
     }
 

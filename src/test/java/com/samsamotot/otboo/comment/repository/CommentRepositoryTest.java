@@ -119,15 +119,16 @@ public class CommentRepositoryTest {
         // given
         int limit = 5;
         List<Comment> savedComments = new ArrayList<>();
-        for (int i = 0; i < 5; i ++) {
+        for (int i = 0; i < 5; i++) {
             Comment comment = CommentFixture.createComment(feed, author);
-            em.persist(comment);
             ReflectionTestUtils.setField(comment, "createdAt", Instant.now().plusSeconds(i));
+            em.persist(comment);
             savedComments.add(comment);
         }
         em.flush();
         em.clear();
 
+        // 커서 = 정렬상 3번째 댓글
         Comment cursorComment = savedComments.get(2);
         String cursor = String.valueOf(cursorComment.getCreatedAt());
         UUID idAfter = cursorComment.getId();
@@ -154,26 +155,32 @@ public class CommentRepositoryTest {
         // given
         Instant fixedTime = Instant.now();
         int totalComments = 5;
-        List<Comment> savedComments = new ArrayList<>();
 
         for (int i = 0; i < totalComments; i++) {
             Comment comment = CommentFixture.createComment(feed, author);
-            em.persist(comment);
             ReflectionTestUtils.setField(comment, "createdAt", fixedTime);
-            savedComments.add(comment);
+            em.persist(comment);
         }
         em.flush();
         em.clear();
 
-        // 예상 결과 리스트 정렬 (id DESC)
-        savedComments.sort(Comparator.comparing(Comment::getId, Comparator.reverseOrder()));
+        // DB 정렬 자체를 기대값으로 사용 (createdAt DESC, id DESC)
+        List<Comment> expectedOrder = em.getEntityManager()
+            .createQuery("""
+                SELECT c
+                FROM Comment c
+                WHERE c.feed.id = :feedId
+                ORDER BY c.createdAt DESC, c.id DESC
+            """, Comment.class)
+            .setParameter("feedId", feed.getId())
+            .getResultList();
 
-        Comment cursorComment = savedComments.get(2);
+        // 커서 = 정렬상 3번째 댓글
+        Comment cursorComment = expectedOrder.get(2);
         String cursor = String.valueOf(cursorComment.getCreatedAt());
         UUID idAfter = cursorComment.getId();
 
         // when
-        // 커서 다음부터 모든 댓글을 조회
         List<Comment> result = commentRepository.findByFeedIdWithCursor(
             feed.getId(),
             cursor,
@@ -181,9 +188,14 @@ public class CommentRepositoryTest {
             totalComments
         );
 
-        // then
+        // then: 4번째, 5번째만 나와야 함
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).getId()).isEqualTo(savedComments.get(3).getId());
-        assertThat(result.get(1).getId()).isEqualTo(savedComments.get(4).getId());
+        assertThat(result.get(0).getId()).isEqualTo(expectedOrder.get(3).getId());
+        assertThat(result.get(1).getId()).isEqualTo(expectedOrder.get(4).getId());
+
+        assertThat(result).isSortedAccordingTo(
+            Comparator.comparing(Comment::getCreatedAt).reversed()
+                .thenComparing(Comment::getId, Comparator.reverseOrder())
+        );
     }
 }
