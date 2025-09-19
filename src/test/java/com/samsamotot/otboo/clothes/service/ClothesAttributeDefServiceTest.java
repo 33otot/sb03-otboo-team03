@@ -285,5 +285,21 @@ class ClothesAttributeDefServiceTest {
             // then
             verify(defRepository).delete(defEntity);
         }
+
+        @Test
+        void 해당하는_의상_속성_정의가_없다면_예외를_발생시킨다() {
+            // given
+            UUID defId = UUID.randomUUID();
+
+            ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
+            when(defRepository.findById(defId)).thenReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> clothesAttributeDefService.delete(defId))
+                .isInstanceOf(ClothesAttributeDefNotFoundException.class)
+                .hasMessageContaining(ErrorCode.CLOTHES_ATTRIBUTE_DEF_NOT_FOUND.getMessage());
+
+            verify(defRepository, times(1)).findById(defId);
+        }
     }
 }
