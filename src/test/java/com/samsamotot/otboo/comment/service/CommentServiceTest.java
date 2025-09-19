@@ -178,7 +178,7 @@ public class CommentServiceTest {
             given(commentRepository.countByFeed(any(Feed.class))).willReturn(1L);
 
             // when
-            commentService.getComments(request, feedId);
+            commentService.getComments(feedId, request);
 
             // then
             verify(feedRepository).findById(any(UUID.class));
@@ -209,7 +209,7 @@ public class CommentServiceTest {
             given(commentRepository.countByFeed(any(Feed.class))).willReturn(1L);
 
             // when
-            commentService.getComments(request, mockFeed.getId());
+            commentService.getComments(mockFeed.getId(), request);
 
             // then
             // 서비스가 요청 DTO의 커서 값들을 레포지토리 메서드에 그대로 전달했는지 검증
@@ -231,7 +231,7 @@ public class CommentServiceTest {
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> commentService.getComments(request, invalidFeedId))
+            assertThatThrownBy(() -> commentService.getComments(invalidFeedId, request))
                 .isInstanceOf(OtbooException.class)
                 .extracting(e -> ((OtbooException) e).getErrorCode())
                 .isEqualTo(ErrorCode.FEED_NOT_FOUND);
@@ -271,7 +271,7 @@ public class CommentServiceTest {
             }
 
             // when
-            CursorResponse<CommentDto> response = commentService.getComments(request, mockFeed.getId());
+            CursorResponse<CommentDto> response = commentService.getComments(mockFeed.getId(), request);
 
             // then
             assertThat(response).isNotNull();
@@ -313,7 +313,7 @@ public class CommentServiceTest {
             }
 
             // when
-            CursorResponse<CommentDto> response = commentService.getComments(request, mockFeed.getId());
+            CursorResponse<CommentDto> response = commentService.getComments(mockFeed.getId(), request);
 
             // then
             assertThat(response).isNotNull();
@@ -339,7 +339,7 @@ public class CommentServiceTest {
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
 
             // when
-            assertThatThrownBy(() -> commentService.getComments(request, mockFeed.getId()))
+            assertThatThrownBy(() -> commentService.getComments(mockFeed.getId(), request))
                 .isInstanceOf(OtbooException.class)
                 .extracting(e -> ((OtbooException) e).getErrorCode())
                 .isEqualTo(ErrorCode.INVALID_CURSOR_FORMAT);
@@ -355,7 +355,7 @@ public class CommentServiceTest {
             given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), anyInt())).willReturn(List.of());
 
             // when
-            CursorResponse<CommentDto> response = commentService.getComments(request, mockFeed.getId());
+            CursorResponse<CommentDto> response = commentService.getComments(mockFeed.getId(), request);
 
             // then
             assertThat(response).isNotNull();

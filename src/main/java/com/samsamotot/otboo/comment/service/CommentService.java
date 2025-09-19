@@ -12,5 +12,5 @@ public interface CommentService {
 
     CommentDto create(UUID feedId, CommentCreateRequest request);
 
-    CursorResponse<CommentDto> getComments(@Valid CommentCursorRequest request, UUID feedId);
+    CursorResponse<CommentDto> getComments(UUID feedId, @Valid CommentCursorRequest request);
 }

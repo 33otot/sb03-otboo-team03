@@ -2,14 +2,18 @@ package com.samsamotot.otboo.comment.controller;
 
 import com.samsamotot.otboo.comment.controller.api.CommentApi;
 import com.samsamotot.otboo.comment.dto.CommentCreateRequest;
+import com.samsamotot.otboo.comment.dto.CommentCursorRequest;
 import com.samsamotot.otboo.comment.dto.CommentDto;
 import com.samsamotot.otboo.comment.service.CommentService;
+import com.samsamotot.otboo.common.dto.CursorResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/feeds/{feedId}")
+@RequestMapping("/api/feeds/{feedId}/comments")
 public class CommentController implements CommentApi {
 
     private final String CONTROLLER = "[CommentController] ";
@@ -39,7 +43,7 @@ public class CommentController implements CommentApi {
      * @return 생성된 댓글 정보를 담은 ResponseEntity (HTTP 201 Created)
      */
     @Override
-    @PostMapping("/comments")
+    @PostMapping
     public ResponseEntity<CommentDto> createComment(
         @PathVariable("feedId") UUID feedId,
         @Valid @RequestBody CommentCreateRequest commentCreateRequest
@@ -50,6 +54,21 @@ public class CommentController implements CommentApi {
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
+            .body(result);
+    }
+
+    @Override
+    @GetMapping
+    public ResponseEntity<CursorResponse<CommentDto>> getComments(
+        @PathVariable("feedId") UUID feedId,
+        @Valid @ModelAttribute CommentCursorRequest commentCursorRequest
+    ) {
+        log.info(CONTROLLER + "피드 댓글 목록 조회 요청: feedId = {}, request = {}", feedId, commentCursorRequest);
+        CursorResponse<CommentDto> result = commentService.getComments(feedId, commentCursorRequest);
+        log.info(CONTROLLER + "피드 댓글 목록 조회 완료: {}개", result.totalCount());
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
             .body(result);
     }
 }

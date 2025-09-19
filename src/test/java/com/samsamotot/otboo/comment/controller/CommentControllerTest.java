@@ -182,7 +182,7 @@ public class CommentControllerTest {
             UUID feedId = UUID.randomUUID();
             CommentDto oldComment = CommentFixture.createCommentDtoWithCreatedAt("content1", null, feedId, base.minusSeconds(1000));
             CommentDto newComment = CommentFixture.createCommentDtoWithCreatedAt("content2", null, feedId, base);
-            List<CommentDto> commentDtos = List.of(oldComment, newComment);
+            List<CommentDto> commentDtos = List.of(newComment, oldComment);
 
             CursorResponse<CommentDto> expected = new CursorResponse<>(
                 commentDtos,
@@ -194,7 +194,7 @@ public class CommentControllerTest {
                 SortDirection.DESCENDING
             );
 
-            given(commentService.getComments(any(CommentCursorRequest.class), any(UUID.class)))
+            given(commentService.getComments(any(UUID.class), any(CommentCursorRequest.class)))
                 .willReturn(expected);
 
             // when & then
@@ -218,7 +218,7 @@ public class CommentControllerTest {
             CommentDto cursorCommentDto = CommentFixture.createCommentDtoWithCreatedAt("cursor", null, feedId, base);
             CommentDto commentDto1 = CommentFixture.createCommentDtoWithCreatedAt("content1", null, feedId, base.plusSeconds(1000));
             CommentDto commentDto2 = CommentFixture.createCommentDtoWithCreatedAt("content2", null, feedId, base.plusSeconds(2000));
-            List<CommentDto> commentDtos = List.of(commentDto1, commentDto2);
+            List<CommentDto> commentDtos = List.of(commentDto2, commentDto1);
 
             String cursor = cursorCommentDto.createdAt().toString();
             UUID idAfter = cursorCommentDto.feedId();
@@ -233,7 +233,7 @@ public class CommentControllerTest {
                 SortDirection.DESCENDING
             );
 
-            given(commentService.getComments(any(CommentCursorRequest.class), any(UUID.class))).willReturn(expected);
+            given(commentService.getComments(any(UUID.class), any(CommentCursorRequest.class))).willReturn(expected);
 
             ArgumentCaptor<CommentCursorRequest> captor = ArgumentCaptor.forClass(CommentCursorRequest.class);
 
@@ -248,7 +248,7 @@ public class CommentControllerTest {
                 .andExpect(jsonPath("$.data[0].content").value("content2"))
                 .andExpect(jsonPath("$.totalCount").value(2L));
 
-            verify(commentService).getComments(captor.capture(), any(UUID.class));
+            verify(commentService).getComments(any(UUID.class), captor.capture());
             CommentCursorRequest actual = captor.getValue();
             assertThat(actual.cursor()).isEqualTo(cursor);
             assertThat(actual.idAfter()).isEqualTo(idAfter);
@@ -261,7 +261,7 @@ public class CommentControllerTest {
             // given
             UUID invalidFeedId = UUID.randomUUID();
 
-            given(commentService.getComments(any(CommentCursorRequest.class), any(UUID.class)))
+            given(commentService.getComments(any(UUID.class), any(CommentCursorRequest.class)))
                 .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
             // when & then

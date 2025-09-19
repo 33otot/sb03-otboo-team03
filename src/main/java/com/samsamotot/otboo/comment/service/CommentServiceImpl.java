@@ -77,7 +77,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional(readOnly = true)
-    public CursorResponse<CommentDto> getComments(CommentCursorRequest request, UUID feedId) {
+    public CursorResponse<CommentDto> getComments(UUID feedId, CommentCursorRequest request) {
 
         log.debug(SERVICE + "댓글 목록 조회 시작: request = {}, feedId = {}", request, feedId);
 

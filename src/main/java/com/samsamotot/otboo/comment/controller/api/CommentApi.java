@@ -1,7 +1,9 @@
 package com.samsamotot.otboo.comment.controller.api;
 
 import com.samsamotot.otboo.comment.dto.CommentCreateRequest;
+import com.samsamotot.otboo.comment.dto.CommentCursorRequest;
 import com.samsamotot.otboo.comment.dto.CommentDto;
+import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -48,5 +51,37 @@ public interface CommentApi {
     ResponseEntity<CommentDto> createComment(
         @PathVariable("feedId") UUID feedId,
         @Valid @RequestBody CommentCreateRequest commentCreateRequest
+    );
+
+    @Operation(summary = "피드 댓글 목록 조회")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "피드 댓글 목록 조회 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = CursorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "피드 미존재",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "피드 댓글 못록 조회 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    ResponseEntity<CursorResponse<CommentDto>> getComments(
+        @PathVariable("feedId") UUID feedId,
+        @Valid @ModelAttribute CommentCursorRequest commentCursorRequest
     );
 }
