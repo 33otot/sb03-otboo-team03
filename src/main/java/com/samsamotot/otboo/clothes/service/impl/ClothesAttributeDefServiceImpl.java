@@ -100,4 +100,10 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
         }
         return defMapper.toDto(def);
     }
+
+    @Override
+    public void delete(UUID defId) {
+        ClothesAttributeDef def = defRepository.findById(defId).orElseThrow();
+        defRepository.delete(def);
+    }
 }
