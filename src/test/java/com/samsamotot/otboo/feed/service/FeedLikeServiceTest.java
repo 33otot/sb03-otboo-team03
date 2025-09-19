@@ -47,7 +47,7 @@ public class FeedLikeServiceTest {
     private UserRepository userRepository;
 
     @InjectMocks
-    private FeedLikeService feedLikeService;
+    private FeedLikeServiceImpl feedLikeService;
 
     User mockUser;
     Feed mockFeed;
