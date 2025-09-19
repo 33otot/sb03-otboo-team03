@@ -75,6 +75,13 @@ public class CommentServiceImpl implements CommentService {
         return result;
     }
 
+    /**
+     * 특정 피드의 댓글 목록을 커서 기반 페이지네이션으로 조회합니다.
+     *
+     * @param feedId    페이지네이션 파라미터({@code limit}, {@code cursor}, {@code idAfter})를 담고 있는 요청 DTO
+     * @param request   댓글을 조회할 피드의 ID.
+     * @return 댓글 DTO 리스트와 페이지네이션 정보를 포함하는 {@link CursorResponse<CommentDto>}
+     */
     @Override
     @Transactional(readOnly = true)
     public CursorResponse<CommentDto> getComments(UUID feedId, CommentCursorRequest request) {

@@ -1,13 +1,10 @@
 package com.samsamotot.otboo.comment.repository;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.Order;
-import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.samsamotot.otboo.comment.entity.Comment;
 import com.samsamotot.otboo.comment.entity.QComment;
-import com.samsamotot.otboo.common.type.SortDirection;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +21,17 @@ public class CommentRepositoryImpl implements CommentRepositoryCustom {
     private final JPAQueryFactory queryFactory;
     private final QComment qComment = QComment.comment;
 
+    /**
+     * 커서 기반 페이지네이션을 사용하여 특정 피드의 댓글 목록을 조회합니다.
+     * 정렬 순서는 생성시각(createdAt) 내림차순, 그리고 ID(id) 내림차순입니다.
+     * 커서 값이 존재할 경우, 해당 커서 위치보다 오래된 댓글들을 조회합니다.
+     *
+     * @param feedId    조회할 피드의 ID
+     * @param cursor    이전 페이지의 마지막 댓글 생성 시각
+     * @param idAfter   이전 페이지의 마지막 댓글 ID
+     * @param limit     조회할 최대 댓글 수
+     * @return 조회된 댓글 엔티티 목록
+     */
     @Override
     public List<Comment> findByFeedIdWithCursor(
         UUID feedId,

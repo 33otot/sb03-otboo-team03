@@ -57,6 +57,13 @@ public class CommentController implements CommentApi {
             .body(result);
     }
 
+    /**
+     * 특정 피드에 달린 댓글 목록을 커서 기반 페이지네이션으로 조회합니다.
+     *
+     * @param feedId 댓글을 조회할 피드의 ID
+     * @param commentCursorRequest 페이지네이션을 위한 커서 요청 정보 DTO (cursor, idAfter, limit)
+     * @return 댓글 목록과 다음 페이지 정보를 담은 CursorResponse를 포함하는 ResponseEntity (HTTP 200 OK)
+     */
     @Override
     @GetMapping
     public ResponseEntity<CursorResponse<CommentDto>> getComments(
