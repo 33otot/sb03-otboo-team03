@@ -174,14 +174,16 @@ public class CommentServiceTest {
             CommentCursorRequest request = createDefaultRequest();
 
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
-            given(commentRepository.findByCursor(any(), any(), any())).willReturn(List.of());
+            given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), anyInt())).willReturn(List.of());
+            given(commentRepository.countByFeed(any(Feed.class))).willReturn(1L);
 
             // when
             commentService.getComments(request, feedId);
 
             // then
             verify(feedRepository).findById(any(UUID.class));
-            verify(commentRepository).findByCursor(
+            verify(commentRepository).findByFeedIdWithCursor(
+                eq(feedId),
                 isNull(String.class),
                 isNull(UUID.class),
                 eq(request.limit() + 1)
@@ -203,14 +205,16 @@ public class CommentServiceTest {
                 .build();
 
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
-            given(commentRepository.findByCursor(any(), any(), anyInt())).willReturn(List.of());
+            given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), anyInt())).willReturn(List.of());
+            given(commentRepository.countByFeed(any(Feed.class))).willReturn(1L);
 
             // when
             commentService.getComments(request, mockFeed.getId());
 
             // then
             // 서비스가 요청 DTO의 커서 값들을 레포지토리 메서드에 그대로 전달했는지 검증
-            verify(commentRepository).findByCursor(
+            verify(commentRepository).findByFeedIdWithCursor(
+                eq(mockFeed.getId()),
                 eq(cursor),
                 eq(idAfter),
                 eq(limit + 1)
@@ -259,7 +263,8 @@ public class CommentServiceTest {
             Comment lastComment = comments.get(limit - 1);
 
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
-            given(commentRepository.findByCursor(any(), any(), eq(limit + 1))).willReturn(comments);
+            given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), eq(limit + 1))).willReturn(comments);
+            given(commentRepository.countByFeed(any(Feed.class))).willReturn(11L);
 
             for (int i = 0; i < limit; i++) {
                 given(commentMapper.toDto(comments.get(i))).willReturn(expectedDtos.get(i));
@@ -300,7 +305,8 @@ public class CommentServiceTest {
                 .toList();
 
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
-            given(commentRepository.findByCursor(any(), any(), eq(limit + 1))).willReturn(comments);
+            given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), eq(limit + 1))).willReturn(comments);
+            given(commentRepository.countByFeed(any(Feed.class))).willReturn(10L);
 
             for (int i = 0; i < limit; i++) {
                 given(commentMapper.toDto(comments.get(i))).willReturn(expectedDtos.get(i));
@@ -346,7 +352,7 @@ public class CommentServiceTest {
             CommentCursorRequest request = createDefaultRequest();
 
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
-            given(commentRepository.findByCursor(any(), any(), anyInt())).willReturn(List.of());
+            given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), anyInt())).willReturn(List.of());
 
             // when
             CursorResponse<CommentDto> response = commentService.getComments(request, mockFeed.getId());
