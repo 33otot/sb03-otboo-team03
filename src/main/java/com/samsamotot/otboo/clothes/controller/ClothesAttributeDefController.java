@@ -48,7 +48,7 @@ public class ClothesAttributeDefController implements ClothesAttributeDefApi {
     }
 
     @DeleteMapping("/{definitionId}")
-    public ResponseEntity<ClothesAttributeDefDto> deleteClothesAttributeDef(
+    public ResponseEntity<Void> deleteClothesAttributeDef(
         @PathVariable("definitionId") UUID definitionId
     ) {
         defService.delete(definitionId);

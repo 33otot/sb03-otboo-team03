@@ -59,7 +59,7 @@ public interface ClothesAttributeDefApi {
         }
     )
     @DeleteMapping("/{definitionId}")
-    ResponseEntity<ClothesAttributeDefDto> deleteClothesAttributeDef(
+    ResponseEntity<Void> deleteClothesAttributeDef(
         @PathVariable UUID definitionId
     );
 }
