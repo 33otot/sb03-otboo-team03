@@ -6,8 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.*;
 import org.hibernate.annotations.Check;
-import jakarta.persistence.Convert;
-import com.samsamotot.otboo.common.converter.StringListJsonbConverter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.List;
 
@@ -16,6 +16,7 @@ import java.util.List;
 @Table(name = "locations")
 @Check(constraints = "latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180")
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Location extends BaseEntity {
@@ -26,13 +27,13 @@ public class Location extends BaseEntity {
     @Column(name = "longitude", nullable = false)
     private double longitude;
 
-    @Column(name = "x", nullable = false)
-    private int x;
+    @Column(name = "x")
+    private Integer x;
 
-    @Column(name = "y", nullable = false)
-    private int y;
+    @Column(name = "y")
+    private Integer y;
 
-    @Convert(converter = StringListJsonbConverter.class)
-    @Column(name = "location_names", columnDefinition = "jsonb", nullable = false)
+    @Column(name = "location_names", columnDefinition = "TEXT[]", nullable = false)
+    @JdbcTypeCode(SqlTypes.ARRAY)
     private List<String> locationNames;
 }

@@ -3,6 +3,8 @@ package com.samsamotot.otboo.follow.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
+import com.samsamotot.otboo.follow.dto.FollowListResponse;
+import com.samsamotot.otboo.follow.dto.FollowingRequest;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
 import com.samsamotot.otboo.follow.service.FollowService;
 import com.samsamotot.otboo.user.entity.User;
@@ -14,31 +16,38 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS;
 
 /**
  * PackageName  : com.samsamotot.otboo.follow.integration
  * FileName     : FollowIntegrationTest
  * Author       : dounguk
  * Date         : 2025. 9. 14.
+ * Description  : follow 기능을 통합 테스트 하는 테스트 클래스
  */
 
 @DisplayName("Follow 통합 테스트")
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@DirtiesContext(classMode = AFTER_CLASS)
 @ActiveProfiles("test")
+@Transactional
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = {
-//    "spring.sql.init.mode=never",
     "spring.datasource.driver-class-name=org.postgresql.Driver",
     "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"
 })
@@ -89,5 +98,110 @@ public class FollowIntegrationTest {
         assertThat(response.follower().userId()).isEqualTo(follower.getId());
         assertThat(response.followee()).isNotNull();
         assertThat(response.followee().userId()).isEqualTo(followee.getId());
+    }
+
+    @Test
+    void 팔로잉_목록_조회를_한다() throws Exception {
+        User follower = User.createUser("f1@test.com", "follower", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.save(follower);
+
+        User followee1 = User.createUser("e1@test.com", "followee1", "password#A", BCRYPT_PASSWORD_ENCODER);
+        User followee2 = User.createUser("e2@test.com", "followee2", "password#A", BCRYPT_PASSWORD_ENCODER);
+        User followee3 = User.createUser("e3@test.com", "followee3", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.saveAll(java.util.List.of(followee1, followee2, followee3));
+
+        followService.follow(new FollowCreateRequest(follower.getId(), followee1.getId()));
+        Thread.sleep(5);
+        followService.follow(new FollowCreateRequest(follower.getId(), followee2.getId()));
+        Thread.sleep(5);
+        followService.follow(new FollowCreateRequest(follower.getId(), followee3.getId()));
+
+        FollowingRequest page1Req = new FollowingRequest(follower.getId(), null, null, 2, null);
+        FollowListResponse page1 = followService.getFollowings(page1Req);
+
+        assertThat(page1).isNotNull();
+        assertThat(page1.data()).isNotNull();
+        assertThat(page1.data().size()).isLessThanOrEqualTo(2);
+        assertThat(page1.hasNext()).isTrue();
+        assertThat(page1.nextCursor()).isNotNull();
+        assertThat(page1.nextIdAfter()).isNotNull();
+
+        page1.data().forEach(d ->
+            assertThat(d.follower().userId()).isEqualTo(follower.getId())
+        );
+
+        FollowingRequest page2Req = new FollowingRequest(
+            follower.getId(),
+            page1.nextCursor(),          // createdAt 커서
+            page1.nextIdAfter(),         // id 보조커서
+            2,
+            null
+        );
+        FollowListResponse page2 = followService.getFollowings(page2Req);
+
+        assertThat(page2).isNotNull();
+        assertThat(page2.data()).isNotNull();
+        assertThat(page2.hasNext()).isFalse();
+        assertThat(page2.nextCursor()).isNull();
+        assertThat(page2.nextIdAfter()).isNull();
+
+        java.util.Set<UUID> p1Followees = page1.data().stream()
+            .map(d -> d.followee().userId())
+            .collect(java.util.stream.Collectors.toSet());
+        assertThat(page2.data().stream().map(d -> d.followee().userId()))
+            .doesNotContainAnyElementsOf(p1Followees);
+    }
+
+    @Test
+    void 팔로워_목록_정상_조회한다() throws Exception {
+        // given
+        User me  = User.createUser("me@test.com", "me", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.save(me);
+
+        User f1 = User.createUser("f1@test.com", "f1", "password#A", BCRYPT_PASSWORD_ENCODER);
+        User f2 = User.createUser("f2@test.com", "f2", "password#A", BCRYPT_PASSWORD_ENCODER);
+        User f3 = User.createUser("f3@test.com", "f3", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.saveAll(java.util.List.of(f1, f2, f3));
+
+        followService.follow(new FollowCreateRequest(f1.getId(), me.getId()));
+        Thread.sleep(5);
+        followService.follow(new FollowCreateRequest(f2.getId(), me.getId()));
+        Thread.sleep(5);
+        followService.follow(new FollowCreateRequest(f3.getId(), me.getId()));
+
+        // when: 1페이지 조회 (limit=2)
+        FollowingRequest page1Req = new FollowingRequest(
+            me.getId(),   // 여기서는 '대상 사용자(=followee)'를 첫 인자로 사용
+            null, null, 2, null
+        );
+        FollowListResponse page1 = followService.getFollowers(page1Req);
+
+        // then: 느슨하게 기본 동작만 확인
+        assertThat(page1).isNotNull();
+        assertThat(page1.data()).isNotNull();
+        assertThat(page1.data().size()).isLessThanOrEqualTo(2);
+        assertThat(page1.hasNext()).isTrue();
+        assertThat(page1.nextCursor()).isNotNull();
+        assertThat(page1.nextIdAfter()).isNotNull();
+        page1.data().forEach(d -> assertThat(d.followee().userId()).isEqualTo(me.getId()));
+
+        // when: 2페이지 조회
+        FollowingRequest page2Req = new FollowingRequest(
+            me.getId(),
+            page1.nextCursor(),
+            page1.nextIdAfter(),
+            2,
+            null
+        );
+        FollowListResponse page2 = followService.getFollowers(page2Req);
+
+        // then: 마지막 페이지라 hasNext=false, cursor/idAfter는 null
+        assertThat(page2).isNotNull();
+        assertThat(page2.data()).isNotNull();
+        assertThat(page2.hasNext()).isFalse();
+        assertThat(page2.nextCursor()).isNull();
+        assertThat(page2.nextIdAfter()).isNull();
+        page2.data().forEach(d -> assertThat(d.followee().userId()).isEqualTo(me.getId()));
+
     }
 }

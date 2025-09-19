@@ -1,9 +1,8 @@
 package com.samsamotot.otboo.follow.mapper;
 
 import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.user.UserSummaryDto;
 import com.samsamotot.otboo.follow.entity.Follow;
-import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.user.mapper.UserMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -16,7 +15,7 @@ import org.mapstruct.ReportingPolicy;
  */
 @Mapper(
     componentModel = "spring",
-//    uses = UserSummaryMapper.class,
+    uses = UserMapper.class,
     unmappedTargetPolicy = ReportingPolicy.ERROR
 )
 public interface FollowMapper {
@@ -24,9 +23,4 @@ public interface FollowMapper {
     @Mapping(target = "followee", source = "followee")
     @Mapping(target = "follower", source = "follower")
     FollowDto toDto(Follow follow);
-
-    // TODO 진짜 UserSummaryDto 만들지기 까지는 profileImageUrl 무시. 아래 코드는 전부 삭제
-    @Mapping(target = "userId", source = "id")
-    @Mapping(target = "profileImageUrl", ignore = true)
-    UserSummaryDto toSummaryDto(User user);
 }

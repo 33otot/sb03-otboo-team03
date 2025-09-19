@@ -10,11 +10,11 @@
 
 -- users 테이블 더미 데이터 (5개)
 INSERT INTO users (id, email, username, password, provider, role, is_locked, created_at, updated_at) VALUES
-('a0000000-0000-0000-0000-000000000001', 'user1@example.com', 'user_one', '$2a$10$somehashedpassword1', 'local', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$10$somehashedpassword2', 'local', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000003', 'admin1@example.com', 'admin_one', '$2a$10$somehashedpassword3', 'local', 'ADMIN', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000004', 'user3@example.com', 'user_three', '$2a$10$somehashedpassword4', 'local', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000005', 'user4@example.com', 'user_four', '$2a$10$somehashedpassword5', 'local', 'USER', FALSE, NOW(), NOW());
+('a0000000-0000-0000-0000-000000000001', 'user1@example.com', 'user_one', '$2a$10$somehashedpassword1', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$10$somehashedpassword2', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000003', 'admin1@example.com', 'admin_one', '$2a$10$somehashedpassword3', 'LOCAL', 'ADMIN', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000004', 'user3@example.com', 'user_three', '$2a$10$somehashedpassword4', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000005', 'user4@example.com', 'user_four', '$2a$10$somehashedpassword5', 'LOCAL', 'USER', FALSE, NOW(), NOW());
 
 -- locations 테이블 더미 데이터 (5개)
 INSERT INTO locations (id, created_at, latitude, longitude, x, y, location_names) VALUES
@@ -90,18 +90,19 @@ VALUES
 INSERT INTO recommendations (id, user_id, weather_id, created_at)
 SELECT gen_random_uuid(), u.id, w.id, NOW() FROM users u, weathers w WHERE u.id = 'a0000000-0000-0000-0000-000000000001' AND w.id = 'c0000000-0000-0000-0000-000000000001' UNION ALL
 SELECT gen_random_uuid(), u.id, w.id, NOW() FROM users u, weathers w WHERE u.id = 'a0000000-0000-0000-0000-000000000002' AND w.id = 'c0000000-0000-0000-0000-000000000002' UNION ALL
-SELECT gen_random_uuid(), u.id, w.id, NOW() FROM users u, weathers w WHERE u.email = 'admin1@example.com' AND w.location_names = '제주공항' UNION ALL
-SELECT gen_random_uuid(), u.id, w.id, NOW() FROM users u, weathers w WHERE u.email = 'user3@example.com' AND w.location_names = '대전역' UNION ALL
-SELECT gen_random_uuid(), u.id, w.id, NOW() FROM users u, weathers w WHERE u.email = 'user4@example.com' AND w.location_names = '인천국제공항';
+SELECT gen_random_uuid(), u.id, w.id, NOW() FROM users u, weathers w WHERE u.email = 'admin1@example.com' AND w.location_id = 'b0000000-0000-0000-0000-000000000003' UNION ALL
+SELECT gen_random_uuid(), u.id, w.id, NOW() FROM users u, weathers w WHERE u.email = 'user3@example.com' AND w.location_id = 'b0000000-0000-0000-0000-000000000004' UNION ALL
+SELECT gen_random_uuid(), u.id, w.id, NOW() FROM users u, weathers w WHERE u.email = 'user4@example.com' AND w.location_id = 'b0000000-0000-0000-0000-000000000005';
 
 
 -- profiles 테이블 더미 데이터 (5개, users, locations 참조)
 INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity)
-SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '김철수', 'MALE', '1990-05-15', 3.5 FROM users u, locations l WHERE u.id = 'a0000000-0000-0000-0000-000000000001' AND l.id = 'b0000000-0000-0000-0000-000000000001' UNION ALL
-SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '이영희', 'FEMALE', '1992-11-20', 4.0 FROM users u, locations l WHERE u.id = 'a0000000-0000-0000-0000-000000000002' AND l.id = 'b0000000-0000-0000-0000-000000000002' UNION ALL
-SELECT gen_random_uuid(), u.id, NULL, NOW(), NOW(), '관리자', 'OTHER', '1985-01-01', 3.0 FROM users u WHERE u.id = 'a0000000-0000-0000-0000-000000000003' UNION ALL
-SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '박민준', 'MALE', '1995-03-01', 2.5 FROM users u, locations l WHERE u.email = 'user3@example.com' AND l.location_names = '대전역' UNION ALL
-SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '최지우', 'FEMALE', '1998-07-10', 4.5 FROM users u, locations l WHERE u.email = 'user4@example.com' AND l.location_names = '인천국제공항';
+SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '김철수', 'MALE', CAST('1990-05-15' AS DATE), 3.5 FROM users u, locations l WHERE u.id = 'a0000000-0000-0000-0000-000000000001' AND l.id = 'b0000000-0000-0000-0000-000000000001' UNION ALL
+SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '이영희', 'FEMALE', CAST('1992-11-20' AS DATE), 4.0 FROM users u, locations l WHERE u.id = 'a0000000-0000-0000-0000-000000000002' AND l.id = 'b0000000-0000-0000-0000-000000000002' UNION ALL
+SELECT gen_random_uuid(), u.id, NULL, NOW(), NOW(), '관리자', 'OTHER', CAST('1985-01-01' AS DATE), 3.0 FROM users u WHERE u.id = 'a0000000-0000-0000-0000-000000000003' UNION ALL
+SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '박민준', 'MALE', CAST('1995-03-01' AS DATE), 2.5 FROM users u, locations l WHERE u.email = 'user3@example.com' AND l.id = 'b0000000-0000-0000-0000-000000000004' UNION ALL
+SELECT gen_random_uuid(), u.id, l.id, NOW(), NOW(), '최지우', 'FEMALE', CAST('1998-07-10' AS DATE), 4.5 FROM users u, locations l WHERE u.email = 'user4@example.com' AND l.id = 'b0000000-0000-0000-0000-000000000005'
+ON CONFLICT (user_id) DO NOTHING;
 
 
 -- direct_messages 테이블 더미 데이터 (5개, users 참조)
@@ -118,8 +119,12 @@ INSERT INTO feeds (id, author_id, weather_id, content, like_count, comment_count
 SELECT gen_random_uuid(), u.id, w.id, '오늘의 OOTD! 날씨가 좋아서 가볍게 입었어요.', 10, 2, FALSE, NOW(), NOW() FROM users u, weathers w WHERE u.id = 'a0000000-0000-0000-0000-000000000001' AND w.id = 'c0000000-0000-0000-0000-000000000001' UNION ALL
 SELECT gen_random_uuid(), u.id, w.id, '부산 여행 중! 바다 바람 시원하네요.', 15, 3, FALSE, NOW(), NOW() FROM users u, weathers w WHERE u.id = 'a0000000-0000-0000-0000-000000000002' AND w.id = 'c0000000-0000-0000-0000-000000000002' UNION ALL
 SELECT gen_random_uuid(), u.id, NULL, '새로운 옷 샀어요! 어떤가요?', 5, 1, FALSE, NOW(), NOW() FROM users u WHERE u.id = 'a0000000-0000-0000-0000-000000000004' UNION ALL
-SELECT gen_random_uuid(), u.id, w.id, '제주도 날씨 흐림. 따뜻하게 입었어요.', 8, 0, FALSE, NOW(), NOW() FROM users u, weathers w WHERE u.id = 'a0000000-0000-0000-0000-000000000005' AND w.location_names = '제주공항' UNION ALL
-SELECT gen_random_uuid(), u.id, w.id, '가을 코디 추천! 트렌치코트의 계절.', 20, 5, FALSE, NOW(), NOW() FROM users u, weathers w WHERE u.id = 'a0000000-0000-0000-0000-000000000001' AND w.location_names = '대전역';
+SELECT gen_random_uuid(), u.id, w.id, '제주도 날씨 흐림. 따뜻하게 입었어요.', 8, 0, FALSE, NOW(), NOW()
+FROM users u, weathers w
+WHERE u.id = 'a0000000-0000-0000-0000-000000000005' AND w.location_id = 'b0000000-0000-0000-0000-000000000003' UNION ALL
+SELECT gen_random_uuid(), u.id, w.id, '가을 코디 추천! 트렌치코트의 계절.', 20, 5, FALSE, NOW(), NOW()
+FROM users u, weathers w
+WHERE u.id = 'a0000000-0000-0000-0000-000000000001' AND w.location_id = 'b0000000-0000-0000-0000-000000000004';
 
 
 -- clothes_attributes 테이블 더미 데이터 (5개, clothes, clothes_attribute_defs, clothes_attribute_options 참조)
@@ -136,9 +141,10 @@ SELECT gen_random_uuid(), c.id, cad.id, '캐주얼', NOW(), NOW() FROM clothes c
 SELECT gen_random_uuid(), c.id, cad.id, '여름', NOW(), NOW() FROM clothes c, clothes_attribute_defs cad WHERE c.name = '여름 원피스' AND cad.name = '계절' UNION ALL
 
 SELECT gen_random_uuid(), c.id, cad.id, '울', NOW(), NOW() FROM clothes c, clothes_attribute_defs cad WHERE c.name = '가을 자켓' AND cad.name = '소재' UNION ALL
-SELECT gen_random_uuid(), c.id, cad.id, '가을', NOW(), NOW() FROM clothes c, clothes_attribute_defs cad WHERE c.name = '가을 자켓' AND cad.name = '계절' UNION ALL
+SELECT gen_random_uuid(), c.id, cad.id, '가을', NOW(), NOW() FROM clothes c, clothes_attribute_defs cad WHERE c.name = '가을 자켓' AND cad.name = '계절'
+ON CONFLICT (clothes_id, definition_id) DO NOTHING;
 
-SELECT gen_random_uuid(), c.id, cad.id, '운동화', NOW(), NOW() FROM clothes c, clothes_attribute_defs cad WHERE c.name = '운동화' AND cad.name = '스타일';
+
 
 
 -- comments 테이블 더미 데이터 (5개, feeds, users 참조)
@@ -165,7 +171,8 @@ SELECT gen_random_uuid(), f.id, u.id, NOW() FROM feeds f, users u WHERE f.conten
 SELECT gen_random_uuid(), f.id, u.id, NOW() FROM feeds f, users u WHERE f.content LIKE '%OOTD%' AND u.id = 'a0000000-0000-0000-0000-000000000004' UNION ALL
 SELECT gen_random_uuid(), f.id, u.id, NOW() FROM feeds f, users u WHERE f.content LIKE '%부산 여행%' AND u.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
 SELECT gen_random_uuid(), f.id, u.id, NOW() FROM feeds f, users u WHERE f.content LIKE '%새로운 옷%' AND u.id = 'a0000000-0000-0000-0000-000000000005' UNION ALL
-SELECT gen_random_uuid(), f.id, u.id, NOW() FROM feeds f, users u WHERE f.content LIKE '%트렌치코트%' AND u.id = 'a0000000-0000-0000-0000-000000000002';
+SELECT gen_random_uuid(), f.id, u.id, NOW() FROM feeds f, users u WHERE f.content LIKE '%트렌치코트%' AND u.id = 'a0000000-0000-0000-0000-000000000002'
+ON CONFLICT (feed_id, user_id) DO NOTHING;
 
 
 -- feed_clothes 테이블 더미 데이터 (5개, feeds, clothes 참조)
@@ -174,7 +181,8 @@ SELECT gen_random_uuid(), f.id, c.id, NOW() FROM feeds f, clothes c WHERE f.cont
 SELECT gen_random_uuid(), f.id, c.id, NOW() FROM feeds f, clothes c WHERE f.content LIKE '%OOTD%' AND c.id = 'd0000000-0000-0000-0000-000000000002' UNION ALL
 SELECT gen_random_uuid(), f.id, c.id, NOW() FROM feeds f, clothes c WHERE f.content LIKE '%부산 여행%' AND c.name = '여름 원피스' UNION ALL
 SELECT gen_random_uuid(), f.id, c.id, NOW() FROM feeds f, clothes c WHERE f.content LIKE '%새로운 옷%' AND c.name = '가을 자켓' UNION ALL
-SELECT gen_random_uuid(), f.id, c.id, NOW() FROM feeds f, clothes c WHERE f.content LIKE '%트렌치코트%' AND c.name = '운동화';
+SELECT gen_random_uuid(), f.id, c.id, NOW() FROM feeds f, clothes c WHERE f.content LIKE '%트렌치코트%' AND c.name = '운동화'
+ON CONFLICT (feed_id, clothes_id) DO NOTHING;
 
 
 -- recommendation_clothes 테이블 더미 데이터 (5개, recommendations, clothes 참조)
@@ -183,13 +191,34 @@ SELECT gen_random_uuid(), r.id, c.id, NOW() FROM recommendations r, clothes c WH
 SELECT gen_random_uuid(), r.id, c.id, NOW() FROM recommendations r, clothes c WHERE r.user_id = 'a0000000-0000-0000-0000-000000000001' AND c.id = 'd0000000-0000-0000-0000-000000000002' UNION ALL
 SELECT gen_random_uuid(), r.id, c.id, NOW() FROM recommendations r, clothes c WHERE r.user_id = 'a0000000-0000-0000-0000-000000000002' AND c.name = '여름 원피스' UNION ALL
 SELECT gen_random_uuid(), r.id, c.id, NOW() FROM recommendations r, clothes c WHERE r.user_id = 'a0000000-0000-0000-0000-000000000004' AND c.name = '가을 자켓' UNION ALL
-SELECT gen_random_uuid(), r.id, c.id, NOW() FROM recommendations r, clothes c WHERE r.user_id = 'a0000000-0000-0000-0000-000000000005' AND c.name = '운동화';
+SELECT gen_random_uuid(), r.id, c.id, NOW() FROM recommendations r, clothes c WHERE r.user_id = 'a0000000-0000-0000-0000-000000000005' AND c.name = '운동화'
+ON CONFLICT (recommendation_id, clothes_id) DO NOTHING;
 
 
 -- follows 테이블 더미 데이터 (5개, users 참조)
-INSERT INTO follows (id, follower_id, followee_id, created_at)
-SELECT gen_random_uuid(), u1.id, u2.id, NOW() FROM users u1, users u2 WHERE u1.id = 'a0000000-0000-0000-0000-000000000001' AND u2.id = 'a0000000-0000-0000-0000-000000000002' UNION ALL
-SELECT gen_random_uuid(), u2.id, u1.id, NOW() FROM users u1, users u2 WHERE u1.id = 'a0000000-0000-0000-0000-000000000002' AND u2.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
-SELECT gen_random_uuid(), u3.id, u1.id, NOW() FROM users u1, users u3 WHERE u1.id = 'a0000000-0000-0000-0000-000000000004' AND u3.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
-SELECT gen_random_uuid(), u4.id, u1.id, NOW() FROM users u1, users u4 WHERE u1.id = 'a0000000-0000-0000-0000-000000000005' AND u4.id = 'a0000000-0000-0000-0000-000000000001' UNION ALL
-SELECT gen_random_uuid(), u1.id, u3.id, NOW() FROM users u1, users u3 WHERE u1.id = 'a0000000-0000-0000-0000-000000000001' AND u3.id = 'a0000000-0000-0000-0000-000000000004';
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+WITH pairs(follower_id, followee_id, offset_sec)
+         AS (VALUES ('a0000000-0000-0000-0000-000000000001'::uuid,
+                     'a0000000-0000-0000-0000-000000000002'::uuid, 0), -- 1 → 2
+                    ('a0000000-0000-0000-0000-000000000002'::uuid,
+                     'a0000000-0000-0000-0000-000000000001'::uuid, 1), -- 2 → 1
+                    ('a0000000-0000-0000-0000-000000000004'::uuid,
+                     'a0000000-0000-0000-0000-000000000001'::uuid, 2), -- 4 → 1
+                    ('a0000000-0000-0000-0000-000000000005'::uuid,
+                     'a0000000-0000-0000-0000-000000000001'::uuid, 3), -- 5 → 1
+                    ('a0000000-0000-0000-0000-000000000001'::uuid,
+                     'a0000000-0000-0000-0000-000000000004'::uuid, 4) -- 1 → 4
+    )
+INSERT
+INTO follows (id, follower_id, followee_id, created_at)
+SELECT gen_random_uuid(), p.follower_id, p.followee_id, now() + (p.offset_sec || ' seconds')::interval
+FROM pairs p
+         JOIN users uf ON uf.id = p.follower_id
+         JOIN users ue ON ue.id = p.followee_id
+WHERE p.follower_id <> p.followee_id -- 자기 자신 팔로우 금지 (추가 안전장치)
+ON CONFLICT (follower_id, followee_id) DO NOTHING;
+
+
+
+

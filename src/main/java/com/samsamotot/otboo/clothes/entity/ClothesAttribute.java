@@ -15,6 +15,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.LastModifiedDate;
 
+/**
+ * 의상 속성 엔티티 (의상에 등록된 속성과 옵션을 관리, 계절: 봄, 재질: 면 등...)
+ */
 @Builder
 @Entity
 @Table(

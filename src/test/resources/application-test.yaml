@@ -2,14 +2,16 @@ spring:
   config:
     activate:
       on-profile: test
-  
+  main:
+    allow-bean-definition-overriding: true
+
   # 테스트용 인메모리 DB 설정
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
     username: sa
-    password: 
+    password:
     driver-class-name: org.h2.Driver
-  
+
   # JPA 설정
   jpa:
     open-in-view: false
@@ -24,20 +26,24 @@ spring:
         # H2에서 UUID 타입 지원을 위한 설정
         type:
           uuid: org.hibernate.type.UUIDCharType
-  
+        # columnDefinition 인용 X
+        globally_quoted_identifiers_skip_column_definitions: true
+        # 키워드 "로 감싸는 설정
+        auto_quote_keyword: true
+
   # H2 콘솔 활성화 (테스트용)
   h2:
     console:
       enabled: true
       path: /h2-console
-  
+
   # SQL 초기화 비활성화 (PostgreSQL 스키마 사용 안함)
   sql:
     init:
       mode: never
       schema-locations: ""
       data-locations: ""
-  
+
   # Batch 설정
   batch:
     jdbc:
@@ -64,3 +70,18 @@ management:
   endpoint:
     health:
       show-details: always
+
+# Kakao API 테스트용 설정
+kakao.api:
+  base-url: https://dapi.kakao.com
+  key: test-api-key
+
+# 테스트용 S3 버킷 설정
+otboo:
+  storage:
+    type: s3
+    s3:
+      access-key: dummy-access
+      secret-key: dummy-secret
+      region: ap-northeast-2
+      bucket: test-bucket

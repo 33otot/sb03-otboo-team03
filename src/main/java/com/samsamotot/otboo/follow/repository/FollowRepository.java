@@ -13,7 +13,7 @@ import java.util.UUID;
  * Date         : 2025. 9. 12.
  * Description  : 팔로우 기능 구현을 위한 JPA repository
  */
-public interface FollowRepository extends JpaRepository<Follow, UUID> {
+public interface FollowRepository extends JpaRepository<Follow, UUID>, FollowRepositoryCustom {
 
     boolean existsByFollowerIdAndFolloweeId(@NotNull UUID followerId, @NotNull UUID followeeId);
 }
