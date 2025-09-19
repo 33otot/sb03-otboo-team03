@@ -69,7 +69,12 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
 
         // 이름 업데이트
         if (newName != null && !newName.isBlank()) {
-            def.updateName(newName);
+            if (!newName.equals(def.getName())) {
+                def.updateName(newName);
+            }
+            else{
+                log.info("[ClothesAttributeDefServiceImpl] 기존의 정의 이름과 동일합니다. 이름: {}", newName);
+            }
         }
         // 옵션 업데이트
         if (newOptions != null) {
