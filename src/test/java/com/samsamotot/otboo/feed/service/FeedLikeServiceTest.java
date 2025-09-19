@@ -1,0 +1,143 @@
+package com.samsamotot.otboo.feed.service;
+
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.FeedFixture;
+import com.samsamotot.otboo.common.fixture.FeedLikeFixture;
+import com.samsamotot.otboo.common.fixture.LocationFixture;
+import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.common.fixture.WeatherFixture;
+import com.samsamotot.otboo.feed.entity.Feed;
+import com.samsamotot.otboo.feed.entity.FeedLike;
+import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
+import com.samsamotot.otboo.feed.repository.FeedRepository;
+import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.user.repository.UserRepository;
+import com.samsamotot.otboo.weather.entity.Weather;
+import java.util.Optional;
+import java.util.UUID;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("FeedLike 서비스 단위 테스트")
+public class FeedLikeServiceTest {
+
+    @Mock
+    private FeedLikeRepository feedLikeRepository;
+
+    @Mock
+    private FeedRepository feedRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @InjectMocks
+    private FeedLikeService feedLikeService;
+
+    User mockUser;
+    Feed mockFeed;
+
+    @BeforeEach
+    void setUp() {
+        mockUser = UserFixture.createUser();
+        Location location = LocationFixture.createLocation();
+        Weather weather = WeatherFixture.createWeather(location);
+        ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
+        mockFeed = FeedFixture.createFeed(mockUser, weather);
+        ReflectionTestUtils.setField(mockFeed, "id", UUID.randomUUID());
+    }
+
+    @Nested
+    @DisplayName("피드 좋아요 생성 테스트")
+    class FeedLikeCreateTest {
+
+        @Test
+        void 피드_좋아요시_좋아요_객체가_반환된다() {
+
+            // given
+            UUID userId = mockUser.getId();
+            UUID feedId = mockFeed.getId();
+
+            FeedLike feedLike = FeedLikeFixture.createFeedLike(mockUser, mockFeed);
+
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+            given(feedRepository.findById(feedId)).willReturn(Optional.of(mockFeed));
+            given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
+            given(feedLikeRepository.save(any(FeedLike.class))).willReturn(feedLike);
+
+            // when
+            FeedLike result = feedLikeService.create(feedId, userId);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result.getFeed()).isEqualTo(mockFeed);
+            assertThat(result.getUser()).isEqualTo(mockUser);
+        }
+
+        @Test
+        void 존재하지_않는_피드에_좋아요시_예외를_던진다() {
+
+            // given
+            UUID userId = mockUser.getId();
+            UUID invalidFeedId = UUID.randomUUID();
+
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+            given(feedRepository.findById(invalidFeedId)).willReturn(Optional.empty());
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> feedLikeService.create(invalidFeedId, userId))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FEED_NOT_FOUND);
+        }
+
+        @Test
+        void 존재하지_않는_사용자가_피드_좋아요시_예외를_던진다() {
+
+            // given
+            UUID invalidUserId = mockUser.getId();
+            UUID feedId = mockFeed.getId();
+
+            given(userRepository.findById(invalidUserId)).willReturn(Optional.empty());
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> feedLikeService.create(feedId, invalidUserId))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.USER_NOT_FOUND);
+        }
+
+        @Test
+        void 이미_좋아요를_누른_피드라면_예외를_던진다() {
+
+            // given
+            UUID userId = mockUser.getId();
+            UUID feedId = mockFeed.getId();
+
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+            given(feedRepository.findById(feedId)).willReturn(Optional.of(mockFeed));
+            given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(true);
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> feedLikeService.create(feedId, userId))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FEED_ALREADY_LIKED);
+        }
+    }
+}
