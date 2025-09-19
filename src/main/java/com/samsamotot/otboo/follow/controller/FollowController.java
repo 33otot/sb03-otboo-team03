@@ -32,10 +32,8 @@ public class FollowController {
 
     /**
      * 새로운 팔로우 관계를 생성한다.
-     *
      * 요청으로 전달된 팔로워 ID와 팔로위 ID를 기반으로
      * 팔로우를 생성하고, 생성된 팔로우 정보를 반환한다.
-     *
      * 요청 본문은 {@link FollowCreateRequest} 형식이며,
      * 유효성 검증(@Valid)이 수행된다.
      *
@@ -59,10 +57,8 @@ public class FollowController {
 
     /**
      * 특정 사용자가 팔로우하고 있는 사용자 목록을 조회한다.
-     *
      * 요청 파라미터로 전달된 followerId(팔로워 ID)를 기준으로
      * 해당 사용자가 팔로우 중인 사용자 목록을 페이징 처리하여 반환한다.
-     *
      * 요청 파라미터는 다음과 같다:
      * <ul>
      *   <li>followerId: 조회 대상 팔로워의 사용자 ID (필수)</li>
@@ -92,17 +88,38 @@ public class FollowController {
         return ResponseEntity.ok().body(followService.getFollowings(request));
     }
 
-    // 팔로워 목록 조회
-//    @GetMapping("/followers")
-//    public ResponseEntity<FollowListResponse> getFollowers(
-//        @RequestParam UUID followeeId,
-//        @RequestParam(required = false) String cursor,
-//        @RequestParam(required = false) String idAfter,
-//        @RequestParam Integer limit,
-//        @RequestParam(required = false) String nameLike
-//    ) {
-//        return ResponseEntity.ok().body(new FollowListResponse());
-//    }
+    /**
+     * 특정 사용자를 팔로우하는 사용자(팔로워) 목록을 조회한다.
+     * 요청 파라미터로 전달된 followeeId(대상 사용자 ID)를 기준으로
+     * 해당 사용자를 팔로우 중인 사용자 목록을 커서 기반으로 페이징하여 반환한다.
+     * 요청 파라미터는 다음과 같다:
+     * <ul>
+     *   <li>followeeId: 조회 대상(팔로위) 사용자 ID (필수)</li>
+     *   <li>cursor: 커서 기반 페이지네이션을 위한 문자열 (선택)</li>
+     *   <li>idAfter: 동일 createdAt 시 보조 커서로 사용할 UUID (선택)</li>
+     *   <li>limit: 조회할 데이터 개수 제한 (필수)</li>
+     *   <li>nameLike: 팔로워 이름 검색 조건 (부분 일치, 선택)</li>
+     * </ul>
+     *
+     * @param followeeId 대상 사용자 ID
+     * @param cursor     커서 문자열 (nullable)
+     * @param idAfter    보조 커서 UUID (nullable)
+     * @param limit      조회 건수
+     * @param nameLike   이름 검색(부분 일치, nullable)
+     * @return 팔로워 목록과 페이징 정보를 담은 ResponseEntity (HTTP 200 OK)
+     * @throws OtbooException 대상 사용자 미존재/잠금 등 서비스 예외 전파
+     */
+    @GetMapping("/followers")
+    public ResponseEntity<FollowListResponse> getFollowers(
+        @RequestParam UUID followeeId,
+        @RequestParam(required = false) String cursor,
+        @RequestParam(required = false) UUID idAfter,
+        @RequestParam Integer limit,
+        @RequestParam(required = false) String nameLike
+    ) {
+        FollowingRequest request = new FollowingRequest(followeeId, cursor, idAfter, limit, nameLike);
+        return ResponseEntity.ok().body(followService.getFollowers(request));
+    }
 
 
     // 팔로우 취소

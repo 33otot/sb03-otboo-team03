@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException e) {
         log.warn("AuthenticationException: {}", e.getMessage());
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.UNAUTHORIZED);
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        return ResponseEntity.status(ErrorCode.UNAUTHORIZED.getHttpStatus()).body(errorResponse);
     }
 
     /**
@@ -49,8 +49,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException e) {
         log.warn("BadCredentialsException: {}", e.getMessage());
-        ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INVALID_PASSWORD);
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.EMAIL_OR_PASSWORD_MISMATCH);
+        return ResponseEntity.status(ErrorCode.EMAIL_OR_PASSWORD_MISMATCH.getHttpStatus()).body(errorResponse);
     }
 
     /**
@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException e) {
         log.warn("AccessDeniedException: {}", e.getMessage());
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.HANDLE_ACCESS_DENIED);
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        return ResponseEntity.status(ErrorCode.HANDLE_ACCESS_DENIED.getHttpStatus()).body(errorResponse);
     }
 
     /**
@@ -76,7 +76,7 @@ public class GlobalExceptionHandler {
         details.put(fieldName, errorMessage);
         });
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, details);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus()).body(errorResponse);
     }
 
     /**
@@ -92,7 +92,7 @@ public class GlobalExceptionHandler {
         details.put(fieldName, errorMessage);
         });
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, details);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus()).body(errorResponse);
     }
 
     /**
@@ -102,7 +102,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
         log.warn("MethodArgumentTypeMismatchException: {}", e.getMessage());
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INVALID_TYPE_VALUE);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return ResponseEntity.status(ErrorCode.INVALID_TYPE_VALUE.getHttpStatus()).body(errorResponse);
     }
 
     /**
@@ -113,7 +113,7 @@ public class GlobalExceptionHandler {
         log.warn("MissingServletRequestParameterException: {}", e.getMessage());
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, 
             "필수 파라미터가 누락되었습니다: " + e.getParameterName());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus()).body(errorResponse);
     }
 
     /**
@@ -123,7 +123,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.warn("HttpMessageNotReadableException: {}", e.getMessage());
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, "잘못된 JSON 형식입니다.");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus()).body(errorResponse);
     }
 
     /**
@@ -133,7 +133,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
         log.warn("MaxUploadSizeExceededException: {}", e.getMessage());
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, "파일 크기가 너무 큽니다.");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus()).body(errorResponse);
     }
 
     /**
@@ -143,6 +143,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
         log.error("Unexpected error occurred", e);
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus()).body(errorResponse);
     }
 }
