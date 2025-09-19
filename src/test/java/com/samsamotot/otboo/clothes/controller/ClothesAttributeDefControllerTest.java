@@ -1,7 +1,10 @@
 package com.samsamotot.otboo.clothes.controller;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -9,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest;
+import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefUpdateRequest;
 import com.samsamotot.otboo.clothes.service.ClothesAttributeDefService;
 import java.time.Instant;
 import java.util.List;
@@ -80,6 +84,39 @@ class ClothesAttributeDefControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").exists())
                 .andExpect(jsonPath("$.status").value(400));
+        }
+    }
+
+    @Nested
+    @DisplayName("의상 속성 정의 수정 컨트롤러 테스트")
+    class ClothesAttributeDefUpdateTest {
+        @Test
+        void 수정에_성공하면_200코드를_반환해야_한다() throws Exception {
+
+            // given
+            UUID defId = UUID.randomUUID();
+            ClothesAttributeDefUpdateRequest request = new ClothesAttributeDefUpdateRequest(
+                "테스트 속성 명",
+                List.of("옵션1", "옵션2", "옵션3")
+            );
+
+            ClothesAttributeDefDto responseDto = ClothesAttributeDefDto.builder()
+                .id(defId)
+                .name("테스트 속성 명")
+                .selectableValues(List.of("옵션1", "옵션2", "옵션3"))
+                .createdAt(Instant.now())
+                .build();
+
+            when(defService.update(eq(defId), any(ClothesAttributeDefUpdateRequest.class))).thenReturn(responseDto);
+
+            // when & then
+            mockMvc.perform(patch("/api/clothes/attribute-defs/{definitionId}", defId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("테스트 속성 명"))
+                .andExpect(jsonPath("$.selectableValues", hasSize(3)))
+                .andExpect(jsonPath("$.selectableValues[0]").value("옵션1"));
         }
     }
 }
