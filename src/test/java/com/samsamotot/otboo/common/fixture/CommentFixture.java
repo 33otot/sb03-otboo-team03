@@ -3,7 +3,10 @@ package com.samsamotot.otboo.common.fixture;
 import com.samsamotot.otboo.comment.dto.CommentDto;
 import com.samsamotot.otboo.comment.entity.Comment;
 import com.samsamotot.otboo.feed.entity.Feed;
+import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
+import java.time.Instant;
+import java.util.UUID;
 
 public class CommentFixture {
 
@@ -32,6 +35,15 @@ public class CommentFixture {
             .feedId(comment.getFeed().getId())
             .content(comment.getContent())
             .createdAt(comment.getCreatedAt())
+            .build();
+    }
+
+    public static CommentDto createCommentDtoWithCreatedAt(String content, AuthorDto authorDto, UUID feedId, Instant createdAt) {
+        return CommentDto.builder()
+            .author(authorDto)
+            .feedId(feedId)
+            .content(content)
+            .createdAt(createdAt)
             .build();
     }
 }
