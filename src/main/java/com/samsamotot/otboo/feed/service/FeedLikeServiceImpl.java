@@ -30,6 +30,15 @@ public class FeedLikeServiceImpl implements FeedLikeService {
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
 
+    /**
+     * 피드에 좋아요를 생성합니다.
+     *
+     * @param feedId 좋아요를 추가할 피드의 ID
+     * @param userId 좋아요를 누른 사용자의 ID
+     * @return 생성된 피드 좋아요(FeedLike) 객체
+     * @throws OtbooException 사용자/피드를 찾을 수 없는 경우
+     *                        이미 좋아요를 누른 피드인 경우
+     */
     @Override
     public FeedLike create(UUID feedId, UUID userId) {
 
