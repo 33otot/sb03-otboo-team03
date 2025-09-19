@@ -101,9 +101,12 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
         return defMapper.toDto(def);
     }
 
+//    @PreAuthorize("hasRole('ADMIN')")
     @Override
     public void delete(UUID defId) {
-        ClothesAttributeDef def = defRepository.findById(defId).orElseThrow();
+        ClothesAttributeDef def = defRepository.findById(defId)
+                .orElseThrow(() -> new ClothesAttributeDefNotFoundException(ErrorCode.CLOTHES_ATTRIBUTE_DEF_NOT_FOUND));
+
         defRepository.delete(def);
     }
 }
