@@ -267,4 +267,23 @@ class ClothesAttributeDefServiceTest {
             assertThat(result.selectableValues()).containsExactlyInAnyOrderElementsOf(defOptions);
         }
     }
+
+    @Nested
+    @DisplayName("의상 속성 정의 삭제 서비스 테스트")
+    class ClothesAttributeDefDeleteServiceTest {
+        @Test
+        void 관리자는_의상_속성_정의를_삭제할_수_있다() {
+            // given
+            UUID defId = UUID.randomUUID();
+
+            ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
+            when(defRepository.findById(defId)).thenReturn(Optional.of(defEntity));
+
+            // when
+            clothesAttributeDefService.delete(defId);
+
+            // then
+            verify(defRepository).delete(defEntity);
+        }
+    }
 }
