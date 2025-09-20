@@ -19,6 +19,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -113,5 +115,22 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
                 .orElseThrow(() -> new ClothesAttributeDefNotFoundException(ErrorCode.CLOTHES_ATTRIBUTE_DEF_NOT_FOUND));
 
         defRepository.delete(def);
+    }
+
+//    @PreAuthorize("hasRole('ADMIN')")
+    @Override
+    public List<ClothesAttributeDefDto> findAll(String sortBy, String sortDirection,
+        String keywordLike) {
+        // Sort 객체
+        Direction direction = sortDirection.equalsIgnoreCase("ASCENDING") ? Direction.ASC : Direction.DESC;
+        Sort sort = Sort.by(direction, sortBy);
+
+        List<ClothesAttributeDef> sorted = defRepository.findAll(sort);
+
+        List<ClothesAttributeDefDto> result = sorted.stream()
+            .map(defMapper::toDto)
+            .toList();
+
+        return result;
     }
 }
