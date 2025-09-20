@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+/**
+ * 의상 속성 정의 Springdoc 어노테이션 매핑
+ */
 @Tag(name = "의상 속성 정의", description = "의상 속성 정의 관련 API")
 public interface ClothesAttributeDefApi {
 

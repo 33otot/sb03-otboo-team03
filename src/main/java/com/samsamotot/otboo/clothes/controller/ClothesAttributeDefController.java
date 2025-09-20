@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 의상 속성 정의 컨트롤러 메서드
+ */
 @RequiredArgsConstructor
 @RequestMapping("/api/clothes/attribute-defs")
 @RestController
