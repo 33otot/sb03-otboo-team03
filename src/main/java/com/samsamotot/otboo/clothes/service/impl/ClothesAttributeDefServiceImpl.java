@@ -107,6 +107,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
     }
 
 //    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     @Override
     public void delete(UUID defId) {
         ClothesAttributeDef def = defRepository.findById(defId)
