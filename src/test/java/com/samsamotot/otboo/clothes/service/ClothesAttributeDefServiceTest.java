@@ -32,6 +32,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
@@ -300,6 +302,52 @@ class ClothesAttributeDefServiceTest {
                 .hasMessageContaining(ErrorCode.CLOTHES_ATTRIBUTE_DEF_NOT_FOUND.getMessage());
 
             verify(defRepository, times(1)).findById(defId);
+        }
+    }
+
+    @Nested
+    @DisplayName("의상 속성 정의 조회 서비스 테스트")
+    class ClothesAttributeDefFindServiceTest {
+        @Test
+        void 정렬_조건에_맞는_결과를_반환한다() {
+            // given
+            String sortBy = "createdAt";
+            String sortDirection = "ASCENDING";
+
+            ClothesAttributeDef def1 = ClothesAttributeDef.createClothesAttributeDef("상의", List.of("반팔", "긴팔"));
+            ReflectionTestUtils.setField(def1, "createdAt", Instant.parse("2023-01-01T00:00:00Z"));
+
+            ClothesAttributeDef def2 = ClothesAttributeDef.createClothesAttributeDef("하의", List.of("반바지", "긴바지"));
+            ReflectionTestUtils.setField(def2, "createdAt", Instant.parse("2023-02-03T00:01:00Z"));
+
+            ClothesAttributeDef def3 = ClothesAttributeDef.createClothesAttributeDef("모자", List.of("캡모자", "베레모", "중절모"));
+            ReflectionTestUtils.setField(def3, "createdAt", Instant.parse("2023-02-03T00:05:01Z"));
+
+            List<ClothesAttributeDef> mockResult = List.of(def1, def2, def3);
+
+            // Repository가 정렬된 결과를 반환한다고 가정
+            when(defRepository.findAll(any(Sort.class))).thenReturn(mockResult);
+
+            // Mapper가 mock이므로 stub 해줘야 함
+            when(defMapper.toDto(any(ClothesAttributeDef.class)))
+                .thenAnswer(invocation -> {
+                    ClothesAttributeDef entity = invocation.getArgument(0);
+                    return ClothesAttributeDefDto.builder()
+                        .id(entity.getId())
+                        .name(entity.getName())
+                        .selectableValues(entity.getOptions().stream().map(ClothesAttributeOption::getValue).toList())
+                        .createdAt(entity.getCreatedAt())
+                        .build();
+                });
+
+            // when
+            List<ClothesAttributeDefDto> results =
+                clothesAttributeDefService.findAll(sortBy, sortDirection, null);
+
+            // isSorted() 검증
+            assertThat(results)
+                .extracting(ClothesAttributeDefDto::createdAt)
+                .isSorted();
         }
     }
 }
