@@ -109,6 +109,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
     }
 
 //    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     @Override
     public void delete(UUID defId) {
         ClothesAttributeDef def = defRepository.findById(defId)
@@ -118,19 +119,29 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
     }
 
 //    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
     @Override
     public List<ClothesAttributeDefDto> findAll(String sortBy, String sortDirection,
         String keywordLike) {
+
+        log.info("[ClothesAttributeDefServiceImpl] findAll 호출됨");
         // Sort 객체
         Direction direction = sortDirection.equalsIgnoreCase("ASCENDING") ? Direction.ASC : Direction.DESC;
         Sort sort = Sort.by(direction, sortBy);
+        List<ClothesAttributeDef> sorted;
 
-        List<ClothesAttributeDef> sorted = defRepository.findAll(sort);
+        // 검색어 조건이 없는 경우
+        if (keywordLike == null || keywordLike.isBlank()) {
+            sorted = defRepository.findAll(sort);
+        }
+        else {
+            sorted = defRepository.findByNameContaining(keywordLike, sort);
+        }
 
-        List<ClothesAttributeDefDto> result = sorted.stream()
+        log.info("[ClothesAttributeDefServiceImpl] findAll 반환 값 첫 번째 정의 이름: {}, 옵션값: {}, 생성시간: {} ", sorted.get(0).getName(), sorted.get(0).getOptions(), sorted.get(0).getCreatedAt());
+
+        return sorted.stream()
             .map(defMapper::toDto)
             .toList();
-
-        return result;
     }
 }
