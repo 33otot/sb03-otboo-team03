@@ -3,7 +3,9 @@ package com.samsamotot.otboo.clothes.controller;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -117,6 +119,22 @@ class ClothesAttributeDefControllerTest {
                 .andExpect(jsonPath("$.name").value("테스트 속성 명"))
                 .andExpect(jsonPath("$.selectableValues", hasSize(3)))
                 .andExpect(jsonPath("$.selectableValues[0]").value("옵션1"));
+        }
+    }
+
+    @Nested
+    @DisplayName("의상 속성 정의 삭제 컨트롤러 테스트")
+    class ClothesAttributeDefDeleteTest {
+        @Test
+        void 의상_속성_정의_삭제_성공() throws Exception {
+
+            // given
+            UUID defId = UUID.randomUUID();
+
+            mockMvc.perform(delete("/api/clothes/attribute-defs/{definitionId}", defId))
+                .andExpect(status().isNoContent());
+
+            verify(defService).delete(defId);
         }
     }
 }
