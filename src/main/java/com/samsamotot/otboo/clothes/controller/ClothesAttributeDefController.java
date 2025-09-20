@@ -5,16 +5,19 @@ import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefUpdateRequest;
 import com.samsamotot.otboo.clothes.service.ClothesAttributeDefService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
@@ -54,7 +57,20 @@ public class ClothesAttributeDefController implements ClothesAttributeDefApi {
         defService.delete(definitionId);
 
         return ResponseEntity
-            .noContent()
+            .status(HttpStatus.NO_CONTENT)
             .build();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ClothesAttributeDefDto>> getClothesAttributeDef(
+        @RequestParam(name = "sortBy") String sortBy,
+        @RequestParam(name = "sortDirection") String sortDirection,
+        @RequestParam(name = "keywordLike", required = false) String keywordLike
+    ) {
+        List<ClothesAttributeDefDto> result = defService.findAll(sortBy, sortDirection, keywordLike);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(result);
     }
 }
