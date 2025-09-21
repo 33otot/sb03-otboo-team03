@@ -1,9 +1,6 @@
 package com.samsamotot.otboo.follow.service;
 
-import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
-import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.FollowListResponse;
-import com.samsamotot.otboo.follow.dto.FollowingRequest;
+import com.samsamotot.otboo.follow.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 
@@ -21,12 +18,12 @@ public interface FollowService {
     /*        팔로우 기능     */
     FollowDto follow(FollowCreateRequest request);
 
+    /*        TODO 팔로우 요약 정보 조회     */
+    FollowSummaryDto findFollowSummaries(UUID userId);
+
     /*        팔로잉 목록 조회     */
     FollowListResponse getFollowings(@Valid FollowingRequest request);
 
     /*            팔로워 목록 조회     */
     FollowListResponse getFollowers(@Valid FollowingRequest request);
-    // 팔로우 요약 정보 조회
-    FollowSummaryDto findFollowSummaries(UUID userId);
-
 }

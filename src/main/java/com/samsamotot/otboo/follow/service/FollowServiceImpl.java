@@ -2,10 +2,7 @@ package com.samsamotot.otboo.follow.service;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
-import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.FollowListResponse;
-import com.samsamotot.otboo.follow.dto.FollowingRequest;
+import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
@@ -108,9 +105,45 @@ public class FollowServiceImpl implements FollowService {
             log.warn(FOLLOW_SERVICE + "동시성 중복 팔로우 감지: followerId={}, followeeId={}", follower.getId(), followee.getId());
             throw new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST);
         }
-
     }
 
+    // TODO 팔로우 요약 정보 조회
+    @Override
+    public FollowSummaryDto findFollowSummaries(UUID userId) {
+
+        UUID loggedInUserId = UUID.randomUUID();
+
+        User loggedInUser = userRepository.findById(loggedInUserId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+        if(loggedInUser.isLocked()) {
+            throw new OtbooException(ErrorCode.USER_LOCKED);
+        }
+        User targetUser = userRepository.findById(userId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+        if(targetUser.isLocked()) {
+            throw new OtbooException(ErrorCode.USER_LOCKED);
+        }
+
+        boolean isFollowed  = followRepository.existsByFollowerIdAndFolloweeId(userId, loggedInUserId);
+
+        UUID followedByMeId = followRepository.findByFollowerIdAndFolloweeId(loggedInUserId, userId)
+            .map(follow -> follow.getId())
+            .orElse(null);
+
+        boolean isFollowing = (followedByMeId != null);
+
+        long followerCount  = followRepository.countByFolloweeId(userId);
+        long followingCount = followRepository.countByFollowerId(userId);
+
+        FollowSummaryDto response = FollowSummaryDto.builder()
+            .followeeId(targetUser.getId())
+            .followerCount(followerCount)
+            .followingCount(followingCount)
+            .followedByMe(isFollowing)
+            .followedByMeId(followedByMeId)
+            .followingMe(isFollowed)
+            .build();
+
+        return response;
+    }
 
     /**
      * 특정 사용자가 팔로우하고 있는 사용자 목록을 조회한다.
@@ -261,8 +294,6 @@ public class FollowServiceImpl implements FollowService {
         return response;
     }
 
-
-
     private static Instant parseCursorToInstant(String cursor) {
         if (cursor == null || cursor.isBlank()) {
             return null;
@@ -276,40 +307,6 @@ public class FollowServiceImpl implements FollowService {
         try {
             return java.time.LocalDateTime.parse(cursor).toInstant(java.time.ZoneOffset.UTC);
         } catch (Exception ignore) {}
-        return null;
-    }
-
-    // 팔로우 요약 정보 조회
-    @Override
-    public FollowSummaryDto findFollowSummaries(UUID userId) {
-//        UUID followeeId, // 팔로우 대상 사용자 ID - given
-//        Long followerCount, // 팔로워 수 - follow
-//        Long followingCount, // 팔로잉 수 - follow
-//        boolean followedByMe, // 내가 팔로우 대상 사용자를 팔로우 하고 있는지 여부 - follow
-//        UUID followedByMeId, // 내가 팔로우 대상 사용자를 팔로우하고 있는 팔로우 ID - follow
-//        boolean followingMe // 대상 사용자가 나를 팔로우하고 있는지 여부 - follow
-
-
-        // findFollowerByFolloweeId
-        // findFolloweeByFollowerId
-        // existByFollowerAndFollowee 정방향
-        // 위에서 true 면 아이디 가져옴
-        // existByFollowerAndFollowee 역방향 조회
-
-        /**
-         * 1. 로그인 유저 id 가져온다.
-         * 2. 대상 사용자 존재 여부 확인
-         * 3. locked 여부 확인
-         * 4. 대상 사용자 기준 팔로우 수 확인
-         * 5. 대상 사용자 기준 팔로잉 수 확인
-         * 6. 내가 대상 사용자를 팔로잉 중인지 확인
-         * 6-A. 팔로잉 중이면 팔로우 id 확인
-         * 7. 대상 사용자가 나를 팔로잉 중인지 확인
-         * 8. dto로 매핑 후 return
-         */
-
-
-
         return null;
     }
 }

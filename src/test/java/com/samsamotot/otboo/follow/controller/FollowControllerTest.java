@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowListResponse;
+import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
 import com.samsamotot.otboo.follow.service.FollowService;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import org.junit.jupiter.api.DisplayName;
@@ -74,6 +75,40 @@ class FollowControllerTest {
             .andExpect(jsonPath("$.follower.profileImageUrl").value(follower.profileImageUrl()));
 
         then(followService).should(times(1)).follow(refEq(validRequest));
+        then(followService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    void 팔로우_요약_정보_조회_파라미터_정상_입력_받을시_간단_목록_반환한다() throws Exception {
+        // given
+        UUID targetUserId   = UUID.randomUUID();
+        UUID followedByMeId = UUID.randomUUID();
+
+        var stub = FollowSummaryDto.builder()
+            .followeeId(targetUserId)
+            .followerCount(3L)
+            .followingCount(5L)
+            .followedByMe(true)
+            .followedByMeId(followedByMeId)
+            .followingMe(false)
+            .build();
+
+        given(followService.findFollowSummaries(targetUserId)).willReturn(stub);
+
+        // when & then
+        mockMvc.perform(get("/api/follows/summary")
+                .param("userId", targetUserId.toString())
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.followeeId").value(targetUserId.toString()))
+            .andExpect(jsonPath("$.followerCount").value(3))
+            .andExpect(jsonPath("$.followingCount").value(5))
+            .andExpect(jsonPath("$.followedByMe").value(true))
+            .andExpect(jsonPath("$.followedByMeId").value(followedByMeId.toString()))
+            .andExpect(jsonPath("$.followingMe").value(false));
+
+        then(followService).should(times(1)).findFollowSummaries(targetUserId);
         then(followService).shouldHaveNoMoreInteractions();
     }
 
@@ -155,59 +190,6 @@ class FollowControllerTest {
 
         then(followService).should(times(1)).getFollowers(any());
         then(followService).shouldHaveNoMoreInteractions();
-
-    }
-
-//        UUID followeeId, // 팔로우 대상 사용자 ID - given
-//        Long followerCount, // 팔로워 수 - follow
-//        Long followingCount, // 팔로잉 수 - follow
-//        boolean followedByMe, // 내가 팔로우 대상 사용자를 팔로우 하고 있는지 여부 - follow
-//        UUID followedByMeId, // 내가 팔로우 대상 사용자를 팔로우하고 있는 팔로우 ID - follow
-//        boolean followingMe // 대상 사용자가 나를 팔로우하고 있는지 여부 - follow
-
-    // findFollowerByFolloweeId
-    // findFolloweeByFollowerId
-    // existByFollowerAndFollowee 정방향
-    // 위에서 true 면 아이디 가져옴
-    // existByFollowerAndFollowee 역방향 조회
-
-    @Test
-    void 유저id를_정상입력_받을경우_요약된_팔로우_리스트를_응답한다() throws Exception {
-        // given
-
-        // when
-
-        // then
-
-    }
-
-    @Test
-    void 정상적으로_팔로워_수를_가져온다() throws Exception {
-        // given
-
-        // when
-
-        // then
-
-    }
-
-    @Test
-    void 정상적으로_팔로우_수를_가져온다() throws Exception {
-        // given
-
-        // when
-
-        // then
-
-    }
-
-    @Test
-    void 사용자_기준_팔로우_여부_확인() throws Exception {
-        // given
-
-        // when
-
-        // then
 
     }
 }

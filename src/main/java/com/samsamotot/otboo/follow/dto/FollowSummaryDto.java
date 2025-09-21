@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.follow.dto;
 
+import lombok.Builder;
+
 import java.util.UUID;
 
 /**
@@ -8,6 +10,7 @@ import java.util.UUID;
  * Author       : dounguk
  * Date         : 2025. 9. 12.
  */
+@Builder
 public record FollowSummaryDto(
     UUID followeeId, // 팔로우 대상 사용자 ID
     Long followerCount, // 팔로워 수
