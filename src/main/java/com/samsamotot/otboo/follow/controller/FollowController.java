@@ -46,7 +46,8 @@ public class FollowController {
         return ResponseEntity.status(HttpStatus.CREATED).body(follow);
     }
 
-    // TODO 팔로우 요약 정보 조회 - 팔로우 하고싶은 대상의 요약 정보 요청
+
+    // TODO 팔로우 요약 정보 조회 - 주석 추가
     @GetMapping("/summary")
     public ResponseEntity<FollowSummaryDto> followSummary(@RequestParam UUID userId) {
         return ResponseEntity.ok().body(followService.findFollowSummaries(userId)); // 200, 400

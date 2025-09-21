@@ -107,11 +107,13 @@ public class FollowServiceImpl implements FollowService {
         }
     }
 
-    // TODO 팔로우 요약 정보 조회
+    // TODO 팔로우 요약 정보 조회 - 주석 추가
     @Override
     public FollowSummaryDto findFollowSummaries(UUID userId) {
-
         UUID loggedInUserId = UUID.randomUUID();
+        log.info(FOLLOW_SERVICE + "팔로우 요약 조회 시작: targetUserId={}", userId);
+        log.warn(FOLLOW_SERVICE + "임시 UUID 사용 중. Security 적용 후 Authentication 기반으로 교체 필요: tempLoggedInUserId={}", loggedInUserId);
+
 
         User loggedInUser = userRepository.findById(loggedInUserId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
         if(loggedInUser.isLocked()) {
@@ -141,6 +143,8 @@ public class FollowServiceImpl implements FollowService {
             .followedByMeId(followedByMeId)
             .followingMe(isFollowed)
             .build();
+        log.info(FOLLOW_SERVICE + "팔로우 요약 조회 완료: targetUserId={}, followerCount={}, followingCount={}, followedByMe={}, followingMe={}",
+            userId, followerCount, followingCount, isFollowing, isFollowed);
 
         return response;
     }
@@ -300,13 +304,16 @@ public class FollowServiceImpl implements FollowService {
         }
         try {
             return Instant.parse(cursor);
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
         try {
             return java.time.OffsetDateTime.parse(cursor).toInstant();
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
         try {
             return java.time.LocalDateTime.parse(cursor).toInstant(java.time.ZoneOffset.UTC);
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
         return null;
     }
 }
