@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.directmessage.service;
 
 import com.samsamotot.otboo.common.dto.CursorResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import org.springframework.stereotype.Service;
@@ -13,5 +14,5 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public interface DirectMessageService {
-    CursorResponse<DirectMessage> getMessages(MessageRequest request);
+    DirectMessageListResponse getMessages(MessageRequest request);
 }

@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.directmessage.controller;
 
 import com.samsamotot.otboo.common.dto.CursorResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
@@ -28,7 +29,7 @@ public class DirectMessageController {
 
 
     @GetMapping
-    public ResponseEntity<CursorResponse<DirectMessage>> directMessages(
+    public ResponseEntity<DirectMessageListResponse> directMessages(
         @RequestParam UUID userId,
         @RequestParam(required = false) String cursor,
         @RequestParam(required = false) UUID idAfter,

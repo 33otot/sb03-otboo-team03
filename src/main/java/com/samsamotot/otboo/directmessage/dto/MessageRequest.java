@@ -12,7 +12,7 @@ import java.util.UUID;
  */
 public record MessageRequest (
     @NotNull
-    UUID followerId,
+    UUID userId,
 
     String cursor,
 
