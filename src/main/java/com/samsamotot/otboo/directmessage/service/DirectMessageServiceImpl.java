@@ -42,7 +42,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     // TODO DM 목록 조회 : me 정보 가져오는 로직 수정 필요
     @Override
     public DirectMessageListResponse getMessages(MessageRequest request) {
-        log.warn(DM_SERVICE + "DM 목록 조회 시작");
+        log.info(DM_SERVICE + "DM 목록 조회 시작 - request: {}", request);
         UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001"); // TODO 추후 currentUserId() 로 수정
         UUID otherId = request.userId();
 
@@ -89,6 +89,8 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         }
 
         long total = directMessageRepository.countBetween(myId, otherId);
+
+        log.info(DM_SERVICE + "DM 목록 조회 완료 - total: {}, hasNext: {}", total, hasNext);
 
         return DirectMessageListResponse.builder()
             .data(data.stream().map(directMessageMapper::toDto).toList())

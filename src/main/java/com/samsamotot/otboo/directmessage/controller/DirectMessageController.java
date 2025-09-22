@@ -28,6 +28,15 @@ public class DirectMessageController {
     private final DirectMessageService directMessageService;
 
 
+    /**
+     * DM 목록을 조회하는 API
+     *
+     * @param userId   상대방 사용자 ID
+     * @param cursor   커서 기반 페이지네이션을 위한 기준 시각(선택)
+     * @param idAfter  동일 시각일 경우 이어지는 메시지 기준 ID(선택)
+     * @param limit    조회할 메시지 개수
+     * @return         메시지 목록 및 페이지네이션 정보
+     */
     @GetMapping
     public ResponseEntity<DirectMessageListResponse> directMessages(
         @RequestParam UUID userId,
