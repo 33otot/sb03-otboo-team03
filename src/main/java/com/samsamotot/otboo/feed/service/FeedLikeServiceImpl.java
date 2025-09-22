@@ -74,5 +74,16 @@ public class FeedLikeServiceImpl implements FeedLikeService {
     @Override
     public void delete(UUID feedId, UUID userId) {
 
+        log.debug(SERVICE + "피드 좋아요 취소 시작: feedId = {}, userId = {}", feedId, userId);
+
+        Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
+
+        FeedLike feedLike = feedLikeRepository.findByFeedIdAndUserId(feedId, userId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_LIKE_NOT_FOUND));
+
+        feedLikeRepository.delete(feedLike);
+
+        log.debug(SERVICE + "피드 좋아요 취소 완료 feedLikeId = {}", feedLike.getId());
     }
 }
