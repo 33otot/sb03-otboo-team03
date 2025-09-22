@@ -50,7 +50,7 @@ public class FollowController {
     // TODO 팔로우 요약 정보 조회 - 주석 추가
     @GetMapping("/summary")
     public ResponseEntity<FollowSummaryDto> followSummary(@RequestParam UUID userId) {
-        return ResponseEntity.ok().body(followService.findFollowSummaries(userId)); // 200, 400
+        return ResponseEntity.ok().body(followService.findFollowSummaries(userId));
     }
 
 

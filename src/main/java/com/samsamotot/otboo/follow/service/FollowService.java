@@ -18,7 +18,7 @@ public interface FollowService {
     /*        팔로우 기능     */
     FollowDto follow(FollowCreateRequest request);
 
-    /*        TODO 팔로우 요약 정보 조회     */
+    /*        팔로우 요약 정보 조회     */
     FollowSummaryDto findFollowSummaries(UUID userId);
 
     /*        팔로잉 목록 조회     */
