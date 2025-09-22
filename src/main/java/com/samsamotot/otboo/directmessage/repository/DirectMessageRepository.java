@@ -16,8 +16,10 @@ import java.util.UUID;
  * Author       : dounguk
  * Date         : 2025. 9. 12.
  */
-public interface DirectMessageRepository extends JpaRepository<DirectMessage, UUID>, DirectMessageRepositoryCustom {
+public interface DirectMessageRepository extends JpaRepository<DirectMessage, UUID> {
 
+
+    // 양방향, 우선순위: cursor, 타이브레이커 idAfter, DESC 고정
     @Query("""
             SELECT m FROM DirectMessage m
             JOIN FETCH m.sender s
@@ -39,9 +41,9 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
     );
 
     @Query("""
-        SELECT COUNT(m) FROM DirectMessage m
-        WHERE ((m.sender.id = :me AND m.receiver.id = :other)
-            OR (m.sender.id = :other AND m.receiver.id = :me))
-    """)
+            SELECT COUNT(m) FROM DirectMessage m
+            WHERE ((m.sender.id = :me AND m.receiver.id = :other)
+                OR (m.sender.id = :other AND m.receiver.id = :me))
+        """)
     long countBetween(@Param("me") UUID me, @Param("other") UUID other);
 }

@@ -1,7 +1,5 @@
 package com.samsamotot.otboo.directmessage.dto;
 
-import com.samsamotot.otboo.directmessage.entity.DirectMessage;
-import com.samsamotot.otboo.follow.dto.FollowDto;
 import lombok.Builder;
 
 import java.util.List;

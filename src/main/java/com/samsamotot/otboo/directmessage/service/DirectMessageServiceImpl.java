@@ -46,7 +46,6 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001"); // TODO 추후 currentUserId() 로 수정
         UUID otherId = request.userId();
 
-
         User me = userRepository.findById(myId)
             .orElseThrow(() -> {
                 log.warn(DM_SERVICE + " 사용자 없음: userId={}", request.userId());
@@ -107,9 +106,10 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         return Instant.parse(cursor);
     }
 
-    private static UUID currentUserId() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getName() == null) throw new OtbooException(ErrorCode.UNAUTHORIZED);
-        return UUID.fromString(auth.getName());
-    }
+    // TODO 로그인 로직 추가되면 사용 예정 - 커버리지 문제로 제거 상태
+//    private static UUID currentUserId() {
+//        var auth = SecurityContextHolder.getContext().getAuthentication();
+//        if (auth == null || auth.getName() == null) throw new OtbooException(ErrorCode.UNAUTHORIZED);
+//        return UUID.fromString(auth.getName());
+//    }
 }
