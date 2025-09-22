@@ -81,7 +81,7 @@ public class FeedLikeServiceTest {
             FeedLike feedLike = FeedLikeFixture.createFeedLike(mockUser, mockFeed);
 
             given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
-            given(feedRepository.findById(feedId)).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
             given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
             given(feedLikeRepository.save(any(FeedLike.class))).willReturn(feedLike);
 
@@ -102,7 +102,7 @@ public class FeedLikeServiceTest {
             UUID invalidFeedId = UUID.randomUUID();
 
             given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
-            given(feedRepository.findById(invalidFeedId)).willReturn(Optional.empty());
+            given(feedRepository.findByIdAndIsDeletedFalse(invalidFeedId)).willReturn(Optional.empty());
 
             // when & then
             Assertions.assertThatThrownBy(() -> feedLikeService.create(invalidFeedId, userId))
@@ -135,7 +135,7 @@ public class FeedLikeServiceTest {
             UUID feedId = mockFeed.getId();
 
             given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
-            given(feedRepository.findById(feedId)).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
             given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(true);
 
             // when & then
@@ -183,10 +183,7 @@ public class FeedLikeServiceTest {
 
             given(feedRepository.findByIdAndIsDeletedFalse(invalidFeedId)).willReturn(Optional.empty());
 
-            // when
-            feedLikeService.delete(invalidFeedId, userId);
-
-            // then
+            // when & then
             Assertions.assertThatThrownBy(() -> feedLikeService.delete(invalidFeedId, userId))
                     .isInstanceOf(OtbooException.class)
                     .extracting(e -> ((OtbooException) e).getErrorCode())
@@ -206,10 +203,7 @@ public class FeedLikeServiceTest {
             given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
             given(feedLikeRepository.findByFeedIdAndUserId(feedId, userId)).willReturn(Optional.empty());
 
-            // when
-            feedLikeService.delete(feedId, userId);
-
-            // then
+            // when & then
             Assertions.assertThatThrownBy(() -> feedLikeService.delete(feedId, userId))
                 .isInstanceOf(OtbooException.class)
                 .extracting(e -> ((OtbooException) e).getErrorCode())

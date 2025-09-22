@@ -48,7 +48,7 @@ public class FeedLikeServiceImpl implements FeedLikeService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND, Map.of("userId", userId.toString())));
 
-        Feed feed = feedRepository.findById(feedId)
+        Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
 
         if (feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)) {
@@ -82,7 +82,7 @@ public class FeedLikeServiceImpl implements FeedLikeService {
         FeedLike feedLike = feedLikeRepository.findByFeedIdAndUserId(feedId, userId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_LIKE_NOT_FOUND));
 
-        feedLikeRepository.delete(feedLike);
+        feedLikeRepository.deleteById(feedLike.getId());
 
         log.debug(SERVICE + "피드 좋아요 취소 완료 feedLikeId = {}", feedLike.getId());
     }
