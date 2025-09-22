@@ -41,4 +41,29 @@ public interface FeedLikeApi {
         @PathVariable UUID feedId,
         @RequestParam UUID userId
     );
+
+    @Operation(summary = "피드 좋아요 취소")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "피드 좋아요 취소 성공"),
+        @ApiResponse(
+            responseCode = "404",
+            description = "관련 자원(피드/좋아요) 미존재",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "피드 좋아요 취소 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    ResponseEntity<Void> delete(
+        @PathVariable UUID feedId,
+        @RequestParam UUID userId
+    );
 }
