@@ -2,7 +2,10 @@ package com.samsamotot.otboo.feed.controller;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -16,7 +19,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -97,6 +99,62 @@ public class FeedLikeControllerTest {
             mockMvc.perform(post("/api/feeds/{feedId}/like", feedId)
                     .param("userId", userId.toString()))
                 .andExpect(status().isConflict());
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 좋아요 취소 테스트")
+    class FeedLikeCancelTest {
+
+        @Test
+        void 피드에_좋아요_취소시_204가_반환되어야_한다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            willDoNothing()
+                .given(feedLikeService)
+                .delete(eq(feedId), eq(userId));
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{feedId}/like", feedId)
+                    .param("userId", userId.toString()))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void 존재하지_않는_피드에_좋아요_취소_요청시_404가_반환되어야_한다() throws Exception {
+
+            // given
+            UUID invalidFeedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND))
+                .given(feedLikeService)
+                .delete(eq(invalidFeedId), eq(userId));
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{feedId}/like", invalidFeedId)
+                    .param("userId", userId.toString()))
+                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void 좋아요를_누르지_않은_피드에_좋아요_취소_요청시_404가_반환되어야_한다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            willThrow(new OtbooException(ErrorCode.FEED_LIKE_NOT_FOUND))
+                .given(feedLikeService)
+                .delete(eq(feedId), eq(userId));
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{feedId}/like", feedId)
+                    .param("userId", userId.toString()))
+                .andExpect(status().isNotFound());
         }
     }
 }
