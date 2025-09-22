@@ -1,14 +1,10 @@
 package com.samsamotot.otboo.follow.controller.api;
 
-import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorResponse;
-import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
-import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowListResponse;
 import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
-import com.samsamotot.otboo.follow.entity.Follow;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,7 +14,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.UUID;
 

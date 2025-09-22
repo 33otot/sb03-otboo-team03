@@ -1,16 +1,13 @@
 package com.samsamotot.otboo.follow.controller;
 
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.feed.controller.api.FeedApi;
 import com.samsamotot.otboo.follow.controller.api.FollowApi;
 import com.samsamotot.otboo.follow.dto.*;
-import com.samsamotot.otboo.follow.repository.FollowRepository;
 import com.samsamotot.otboo.follow.service.FollowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,7 +27,6 @@ import java.util.UUID;
 public class FollowController implements FollowApi {
 
     private final FollowService followService;
-    private final FollowRepository followRepository;
 
     /**
      * 새로운 팔로우 관계를 생성한다.

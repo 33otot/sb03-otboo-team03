@@ -5,7 +5,6 @@ import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowListResponse;
 import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
-import com.samsamotot.otboo.follow.repository.FollowRepository;
 import com.samsamotot.otboo.follow.service.FollowService;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import org.junit.jupiter.api.DisplayName;
@@ -46,9 +45,6 @@ class FollowControllerTest {
 
     @MockitoBean
     private FollowService followService;
-
-    @MockitoBean
-    private FollowRepository followRepository;
 
 
     @Test
