@@ -143,7 +143,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
             sorted = defRepository.findByNameContaining(keywordLike, sort);
         }
 
-        log.info("[ClothesAttributeDefServiceImpl] findAll - 반환 값 첫 번째 정의 이름: {}, 옵션값: {}, 생성시간: {} ", sorted.get(0).getName(), sorted.get(0).getOptions(), sorted.get(0).getCreatedAt());
+        log.info("[ClothesAttributeDefServiceImpl] findAll - 반환된 리스트 크기: {}", sorted.size());
 
         return sorted.stream()
             .map(defMapper::toDto)
