@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowListResponse;
+import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
 import com.samsamotot.otboo.follow.service.FollowService;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import org.junit.jupiter.api.DisplayName;
@@ -74,6 +75,40 @@ class FollowControllerTest {
             .andExpect(jsonPath("$.follower.profileImageUrl").value(follower.profileImageUrl()));
 
         then(followService).should(times(1)).follow(refEq(validRequest));
+        then(followService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    void 팔로우_요약_정보_조회_파라미터_정상_입력_받을시_간단_목록_반환한다() throws Exception {
+        // given
+        UUID targetUserId   = UUID.randomUUID();
+        UUID followedByMeId = UUID.randomUUID();
+
+        var stub = FollowSummaryDto.builder()
+            .followeeId(targetUserId)
+            .followerCount(3L)
+            .followingCount(5L)
+            .followedByMe(true)
+            .followedByMeId(followedByMeId)
+            .followingMe(false)
+            .build();
+
+        given(followService.findFollowSummaries(targetUserId)).willReturn(stub);
+
+        // when & then
+        mockMvc.perform(get("/api/follows/summary")
+                .param("userId", targetUserId.toString())
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.followeeId").value(targetUserId.toString()))
+            .andExpect(jsonPath("$.followerCount").value(3))
+            .andExpect(jsonPath("$.followingCount").value(5))
+            .andExpect(jsonPath("$.followedByMe").value(true))
+            .andExpect(jsonPath("$.followedByMeId").value(followedByMeId.toString()))
+            .andExpect(jsonPath("$.followingMe").value(false));
+
+        then(followService).should(times(1)).findFollowSummaries(targetUserId);
         then(followService).shouldHaveNoMoreInteractions();
     }
 

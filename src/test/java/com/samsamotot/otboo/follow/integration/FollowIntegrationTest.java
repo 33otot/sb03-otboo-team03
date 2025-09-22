@@ -100,6 +100,18 @@ public class FollowIntegrationTest {
         assertThat(response.followee().userId()).isEqualTo(followee.getId());
     }
 
+    // TODO 팔로우 요약 정보 조회 - 로그인 정보 가져오는 로직 구현시 추가 예정
+    @Test
+    void 팔로우_요약_정보_정상_조회한다() throws Exception {
+
+        // given
+
+        // when
+
+        // then
+
+    }
+
     @Test
     void 팔로잉_목록_조회를_한다() throws Exception {
         User follower = User.createUser("f1@test.com", "follower", "password#A", BCRYPT_PASSWORD_ENCODER);
