@@ -11,5 +11,5 @@ import java.util.UUID;
  * Author       : dounguk
  * Date         : 2025. 9. 12.
  */
-public interface DirectMessageRepository extends JpaRepository<DirectMessage, UUID> {
+public interface DirectMessageRepository extends JpaRepository<DirectMessage, UUID>, DirectMessageRepositoryCustom {
 }
