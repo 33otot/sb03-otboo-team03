@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,5 +48,18 @@ public interface ClothesAttributeDefApi {
     ResponseEntity<ClothesAttributeDefDto> updateClothesAttributeDef(
         @PathVariable UUID definitionId,
         @Parameter ClothesAttributeDefUpdateRequest request
+    );
+
+    @Operation(summary = "의상 속성 정의 삭제", description = "의상 속성 정의 삭제 API")
+    @ApiResponses(
+        value = {
+            @ApiResponse(responseCode = "204", description = "의상 속성 정의 삭제 성공"),
+            @ApiResponse(responseCode = "400", description = "의상 속성 정의 삭제 실패",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+        }
+    )
+    @DeleteMapping("/{definitionId}")
+    ResponseEntity<Void> deleteClothesAttributeDef(
+        @PathVariable UUID definitionId
     );
 }
