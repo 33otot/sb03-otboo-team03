@@ -1,15 +1,13 @@
 package com.samsamotot.otboo.follow.controller;
 
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
-import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.FollowListResponse;
-import com.samsamotot.otboo.follow.dto.FollowingRequest;
+import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.service.FollowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,11 +46,12 @@ public class FollowController {
         return ResponseEntity.status(HttpStatus.CREATED).body(follow);
     }
 
-    // 팔로우 요약 정보 조회
-//    @GetMapping("/summary")
-//    public ResponseEntity<FollowSummaryDto> followSummary(@RequestParam UUID userId) {
-//        return ResponseEntity.ok().body(new FollowSummaryDto());
-//    }
+
+    // TODO 팔로우 요약 정보 조회 - 주석 추가
+    @GetMapping("/summary")
+    public ResponseEntity<FollowSummaryDto> followSummary(@RequestParam UUID userId) {
+        return ResponseEntity.ok().body(followService.findFollowSummaries(userId));
+    }
 
 
     /**
