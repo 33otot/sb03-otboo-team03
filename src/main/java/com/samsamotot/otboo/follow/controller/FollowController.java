@@ -2,6 +2,7 @@ package com.samsamotot.otboo.follow.controller;
 
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.*;
+import com.samsamotot.otboo.follow.repository.FollowRepository;
 import com.samsamotot.otboo.follow.service.FollowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public class FollowController {
 
     private final FollowService followService;
+    private final FollowRepository followRepository;
 
     /**
      * 새로운 팔로우 관계를 생성한다.
@@ -122,8 +124,9 @@ public class FollowController {
 
 
     // 팔로우 취소
-//    @DeleteMapping("/{followId}")
-//    public ResponseEntity<Void> deleteFollow(@PathVariable UUID followId) {
-//        return ResponseEntity.noContent().build();
-//    }
+    @DeleteMapping("/{followId}")
+    public ResponseEntity<Void> deleteFollow(@PathVariable UUID followId) {
+        followService.unfollow(followId);
+        return ResponseEntity.noContent().build();
+    }
 }

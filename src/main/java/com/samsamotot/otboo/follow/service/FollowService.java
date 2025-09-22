@@ -15,7 +15,7 @@ import java.util.UUID;
  */
 @Validated
 public interface FollowService {
-    /*        팔로우 기능     */
+    /*        팔로우     */
     FollowDto follow(FollowCreateRequest request);
 
     /*        TODO 팔로우 요약 정보 조회     */
@@ -26,4 +26,7 @@ public interface FollowService {
 
     /*            팔로워 목록 조회     */
     FollowListResponse getFollowers(@Valid FollowingRequest request);
+
+    /*        언팔로우 기능     */
+    void unfollow(UUID followId);
 }

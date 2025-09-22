@@ -298,6 +298,17 @@ public class FollowServiceImpl implements FollowService {
         return response;
     }
 
+    @Transactional
+    @Override
+    public void unfollow(UUID followId) {
+        log.info(FOLLOW_SERVICE + "언팔로우 시작: followeeId={}", followId);
+        if (!followRepository.existsById(followId)) {
+            throw new OtbooException(ErrorCode.FOLLOW_NOT_FOUND);
+        }
+        followRepository.deleteById(followId);
+        log.info(FOLLOW_SERVICE + "언팔로우 완료");
+    }
+
     private static Instant parseCursorToInstant(String cursor) {
         if (cursor == null || cursor.isBlank()) {
             return null;
