@@ -1,13 +1,13 @@
 package com.samsamotot.otboo.follow.controller;
 
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.follow.controller.api.FollowApi;
 import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.service.FollowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +24,7 @@ import java.util.UUID;
 @RestController
 @Validated
 @RequestMapping("api/follows")
-public class FollowController {
+public class FollowController implements FollowApi {
 
     private final FollowService followService;
 
@@ -121,9 +121,18 @@ public class FollowController {
     }
 
 
-    // 팔로우 취소
-//    @DeleteMapping("/{followId}")
-//    public ResponseEntity<Void> deleteFollow(@PathVariable UUID followId) {
-//        return ResponseEntity.noContent().build();
-//    }
+    /**
+     * 기존 팔로우 관계를 취소(언팔로우)한다.
+     * 전달된 followId를 기준으로 해당 팔로우 엔티티를 삭제한다.
+     *
+     * @param followId 삭제할 팔로우 관계의 고유 ID
+     * @return HTTP 204 No Content 응답 (본문 없음)
+     * @throws OtbooException 존재하지 않는 팔로우 ID거나,
+     *                        기타 서비스 예외가 발생한 경우
+     */
+    @DeleteMapping("/{followId}")
+    public ResponseEntity<Void> deleteFollow(@PathVariable UUID followId) {
+        followService.unfollow(followId);
+        return ResponseEntity.noContent().build();
+    }
 }

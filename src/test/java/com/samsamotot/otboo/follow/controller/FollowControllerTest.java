@@ -23,8 +23,7 @@ import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -45,6 +44,7 @@ class FollowControllerTest {
 
     @MockitoBean
     private FollowService followService;
+
 
     @Test
     void 바디를_정상입력_받을경우_팔로우를_성공한다() throws Exception {
@@ -191,5 +191,18 @@ class FollowControllerTest {
         then(followService).should(times(1)).getFollowers(any());
         then(followService).shouldHaveNoMoreInteractions();
 
+    }
+
+    @Test
+    void 팔로우_삭제_파라미터_정상_입력_받으면_팔로우_삭제() throws Exception {
+        // given
+        UUID followId = UUID.randomUUID();
+
+        // when n then
+        mockMvc.perform(delete("/api/follows/{followId}", followId))
+            .andExpect(status().isNoContent());
+
+        then(followService).should(times(1)).unfollow(followId);
+        then(followService).shouldHaveNoMoreInteractions();
     }
 }

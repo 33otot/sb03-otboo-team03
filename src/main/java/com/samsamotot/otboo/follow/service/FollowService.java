@@ -15,15 +15,13 @@ import java.util.UUID;
  */
 @Validated
 public interface FollowService {
-    /*        팔로우 기능     */
     FollowDto follow(FollowCreateRequest request);
 
-    /*        팔로우 요약 정보 조회     */
     FollowSummaryDto findFollowSummaries(UUID userId);
 
-    /*        팔로잉 목록 조회     */
     FollowListResponse getFollowings(@Valid FollowingRequest request);
 
-    /*            팔로워 목록 조회     */
     FollowListResponse getFollowers(@Valid FollowingRequest request);
+
+    void unfollow(UUID followId);
 }
