@@ -1,3 +1,6 @@
+-- UUID 생성을 위해 pgcrypto 확장 모듈을 활성화합니다.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Foreign key 제약 조건을 고려하여 테이블 생성 순서에 맞게 데이터를 삽입합니다.
 -- UUID는 테스트의 일관성을 위해 미리 정의된 값을 사용합니다.
 

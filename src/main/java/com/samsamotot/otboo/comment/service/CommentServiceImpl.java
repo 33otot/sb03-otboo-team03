@@ -34,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommentServiceImpl implements CommentService {
 
     private static final String SERVICE = "[CommentServiceImpl] ";
+    private static final int DEFAULT_LIMIT = 20;
+    private static final int MAX_LIMIT = 50;
 
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
@@ -78,8 +80,8 @@ public class CommentServiceImpl implements CommentService {
     /**
      * 특정 피드의 댓글 목록을 커서 기반 페이지네이션으로 조회합니다.
      *
-     * @param feedId    페이지네이션 파라미터({@code limit}, {@code cursor}, {@code idAfter})를 담고 있는 요청 DTO
-     * @param request   댓글을 조회할 피드의 ID.
+     * @param feedId    댓글을 조회할 피드의 ID.
+     * @param request   페이지네이션 파라미터({@code limit}, {@code cursor}, {@code idAfter})를 담고 있는 요청 DTO
      * @return 댓글 DTO 리스트와 페이지네이션 정보를 포함하는 {@link CursorResponse<CommentDto>}
      */
     @Override
@@ -93,11 +95,14 @@ public class CommentServiceImpl implements CommentService {
 
         String cursor = request.cursor();
         UUID idAfter = request.idAfter();
-        Integer limit = request.limit();
+        int limit = sanitizeLimit(request.limit());
+
         String sortBy = "createdAt";
         SortDirection sortDirection = SortDirection.DESCENDING;
 
-        validateCursorFormat(cursor);
+        if (cursor != null) {
+            validateCursorFormat(cursor);
+        }
 
         List<Comment> comments = commentRepository.findByFeedIdWithCursor(feedId, cursor, idAfter, limit + 1);
 
@@ -112,13 +117,13 @@ public class CommentServiceImpl implements CommentService {
             comments = comments.subList(0, limit);
         }
 
-        long totalCount = commentRepository.countByFeed(feed);
+        long totalCount = commentRepository.countByFeedId(feedId);
 
         List<CommentDto> commentDtos = comments.stream()
             .map(commentMapper::toDto)
             .toList();
 
-        log.info(SERVICE + "댓글 목록 조회 완료 - 조회된 댓글 수: {}, hasNext: {}", commentDtos.size(), hasNext);
+        log.debug(SERVICE + "댓글 목록 조회 완료 - 조회된 댓글 수: {}, hasNext: {}", commentDtos.size(), hasNext);
 
         return new CursorResponse<>(
             commentDtos,
@@ -131,16 +136,17 @@ public class CommentServiceImpl implements CommentService {
         );
     }
 
-    private void validateCursorFormat(String cursorValue) {
-
-        if (cursorValue == null) {
-            return;
-        }
+    private Instant validateCursorFormat(String cursorValue) {
 
         try {
-            Instant.parse(cursorValue);
+            return Instant.parse(cursorValue);
         } catch (DateTimeParseException e) {
             throw new OtbooException(ErrorCode.INVALID_CURSOR_FORMAT, Map.of("cursor", cursorValue));
         }
+    }
+
+    private int sanitizeLimit(Integer limit) {
+        if (limit == null || limit <= 0) return DEFAULT_LIMIT;
+        return Math.min(limit, MAX_LIMIT);
     }
 }

@@ -175,7 +175,7 @@ public class CommentServiceTest {
 
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), anyInt())).willReturn(List.of());
-            given(commentRepository.countByFeed(any(Feed.class))).willReturn(1L);
+            given(commentRepository.countByFeedId(any(UUID.class))).willReturn(1L);
 
             // when
             commentService.getComments(feedId, request);
@@ -206,7 +206,7 @@ public class CommentServiceTest {
 
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), anyInt())).willReturn(List.of());
-            given(commentRepository.countByFeed(any(Feed.class))).willReturn(1L);
+            given(commentRepository.countByFeedId(any(UUID.class))).willReturn(1L);
 
             // when
             commentService.getComments(mockFeed.getId(), request);
@@ -264,7 +264,7 @@ public class CommentServiceTest {
 
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), eq(limit + 1))).willReturn(comments);
-            given(commentRepository.countByFeed(any(Feed.class))).willReturn(11L);
+            given(commentRepository.countByFeedId(any(UUID.class))).willReturn(11L);
 
             for (int i = 0; i < limit; i++) {
                 given(commentMapper.toDto(comments.get(i))).willReturn(expectedDtos.get(i));
@@ -306,7 +306,7 @@ public class CommentServiceTest {
 
             given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), eq(limit + 1))).willReturn(comments);
-            given(commentRepository.countByFeed(any(Feed.class))).willReturn(10L);
+            given(commentRepository.countByFeedId(any(UUID.class))).willReturn(10L);
 
             for (int i = 0; i < limit; i++) {
                 given(commentMapper.toDto(comments.get(i))).willReturn(expectedDtos.get(i));

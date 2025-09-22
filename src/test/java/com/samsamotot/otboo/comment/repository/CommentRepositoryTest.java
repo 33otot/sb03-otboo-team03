@@ -52,7 +52,7 @@ public class CommentRepositoryTest {
 
     @Container
     static PostgreSQLContainer<?> postgres =
-        new PostgreSQLContainer<>("postgres:17");
+        new PostgreSQLContainer<>("postgres:17").withReuse(true);
 
     @DynamicPropertySource
     static void overrideProps(DynamicPropertyRegistry reg) {
@@ -111,6 +111,7 @@ public class CommentRepositoryTest {
             Comparator.comparing(Comment::getCreatedAt).reversed()
                 .thenComparing(Comment::getId, Comparator.reverseOrder())
         );
+        assertThat(result).allMatch(c -> c.getFeed().getId().equals(feed.getId()));
     }
 
     @Test
@@ -130,7 +131,7 @@ public class CommentRepositoryTest {
 
         // 커서 = 정렬상 3번째 댓글
         Comment cursorComment = savedComments.get(2);
-        String cursor = String.valueOf(cursorComment.getCreatedAt());
+        String cursor = cursorComment.getCreatedAt().toString();
         UUID idAfter = cursorComment.getId();
 
         // when
@@ -177,7 +178,7 @@ public class CommentRepositoryTest {
 
         // 커서 = 정렬상 3번째 댓글
         Comment cursorComment = expectedOrder.get(2);
-        String cursor = String.valueOf(cursorComment.getCreatedAt());
+        String cursor = cursorComment.getCreatedAt().toString();
         UUID idAfter = cursorComment.getId();
 
         // when

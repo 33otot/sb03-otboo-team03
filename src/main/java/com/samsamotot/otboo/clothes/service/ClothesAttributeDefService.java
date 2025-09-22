@@ -12,4 +12,6 @@ public interface ClothesAttributeDefService {
     ClothesAttributeDefDto create(ClothesAttributeDefCreateRequest request);
 
     ClothesAttributeDefDto update(UUID defId, ClothesAttributeDefUpdateRequest request);
+
+    void delete(UUID defId);
 }

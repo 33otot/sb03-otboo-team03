@@ -221,7 +221,7 @@ public class CommentControllerTest {
             List<CommentDto> commentDtos = List.of(commentDto2, commentDto1);
 
             String cursor = cursorCommentDto.createdAt().toString();
-            UUID idAfter = cursorCommentDto.feedId();
+            UUID idAfter = UUID.randomUUID();
 
             CursorResponse<CommentDto> expected = new CursorResponse<>(
                 commentDtos,
@@ -278,6 +278,8 @@ public class CommentControllerTest {
             mockMvc.perform(get("/api/feeds/{feedId}/comments", UUID.randomUUID())
                 )
                 .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(commentService);
         }
     }
 }
