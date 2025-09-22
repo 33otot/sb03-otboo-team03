@@ -4,6 +4,11 @@ package com.samsamotot.otboo.feed.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
@@ -76,7 +81,7 @@ public class FeedLikeServiceTest {
             FeedLike feedLike = FeedLikeFixture.createFeedLike(mockUser, mockFeed);
 
             given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
-            given(feedRepository.findById(feedId)).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
             given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
             given(feedLikeRepository.save(any(FeedLike.class))).willReturn(feedLike);
 
@@ -97,7 +102,7 @@ public class FeedLikeServiceTest {
             UUID invalidFeedId = UUID.randomUUID();
 
             given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
-            given(feedRepository.findById(invalidFeedId)).willReturn(Optional.empty());
+            given(feedRepository.findByIdAndIsDeletedFalse(invalidFeedId)).willReturn(Optional.empty());
 
             // when & then
             Assertions.assertThatThrownBy(() -> feedLikeService.create(invalidFeedId, userId))
@@ -130,7 +135,7 @@ public class FeedLikeServiceTest {
             UUID feedId = mockFeed.getId();
 
             given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
-            given(feedRepository.findById(feedId)).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
             given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(true);
 
             // when & then
@@ -138,6 +143,68 @@ public class FeedLikeServiceTest {
                 .isInstanceOf(OtbooException.class)
                 .extracting(e -> ((OtbooException) e).getErrorCode())
                 .isEqualTo(ErrorCode.FEED_ALREADY_LIKED);
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 좋아요 취소 테스트")
+    class FeedLikeCancelTest {
+
+        @Test
+        void 좋아요_취소_요청시_정상적으로_처리되어야_한다() {
+
+            // given
+            UUID userId = mockUser.getId();
+            UUID feedId = mockFeed.getId();
+
+            given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
+            given(feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId)).willReturn(1);
+
+            // when
+            feedLikeService.delete(feedId, userId);
+
+            // then
+            verify(feedRepository, times(1)).findByIdAndIsDeletedFalse(feedId);
+            verify(feedLikeRepository, times(1)).deleteByFeedIdAndUserId(feedId, userId);
+        }
+
+        @Test
+        void 존재하지_않는_피드에_좋아요_취소시_예외를_던진다() {
+
+            // given
+            UUID invalidFeedId = UUID.randomUUID();
+            UUID userId = mockUser.getId();
+
+            given(feedRepository.findByIdAndIsDeletedFalse(invalidFeedId)).willReturn(Optional.empty());
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> feedLikeService.delete(invalidFeedId, userId))
+                    .isInstanceOf(OtbooException.class)
+                    .extracting(e -> ((OtbooException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.FEED_NOT_FOUND);
+
+            verify(feedRepository, times(1)).findByIdAndIsDeletedFalse(invalidFeedId);
+            verifyNoInteractions(feedLikeRepository);
+        }
+
+        @Test
+        void 좋아요_정보가_없는_상태에서_좋아요_취소시_예외를_던진다() {
+
+            // given
+            UUID feedId = mockFeed.getId();
+            UUID userId = mockUser.getId();
+
+            given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
+            given(feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId)).willReturn(0);
+
+            // when & then
+            Assertions.assertThatThrownBy(() -> feedLikeService.delete(feedId, userId))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FEED_LIKE_NOT_FOUND);
+
+            verify(feedRepository, times(1)).findByIdAndIsDeletedFalse(feedId);
+            verify(feedLikeRepository, times(1)).deleteByFeedIdAndUserId(feedId, userId);
         }
     }
 }

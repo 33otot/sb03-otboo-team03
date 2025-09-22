@@ -1,12 +1,12 @@
 package com.samsamotot.otboo.feed.repository;
 
 import com.samsamotot.otboo.feed.entity.FeedLike;
-import io.lettuce.core.dynamic.annotation.Param;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -22,4 +22,6 @@ public interface FeedLikeRepository extends JpaRepository<FeedLike, UUID> {
             @Param("feedIds")Collection<UUID> feedIds);
 
     boolean existsByFeedIdAndUserId(UUID feedId, UUID userId);
+
+    int deleteByFeedIdAndUserId(UUID feedId, UUID userId);
 }

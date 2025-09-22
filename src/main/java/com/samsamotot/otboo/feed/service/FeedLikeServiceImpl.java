@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class FeedLikeServiceImpl implements FeedLikeService {
 
-    private final String SERVICE = "[FeedLikeServiceImpl] ";
+    private static final String SERVICE = "[FeedLikeServiceImpl] ";
 
     private final FeedLikeRepository feedLikeRepository;
     private final FeedRepository feedRepository;
@@ -48,7 +48,7 @@ public class FeedLikeServiceImpl implements FeedLikeService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND, Map.of("userId", userId.toString())));
 
-        Feed feed = feedRepository.findById(feedId)
+        Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
 
         if (feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)) {
@@ -69,5 +69,30 @@ public class FeedLikeServiceImpl implements FeedLikeService {
         log.debug(SERVICE + "피드 좋아요 생성 완료 feedLikeId = {}", feedLike.getId());
 
         return feedLike;
+    }
+
+
+    /**
+     * 피드에 추가된 좋아요를 취소합니다.
+     *
+     * @param feedId 좋아요를 취소할 피드의 ID
+     * @param userId 좋아요를 취소하는 사용자의 ID
+     * @throws OtbooException 피드 또는 좋아요 정보를 찾을 수 없는 경우
+     */
+    @Override
+    public void delete(UUID feedId, UUID userId) {
+
+        log.debug(SERVICE + "피드 좋아요 취소 시작: feedId = {}, userId = {}", feedId, userId);
+
+        feedRepository.findByIdAndIsDeletedFalse(feedId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
+
+        int deletedCnt = feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId);
+
+        if (deletedCnt == 0) {
+            throw new OtbooException(ErrorCode.FEED_LIKE_NOT_FOUND);
+        }
+
+        log.debug(SERVICE + "피드 좋아요 취소 완료 feedId = {}, userId = {}", feedId, userId);
     }
 }
