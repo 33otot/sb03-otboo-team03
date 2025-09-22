@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,7 +59,12 @@ public class FeedLikeServiceImpl implements FeedLikeService {
             .user(user)
             .feed(feed)
             .build();
-        feedLikeRepository.save(feedLike);
+        try {
+            feedLikeRepository.save(feedLike);
+        } catch (DataIntegrityViolationException e) {
+            // 유니크 제약 위반 등 동시성 충돌 → 멱등하게 409로 매핑
+            throw new OtbooException(ErrorCode.FEED_ALREADY_LIKED);
+        }
 
         log.debug(SERVICE + "피드 좋아요 생성 완료 feedLikeId = {}", feedLike.getId());
 
