@@ -19,6 +19,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
 
         // 엔티티 생성
         ClothesAttributeDef def = ClothesAttributeDef.createClothesAttributeDef(request.name());
+        log.debug("[ClothesAttributeDefServiceImpl] create - 생성된 엔티티: {}", def);
 
         // 옵션이랑 연관관계
         request.selectableValues().forEach(value -> {
@@ -73,7 +76,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
                 def.updateName(newName);
             }
             else{
-                log.info("[ClothesAttributeDefServiceImpl] 기존의 정의 이름과 동일합니다. 이름: {}", newName);
+                log.info("[ClothesAttributeDefServiceImpl] update - 기존의 정의 이름과 동일합니다. 이름: {}", newName);
             }
         }
         // 옵션 업데이트
@@ -84,7 +87,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
 
             Set<String> newValueSet = new HashSet<>(newOptions);
 
-            // 없앨 옵션들 수집
+            // 수정될 옵션값 요청에 없는 기존 옵션을 제거함
             List<ClothesAttributeOption> toRemove = new ArrayList<>();
 
             for (ClothesAttributeOption option : def.getOptions()) {
@@ -95,7 +98,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
             }
             def.getOptions().removeAll(toRemove);
 
-            // 새로운 옵션 값 추가
+            // 기존 옵션에 없는 새로운 값이 수정될 옵션값에 있다면 추가함
             for (String value : newValueSet) {
                 if (!currentValues.contains(value)) {
                     ClothesAttributeOption option = ClothesAttributeOption.createClothesAttributeOption(def, value);
@@ -103,7 +106,9 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
                 }
             }
         }
-        return defMapper.toDto(def);
+        ClothesAttributeDefDto result = defMapper.toDto(def);
+        log.debug("[ClothesAttributeDefServiceImpl] update - 수정된 dto: {}", result);
+        return result;
     }
 
 //    @PreAuthorize("hasRole('ADMIN')")
@@ -113,6 +118,35 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
         ClothesAttributeDef def = defRepository.findById(defId)
                 .orElseThrow(() -> new ClothesAttributeDefNotFoundException(ErrorCode.CLOTHES_ATTRIBUTE_DEF_NOT_FOUND));
 
+        log.info("[ClothesAttributeDefServiceImpl] delete - 삭제될 속성 정의 이름: {}", def.getName());
+
         defRepository.delete(def);
+    }
+
+//    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    @Override
+    public List<ClothesAttributeDefDto> findAll(String sortBy, String sortDirection,
+        String keywordLike) {
+
+        log.info("[ClothesAttributeDefServiceImpl] findAll - 호출됨");
+        // Sort 객체
+        Direction direction = sortDirection.equalsIgnoreCase("ASCENDING") ? Direction.ASC : Direction.DESC;
+        Sort sort = Sort.by(direction, sortBy);
+        List<ClothesAttributeDef> sorted;
+
+        // 검색어 조건이 없는 경우
+        if (keywordLike == null || keywordLike.isBlank()) {
+            sorted = defRepository.findAll(sort);
+        }
+        else {
+            sorted = defRepository.findByNameContaining(keywordLike, sort);
+        }
+
+        log.info("[ClothesAttributeDefServiceImpl] findAll - 반환된 리스트 크기: {}", sorted.size());
+
+        return sorted.stream()
+            .map(defMapper::toDto)
+            .toList();
     }
 }
