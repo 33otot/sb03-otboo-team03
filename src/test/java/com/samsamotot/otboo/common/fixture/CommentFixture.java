@@ -46,4 +46,14 @@ public class CommentFixture {
             .createdAt(createdAt)
             .build();
     }
+
+    public static CommentDto createCommentDtoWithIdAndCreatedAt(UUID id, String content, AuthorDto authorDto, UUID feedId, Instant createdAt) {
+        return CommentDto.builder()
+            .id(id)
+            .author(authorDto)
+            .feedId(feedId)
+            .content(content)
+            .createdAt(createdAt)
+            .build();
+    }
 }

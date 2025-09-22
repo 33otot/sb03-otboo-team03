@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -72,8 +73,8 @@ public interface CommentApi {
             )
         ),
         @ApiResponse(
-            responseCode = "404",
-            description = "피드 댓글 못록 조회 실패",
+            responseCode = "400",
+            description = "피드 댓글 목록 조회 실패",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = ErrorResponse.class)
@@ -82,6 +83,6 @@ public interface CommentApi {
     })
     ResponseEntity<CursorResponse<CommentDto>> getComments(
         @PathVariable("feedId") UUID feedId,
-        @Valid @ModelAttribute CommentCursorRequest commentCursorRequest
+        @Valid @ParameterObject @ModelAttribute CommentCursorRequest commentCursorRequest
     );
 }

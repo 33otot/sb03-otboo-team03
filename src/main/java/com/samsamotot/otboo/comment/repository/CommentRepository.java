@@ -9,5 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, UUID>, CommentRepositoryCustom {
 
-    long countByFeed(Feed feed);
+    long countByFeedId(UUID feedId);
 }

@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/feeds/{feedId}/comments")
 public class CommentController implements CommentApi {
 
-    private final String CONTROLLER = "[CommentController] ";
+    private static final String CONTROLLER = "[CommentController] ";
 
     private final CommentService commentService;
 
@@ -68,7 +69,7 @@ public class CommentController implements CommentApi {
     @GetMapping
     public ResponseEntity<CursorResponse<CommentDto>> getComments(
         @PathVariable("feedId") UUID feedId,
-        @Valid @ModelAttribute CommentCursorRequest commentCursorRequest
+        @Valid @ParameterObject @ModelAttribute CommentCursorRequest commentCursorRequest
     ) {
         log.info(CONTROLLER + "피드 댓글 목록 조회 요청: feedId = {}, request = {}", feedId, commentCursorRequest);
         CursorResponse<CommentDto> result = commentService.getComments(feedId, commentCursorRequest);
