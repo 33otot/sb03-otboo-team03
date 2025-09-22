@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class FeedLikeServiceImpl implements FeedLikeService {
 
-    private final String SERVICE = "[FeedLikeServiceImpl] ";
+    private static final String SERVICE = "[FeedLikeServiceImpl] ";
 
     private final FeedLikeRepository feedLikeRepository;
     private final FeedRepository feedRepository;
@@ -84,14 +84,15 @@ public class FeedLikeServiceImpl implements FeedLikeService {
 
         log.debug(SERVICE + "피드 좋아요 취소 시작: feedId = {}, userId = {}", feedId, userId);
 
-        Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
+        feedRepository.findByIdAndIsDeletedFalse(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
 
-        FeedLike feedLike = feedLikeRepository.findByFeedIdAndUserId(feedId, userId)
-            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_LIKE_NOT_FOUND));
+        int deletedCnt = feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId);
 
-        feedLikeRepository.deleteById(feedLike.getId());
+        if (deletedCnt == 0) {
+            throw new OtbooException(ErrorCode.FEED_LIKE_NOT_FOUND);
+        }
 
-        log.debug(SERVICE + "피드 좋아요 취소 완료 feedLikeId = {}", feedLike.getId());
+        log.debug(SERVICE + "피드 좋아요 취소 완료 feedId = {}, userId = {}", feedId, userId);
     }
 }

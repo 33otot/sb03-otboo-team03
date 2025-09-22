@@ -157,21 +157,15 @@ public class FeedLikeServiceTest {
             UUID userId = mockUser.getId();
             UUID feedId = mockFeed.getId();
 
-            UUID feedLikeId = UUID.randomUUID();
-            FeedLike feedLike = FeedLikeFixture.createFeedLike(mockUser, mockFeed);
-            ReflectionTestUtils.setField(feedLike, "id", feedLikeId);
-
             given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
-            given(feedLikeRepository.findByFeedIdAndUserId(feedId, userId)).willReturn(Optional.of(feedLike));
-            willDoNothing().given(feedLikeRepository).deleteById(feedLikeId);
+            given(feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId)).willReturn(1);
 
             // when
             feedLikeService.delete(feedId, userId);
 
             // then
             verify(feedRepository, times(1)).findByIdAndIsDeletedFalse(feedId);
-            verify(feedLikeRepository, times(1)).findByFeedIdAndUserId(feedId, userId);
-            verify(feedLikeRepository, times(1)).deleteById(feedLikeId);
+            verify(feedLikeRepository, times(1)).deleteByFeedIdAndUserId(feedId, userId);
         }
 
         @Test
@@ -201,7 +195,7 @@ public class FeedLikeServiceTest {
             UUID userId = mockUser.getId();
 
             given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
-            given(feedLikeRepository.findByFeedIdAndUserId(feedId, userId)).willReturn(Optional.empty());
+            given(feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId)).willReturn(0);
 
             // when & then
             Assertions.assertThatThrownBy(() -> feedLikeService.delete(feedId, userId))
@@ -210,8 +204,7 @@ public class FeedLikeServiceTest {
                 .isEqualTo(ErrorCode.FEED_LIKE_NOT_FOUND);
 
             verify(feedRepository, times(1)).findByIdAndIsDeletedFalse(feedId);
-            verify(feedLikeRepository, times(1)).findByFeedIdAndUserId(feedId, userId);
-            verify(feedLikeRepository, never()).deleteById(any(UUID.class));
+            verify(feedLikeRepository, times(1)).deleteByFeedIdAndUserId(feedId, userId);
         }
     }
 }

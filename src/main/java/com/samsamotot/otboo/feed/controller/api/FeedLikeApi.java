@@ -1,8 +1,6 @@
 package com.samsamotot.otboo.feed.controller.api;
 
 import com.samsamotot.otboo.common.exception.ErrorResponse;
-import com.samsamotot.otboo.feed.dto.FeedDto;
-import com.samsamotot.otboo.feed.entity.FeedLike;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
