@@ -70,4 +70,9 @@ public class FeedLikeServiceImpl implements FeedLikeService {
 
         return feedLike;
     }
+
+    @Override
+    public void delete(UUID feedId, UUID userId) {
+
+    }
 }

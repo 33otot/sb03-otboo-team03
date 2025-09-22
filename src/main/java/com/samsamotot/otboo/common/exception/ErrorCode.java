@@ -51,6 +51,7 @@ public enum ErrorCode {
 
     // 피드 좋아요 관련 에러
     FEED_ALREADY_LIKED(HttpStatus.CONFLICT, "FDL001", "이미 좋아요를 누른 피드입니다."),
+    FEED_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "FDL002", "피드 좋아요를 찾을 수 없습니다."),
 
     // 팔로우 관련 에러
     FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "FO001", "팔로우 관계를 찾을 수 없습니다."),

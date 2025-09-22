@@ -4,6 +4,11 @@ package com.samsamotot.otboo.feed.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
@@ -138,6 +143,81 @@ public class FeedLikeServiceTest {
                 .isInstanceOf(OtbooException.class)
                 .extracting(e -> ((OtbooException) e).getErrorCode())
                 .isEqualTo(ErrorCode.FEED_ALREADY_LIKED);
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 좋아요 취소 테스트")
+    class FeedLikeCancelTest {
+
+        @Test
+        void 좋아요_취소_요청시_정상적으로_처리되어야_한다() {
+
+            // given
+            UUID userId = mockUser.getId();
+            UUID feedId = mockFeed.getId();
+
+            UUID feedLikeId = UUID.randomUUID();
+            FeedLike feedLike = FeedLikeFixture.createFeedLike(mockUser, mockFeed);
+            ReflectionTestUtils.setField(feedLike, "id", feedLikeId);
+
+            given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
+            given(feedLikeRepository.findByFeedIdAndUserId(feedId, userId)).willReturn(Optional.of(feedLike));
+            willDoNothing().given(feedLikeRepository).deleteById(feedLikeId);
+
+            // when
+            feedLikeService.delete(feedId, userId);
+
+            // then
+            verify(feedRepository, times(1)).findByIdAndIsDeletedFalse(feedId);
+            verify(feedLikeRepository, times(1)).findByFeedIdAndUserId(feedId, userId);
+            verify(feedLikeRepository, times(1)).deleteById(feedLikeId);
+        }
+
+        @Test
+        void 존재하지_않는_피드에_좋아요_취소시_예외를_던진다() {
+
+            // given
+            UUID invalidFeedId = UUID.randomUUID();
+            UUID userId = mockUser.getId();
+
+            given(feedRepository.findByIdAndIsDeletedFalse(invalidFeedId)).willReturn(Optional.empty());
+
+            // when
+            feedLikeService.delete(invalidFeedId, userId);
+
+            // then
+            Assertions.assertThatThrownBy(() -> feedLikeService.delete(invalidFeedId, userId))
+                    .isInstanceOf(OtbooException.class)
+                    .extracting(e -> ((OtbooException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.FEED_NOT_FOUND);
+
+            verify(feedRepository, times(1)).findByIdAndIsDeletedFalse(invalidFeedId);
+            verifyNoInteractions(feedLikeRepository);
+        }
+
+        @Test
+        void 좋아요_정보가_없는_상태에서_좋아요_취소시_예외를_던진다() {
+
+            // given
+            UUID feedId = mockFeed.getId();
+            UUID userId = mockUser.getId();
+
+            given(feedRepository.findByIdAndIsDeletedFalse(feedId)).willReturn(Optional.of(mockFeed));
+            given(feedLikeRepository.findByFeedIdAndUserId(feedId, userId)).willReturn(Optional.empty());
+
+            // when
+            feedLikeService.delete(feedId, userId);
+
+            // then
+            Assertions.assertThatThrownBy(() -> feedLikeService.delete(feedId, userId))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FEED_LIKE_NOT_FOUND);
+
+            verify(feedRepository, times(1)).findByIdAndIsDeletedFalse(feedId);
+            verify(feedLikeRepository, times(1)).findByFeedIdAndUserId(feedId, userId);
+            verify(feedLikeRepository, never()).deleteById(any(UUID.class));
         }
     }
 }
