@@ -1,13 +1,12 @@
 package com.samsamotot.otboo.follow.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.samsamotot.otboo.common.fixture.FollowFixture;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowListResponse;
+import com.samsamotot.otboo.follow.dto.FollowSummaryDto;
 import com.samsamotot.otboo.follow.service.FollowService;
 import com.samsamotot.otboo.user.dto.AuthorDto;
-import com.samsamotot.otboo.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Date         : 2025. 9. 13.
  */
 @WebMvcTest(FollowController.class)
-@DisplayName("팔로우 컨트롤러 슬라이스 테스트")
+@DisplayName("Follow 컨트롤러 슬라이스 테스트")
 class FollowControllerTest {
 
     @Autowired
@@ -81,6 +79,40 @@ class FollowControllerTest {
     }
 
     @Test
+    void 팔로우_요약_정보_조회_파라미터_정상_입력_받을시_간단_목록_반환한다() throws Exception {
+        // given
+        UUID targetUserId   = UUID.randomUUID();
+        UUID followedByMeId = UUID.randomUUID();
+
+        var stub = FollowSummaryDto.builder()
+            .followeeId(targetUserId)
+            .followerCount(3L)
+            .followingCount(5L)
+            .followedByMe(true)
+            .followedByMeId(followedByMeId)
+            .followingMe(false)
+            .build();
+
+        given(followService.findFollowSummaries(targetUserId)).willReturn(stub);
+
+        // when & then
+        mockMvc.perform(get("/api/follows/summary")
+                .param("userId", targetUserId.toString())
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.followeeId").value(targetUserId.toString()))
+            .andExpect(jsonPath("$.followerCount").value(3))
+            .andExpect(jsonPath("$.followingCount").value(5))
+            .andExpect(jsonPath("$.followedByMe").value(true))
+            .andExpect(jsonPath("$.followedByMeId").value(followedByMeId.toString()))
+            .andExpect(jsonPath("$.followingMe").value(false));
+
+        then(followService).should(times(1)).findFollowSummaries(targetUserId);
+        then(followService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
     void 팔로잉_목록_조회_파라미터_정상_입력_받을시_간단_목록_반환한다() throws Exception {
         // given
         UUID followerId = UUID.randomUUID();
@@ -116,5 +148,48 @@ class FollowControllerTest {
             .andExpect(jsonPath("$.hasNext").value(false));
 
         then(followService).should(times(1)).getFollowings(any());
+    }
+
+    @Test
+    void 팔로워_목록_조회_파라미터_정상_입력_받으면_간단_목록_반환() throws Exception {
+        // given
+        UUID followeeId = UUID.randomUUID();
+        UUID followerId = UUID.randomUUID();
+        UUID followId   = UUID.randomUUID();
+
+        FollowDto item = FollowDto.builder()
+            .id(followId)
+            .followee(new AuthorDto(followeeId, "followee", null))
+            .follower(new AuthorDto(followerId, "follower", null))
+            .build();
+
+        FollowListResponse stub = FollowListResponse.builder()
+            .data(List.of(item))
+            .nextCursor(null)
+            .nextIdAfter(null)
+            .hasNext(false)
+            .sortBy("createdAt")
+            .sortDirection("DESC")
+            .totalCount(1L)
+            .build();
+
+        given(followService.getFollowers(any())).willReturn(stub);
+
+        // when & then
+        mockMvc.perform(get("/api/follows/followers")
+                .param("followeeId", followeeId.toString())
+                .param("limit", "20")
+                .param("cursor", ""))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.data").isArray())
+            .andExpect(jsonPath("$.hasNext").value(false))
+            .andExpect(jsonPath("$.data[0].id").value(followId.toString()))
+            .andExpect(jsonPath("$.data[0].followee.userId").value(followeeId.toString()))
+            .andExpect(jsonPath("$.data[0].follower.userId").value(followerId.toString()));
+
+        then(followService).should(times(1)).getFollowers(any());
+        then(followService).shouldHaveNoMoreInteractions();
+
     }
 }

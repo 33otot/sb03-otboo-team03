@@ -1,10 +1,7 @@
 package com.samsamotot.otboo.follow.service;
 
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
-import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.FollowListResponse;
-import com.samsamotot.otboo.follow.dto.FollowingRequest;
+import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
@@ -39,7 +36,7 @@ import static org.mockito.Mockito.mock;
  * Date         : 2025. 9. 13.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("팔로우 서비스 단위 테스트")
+@DisplayName("Follow 서비스 단위 테스트")
 class FollowServiceImplTest {
     @InjectMocks
     private FollowServiceImpl followService;
@@ -57,7 +54,7 @@ class FollowServiceImplTest {
         try {
             Method m = FollowServiceImpl.class.getDeclaredMethod("parseCursorToInstant", String.class);
             m.setAccessible(true);
-            return (Instant) m.invoke(null, cursor); // static 메서드이므로 인스턴스 null
+            return (Instant) m.invoke(null, cursor);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -203,13 +200,141 @@ class FollowServiceImplTest {
             .isInstanceOf(OtbooException.class);
     }
 
+    /*
+        팔로우 요약 정보 조회 단위 테스트
+     */
+    @Test
+    void 로그인_유저정보_확인_실패() throws Exception {
+        // given
+        given(userRepository.findById(any(UUID.class))).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> followService.findFollowSummaries(UUID.randomUUID()))
+            .isInstanceOf(OtbooException.class);
+
+    }
+
+    @Test
+    void 입력_유저정보_확인_실패() throws Exception {
+        // given
+        User loggedIn = mock(User.class, Answers.RETURNS_DEFAULTS);
+        lenient().when(loggedIn.isLocked()).thenReturn(false);
+
+        given(userRepository.findById(any(UUID.class)))
+            .willReturn(Optional.of(loggedIn))
+            .willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> followService.findFollowSummaries(UUID.randomUUID()))
+            .isInstanceOf(OtbooException.class);
+    }
+
+    @Test
+    void 로그인_유저_locked_확인_실패() throws Exception {
+        // given
+        User loggedIn = mock(User.class, Answers.RETURNS_DEFAULTS);
+        given(loggedIn.isLocked()).willReturn(true);
+
+        given(userRepository.findById(any(UUID.class)))
+            .willReturn(Optional.of(loggedIn));
+
+        // when & then
+        assertThatThrownBy(() -> followService.findFollowSummaries(UUID.randomUUID()))
+            .isInstanceOf(OtbooException.class);
+    }
+
+    @Test
+    void 입력_유저_locked_확인_실패() throws Exception {
+        // given
+        User loggedIn = mock(User.class, Answers.RETURNS_DEFAULTS);
+        User target   = mock(User.class, Answers.RETURNS_DEFAULTS);
+        given(loggedIn.isLocked()).willReturn(false);
+        given(target.isLocked()).willReturn(true);
+
+        given(userRepository.findById(any(UUID.class)))
+            .willReturn(Optional.of(loggedIn))
+            .willReturn(Optional.of(target));
+
+        // when & then
+        assertThatThrownBy(() -> followService.findFollowSummaries(UUID.randomUUID()))
+            .isInstanceOf(OtbooException.class);
+    }
+    @Test
+    void 팔로우_있는지_확인_실패() throws Exception {
+        // given
+        User loggedIn = mock(User.class, Answers.RETURNS_DEFAULTS);
+        User target   = mock(User.class, Answers.RETURNS_DEFAULTS);
+        UUID targetId = UUID.randomUUID();
+
+        given(loggedIn.isLocked()).willReturn(false);
+        given(target.isLocked()).willReturn(false);
+
+        given(userRepository.findById(any(UUID.class)))
+            .willReturn(Optional.of(loggedIn))
+            .willReturn(Optional.of(target));
+
+        given(followRepository.existsByFollowerIdAndFolloweeId(any(UUID.class), any(UUID.class)))
+            .willReturn(false);
+
+        given(followRepository.findByFollowerIdAndFolloweeId(any(UUID.class), any(UUID.class)))
+            .willReturn(Optional.empty());
+
+        given(followRepository.countByFolloweeId(any(UUID.class))).willReturn(0L);
+        given(followRepository.countByFollowerId(any(UUID.class))).willReturn(0L);
+
+        // when
+        FollowSummaryDto response = followService.findFollowSummaries(targetId);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.followedByMe()).isFalse();
+        assertThat(response.followedByMeId()).isNull();
+        assertThat(response.followingMe()).isFalse();
+    }
+
+    @Test
+    void 팔로우_여부_확인_실패() throws Exception {
+        // given
+        User loggedIn = mock(User.class, Answers.RETURNS_DEFAULTS);
+        User target   = mock(User.class, Answers.RETURNS_DEFAULTS);
+        UUID targetId = UUID.randomUUID();
+
+        given(loggedIn.isLocked()).willReturn(false);
+        given(target.isLocked()).willReturn(false);
+
+        given(userRepository.findById(any(UUID.class)))
+            .willReturn(Optional.of(loggedIn))
+            .willReturn(Optional.of(target));
+
+        given(followRepository.existsByFollowerIdAndFolloweeId(any(UUID.class), any(UUID.class)))
+            .willReturn(false);
+
+        Follow follow = mock(Follow.class, Answers.RETURNS_DEFAULTS);
+        given(follow.getId()).willReturn(UUID.randomUUID());
+        given(followRepository.findByFollowerIdAndFolloweeId(any(UUID.class), any(UUID.class)))
+            .willReturn(Optional.of(follow));
+
+        given(followRepository.countByFolloweeId(any(UUID.class))).willReturn(0L);
+        given(followRepository.countByFollowerId(any(UUID.class))).willReturn(0L);
+
+        // when
+        FollowSummaryDto res = followService.findFollowSummaries(targetId);
+
+        // then
+        assertThat(res).isNotNull();
+        assertThat(res.followedByMe()).isTrue();
+        assertThat(res.followedByMeId()).isNotNull();
+        assertThat(res.followingMe()).isFalse();
+    }
+
+
 
     /*
         팔로잉 목록 조회 단위 테스트
      */
 
     @Test
-    void 팔로잉_목록_조회를_한다() throws Exception {
+    void 팔로잉_목록_조회_한다() throws Exception {
         // given
         UUID followerId = UUID.randomUUID();
         FollowingRequest req = new FollowingRequest(followerId, null, null, 10, null);
@@ -223,7 +348,7 @@ class FollowServiceImplTest {
         given(followRepository.findFollowings(any(FollowingRequest.class)))
             .willReturn(List.of(f1, f2));
 
-        given(followRepository.countTotalElements(followerId, null))
+        given(followRepository.countTotalFollowings(followerId, null))
             .willReturn(2L);
 
         given(followMapper.toDto(any(Follow.class))).willAnswer(inv ->
@@ -308,7 +433,7 @@ class FollowServiceImplTest {
         for (String bad : bads) {
             // when
             Instant actual = invokeParse(bad);
-            // then (느슨)
+            // then
             assertThat(actual).isNull();
         }
     }
@@ -317,5 +442,71 @@ class FollowServiceImplTest {
         assertThat(invokeParse("")).isNull();
         assertThat(invokeParse("   ")).isNull();
         assertThat(invokeParse(null)).isNull();
+    }
+
+
+    /*
+        팔로워 목록 조회 단위 테스트
+     */
+
+    @Test
+    void 팔로워_목록_조회를_한다() throws Exception {
+        // given
+        UUID followeeId = UUID.randomUUID();
+        FollowingRequest req = new FollowingRequest(followeeId, null, null, 10, null);
+
+        User followee = mock(User.class, Answers.RETURNS_DEFAULTS);
+        given(userRepository.findById(followeeId)).willReturn(Optional.of(followee));
+        lenient().when(followee.isLocked()).thenReturn(false);
+
+        Follow f1 = mock(Follow.class, Answers.RETURNS_DEFAULTS);
+        Follow f2 = mock(Follow.class, Answers.RETURNS_DEFAULTS);
+        given(followRepository.findFollowers(any(FollowingRequest.class)))
+            .willReturn(List.of(f1, f2));
+
+        given(followRepository.countTotalFollowers(followeeId, null)).willReturn(2L);
+
+        given(followMapper.toDto(any(Follow.class))).willAnswer(inv ->
+            new FollowDto(
+                UUID.randomUUID(),
+                new AuthorDto(followeeId, "followee", null),
+                new AuthorDto(UUID.randomUUID(), "follower", null)
+            )
+        );
+
+        // when
+        FollowListResponse res = followService.getFollowers(req);
+
+        // then
+        assertThat(res).isNotNull();
+        assertThat(res.data()).isNotEmpty();
+    }
+
+    @Test
+    void 팔로워_조회시_유저가_있는지_확인한다() throws Exception {
+        /// given
+        UUID followerId = UUID.randomUUID();
+        FollowingRequest req = new FollowingRequest(followerId, null, null, 10, null);
+
+        given(userRepository.findById(followerId)).willReturn(Optional.empty());
+
+        // when n then
+        assertThatThrownBy(() -> followService.getFollowers(req))
+            .isInstanceOf(OtbooException.class);
+    }
+
+    @Test
+    void 팔로워_조회시_유저의_locked_여부를_확인한다() throws Exception {
+        // given
+        UUID followerId = UUID.randomUUID();
+        FollowingRequest req = new FollowingRequest(followerId, null, null, 10, null);
+
+        User follower = mock(User.class, Answers.RETURNS_DEFAULTS);
+        given(userRepository.findById(followerId)).willReturn(Optional.of(follower));
+        given(follower.isLocked()).willReturn(true); // 잠금
+
+        // when n then
+        assertThatThrownBy(() -> followService.getFollowers(req))
+            .isInstanceOf(OtbooException.class);
     }
 }

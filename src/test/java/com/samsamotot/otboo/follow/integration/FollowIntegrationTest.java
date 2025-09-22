@@ -21,6 +21,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -44,9 +45,9 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER
 @Testcontainers
 @DirtiesContext(classMode = AFTER_CLASS)
 @ActiveProfiles("test")
+@Transactional
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = {
-//    "spring.sql.init.mode=never",
     "spring.datasource.driver-class-name=org.postgresql.Driver",
     "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"
 })
@@ -99,6 +100,18 @@ public class FollowIntegrationTest {
         assertThat(response.followee().userId()).isEqualTo(followee.getId());
     }
 
+    // TODO 팔로우 요약 정보 조회 - 로그인 정보 가져오는 로직 구현시 추가 예정
+    @Test
+    void 팔로우_요약_정보_정상_조회한다() throws Exception {
+
+        // given
+
+        // when
+
+        // then
+
+    }
+
     @Test
     void 팔로잉_목록_조회를_한다() throws Exception {
         User follower = User.createUser("f1@test.com", "follower", "password#A", BCRYPT_PASSWORD_ENCODER);
@@ -149,5 +162,58 @@ public class FollowIntegrationTest {
             .collect(java.util.stream.Collectors.toSet());
         assertThat(page2.data().stream().map(d -> d.followee().userId()))
             .doesNotContainAnyElementsOf(p1Followees);
+    }
+
+    @Test
+    void 팔로워_목록_정상_조회한다() throws Exception {
+        // given
+        User me  = User.createUser("me@test.com", "me", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.save(me);
+
+        User f1 = User.createUser("f1@test.com", "f1", "password#A", BCRYPT_PASSWORD_ENCODER);
+        User f2 = User.createUser("f2@test.com", "f2", "password#A", BCRYPT_PASSWORD_ENCODER);
+        User f3 = User.createUser("f3@test.com", "f3", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.saveAll(java.util.List.of(f1, f2, f3));
+
+        followService.follow(new FollowCreateRequest(f1.getId(), me.getId()));
+        Thread.sleep(5);
+        followService.follow(new FollowCreateRequest(f2.getId(), me.getId()));
+        Thread.sleep(5);
+        followService.follow(new FollowCreateRequest(f3.getId(), me.getId()));
+
+        // when: 1페이지 조회 (limit=2)
+        FollowingRequest page1Req = new FollowingRequest(
+            me.getId(),   // 여기서는 '대상 사용자(=followee)'를 첫 인자로 사용
+            null, null, 2, null
+        );
+        FollowListResponse page1 = followService.getFollowers(page1Req);
+
+        // then: 느슨하게 기본 동작만 확인
+        assertThat(page1).isNotNull();
+        assertThat(page1.data()).isNotNull();
+        assertThat(page1.data().size()).isLessThanOrEqualTo(2);
+        assertThat(page1.hasNext()).isTrue();
+        assertThat(page1.nextCursor()).isNotNull();
+        assertThat(page1.nextIdAfter()).isNotNull();
+        page1.data().forEach(d -> assertThat(d.followee().userId()).isEqualTo(me.getId()));
+
+        // when: 2페이지 조회
+        FollowingRequest page2Req = new FollowingRequest(
+            me.getId(),
+            page1.nextCursor(),
+            page1.nextIdAfter(),
+            2,
+            null
+        );
+        FollowListResponse page2 = followService.getFollowers(page2Req);
+
+        // then: 마지막 페이지라 hasNext=false, cursor/idAfter는 null
+        assertThat(page2).isNotNull();
+        assertThat(page2.data()).isNotNull();
+        assertThat(page2.hasNext()).isFalse();
+        assertThat(page2.nextCursor()).isNull();
+        assertThat(page2.nextIdAfter()).isNull();
+        page2.data().forEach(d -> assertThat(d.followee().userId()).isEqualTo(me.getId()));
+
     }
 }

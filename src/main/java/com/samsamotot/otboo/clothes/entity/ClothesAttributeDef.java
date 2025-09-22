@@ -4,7 +4,6 @@ import com.samsamotot.otboo.common.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -72,5 +71,18 @@ public class ClothesAttributeDef extends BaseEntity {
         });
 
         return def;
+    }
+
+    public void updateName(String name) {
+        this.name = name;
+        this.updatedAt = Instant.now();
+    }
+
+    public void updateOptions(List<String> newValues) {
+        this.options.clear();
+        newValues.forEach(value -> {
+            ClothesAttributeOption option = ClothesAttributeOption.createClothesAttributeOption(this, value);
+            this.addOption(option);
+        });
     }
 }
