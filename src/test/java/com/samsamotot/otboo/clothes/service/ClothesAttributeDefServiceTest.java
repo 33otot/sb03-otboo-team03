@@ -8,6 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest;
@@ -22,6 +23,7 @@ import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttribute
 import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttributeDefNotFoundException;
 import com.samsamotot.otboo.common.fixture.ClothesAttributeDefFixture;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +34,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
@@ -300,6 +304,199 @@ class ClothesAttributeDefServiceTest {
                 .hasMessageContaining(ErrorCode.CLOTHES_ATTRIBUTE_DEF_NOT_FOUND.getMessage());
 
             verify(defRepository, times(1)).findById(defId);
+        }
+    }
+
+    @Nested
+    @DisplayName("의상 속성 정의 조회 서비스 테스트")
+    class ClothesAttributeDefFindServiceTest {
+        @Test
+        void 생성시간으로_오름차순_정렬이_가능하다() {
+            // given
+            String sortBy = "createdAt";
+            String sortDirection = "ASCENDING";
+
+            ClothesAttributeDef def1 = ClothesAttributeDef.createClothesAttributeDef("상의", List.of("반팔", "긴팔"));
+            ReflectionTestUtils.setField(def1, "createdAt", Instant.parse("2023-01-01T00:00:00Z"));
+
+            ClothesAttributeDef def2 = ClothesAttributeDef.createClothesAttributeDef("하의", List.of("반바지", "긴바지"));
+            ReflectionTestUtils.setField(def2, "createdAt", Instant.parse("2023-02-03T00:01:00Z"));
+
+            ClothesAttributeDef def3 = ClothesAttributeDef.createClothesAttributeDef("모자", List.of("캡모자", "베레모", "중절모"));
+            ReflectionTestUtils.setField(def3, "createdAt", Instant.parse("2023-02-03T00:05:01Z"));
+
+            List<ClothesAttributeDef> mockResult = List.of(def1, def2, def3);
+
+            // Repository가 정렬된 결과를 반환한다고 가정
+            when(defRepository.findAll(any(Sort.class))).thenReturn(mockResult);
+
+            // Mapper가 mock이므로 stub 해줘야 함
+            when(defMapper.toDto(any(ClothesAttributeDef.class)))
+                .thenAnswer(invocation -> {
+                    ClothesAttributeDef entity = invocation.getArgument(0);
+                    return ClothesAttributeDefDto.builder()
+                        .id(entity.getId())
+                        .name(entity.getName())
+                        .selectableValues(entity.getOptions().stream().map(ClothesAttributeOption::getValue).toList())
+                        .createdAt(entity.getCreatedAt())
+                        .build();
+                });
+
+            // when
+            List<ClothesAttributeDefDto> results =
+                clothesAttributeDefService.findAll(sortBy, sortDirection, null);
+
+            // isSorted() 검증
+            assertThat(results)
+                .extracting(ClothesAttributeDefDto::createdAt)
+                .isSorted(); // 오름차순 검증
+        }
+
+        @Test
+        void 생성시간으로_내림차순_정렬이_가능하다() {
+            // given
+            String sortBy = "createdAt";
+            String sortDirection = "DESCENDING";
+
+            ClothesAttributeDef def1 = ClothesAttributeDef.createClothesAttributeDef("상의", List.of("반팔", "긴팔"));
+            ReflectionTestUtils.setField(def1, "createdAt", Instant.parse("2023-01-01T00:00:00Z"));
+
+            ClothesAttributeDef def2 = ClothesAttributeDef.createClothesAttributeDef("하의", List.of("반바지", "긴바지"));
+            ReflectionTestUtils.setField(def2, "createdAt", Instant.parse("2023-02-03T00:01:00Z"));
+
+            ClothesAttributeDef def3 = ClothesAttributeDef.createClothesAttributeDef("모자", List.of("캡모자", "베레모", "중절모"));
+            ReflectionTestUtils.setField(def3, "createdAt", Instant.parse("2023-02-03T00:05:01Z"));
+
+            List<ClothesAttributeDef> mockResult = List.of(def3, def2, def1);
+
+            // Repository가 정렬된 결과를 반환한다고 가정
+            when(defRepository.findAll(any(Sort.class))).thenReturn(mockResult);
+
+            // Mapper가 mock이므로 stub 해줘야 함
+            when(defMapper.toDto(any(ClothesAttributeDef.class)))
+                .thenAnswer(invocation -> {
+                    ClothesAttributeDef entity = invocation.getArgument(0);
+                    return ClothesAttributeDefDto.builder()
+                        .id(entity.getId())
+                        .name(entity.getName())
+                        .selectableValues(entity.getOptions().stream().map(ClothesAttributeOption::getValue).toList())
+                        .createdAt(entity.getCreatedAt())
+                        .build();
+                });
+
+            // when
+            List<ClothesAttributeDefDto> results =
+                clothesAttributeDefService.findAll(sortBy, sortDirection, null);
+
+            // isSorted() 검증
+            assertThat(results)
+                .extracting(ClothesAttributeDefDto::createdAt)
+                .isSortedAccordingTo(Comparator.reverseOrder()); // 내림차순 검증
+        }
+
+        @Test
+        void 이름으로_오름차순_정렬이_가능하다() {
+            // given
+            String sortBy = "name";
+            String sortDirection = "ASCENDING";
+
+            ClothesAttributeDef def1 = ClothesAttributeDef.createClothesAttributeDef("가방", List.of("백팩", "숄더백"));
+            ClothesAttributeDef def2 = ClothesAttributeDef.createClothesAttributeDef("모자", List.of("캡모자", "베레모"));
+            ClothesAttributeDef def3 = ClothesAttributeDef.createClothesAttributeDef("상의", List.of("반팔", "긴팔"));
+
+            List<ClothesAttributeDef> mockResult = List.of(def1, def2, def3); // 가방, 모자, 상의
+
+            when(defRepository.findAll(any(Sort.class))).thenReturn(mockResult);
+
+            when(defMapper.toDto(any(ClothesAttributeDef.class)))
+                .thenAnswer(invocation -> {
+                    ClothesAttributeDef entity = invocation.getArgument(0);
+                    return ClothesAttributeDefDto.builder()
+                        .id(entity.getId())
+                        .name(entity.getName())
+                        .selectableValues(entity.getOptions().stream().map(ClothesAttributeOption::getValue).toList())
+                        .createdAt(entity.getCreatedAt())
+                        .build();
+                });
+
+            // when
+            List<ClothesAttributeDefDto> results =
+                clothesAttributeDefService.findAll(sortBy, sortDirection, null);
+
+            // then
+            assertThat(results)
+                .extracting(ClothesAttributeDefDto::name)
+                .isSorted(); // 오름차순 검증
+        }
+
+        @Test
+        void 이름으로_내림차순_정렬이_가능하다() {
+            // given
+            String sortBy = "name";
+            String sortDirection = "DESCENDING";
+
+            ClothesAttributeDef def1 = ClothesAttributeDef.createClothesAttributeDef("가방", List.of("백팩", "숄더백"));
+            ClothesAttributeDef def2 = ClothesAttributeDef.createClothesAttributeDef("모자", List.of("캡모자", "베레모"));
+            ClothesAttributeDef def3 = ClothesAttributeDef.createClothesAttributeDef("상의", List.of("반팔", "긴팔"));
+
+            List<ClothesAttributeDef> mockResult = List.of(def3, def2, def1); // 상의, 모자, 가방 (역순)
+
+            when(defRepository.findAll(any(Sort.class))).thenReturn(mockResult);
+
+            when(defMapper.toDto(any(ClothesAttributeDef.class)))
+                .thenAnswer(invocation -> {
+                    ClothesAttributeDef entity = invocation.getArgument(0);
+                    return ClothesAttributeDefDto.builder()
+                        .id(entity.getId())
+                        .name(entity.getName())
+                        .selectableValues(entity.getOptions().stream().map(ClothesAttributeOption::getValue).toList())
+                        .createdAt(entity.getCreatedAt())
+                        .build();
+                });
+
+            // when
+            List<ClothesAttributeDefDto> results =
+                clothesAttributeDefService.findAll(sortBy, sortDirection, null);
+
+            // then
+            assertThat(results)
+                .extracting(ClothesAttributeDefDto::name)
+                .isSortedAccordingTo(Comparator.reverseOrder()); // 내림차순 검증
+        }
+
+        @Test
+        void 키워드가_있으면_이름에_포함된_정의만_정렬하여_반환한다() {
+            // given
+            String sortBy = "name";
+            String sortDirection = "ASCENDING";
+            String keywordLike = "모";
+
+            ClothesAttributeDef def1 = ClothesAttributeDef.createClothesAttributeDef("모자", List.of("캡모자", "베레모"));
+            ClothesAttributeDef def2 = ClothesAttributeDef.createClothesAttributeDef("상의", List.of("반팔", "긴팔"));
+            ClothesAttributeDef def3 = ClothesAttributeDef.createClothesAttributeDef("하의", List.of("반바지", "긴바지"));
+
+            when(defRepository.findByNameContaining(eq(keywordLike), any(Sort.class)))
+                .thenReturn(List.of(def1)); // 이름에 "모" 포함된 건 모자뿐
+
+            when(defMapper.toDto(any(ClothesAttributeDef.class)))
+                .thenAnswer(invocation -> {
+                    ClothesAttributeDef entity = invocation.getArgument(0);
+                    return ClothesAttributeDefDto.builder()
+                        .id(entity.getId())
+                        .name(entity.getName())
+                        .selectableValues(entity.getOptions().stream().map(ClothesAttributeOption::getValue).toList())
+                        .createdAt(entity.getCreatedAt())
+                        .build();
+                });
+
+            // when
+            List<ClothesAttributeDefDto> results =
+                clothesAttributeDefService.findAll(sortBy, sortDirection, keywordLike);
+
+            // then
+            assertThat(results)
+                .extracting(ClothesAttributeDefDto::name)
+                .containsExactly("모자"); // 필터링 검증
         }
     }
 }

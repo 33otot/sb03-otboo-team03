@@ -3,6 +3,7 @@ package com.samsamotot.otboo.clothes.service;
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefUpdateRequest;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -14,4 +15,6 @@ public interface ClothesAttributeDefService {
     ClothesAttributeDefDto update(UUID defId, ClothesAttributeDefUpdateRequest request);
 
     void delete(UUID defId);
+
+    List<ClothesAttributeDefDto> findAll(String sortBy, String sortDirection, String keywordLike);
 }
