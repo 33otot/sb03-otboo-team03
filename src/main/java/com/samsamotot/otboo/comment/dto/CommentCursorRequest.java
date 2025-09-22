@@ -22,6 +22,6 @@ public record CommentCursorRequest(
      */
     @AssertTrue(message = "idAfter 파라미터는 cursor 파라미터와 함께 제공되어야 합니다.")
     private boolean isCursorPairValid() {
-        return idAfter == null || cursor != null;
+        return idAfter == null || (cursor != null && !cursor.isBlank());
     }
 }
