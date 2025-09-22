@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -135,6 +136,74 @@ class ClothesAttributeDefControllerTest {
                 .andExpect(status().isNoContent());
 
             verify(defService).delete(defId);
+        }
+    }
+
+    @Nested
+    @DisplayName("의상 속성 정의 목록 조회 컨트롤러 테스트")
+    class ClothesAttributeDefFindTest {
+        @Test
+        void 조회에_성공하면_200코드와_dto리스트를_반환한다() throws Exception {
+
+            ClothesAttributeDefDto responseDto1 = ClothesAttributeDefDto.builder()
+                .id(UUID.randomUUID())
+                .name("가나다 테스트 속성 명")
+                .selectableValues(List.of("옵션1", "옵션2", "옵션3"))
+                .createdAt(Instant.now())
+                .build();
+
+            ClothesAttributeDefDto responseDto2 = ClothesAttributeDefDto.builder()
+                .id(UUID.randomUUID())
+                .name("라마바 테스트 속성 명")
+                .selectableValues(List.of("옵션12", "옵션22", "옵션32"))
+                .createdAt(Instant.now())
+                .build();
+
+            List<ClothesAttributeDefDto> responseList = List.of(responseDto1, responseDto2);
+
+            when(defService.findAll("name", "ASCENDING", null)).thenReturn(responseList);
+
+            // when & then
+            mockMvc.perform(get("/api/clothes/attribute-defs")
+                .param("sortBy", "name")
+                .param("sortDirection", "ASCENDING"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].name").value("가나다 테스트 속성 명"))
+                .andExpect(jsonPath("$[0].selectableValues[0]").value("옵션1"))
+                .andExpect(jsonPath("$[1].name").value("라마바 테스트 속성 명"));
+        }
+
+        @Test
+        void 키워드가_있다면_포함하는_결과가_반환된다() throws Exception {
+
+            ClothesAttributeDefDto responseDto1 = ClothesAttributeDefDto.builder()
+                .id(UUID.randomUUID())
+                .name("가나다 테스트 속성 명")
+                .selectableValues(List.of("옵션1", "옵션2", "옵션3"))
+                .createdAt(Instant.now())
+                .build();
+
+            ClothesAttributeDefDto responseDto2 = ClothesAttributeDefDto.builder()
+                .id(UUID.randomUUID())
+                .name("라마바 테스트 속성 명")
+                .selectableValues(List.of("옵션12", "옵션22", "옵션32"))
+                .createdAt(Instant.now())
+                .build();
+
+            List<ClothesAttributeDefDto> responseList = List.of(responseDto1);
+
+            when(defService.findAll("name", "ASCENDING", "가")).thenReturn(responseList);
+
+            // when & then
+            mockMvc.perform(get("/api/clothes/attribute-defs")
+                    .param("sortBy", "name")
+                    .param("sortDirection", "ASCENDING")
+                    .param("keywordLike", "가"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name").value("가나다 테스트 속성 명"))
+                .andExpect(jsonPath("$[0].selectableValues[0]").value("옵션1"));
         }
     }
 }
