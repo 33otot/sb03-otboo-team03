@@ -71,6 +71,14 @@ public class FeedLikeServiceImpl implements FeedLikeService {
         return feedLike;
     }
 
+
+    /**
+     * 피드에 추가된 좋아요를 취소합니다.
+     *
+     * @param feedId 좋아요를 취소할 피드의 ID
+     * @param userId 좋아요를 취소하는 사용자의 ID
+     * @throws OtbooException 피드 또는 좋아요 정보를 찾을 수 없는 경우
+     */
     @Override
     public void delete(UUID feedId, UUID userId) {
 
