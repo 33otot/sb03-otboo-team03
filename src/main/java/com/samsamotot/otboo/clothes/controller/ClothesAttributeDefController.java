@@ -80,7 +80,10 @@ public class ClothesAttributeDefController implements ClothesAttributeDefApi {
     ) {
         log.debug("[ClothesAttributeDefController] getClothesAttributeDef - service.findAll 호출");
         List<ClothesAttributeDefDto> result = defService.findAll(sortBy, sortDirection, keywordLike);
-        log.debug("[ClothesAttributeDefController] getClothesAttributeDef - service.findAll 결과(첫번째 요소): {}", result.get(0));
+        log.debug("[ClothesAttributeDefController] getClothesAttributeDef - service.findAll 결과 리스트 크기: {}", result.size());
+        if (!result.isEmpty()) {
+            log.trace("[ClothesAttributeDefController] getClothesAttributeDef - 첫 번째 요소: {}", result.get(0));
+        }
 
         return ResponseEntity
             .status(HttpStatus.OK)
