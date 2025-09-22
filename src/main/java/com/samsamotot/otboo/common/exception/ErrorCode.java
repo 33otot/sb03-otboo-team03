@@ -49,6 +49,9 @@ public enum ErrorCode {
     FORBIDDEN_FEED_MODIFICATION(HttpStatus.FORBIDDEN, "FD003", "본인이 작성한 피드만 수정할 수 있습니다."),
     FORBIDDEN_FEED_DELETION(HttpStatus.FORBIDDEN, "FD004", "본인이 작성한 피드만 삭제할 수 있습니다."),
 
+    // 피드 좋아요 관련 에러
+    FEED_ALREADY_LIKED(HttpStatus.CONFLICT, "FDL001", "이미 좋아요를 누른 피드입니다."),
+
     // 팔로우 관련 에러
     FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "FO001", "팔로우 관계를 찾을 수 없습니다."),
     INVALID_FOLLOW_REQUEST(HttpStatus.BAD_REQUEST, "FO002", "팔로우 관계를 생성할 수 없습니다."),
