@@ -13,6 +13,9 @@ import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 public class DirectMessageServiceImpl implements DirectMessageService {
     @Override
     public CursorResponse<DirectMessage> getMessages(MessageRequest request) {
+
+
+
         return null;
     }
 }
