@@ -36,15 +36,22 @@ public enum ErrorCode {
     CLOTHES_NOT_FOUND(HttpStatus.NOT_FOUND, "CL001", "의상을 찾을 수 없습니다."),
     INVALID_CLOTHES_TYPE(HttpStatus.BAD_REQUEST, "CL002", "올바르지 않은 의상 타입입니다."),
     CLOTHES_ATTRIBUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "CL003", "의상 속성을 찾을 수 없습니다."),
-    CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS(HttpStatus.CONFLICT, "CL006", "이미 존재하는 의상 속성 정의입니다."),
-    INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "CL004", "올바르지 않은 이미지 형식입니다."),
-    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CL005", "이미지 업로드에 실패했습니다."),
+
+    CLOTHES_ATTRIBUTE_DEF_NOT_FOUND(HttpStatus.NOT_FOUND, "CL004", "의상 속성 정의를 찾을 수 없습니다."),
+    CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS(HttpStatus.CONFLICT, "CL005", "이미 존재하는 의상 속성 정의입니다."),
+
+    INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "CL006", "올바르지 않은 이미지 형식입니다."),
+    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CL007", "이미지 업로드에 실패했습니다."),
 
     // 피드 관련 에러
     FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "FD001", "피드를 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "FD002", "댓글을 찾을 수 없습니다."),
     FORBIDDEN_FEED_MODIFICATION(HttpStatus.FORBIDDEN, "FD003", "본인이 작성한 피드만 수정할 수 있습니다."),
     FORBIDDEN_FEED_DELETION(HttpStatus.FORBIDDEN, "FD004", "본인이 작성한 피드만 삭제할 수 있습니다."),
+
+    // 피드 좋아요 관련 에러
+    FEED_ALREADY_LIKED(HttpStatus.CONFLICT, "FDL001", "이미 좋아요를 누른 피드입니다."),
+    FEED_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "FDL002", "피드 좋아요를 찾을 수 없습니다."),
 
     // 팔로우 관련 에러
     FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "FO001", "팔로우 관계를 찾을 수 없습니다."),

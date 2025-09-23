@@ -2,10 +2,7 @@ package com.samsamotot.otboo.follow.service;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
-import com.samsamotot.otboo.follow.dto.FollowDto;
-import com.samsamotot.otboo.follow.dto.FollowListResponse;
-import com.samsamotot.otboo.follow.dto.FollowingRequest;
+import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
@@ -108,9 +105,50 @@ public class FollowServiceImpl implements FollowService {
             log.warn(FOLLOW_SERVICE + "동시성 중복 팔로우 감지: followerId={}, followeeId={}", follower.getId(), followee.getId());
             throw new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST);
         }
-
     }
 
+    // TODO 팔로우 요약 정보 조회 - 주석 추가
+    @Override
+    public FollowSummaryDto findFollowSummaries(UUID userId) {
+        // TODO: 임시 구현 - Authentication/Security 적용 후 실제 로그인 사용자 ID로 교체 필요
+        UUID loggedInUserId = UUID.randomUUID(); // 임시값: 항상 USER_NOT_FOUND 발생
+        log.info(FOLLOW_SERVICE + "팔로우 요약 조회 시작: targetUserId={}", userId);
+        log.warn(FOLLOW_SERVICE + "임시 UUID 사용 중. Security 적용 후 Authentication 기반으로 교체 필요: tempLoggedInUserId={}", loggedInUserId);
+
+
+        User loggedInUser = userRepository.findById(loggedInUserId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+        if(loggedInUser.isLocked()) {
+            throw new OtbooException(ErrorCode.USER_LOCKED);
+        }
+        User targetUser = userRepository.findById(userId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+        if(targetUser.isLocked()) {
+            throw new OtbooException(ErrorCode.USER_LOCKED);
+        }
+
+        boolean isFollowed  = followRepository.existsByFollowerIdAndFolloweeId(userId, loggedInUserId);
+
+        UUID followedByMeId = followRepository.findByFollowerIdAndFolloweeId(loggedInUserId, userId)
+            .map(follow -> follow.getId())
+            .orElse(null);
+
+        boolean isFollowing = (followedByMeId != null);
+
+        long followerCount  = followRepository.countByFolloweeId(userId);
+        long followingCount = followRepository.countByFollowerId(userId);
+
+        FollowSummaryDto response = FollowSummaryDto.builder()
+            .followeeId(targetUser.getId())
+            .followerCount(followerCount)
+            .followingCount(followingCount)
+            .followedByMe(isFollowing)
+            .followedByMeId(followedByMeId)
+            .followingMe(isFollowed)
+            .build();
+        log.info(FOLLOW_SERVICE + "팔로우 요약 조회 완료: targetUserId={}, followerCount={}, followingCount={}, followedByMe={}, followingMe={}",
+            userId, followerCount, followingCount, isFollowing, isFollowed);
+
+        return response;
+    }
 
     /**
      * 특정 사용자가 팔로우하고 있는 사용자 목록을 조회한다.
@@ -261,7 +299,27 @@ public class FollowServiceImpl implements FollowService {
         return response;
     }
 
-
+    /**
+     * 기존 팔로우 관계를 취소(언팔로우)한다.
+     *
+     * 1. 전달된 followId(팔로우 관계 고유 ID)를 기준으로 존재 여부 확인
+     *    - 존재하지 않으면 {@link OtbooException} 발생 (ErrorCode.FOLLOW_NOT_FOUND)
+     * 2. 존재할 경우 해당 팔로우 관계를 삭제
+     * 3. 시작/완료 로그 기록
+     *
+     * @param followId 언팔로우할 팔로우 관계의 고유 ID
+     * @throws OtbooException followId가 존재하지 않을 경우 발생
+     */
+    @Transactional
+    @Override
+    public void unfollow(UUID followId) {
+        log.info(FOLLOW_SERVICE + "언팔로우 시작: followeeId={}", followId);
+        if (!followRepository.existsById(followId)) {
+            throw new OtbooException(ErrorCode.FOLLOW_NOT_FOUND);
+        }
+        followRepository.deleteById(followId);
+        log.info(FOLLOW_SERVICE + "언팔로우 완료");
+    }
 
     private static Instant parseCursorToInstant(String cursor) {
         if (cursor == null || cursor.isBlank()) {
@@ -269,13 +327,16 @@ public class FollowServiceImpl implements FollowService {
         }
         try {
             return Instant.parse(cursor);
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
         try {
             return java.time.OffsetDateTime.parse(cursor).toInstant();
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
         try {
             return java.time.LocalDateTime.parse(cursor).toInstant(java.time.ZoneOffset.UTC);
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
         return null;
     }
 }

@@ -100,6 +100,18 @@ public class FollowIntegrationTest {
         assertThat(response.followee().userId()).isEqualTo(followee.getId());
     }
 
+    // TODO 팔로우 요약 정보 조회 - 로그인 정보 가져오는 로직 구현시 추가 예정
+    @Test
+    void 팔로우_요약_정보_정상_조회한다() throws Exception {
+
+        // given
+
+        // when
+
+        // then
+
+    }
+
     @Test
     void 팔로잉_목록_조회를_한다() throws Exception {
         User follower = User.createUser("f1@test.com", "follower", "password#A", BCRYPT_PASSWORD_ENCODER);
@@ -203,5 +215,27 @@ public class FollowIntegrationTest {
         assertThat(page2.nextIdAfter()).isNull();
         page2.data().forEach(d -> assertThat(d.followee().userId()).isEqualTo(me.getId()));
 
+    }
+    
+    @Test
+    void 팔로우를_정상_삭제한다() throws Exception {
+        // given
+        User follower = User.createUser("uf1@test.com", "uf1", "password#A", BCRYPT_PASSWORD_ENCODER);
+        User followee = User.createUser("ue1@test.com", "ue1", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.save(follower);
+        userRepository.save(followee);
+
+        FollowDto created = followService.follow(new FollowCreateRequest(follower.getId(), followee.getId()));
+        UUID followId = created.id();
+
+        assertThat(followRepository.existsById(followId)).isTrue();
+
+        // when
+        followService.unfollow(followId);
+
+        // then
+        assertThat(followRepository.existsById(followId)).isFalse();
+        assertThat(followRepository.countTotalFollowings(follower.getId(), null)).isEqualTo(0L);
+        assertThat(followRepository.countTotalFollowers(followee.getId(), null)).isEqualTo(0L);
     }
 }
