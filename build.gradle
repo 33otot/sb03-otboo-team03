@@ -110,6 +110,7 @@ clean.doLast {
 tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy jacocoTestReport // 테스트 후 JaCoCo 리포트 생성
+  	systemProperty 'spring.profiles.active', 'test' // 테스트 실행 시 프로필을 test로 강제
 }
 
 // JaCoCo 코드 커버리지 리포트 설정
