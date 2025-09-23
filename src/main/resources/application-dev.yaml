@@ -18,7 +18,7 @@ spring:
 
   # PostgreSQL DB 접속 정보
   datasource:
-    url: jdbc:postgresql://localhost:5433/otboo #로컬에서 사용하기 위한
+    url: jdbc:postgresql://${POSTGRES_HOST:postgres}:${POSTGRES_PORT:5432}/${POSTGRES_DB:otboo}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -76,4 +76,4 @@ logging:
     com.samsamotot.otboo: DEBUG
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
