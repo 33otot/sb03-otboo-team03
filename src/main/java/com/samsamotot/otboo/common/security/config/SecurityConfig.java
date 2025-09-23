@@ -2,6 +2,7 @@ package com.samsamotot.otboo.common.security.config;
 
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
 import com.samsamotot.otboo.common.security.csrf.CsrfTokenFilter;
+import org.springframework.beans.factory.ObjectProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,8 +50,8 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class SecurityConfig {
     
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CsrfTokenFilter csrfTokenFilter;
+    private final ObjectProvider<JwtAuthenticationFilter> jwtAuthenticationFilter;
+    private final ObjectProvider<CsrfTokenFilter> csrfTokenFilter;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -87,9 +88,17 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             
-            // 필터 추가
-            .addFilterBefore(csrfTokenFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            // 필터 추가 (존재하는 경우에만)
+            ;
+
+        CsrfTokenFilter csrfFilterBean = csrfTokenFilter.getIfAvailable();
+        if (csrfFilterBean != null) {
+            http.addFilterBefore(csrfFilterBean, UsernamePasswordAuthenticationFilter.class);
+        }
+        JwtAuthenticationFilter jwtFilterBean = jwtAuthenticationFilter.getIfAvailable();
+        if (jwtFilterBean != null) {
+            http.addFilterBefore(jwtFilterBean, UsernamePasswordAuthenticationFilter.class);
+        }
         
         return http.build();
     }
