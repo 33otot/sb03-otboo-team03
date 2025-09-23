@@ -161,6 +161,50 @@ class ClothesServiceTest {
             assertThat(result.imageUrl()).isNotBlank();  // S3 업로드 후 URL이 들어갔는지 확인
             assertThat(result.attributes()).isEmpty();
         }
+
+        @Test
+        void 의상_이미지와_속성으로_의상_등록이_가능해야_한다() {
+            // given
+            UUID ownerId = mockUser.getId();
+
+            // 속성 정의와 옵션 미리 준비
+            ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
+            ClothesAttributeDto attrDto = new ClothesAttributeDto(defEntity.getId(), "봄");
+
+            ClothesCreateRequest request = new ClothesCreateRequest(
+                ownerId,
+                "부들부들 티셔츠",
+                ClothesType.TOP,
+                List.of(attrDto)
+            );
+
+            // 가짜 이미지 파일
+            MockMultipartFile imageFile = new MockMultipartFile(
+                "file",
+                "test.jpg",
+                "image/jpeg",
+                "dummy-image".getBytes()
+            );
+            String mockImageUrl = "https://test-bucket.s3.ap-northeast-2.amazonaws.com/clothes/test.jpg";
+
+            Clothes savedClothes = Clothes.createClothes(request.name(), request.type(), mockUser);
+
+            when(userRepository.findById(ownerId)).thenReturn(Optional.of(mockUser));
+            when(defRepository.findById(defEntity.getId())).thenReturn(Optional.of(defEntity));
+            when(clothesRepository.save(any(Clothes.class))).thenReturn(savedClothes);
+
+            when(s3ImageStorage.uploadImage(imageFile, "clothes/")).thenReturn(mockImageUrl);
+
+            // when
+            ClothesDto result = clothesService.create(request, imageFile);
+
+            // then
+            assertThat(result.name()).isEqualTo("부들부들 티셔츠");
+            assertThat(result.type()).isEqualTo(ClothesType.TOP);
+            assertThat(result.imageUrl()).isNotBlank();  // S3 업로드 후 URL이 들어갔는지 확인
+            assertThat(result.attributes().get(0).definitionName()).isEqualTo("계절");
+            assertThat(result.attributes().get(0).value()).isEqualTo("봄");
+        }
     }
 
 }
