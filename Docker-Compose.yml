@@ -17,6 +17,11 @@ services:
       KAKAO_API_KEY: ${KAKAO_API_KEY}
       JVM_OPTS: ${JVM_OPTS:-}
       SERVER_PORT: ${APP_INTERNAL_PORT:-8080}   # 컨테이너 내부 포트 = 서버 포트
+      # JWT 설정
+      JWT_SECRET: ${JWT_SECRET:-otboo-jwt-secret-key-for-development-only-change-in-production}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-3600000}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION:-604800000}
+      JWT_ISSUER: ${JWT_ISSUER:-otboo}
     ports:
       - "${APP_EXTERNAL_PORT:-8080}:${APP_INTERNAL_PORT:-8080}" # 외부 포트와 내부 포트 매핑
     depends_on:
