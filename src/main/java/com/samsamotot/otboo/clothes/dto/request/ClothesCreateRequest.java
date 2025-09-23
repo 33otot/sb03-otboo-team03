@@ -1,7 +1,6 @@
 package com.samsamotot.otboo.clothes.dto.request;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDto;
-import com.samsamotot.otboo.clothes.entity.ClothesAttribute;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,7 +17,7 @@ public record ClothesCreateRequest(
     @NotNull(message = "의상 타입은 필수입니다.")
     ClothesType type,
 
-    List<ClothesAttributeDto> items
+    List<ClothesAttributeDto> attributes
 ) {
 
 }
