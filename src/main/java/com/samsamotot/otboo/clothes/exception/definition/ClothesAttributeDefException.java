@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.common.exception.clothes.definition;
+package com.samsamotot.otboo.clothes.exception.definition;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
