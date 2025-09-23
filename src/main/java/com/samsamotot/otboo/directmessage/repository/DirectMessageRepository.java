@@ -1,7 +1,7 @@
 package com.samsamotot.otboo.directmessage.repository;
 
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -26,8 +26,8 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
             JOIN FETCH m.receiver r
             WHERE ((s.id = :me AND r.id = :other) OR (s.id = :other AND r.id = :me))
               AND (
-                    cast(:cursor as timestamp) IS NULL
-                 OR  m.createdAt < :cursor
+                    :cursor IS NULL
+                 OR m.createdAt < :cursor
                  OR (m.createdAt = :cursor AND (:idAfter IS NULL OR m.id < :idAfter))
               )
             ORDER BY m.createdAt DESC, m.id DESC

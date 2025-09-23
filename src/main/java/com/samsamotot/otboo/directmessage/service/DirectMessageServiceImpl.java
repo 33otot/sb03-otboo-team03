@@ -105,7 +105,11 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
     private static Instant parseCursor(String cursor) {
         if (cursor == null || cursor.isBlank()) return null;
-        return Instant.parse(cursor);
+        try {
+            return Instant.parse(cursor);
+        } catch (Exception e) {
+            throw new OtbooException(ErrorCode.INVALID_REQUEST_PARAMETER);
+        }
     }
 
     // TODO 로그인 로직 추가되면 사용 예정 - 커버리지 문제로 제거 상태
