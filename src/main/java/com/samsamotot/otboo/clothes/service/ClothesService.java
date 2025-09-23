@@ -7,5 +7,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface ClothesService {
 
-    ClothesDto create(ClothesCreateRequest request, Optional<MultipartFile> optionalClothesImage);
+    ClothesDto create(ClothesCreateRequest request);
+    ClothesDto create(ClothesCreateRequest request, MultipartFile clothesImage);
 }

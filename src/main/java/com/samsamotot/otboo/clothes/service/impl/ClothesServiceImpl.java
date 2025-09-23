@@ -1,16 +1,28 @@
 package com.samsamotot.otboo.clothes.service.impl;
 
+import com.samsamotot.otboo.clothes.dto.ClothesAttributeDto;
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeWithDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesCreateRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
+import com.samsamotot.otboo.clothes.entity.Clothes;
+import com.samsamotot.otboo.clothes.entity.ClothesAttribute;
+import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
+import com.samsamotot.otboo.clothes.entity.ClothesAttributeOption;
+import com.samsamotot.otboo.clothes.exception.definition.ClothesAttributeDefNotFoundException;
+import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
+import com.samsamotot.otboo.clothes.repository.ClothesRepository;
 import com.samsamotot.otboo.clothes.service.ClothesService;
+import com.samsamotot.otboo.common.storage.S3ImageStorage;
+import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.user.exception.UserNotFoundException;
+import com.samsamotot.otboo.user.repository.UserRepository;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -21,34 +33,134 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class ClothesServiceImpl implements ClothesService {
 
+    private final ClothesRepository clothesRepository;
+    private final ClothesAttributeDefRepository defRepository;
+    private final UserRepository userRepository;
+    private final S3ImageStorage s3ImageStorage;
+
+
+    // 이미지 없는 생성
     @Override
-    public ClothesDto create(ClothesCreateRequest request,
-        Optional<MultipartFile> optionalClothesImage) {
+    @Transactional
+    public ClothesDto create(ClothesCreateRequest request) {
+        log.info("[ClothesServiceImpl] create - 이미지 없는 의상 생성 호출됨");
 
-        // imageUrl 처리 - 이미지가 있으면 더미 URL, 없으면 null
-        String imageUrl = optionalClothesImage.isPresent()
-            ? "https://dummy-s3-url.com/test.jpg"
-            : null;
+        List<ClothesAttributeWithDefDto> attributes = new ArrayList<>();
 
-        List<ClothesAttributeWithDefDto> attributes;
+        // 유저 조회
+        User owner = userRepository.findById(request.ownerId())
+            .orElseThrow(() -> new UserNotFoundException());
 
-        if (request.items() == null) {
+        // Clothes 객체 생성
+        Clothes clothes = Clothes.createClothes(
+            request.name(),
+            request.type(),
+            owner
+        );
+
+        // Attributes 처리
+        if (request.attributes() != null) {
+            for (ClothesAttributeDto dto : request.attributes()) {
+                log.debug("[ClothesServiceImpl] Attribute 처리와 ClothesAttributeWithDefDto 생성을 위한 반복문");
+                log.debug("[ClothesServiceImpl] {} 에서 현재 위치: {}", request.attributes(), dto);
+                // def 객체 조회
+                ClothesAttributeDef definition = defRepository.findById(dto.definitionId())
+                    .orElseThrow(() -> new ClothesAttributeDefNotFoundException());
+                ClothesAttribute attribute = ClothesAttribute.createClothesAttribute(definition, dto.value());
+
+                // 연관관계 세팅
+                clothes.addAttribute(attribute);
+
+                // ClothesAttributeWithDefDto 생성
+                ClothesAttributeWithDefDto withDefDto = new ClothesAttributeWithDefDto(
+                    dto.definitionId(),
+                    definition.getName(),
+                    definition.getOptions().stream()
+                        .map(ClothesAttributeOption::getValue)
+                        .toList(),
+                    dto.value()
+                );
+                attributes.add(withDefDto);
+            }
+        }
+        else {
             attributes = Collections.emptyList();
-        } else {
-            attributes = request.items().stream()
-                .map(attr -> new ClothesAttributeWithDefDto(
-                    attr.definitionId(),
-                    null,
-                    Collections.emptyList(),
-                    attr.value()
-                ))
-                .toList();
         }
 
+        Clothes saved = clothesRepository.save(clothes);
+
+        log.info("[ClothesServiceImpl] ClothesDto 생성중");
         // DTO 반환
         return new ClothesDto(
-            // 임시 id
-            UUID.randomUUID(),
+            saved.getId(),
+            request.ownerId(),
+            request.name(),
+            null,
+            request.type(),
+            attributes
+        );
+    }
+
+    // 이미지 있는 생성
+    @Override
+    @Transactional
+    public ClothesDto create(ClothesCreateRequest request,
+        MultipartFile clothesImage) {
+        log.info("[ClothesServiceImpl] create - 이미지 있는 의상 생성 호출됨");
+
+        List<ClothesAttributeWithDefDto> attributes = new ArrayList<>();
+
+        // 유저 조회
+        User owner = userRepository.findById(request.ownerId())
+            .orElseThrow(() -> new UserNotFoundException());
+
+        // Clothes 객체 생성
+        Clothes clothes = Clothes.createClothes(
+            request.name(),
+            request.type(),
+            owner
+        );
+
+        // Attributes 처리
+        if (request.attributes() != null) {
+            for (ClothesAttributeDto dto : request.attributes()) {
+                log.debug("[ClothesServiceImpl] Attribute 처리와 ClothesAttributeWithDefDto 생성을 위한 반복문");
+                log.debug("[ClothesServiceImpl] {} 에서 현재 위치: {}", request.attributes(), dto);
+                // def 객체 조회
+                ClothesAttributeDef definition = defRepository.findById(dto.definitionId())
+                    .orElseThrow(() -> new ClothesAttributeDefNotFoundException());
+                ClothesAttribute attribute = ClothesAttribute.createClothesAttribute(definition, dto.value());
+
+                // 연관관계 세팅
+                clothes.addAttribute(attribute);
+
+                // ClothesAttributeWithDefDto 생성
+                ClothesAttributeWithDefDto withDefDto = new ClothesAttributeWithDefDto(
+                    dto.definitionId(),
+                    definition.getName(),
+                    definition.getOptions().stream()
+                        .map(ClothesAttributeOption::getValue)
+                        .toList(),
+                    dto.value()
+                );
+                attributes.add(withDefDto);
+            }
+        }
+        else {
+            attributes = Collections.emptyList();
+        }
+
+        Clothes saved = clothesRepository.save(clothes);
+
+        // imageUrl 처리
+        String imageUrl;
+        log.debug("[ClothesServiceImpl] S3에 썸네일 이미지 업로드 요청: {}", clothesImage.getOriginalFilename());
+        imageUrl = s3ImageStorage.uploadImage(clothesImage, "clothes/");
+
+        log.info("[ClothesServiceImpl] ClothesDto 생성중");
+        // DTO 반환
+        return new ClothesDto(
+            saved.getId(),
             request.ownerId(),
             request.name(),
             imageUrl,
