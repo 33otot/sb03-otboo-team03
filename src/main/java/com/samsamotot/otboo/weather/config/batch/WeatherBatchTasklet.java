@@ -46,7 +46,9 @@ public class WeatherBatchTasklet implements Tasklet {
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         } catch (Exception e) {
-            log.error(TASKLET_NAME + "모든 비동기 작업 완료 대기 중 에러 발생", e);
+            // 비동기 작업 중 하나라도 실패하면, 전체 Step을 실패 처리하기 위해 예외를 다시 던짐
+            log.error(TASKLET_NAME + "하나 이상의 비동기 날씨 업데이트 작업 실패. Step을 실패 처리합니다.", e);
+            throw new RuntimeException("비동기 날씨 업데이트 작업 중 오류 발생", e);
         }
 
         log.info(TASKLET_NAME + "전국 날씨 데이터 병렬 업데이트 배치 완료.");

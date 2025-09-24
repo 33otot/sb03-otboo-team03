@@ -58,9 +58,15 @@ public class WeatherServiceImpl implements WeatherService {
             Mono<WeatherForecastResponse> responseDtoMono = weatherKmaClient.fetchWeather(location.getX(), location.getY());
             WeatherForecastResponse responseDto = responseDtoMono.block(Duration.ofSeconds(10));
 
-            // 2. API 응답 유효성 검증
-            if (responseDto == null || !isValid(responseDto)) {
-                throw new OtbooException(ErrorCode.INVALID_LOCATION);
+            if (responseDto == null) {
+                // KmaClient의 onErrorResume에 의해 Mono.empty()가 반환된 경우.
+                // API 호출 자체에 실패했음을 명확히 알려주는 예외를 던집니다.
+                throw new OtbooException(ErrorCode.WEATHER_API_ERROR, "기상청 API 호출에 실패했습니다. KmaClient 로그를 확인하세요.");
+            }
+            if (!isValid(responseDto)) {
+                // API 호출은 성공했으나, 응답 내용이 비어있는 경우.
+                log.warn(SERVICE_NAME + "API 응답 데이터가 비어있습니다. Location ID: {}", location.getId());
+                return CompletableFuture.completedFuture(null); // 실패가 아니므로 정상 종료
             }
 
             // 3. API 응답(DTO)을 DB에 저장할 Weather 엔티티 리스트로 변환
