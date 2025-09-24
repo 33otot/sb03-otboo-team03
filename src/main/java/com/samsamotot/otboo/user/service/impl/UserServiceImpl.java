@@ -1,5 +1,8 @@
 package com.samsamotot.otboo.user.service.impl;
 
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.entity.User;
@@ -10,9 +13,12 @@ import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 /**
  * 사용자 서비스 구현체
@@ -57,5 +63,36 @@ public class UserServiceImpl implements UserService {
         
         // DTO 변환하여 반환 (매퍼 사용)
         return userMapper.toDto(savedUser);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public UserDetails loadUserByUsername(String userId) {
+        log.debug(SERVICE + "사용자 조회 시도 - 사용자 ID: {}", userId);
+        
+        try {
+            UUID userUuid = UUID.fromString(userId);
+            User user = userRepository.findById(userUuid)
+                .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+            
+            log.debug(SERVICE + "사용자 조회 성공 - 사용자 ID: {}, 이메일: {}", user.getId(), user.getEmail());
+            return new CustomUserDetails(user);
+            
+        } catch (IllegalArgumentException e) {
+            log.warn(SERVICE + "잘못된 사용자 ID 형식 - 사용자 ID: {}", userId);
+            throw new OtbooException(ErrorCode.USER_NOT_FOUND);
+        }
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public UserDto getUserById(UUID userId) {
+        log.debug(SERVICE + "사용자 조회 시도 - 사용자 ID: {}", userId);
+        
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+        
+        log.debug(SERVICE + "사용자 조회 성공 - 사용자 ID: {}, 이메일: {}", user.getId(), user.getEmail());
+        return userMapper.toDto(user);
     }
 }
