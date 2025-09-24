@@ -76,6 +76,7 @@ public class SecurityConfig {
                 .csrfTokenRepository(csrfTokenRepository)
                 .ignoringRequestMatchers(
                     "/api/auth/sign-in",
+                    "/api/auth/sign-out",  // 로그아웃 CSRF 무시
                     "/api/auth/refresh",
                     "/api/users",
                     "/api/weathers/**",
