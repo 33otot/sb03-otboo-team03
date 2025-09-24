@@ -5,12 +5,6 @@ spring:
     # .env 파일을 속성 소스로 추가
     import: optional:file:.env[.properties]
   
-  # 개발환경에서 보안 자동설정 비활성화
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
-      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
-  
   # PostgreSQL 데이터베이스 초기화
   sql:
     init:
@@ -24,7 +18,7 @@ spring:
 
   # PostgreSQL DB 접속 정보
   datasource:
-    url: jdbc:postgresql://postgres:5432/otboo
+    url: jdbc:postgresql://${POSTGRES_HOST:postgres}:${POSTGRES_PORT:5432}/${POSTGRES_DB:otboo}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -67,6 +61,23 @@ otboo:
       secret-key: ${AWS_S3_SECRET_KEY}
       region: ${AWS_S3_REGION}
       bucket: ${AWS_S3_BUCKET}
+  
+  # JWT 설정
+  jwt:
+    secret: ${JWT_SECRET:otboo-jwt-secret-key-for-development-only-change-in-production}
+    access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600000}  # 1시간 (밀리초)
+    refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}  # 7일 (밀리초)
+    issuer: ${JWT_ISSUER:otboo}
+
+  # 보안 설정
+  security:
+    cookie:
+      secure: false  # 개발환경에서는 false
+      same-site: Lax  # 개발환경에서는 Lax
+  
+  # CORS 설정
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:8080}
 
 logging:
   level:
@@ -75,4 +86,4 @@ logging:
     com.samsamotot.otboo: DEBUG
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
