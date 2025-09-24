@@ -189,6 +189,9 @@ public class ClothesServiceImpl implements ClothesService {
         return null;
     }
 
+
+    // ===== 공통 로직 메서드 ===== //
+
     /**
      *
      * 1. 요청받은 dto에서 선택한 속성 값으로 def 객체를 조회하고 attribute 객체와 연관관계를 세팅함
@@ -229,16 +232,6 @@ public class ClothesServiceImpl implements ClothesService {
      *
      * 들어온 옵션이 정의에 존재하는지 확인하는 메서드
      */
-    void attributeValid(ClothesAttributeDef definition, ClothesAttributeDto dto) {
-        boolean valid = definition.getOptions().stream()
-            .map(ClothesAttributeOption::getValue)
-            .anyMatch(v -> v.equals(dto.value()));
-        if (!valid) {
-            log.warn("[ClothesServiceImpl] 정의에 없는 속성 값: defId: {}, value: {}", dto.definitionId(), dto.value());
-            throw new IllegalArgumentException("정의된 옵션에 없는 속성 값입니다.");
-        }
-    }
-
     void attributeValid(ClothesAttributeDef definition, String value) {
         boolean valid = definition.getOptions().stream()
             .map(ClothesAttributeOption::getValue)
