@@ -5,6 +5,7 @@ import com.samsamotot.otboo.auth.dto.LogoutRequest;
 import com.samsamotot.otboo.auth.service.AuthService;
 import com.samsamotot.otboo.common.security.jwt.JwtDto;
 import com.samsamotot.otboo.user.dto.UserDto;
+import com.samsamotot.otboo.common.config.SecurityProperties;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,11 +45,14 @@ class AuthControllerTest {
     @MockBean
     private AuthService authService;
 
+    @MockBean
+    private SecurityProperties securityProperties;
+
     @Autowired
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("/api/auth/sign-in 성공: JwtDto 본문, REFRESH_TOKEN 쿠키 설정")
+    @DisplayName("/api/auth/sign-in 성공: 리프레시 토큰은 쿠키로만 전달, JSON 응답에는 포함되지 않음")
     void signIn_success() throws Exception {
         UUID userId = UUID.randomUUID();
         JwtDto jwtDto = JwtDto.builder()
@@ -58,6 +62,12 @@ class AuthControllerTest {
         .expiresIn(3600L)
         .build();
 
+        // SecurityProperties 모킹
+        SecurityProperties.Cookie cookie = new SecurityProperties.Cookie();
+        cookie.setSecure(false);
+        cookie.setSameSite("Lax");
+        given(securityProperties.getCookie()).willReturn(cookie);
+
         given(authService.login(any())).willReturn(jwtDto);
 
         mockMvc.perform(multipart("/api/auth/sign-in")
@@ -66,14 +76,22 @@ class AuthControllerTest {
         .andExpect(status().isOk())
         .andExpect(header().string("Set-Cookie", containsString("REFRESH_TOKEN")))
         .andExpect(jsonPath("$.accessToken").value("access.jwt"))
-        .andExpect(jsonPath("$.refreshToken").value("refresh.jwt"))
-        .andExpect(jsonPath("$.userDto.id").exists());
+        .andExpect(jsonPath("$.refreshToken").doesNotExist()) // 리프레시 토큰이 JSON 응답에 없어야 함
+        .andExpect(jsonPath("$.userDto.id").exists())
+        .andExpect(jsonPath("$.tokenType").value("Bearer"))
+        .andExpect(jsonPath("$.expiresIn").value(3600L));
     }
 
     @Test
     @DisplayName("/api/auth/sign-out 성공: REFRESH_TOKEN 삭제 쿠키와 메시지 반환")
     void signOut_success() throws Exception {
         LogoutRequest request = LogoutRequest.builder().refreshToken("refresh.jwt").build();
+
+        // SecurityProperties 모킹
+        SecurityProperties.Cookie cookie = new SecurityProperties.Cookie();
+        cookie.setSecure(false);
+        cookie.setSameSite("Lax");
+        given(securityProperties.getCookie()).willReturn(cookie);
 
         mockMvc.perform(post("/api/auth/sign-out")
             .contentType(MediaType.APPLICATION_JSON)

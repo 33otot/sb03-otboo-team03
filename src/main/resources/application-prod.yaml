@@ -39,5 +39,12 @@ management:
       show-details: when-authorized
       show-components: when-authorized
 
+otboo:
+  # 보안 설정
+  security:
+    cookie:
+      secure: true  # 운영환경에서는 true
+      same-site: Strict  # 운영환경에서는 Strict
+
 server:
   port: ${SERVER_PORT:80}

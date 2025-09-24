@@ -4,14 +4,17 @@ import com.samsamotot.otboo.auth.dto.LoginRequest;
 import com.samsamotot.otboo.auth.dto.LogoutRequest;
 import com.samsamotot.otboo.auth.service.AuthService;
 import com.samsamotot.otboo.common.security.jwt.JwtDto;
+import com.samsamotot.otboo.common.config.SecurityProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
@@ -27,13 +30,14 @@ import java.util.Map;
 public class AuthController {
     
     private final AuthService authService;
+    private final SecurityProperties securityProperties;
     
     /**
      * 로그인
      */
     @PostMapping(value = "/sign-in", consumes = "multipart/form-data")
     @Operation(summary = "로그인", description = "사용자명과 비밀번호로 로그인하여 JWT 토큰을 발급받습니다.")
-    public ResponseEntity<JwtDto> signIn(
+    public ResponseEntity<Map<String, Object>> signIn(
             @RequestParam("username") String username,
             @RequestParam("password") String password) {
         
@@ -52,14 +56,23 @@ public class AuthController {
         // 리프레시 토큰을 쿠키에 설정
         ResponseCookie refreshTokenCookie = ResponseCookie.from("REFRESH_TOKEN", jwtDto.getRefreshToken())
             .httpOnly(true)
-            .secure(false) // 개발환경에서는 false, 운영환경에서는 true
+            .secure(securityProperties.getCookie().isSecure())
             .path("/")
             .maxAge(7 * 24 * 60 * 60) // 7일
+            .sameSite(securityProperties.getCookie().getSameSite())
             .build();
+        
+        // 리프레시 토큰을 제외한 응답 객체 생성
+        Map<String, Object> response = Map.of(
+            "userDto", jwtDto.getUserDto(),
+            "accessToken", jwtDto.getAccessToken(),
+            "tokenType", jwtDto.getTokenType(),
+            "expiresIn", jwtDto.getExpiresIn()
+        );
         
         return ResponseEntity.ok()
             .header("Set-Cookie", refreshTokenCookie.toString())
-            .body(jwtDto);
+            .body(response);
     }
     
     /**
@@ -77,9 +90,10 @@ public class AuthController {
         // 리프레시 토큰 쿠키 삭제
         ResponseCookie refreshTokenCookie = ResponseCookie.from("REFRESH_TOKEN", "")
             .httpOnly(true)
-            .secure(false)
+            .secure(securityProperties.getCookie().isSecure())
             .path("/")
             .maxAge(0) // 즉시 삭제
+            .sameSite(securityProperties.getCookie().getSameSite())
             .build();
         
         return ResponseEntity.ok()
@@ -101,7 +115,7 @@ public class AuthController {
         // 쿠키에서 리프레시 토큰이 없는 경우
         if (refreshToken == null || refreshToken.trim().isEmpty()) {
             log.warn("[AuthController] 쿠키에서 리프레시 토큰을 찾을 수 없음");
-            throw new IllegalArgumentException("리프레시 토큰이 필요합니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "리프레시 토큰이 필요합니다.");
         }
         
         JwtDto jwtDto = authService.refreshToken(refreshToken);

@@ -69,6 +69,12 @@ otboo:
     refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}  # 7일 (밀리초)
     issuer: ${JWT_ISSUER:otboo}
 
+  # 보안 설정
+  security:
+    cookie:
+      secure: false  # 개발환경에서는 false
+      same-site: Lax  # 개발환경에서는 Lax
+
 logging:
   level:
     org.hibernate.sql: DEBUG
