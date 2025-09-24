@@ -541,5 +541,6 @@ class FollowServiceImplTest {
         // then
         then(followRepository).should(times(1)).deleteById(followId);
         then(followRepository).shouldHaveNoMoreInteractions();
+
     }
 }

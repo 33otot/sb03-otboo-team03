@@ -31,6 +31,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class FollowServiceImpl implements FollowService {
     private static final String FOLLOW_SERVICE = "[FollowService] ";
+
     private static final String SORT_DIRECTION_DESCENDING = "DESCENDING";
     private static final String SORT_BY = "createdAt";
 
