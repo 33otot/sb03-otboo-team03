@@ -24,13 +24,6 @@ kakao.api:
   base-url: https://dapi.kakao.com
   key: ${KAKAO_API_KEY}
 
-# 날씨 수집 설정
-weather:
-  collection:
-    batch-size: 1000
-    batch-delay-ms: 10
-    api-delay-ms: 100
-
 # 비동기 실행 설정
 async:
   executors:
