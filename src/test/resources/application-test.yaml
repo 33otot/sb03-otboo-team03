@@ -71,6 +71,11 @@ management:
     health:
       show-details: always
 
+# 기상청 API 테스트용 설정
+kma:
+  base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
+  service-key: test-kma-api-key
+
 # Kakao API 테스트용 설정
 kakao.api:
   base-url: https://dapi.kakao.com

@@ -74,4 +74,14 @@ public class LocationFixture {
                 .locationNames(List.of("서울특별시", "중구", "명동", ""))
                 .build();
     }
+
+    public static Location createLocationWithCoordinates() {
+        return Location.builder()
+                .latitude(DEFAULT_LATITUDE)
+                .longitude(DEFAULT_LONGITUDE)
+                .x(999)
+                .y(999)
+                .locationNames(List.of("화성", "인데경기도아님", "화성읍읍"))
+                .build();
+    }
 }
