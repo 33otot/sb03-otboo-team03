@@ -51,6 +51,10 @@ public class ClothesAttribute extends BaseEntity {
         this.clothes = clothes;
     }
 
+    public void updateValue(String value) {
+        this.value = value;
+    }
+
     // 명시적으로 빌더 메서드 추가
     public static ClothesAttribute createClothesAttribute(ClothesAttributeDef definition, String value) {
         return ClothesAttribute.builder()
