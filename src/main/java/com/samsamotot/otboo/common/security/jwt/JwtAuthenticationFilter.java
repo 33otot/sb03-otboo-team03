@@ -49,7 +49,7 @@ import java.util.UUID;
  * </ol>
  * 
  * <h3>필터 순서:</h3>
- * <p>CsrfTokenFilter 다음, Spring Security 기본 인증 필터 이전에 실행됩니다.</p>
+ * <p>Spring Security CSRF 필터 다음, 기본 인증 필터 이전에 실행됩니다.</p>
  * 
  * <h3>제외 경로:</h3>
  * <ul>

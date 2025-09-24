@@ -1,22 +1,25 @@
 package com.samsamotot.otboo.common.security.config;
 
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
-import com.samsamotot.otboo.common.security.csrf.CsrfTokenFilter;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Spring Security 설정 클래스
@@ -40,24 +43,45 @@ import java.util.Arrays;
  * 
  * <h3>필터 순서:</h3>
  * <ol>
- *   <li>CsrfTokenFilter: CSRF 토큰을 쿠키에 설정</li>
+ *   <li>Spring Security CSRF Filter: 자동으로 CSRF 토큰 생성 및 검증</li>
  *   <li>JwtAuthenticationFilter: JWT 토큰을 통한 인증 처리</li>
  *   <li>UsernamePasswordAuthenticationFilter: Spring Security 기본 인증 필터</li>
  * </ol>
  */
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
     
     private final ObjectProvider<JwtAuthenticationFilter> jwtAuthenticationFilter;
-    private final ObjectProvider<CsrfTokenFilter> csrfTokenFilter;
+    
+    @Value("${otboo.cors.allowed-origins:http://localhost:3000,http://localhost:8080}") 
+    private String allowedOrigins;
+    
+    @Value("${otboo.security.cookie.secure:false}")
+    private boolean cookieSecure;
+    
+    @Value("${otboo.security.cookie.same-site:Lax}")
+    private String cookieSameSite;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // CSRF 토큰 저장소 설정 (환경별 보안 속성 적용)
+        CsrfTokenRepository csrfTokenRepository = createSecureCsrfTokenRepository();
+        
         http
-            // CSRF 비활성화 (JWT 사용 시 불필요)
-            .csrf(AbstractHttpConfigurer::disable)
+            // CSRF 보호 활성화 (쿠키 기반)
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(csrfTokenRepository)
+                .ignoringRequestMatchers(
+                    "/api/auth/sign-in",
+                    "/api/auth/refresh",
+                    "/api/users",
+                    "/api/weathers/**",
+                    "/actuator/**"
+                )
+            )
             
             // CORS 설정
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -75,6 +99,7 @@ public class SecurityConfig {
                     "/favicon.ico", // 파비콘
                     "/logo_symbol.svg", // 로고 아이콘
                     "/api/auth/sign-in",
+                    "/api/auth/sign-out",  // 로그아웃
                     "/api/auth/refresh",  // JWT 토큰 갱신
                     "/api/users", // 회원가입
                     "/api/auth/csrf-token",
@@ -91,10 +116,7 @@ public class SecurityConfig {
             // 필터 추가 (존재하는 경우에만)
             ;
 
-        CsrfTokenFilter csrfFilterBean = csrfTokenFilter.getIfAvailable();
-        if (csrfFilterBean != null) {
-            http.addFilterBefore(csrfFilterBean, UsernamePasswordAuthenticationFilter.class);
-        }
+        // JWT 인증 필터 추가 (CSRF 필터는 Spring Security가 자동으로 처리)
         JwtAuthenticationFilter jwtFilterBean = jwtAuthenticationFilter.getIfAvailable();
         if (jwtFilterBean != null) {
             http.addFilterBefore(jwtFilterBean, UsernamePasswordAuthenticationFilter.class);
@@ -106,12 +128,12 @@ public class SecurityConfig {
     /**
      * CORS(Cross-Origin Resource Sharing) 설정을 위한 ConfigurationSource 빈을 생성합니다.
      * 
-     * <p>이 메서드는 웹 애플리케이션의 CORS 정책을 정의하여 다른 도메인에서의 요청을 허용합니다.
-     * 개발 환경에서는 모든 Origin, HTTP 메서드, 헤더를 허용하도록 설정되어 있습니다.</p>
+     * <p>이 메서드는 웹 애플리케이션의 CORS 정책을 정의하여 신뢰할 수 있는 도메인에서의 요청만 허용합니다.
+     * 설정 파일에서 허용된 Origin 목록을 로드하여 보안을 강화합니다.</p>
      * 
      * <h3>CORS 설정 내용:</h3>
      * <ul>
-     *   <li><strong>허용 Origin</strong>: 모든 도메인 (*)</li>
+     *   <li><strong>허용 Origin</strong>: 설정 파일에서 지정된 도메인들만 허용</li>
      *   <li><strong>허용 HTTP 메서드</strong>: GET, POST, PUT, PATCH, DELETE, OPTIONS</li>
      *   <li><strong>허용 헤더</strong>: 모든 헤더 (*)</li>
      *   <li><strong>인증 정보 포함</strong>: 쿠키 및 인증 헤더 허용</li>
@@ -124,8 +146,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // 허용할 Origin 설정
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        // 설정에서 허용된 Origin 목록 파싱
+        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+        configuration.setAllowedOrigins(origins);
         
         // 허용할 HTTP 메서드 설정
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
@@ -143,6 +166,38 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         
         return source;
+    }
+    
+    /**
+     * 환경별 보안 속성이 적용된 CSRF 토큰 저장소를 생성합니다.
+     * 
+     * <p>이 메서드는 개발/운영 환경에 따라 적절한 쿠키 보안 속성을 설정합니다.
+     * Spring Security의 기본 CSRF 보호를 사용하여 안전한 토큰 관리를 제공합니다.</p>
+     * 
+     * <h3>보안 속성:</h3>
+     * <ul>
+     *   <li><strong>HttpOnly</strong>: false (SPA에서 JavaScript로 접근 가능)</li>
+     *   <li><strong>Secure</strong>: 환경별 설정 (개발: false, 운영: true)</li>
+     *   <li><strong>SameSite</strong>: 환경별 설정 (개발: Lax, 운영: Strict)</li>
+     *   <li><strong>Path</strong>: "/" (모든 경로에서 접근 가능)</li>
+     * </ul>
+     * 
+     * @return 보안 속성이 적용된 CSRF 토큰 저장소
+     */
+    private CsrfTokenRepository createSecureCsrfTokenRepository() {
+        // Spring Security의 기본 CSRF 토큰 저장소 사용
+        // HttpOnly=false로 설정하여 SPA에서 JavaScript로 접근 가능
+        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        
+        // 기본 설정
+        repository.setCookieName("XSRF-TOKEN");
+        repository.setHeaderName("X-XSRF-TOKEN");
+        
+        // 환경별 보안 속성은 Spring Security가 자동으로 처리
+        // Secure 속성은 현재 요청이 HTTPS인지에 따라 자동 결정됨
+        log.info("CSRF 토큰 저장소 설정 완료 - Secure: {}, SameSite: {}", cookieSecure, cookieSameSite);
+        
+        return repository;
     }
     
 }

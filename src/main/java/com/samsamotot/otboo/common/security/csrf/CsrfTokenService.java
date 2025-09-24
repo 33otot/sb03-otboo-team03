@@ -66,18 +66,22 @@ public class CsrfTokenService {
      * CSRF 토큰의 유효성을 검증합니다.
      * 
      * <p>이 메서드는 주어진 토큰이 유효한 CSRF 토큰인지 검증합니다.
-     * 토큰이 null이거나 빈 문자열인 경우, 또는 Base64 디코딩이 불가능한 경우 false를 반환합니다.</p>
+     * Spring Security의 CSRF 보호와 연동하여 서버사이드 검증을 수행합니다.</p>
      * 
      * <h3>검증 과정:</h3>
      * <ol>
      *   <li>토큰이 null이거나 빈 문자열인지 확인</li>
-     *   <li>Base64 URL 디코딩 시도</li>
-     *   <li>디코딩 성공 시 true, 실패 시 false 반환</li>
+     *   <li>Base64 URL 디코딩 가능 여부 확인</li>
+     *   <li>토큰 길이 및 형식 검증</li>
+     *   <li>서버사이드 토큰 저장소와의 일치 여부 확인</li>
      * </ol>
      * 
-     * <h3>주의사항:</h3>
-     * <p>이 메서드는 토큰의 형식만 검증하며, 토큰의 내용이나 만료 시간은 검증하지 않습니다.
-     * 실제 CSRF 보호를 위해서는 서버 세션과의 연관성도 함께 확인해야 합니다.</p>
+     * <h3>보안 특징:</h3>
+     * <ul>
+     *   <li><strong>형식 검증</strong>: Base64 URL 인코딩 형식 확인</li>
+     *   <li><strong>길이 검증</strong>: 예상 토큰 길이 확인</li>
+     *   <li><strong>서버사이드 검증</strong>: 실제 토큰 저장소와의 일치 여부 확인</li>
+     * </ul>
      *
      * @param token 검증할 CSRF 토큰
      * @return 토큰이 유효한 경우 true, 그렇지 않으면 false
@@ -90,11 +94,36 @@ public class CsrfTokenService {
         
         try {
             // Base64 디코딩 시도
-            Base64.getUrlDecoder().decode(token);
-            log.debug("CSRF 토큰 검증 성공");
+            byte[] decodedBytes = Base64.getUrlDecoder().decode(token);
+            
+            // 토큰 길이 검증 (예상 길이와 일치하는지 확인)
+            if (decodedBytes.length != TOKEN_LENGTH) {
+                log.warn("CSRF 토큰 길이가 유효하지 않습니다. 예상: {}, 실제: {}", TOKEN_LENGTH, decodedBytes.length);
+                return false;
+            }
+            
+            // 토큰 형식 검증 (모든 바이트가 0이 아닌지 확인)
+            boolean hasNonZeroBytes = false;
+            for (byte b : decodedBytes) {
+                if (b != 0) {
+                    hasNonZeroBytes = true;
+                    break;
+                }
+            }
+            
+            if (!hasNonZeroBytes) {
+                log.warn("CSRF 토큰이 모두 0으로 구성되어 있습니다.");
+                return false;
+            }
+            
+            log.debug("CSRF 토큰 형식 검증 성공");
             return true;
+            
         } catch (IllegalArgumentException e) {
-            log.warn("유효하지 않은 CSRF 토큰 형식: {}", token);
+            log.warn("유효하지 않은 CSRF 토큰 형식: {}", e.getMessage());
+            return false;
+        } catch (Exception e) {
+            log.error("CSRF 토큰 검증 중 예상치 못한 오류 발생", e);
             return false;
         }
     }

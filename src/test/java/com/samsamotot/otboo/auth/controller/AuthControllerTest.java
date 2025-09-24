@@ -24,14 +24,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.samsamotot.otboo.common.security.csrf.CsrfTokenFilter;
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
 
 @WebMvcTest(
     controllers = AuthController.class,
     excludeFilters = @ComponentScan.Filter(
         type = FilterType.ASSIGNABLE_TYPE,
-        classes = { CsrfTokenFilter.class, JwtAuthenticationFilter.class }
+        classes = { JwtAuthenticationFilter.class }
     )
 )
 @AutoConfigureMockMvc(addFilters = false)
