@@ -119,14 +119,10 @@ public class ClothesServiceImpl implements ClothesService {
 
     /**
      *
-     * @param attributes
-     * @param clothes
-     * @param clothesAttributeWithDefDtoList
-     *
      * 1. 요청받은 dto에서 선택한 속성 값으로 def 객체를 조회하고 attribute 객체와 연관관계를 세팅함
      * 2. ClothesDto에 사용할 ClothesAttributeWithDefDto을 생성하고 List에 추가함
      */
-    private void process(List<ClothesAttributeDto> attributes, Clothes clothes, List<ClothesAttributeWithDefDto> clothesAttributeWithDefDtoList) {
+    void process(List<ClothesAttributeDto> attributes, Clothes clothes, List<ClothesAttributeWithDefDto> clothesAttributeWithDefDtoList) {
         // Attributes 처리
         if (attributes != null) {
             for (ClothesAttributeDto dto : attributes) {
