@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.clothes.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -11,6 +12,7 @@ import com.samsamotot.otboo.clothes.dto.ClothesAttributeDto;
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeWithDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesCreateRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
+import com.samsamotot.otboo.clothes.dto.request.ClothesUpdateRequest;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.service.ClothesService;
 import java.util.Collections;
@@ -21,10 +23,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.multipart.MultipartFile;
 
 @WebMvcTest(ClothesController.class)
 public class ClothesControllerTest {
@@ -151,6 +155,126 @@ public class ClothesControllerTest {
 
             // when & then
             mockMvc.perform(multipart("/api/clothes").file(jsonPart))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.exceptionName").exists())
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.status").value(400));
+        }
+    }
+
+    @Nested
+    @DisplayName("의상 수정 컨트롤러 테스트")
+    class ClothesUpdateTest {
+        @Test
+        void 유효한_JSON을_보내면_200과_DTO가_반환된다() throws Exception {
+            // given
+            UUID clothesId = UUID.randomUUID();
+            UUID ownerId = UUID.randomUUID();
+            UUID defId = UUID.randomUUID();
+
+            ClothesUpdateRequest request = new ClothesUpdateRequest(
+                "업데이트된 티셔츠",
+                ClothesType.TOP,
+                List.of(new ClothesAttributeDto(defId, "여름"))
+            );
+
+            ClothesDto responseDto = new ClothesDto(
+                clothesId,
+                ownerId,
+                "업데이트된 티셔츠",
+                null,
+                ClothesType.TOP,
+                List.of(new ClothesAttributeWithDefDto(defId, "계절", List.of("봄", "여름", "가을", "겨울"), "여름"))
+            );
+
+            when(clothesService.update(eq(clothesId), any(ClothesUpdateRequest.class)))
+                .thenReturn(responseDto);
+
+            MockMultipartFile jsonPart = new MockMultipartFile(
+                "clothesUpdateRequest",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                objectMapper.writeValueAsBytes(request)
+            );
+
+            // when & then
+            mockMvc.perform(multipart(HttpMethod.PATCH, "/api/clothes/{clothesId}", clothesId).file(jsonPart))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(clothesId.toString()))
+                .andExpect(jsonPath("$.name").value("업데이트된 티셔츠"))
+                .andExpect(jsonPath("$.attributes[0].value").value("여름"));
+        }
+
+        @Test
+        void 유효한_이미지와_JSON을_보내면_200과_DTO가_반환된다() throws Exception {
+            // given
+            UUID clothesId = UUID.randomUUID();
+            UUID ownerId = UUID.randomUUID();
+            UUID defId = UUID.randomUUID();
+
+            ClothesUpdateRequest request = new ClothesUpdateRequest(
+                "청자켓",
+                ClothesType.OUTER,
+                List.of(new ClothesAttributeDto(defId, "흑청"))
+            );
+
+            ClothesDto responseDto = new ClothesDto(
+                clothesId,
+                ownerId,
+                "청자켓",
+                "http://fake-s3-url/test.png",
+                ClothesType.OUTER,
+                List.of(new ClothesAttributeWithDefDto(defId, "색상", List.of("흑청","진청","연청"), "흑청"))
+            );
+
+            when(clothesService.update(eq(clothesId), any(ClothesUpdateRequest.class), any(MultipartFile.class)))
+                .thenReturn(responseDto);
+
+            MockMultipartFile jsonPart = new MockMultipartFile(
+                "clothesUpdateRequest",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                objectMapper.writeValueAsBytes(request)
+            );
+
+            MockMultipartFile imagePart = new MockMultipartFile(
+                "clothesImage",
+                "test.png",
+                MediaType.IMAGE_PNG_VALUE,
+                "fake-image-content".getBytes()
+            );
+
+            // when & then
+            mockMvc.perform(multipart(HttpMethod.PATCH, "/api/clothes/{clothesId}", clothesId)
+                    .file(jsonPart)
+                    .file(imagePart))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(clothesId.toString()))
+                .andExpect(jsonPath("$.name").value("청자켓"))
+                .andExpect(jsonPath("$.imageUrl").value("http://fake-s3-url/test.png"))
+                .andExpect(jsonPath("$.attributes[0].value").value("흑청"));
+        }
+
+        @Test
+        void 잘못된_요청이라면_400코드와_에러메시지를_반환해야_한다() throws Exception {
+            // given: 유효하지 않은 요청
+            UUID clothesId = UUID.randomUUID();
+            ClothesUpdateRequest invalidRequest = new ClothesUpdateRequest(
+                "   ",
+                null,
+                Collections.emptyList()
+            );
+
+            MockMultipartFile jsonPart = new MockMultipartFile(
+                "clothesUpdateRequest",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                objectMapper.writeValueAsBytes(invalidRequest)
+            );
+
+            // when & then
+            mockMvc.perform(multipart(HttpMethod.PATCH, "/api/clothes/{clothesId}", clothesId)
+                    .file(jsonPart))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.exceptionName").exists())
                 .andExpect(jsonPath("$.message").exists())
