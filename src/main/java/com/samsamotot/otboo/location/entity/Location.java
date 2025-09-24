@@ -33,7 +33,7 @@ public class Location extends BaseEntity {
     @Column(name = "y")
     private Integer y;
 
-    @Column(name = "location_names", columnDefinition = "TEXT[]", nullable = false)
+    @Column(name = "location_names", nullable = false)
     @JdbcTypeCode(SqlTypes.ARRAY)
     private List<String> locationNames;
 }
