@@ -3,11 +3,11 @@ package com.samsamotot.otboo.location.service.impl;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.location.client.KakaoApiClient;
+import com.samsamotot.otboo.location.dto.KakaoAddressResponse;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.entity.WeatherAPILocation;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.location.service.LocationService;
-import com.samsamotot.otboo.location.dto.KakaoAddressResponse;
 import com.samsamotot.otboo.weather.util.KmaGridConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 
@@ -112,6 +114,14 @@ public class LocationServiceImpl implements LocationService {
         // locationNames가 null이거나, UNKNOWN이 포함되어 있거나, null이 포함된 경우, x 혹은 y가 0인 경우
         if (location.getLocationNames() == null) {
             return true;
+        }
+
+        // 생성된지 한달 넘었는지 검증
+        if (location.getCreatedAt() != null) {
+            Instant oneMonthAgo = Instant.now().minus(30, ChronoUnit.DAYS);
+            if (location.getCreatedAt().isBefore(oneMonthAgo)) {
+                return true;
+            }
         }
         
         return location.getLocationNames().contains("UNKNOWN") ||
