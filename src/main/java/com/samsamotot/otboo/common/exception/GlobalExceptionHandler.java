@@ -137,10 +137,26 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 잘못된 인수 예외 처리 (IllegalArgumentException)
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.warn("Invalid input value provided");
+        log.debug("IllegalArgumentException", e);
+        ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE);
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus()).body(errorResponse);
+    }
+
+    /**
      * 기타 예외 처리
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        // ResponseStatusException은 Spring에서 자동으로 처리되므로 제외
+        if (e instanceof org.springframework.web.server.ResponseStatusException) {
+            throw (org.springframework.web.server.ResponseStatusException) e;
+        }
+        
         log.error("Unexpected error occurred", e);
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR);
         return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus()).body(errorResponse);
