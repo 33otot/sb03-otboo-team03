@@ -2,6 +2,7 @@ package com.samsamotot.otboo.feed.controller.api;
 
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorResponse;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
@@ -15,10 +16,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "피드 관리", description = "피드 관련 API")
 public interface FeedApi {
@@ -75,7 +76,7 @@ public interface FeedApi {
     })
     ResponseEntity<CursorResponse<FeedDto>> getFeeds(
         @Valid @ModelAttribute FeedCursorRequest feedCursorRequest,
-        @RequestParam UUID userId
+        @AuthenticationPrincipal CustomUserDetails principal
     );
 
     @Operation(summary = "피드 수정")
@@ -116,7 +117,7 @@ public interface FeedApi {
     ResponseEntity<FeedDto> updateFeed(
         @PathVariable UUID feedId,
         @Valid @RequestBody FeedUpdateRequest feedUpdateRequest,
-        @RequestParam UUID userId
+        @AuthenticationPrincipal CustomUserDetails principal
     );
 
     @Operation(summary = "피드 삭제")
@@ -152,6 +153,6 @@ public interface FeedApi {
     })
     ResponseEntity<Void> deleteFeed(
         @PathVariable UUID feedId,
-        @RequestParam UUID userId
+        @AuthenticationPrincipal CustomUserDetails principal
     );
 }
