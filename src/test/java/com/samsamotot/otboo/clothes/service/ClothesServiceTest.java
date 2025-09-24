@@ -67,29 +67,6 @@ class ClothesServiceTest {
     @BeforeEach
     void setUp() {
         mockUser = UserFixture.createUser();
-
-        // ClothesMapper 공통 스텁 세팅
-        when(clothesMapper.toClothesDto(any(Clothes.class)))
-            .thenAnswer(invocation -> {
-                Clothes c = invocation.getArgument(0);
-                return new ClothesDto(
-                    c.getId(),
-                    c.getOwner().getId(),
-                    c.getName(),
-                    c.getImageUrl(),
-                    c.getType(),
-                    c.getAttributes().stream()
-                        .map(attr -> new ClothesAttributeWithDefDto(
-                            attr.getDefinition().getId(),
-                            attr.getDefinition().getName(),
-                            attr.getDefinition().getOptions().stream()
-                                .map(ClothesAttributeOption::getValue)
-                                .toList(),
-                            attr.getValue()
-                        ))
-                        .toList()
-                );
-            });
     }
 
     @Nested
@@ -237,6 +214,33 @@ class ClothesServiceTest {
     @Nested
     @DisplayName("의상 수정 서비스 테스트")
     class ClothesUpdateServiceTest {
+
+        @BeforeEach
+        void setUpMapper() {
+            // 수정 테스트에서만 mapper 스텁 필요
+            when(clothesMapper.toClothesDto(any(Clothes.class)))
+                .thenAnswer(invocation -> {
+                    Clothes c = invocation.getArgument(0);
+                    return new ClothesDto(
+                        c.getId(),
+                        c.getOwner().getId(),
+                        c.getName(),
+                        c.getImageUrl(),
+                        c.getType(),
+                        c.getAttributes().stream()
+                            .map(attr -> new ClothesAttributeWithDefDto(
+                                attr.getDefinition().getId(),
+                                attr.getDefinition().getName(),
+                                attr.getDefinition().getOptions().stream()
+                                    .map(ClothesAttributeOption::getValue)
+                                    .toList(),
+                                attr.getValue()
+                            ))
+                            .toList()
+                    );
+                });
+        }
+
         @Test
         void 의상_이름과_타입을_수정할_수_있어야_한다() {
             // given
