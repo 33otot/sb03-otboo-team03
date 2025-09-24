@@ -98,12 +98,13 @@ public class ClothesServiceImpl implements ClothesService {
         // Attributes 처리
         process(request.attributes(), clothes, attributes);
 
-        Clothes saved = clothesRepository.save(clothes);
-
         // imageUrl 처리
         String imageUrl;
         log.debug("[ClothesServiceImpl] S3에 썸네일 이미지 업로드 요청: {}", clothesImage.getOriginalFilename());
         imageUrl = s3ImageStorage.uploadImage(clothesImage, "clothes/");
+
+        clothes.updateImageUrl(imageUrl);
+        Clothes saved = clothesRepository.save(clothes);
 
         log.info("[ClothesServiceImpl] ClothesDto 생성중");
         // DTO 반환
