@@ -59,33 +59,7 @@ public class ClothesServiceImpl implements ClothesService {
         );
 
         // Attributes 처리
-        if (request.attributes() != null) {
-            for (ClothesAttributeDto dto : request.attributes()) {
-                log.debug("[ClothesServiceImpl] Attribute 처리와 ClothesAttributeWithDefDto 생성을 위한 반복문");
-                log.debug("[ClothesServiceImpl] {} 에서 현재 위치: {}", request.attributes(), dto);
-                // def 객체 조회
-                ClothesAttributeDef definition = defRepository.findById(dto.definitionId())
-                    .orElseThrow(() -> new ClothesAttributeDefNotFoundException());
-                ClothesAttribute attribute = ClothesAttribute.createClothesAttribute(definition, dto.value());
-
-                // 연관관계 세팅
-                clothes.addAttribute(attribute);
-
-                // ClothesAttributeWithDefDto 생성
-                ClothesAttributeWithDefDto withDefDto = new ClothesAttributeWithDefDto(
-                    dto.definitionId(),
-                    definition.getName(),
-                    definition.getOptions().stream()
-                        .map(ClothesAttributeOption::getValue)
-                        .toList(),
-                    dto.value()
-                );
-                attributes.add(withDefDto);
-            }
-        }
-        else {
-            attributes = Collections.emptyList();
-        }
+        process(request.attributes(), clothes, attributes);
 
         Clothes saved = clothesRepository.save(clothes);
 
@@ -122,33 +96,7 @@ public class ClothesServiceImpl implements ClothesService {
         );
 
         // Attributes 처리
-        if (request.attributes() != null) {
-            for (ClothesAttributeDto dto : request.attributes()) {
-                log.debug("[ClothesServiceImpl] Attribute 처리와 ClothesAttributeWithDefDto 생성을 위한 반복문");
-                log.debug("[ClothesServiceImpl] {} 에서 현재 위치: {}", request.attributes(), dto);
-                // def 객체 조회
-                ClothesAttributeDef definition = defRepository.findById(dto.definitionId())
-                    .orElseThrow(() -> new ClothesAttributeDefNotFoundException());
-                ClothesAttribute attribute = ClothesAttribute.createClothesAttribute(definition, dto.value());
-
-                // 연관관계 세팅
-                clothes.addAttribute(attribute);
-
-                // ClothesAttributeWithDefDto 생성
-                ClothesAttributeWithDefDto withDefDto = new ClothesAttributeWithDefDto(
-                    dto.definitionId(),
-                    definition.getName(),
-                    definition.getOptions().stream()
-                        .map(ClothesAttributeOption::getValue)
-                        .toList(),
-                    dto.value()
-                );
-                attributes.add(withDefDto);
-            }
-        }
-        else {
-            attributes = Collections.emptyList();
-        }
+        process(request.attributes(), clothes, attributes);
 
         Clothes saved = clothesRepository.save(clothes);
 
@@ -167,5 +115,45 @@ public class ClothesServiceImpl implements ClothesService {
             request.type(),
             attributes
         );
+    }
+
+    /**
+     *
+     * @param attributes
+     * @param clothes
+     * @param clothesAttributeWithDefDtoList
+     *
+     * 1. 요청받은 dto에서 선택한 속성 값으로 def 객체를 조회하고 attribute 객체와 연관관계를 세팅함
+     * 2. ClothesDto에 사용할 ClothesAttributeWithDefDto을 생성하고 List에 추가함
+     */
+    private void process(List<ClothesAttributeDto> attributes, Clothes clothes, List<ClothesAttributeWithDefDto> clothesAttributeWithDefDtoList) {
+        // Attributes 처리
+        if (attributes != null) {
+            for (ClothesAttributeDto dto : attributes) {
+                log.debug("[ClothesServiceImpl] Attribute 처리와 ClothesAttributeWithDefDto 생성을 위한 반복문");
+                log.debug("[ClothesServiceImpl] {} 에서 현재 위치: {}", attributes, dto);
+                // def 객체 조회
+                ClothesAttributeDef definition = defRepository.findById(dto.definitionId())
+                    .orElseThrow(() -> new ClothesAttributeDefNotFoundException());
+                ClothesAttribute attribute = ClothesAttribute.createClothesAttribute(definition, dto.value());
+
+                // 연관관계 세팅
+                clothes.addAttribute(attribute);
+
+                // ClothesAttributeWithDefDto 생성
+                ClothesAttributeWithDefDto withDefDto = new ClothesAttributeWithDefDto(
+                    dto.definitionId(),
+                    definition.getName(),
+                    definition.getOptions().stream()
+                        .map(ClothesAttributeOption::getValue)
+                        .toList(),
+                    dto.value()
+                );
+                clothesAttributeWithDefDtoList.add(withDefDto);
+            }
+        }
+        else {
+            clothesAttributeWithDefDtoList = Collections.emptyList();
+        }
     }
 }
