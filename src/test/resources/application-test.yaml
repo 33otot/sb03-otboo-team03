@@ -102,7 +102,3 @@ otboo:
     issuer: otboo-test
   security:
     enable-filters: false
-
-# KMA 테스트용 설정
-kma:
-  service-key: test-kma-key

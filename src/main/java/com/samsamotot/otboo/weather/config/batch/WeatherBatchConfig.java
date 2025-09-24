@@ -9,10 +9,11 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.PlatformTransactionManager;
 
-@EnableBatchProcessing
 @Configuration
+@EnableScheduling
 @RequiredArgsConstructor
 public class WeatherBatchConfig {
 

@@ -102,7 +102,7 @@ public class AsyncConfig implements AsyncConfigurer {
             @Value("${async.executors.weather.queue-capacity:100}") int queue,
             @Value("${async.executors.weather.keep-alive-seconds:60}") int keepAlive
     ) {
-        return buildExecutor(core, max, queue, keepAlive, "file-exec");
+        return buildExecutor(core, max, queue, keepAlive, "weather-exec");
     }
 
     /**
