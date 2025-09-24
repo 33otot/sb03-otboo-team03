@@ -1,7 +1,6 @@
 package com.samsamotot.otboo.auth.service;
 
 import com.samsamotot.otboo.auth.dto.LoginRequest;
-import com.samsamotot.otboo.auth.dto.LogoutRequest;
 import com.samsamotot.otboo.common.security.jwt.JwtDto;
 
 /**
@@ -20,9 +19,9 @@ public interface AuthService {
     /**
      * 로그아웃 처리
      * 
-     * @param request 로그아웃 요청
+     * @param refreshToken 리프레시 토큰
      */
-    void logout(LogoutRequest request);
+    void logout(String refreshToken);
     
     /**
      * CSRF 토큰 조회

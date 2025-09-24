@@ -1,7 +1,6 @@
 package com.samsamotot.otboo.auth.service.impl;
 
 import com.samsamotot.otboo.auth.dto.LoginRequest;
-import com.samsamotot.otboo.auth.dto.LogoutRequest;
 import com.samsamotot.otboo.auth.service.AuthService;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
@@ -79,13 +78,13 @@ public class AuthServiceImpl implements AuthService {
     }
     
     @Override
-    public void logout(LogoutRequest request) {
+    public void logout(String refreshToken) {
         log.info(SERVICE + "로그아웃 시도 - 리프레시 토큰: {}", 
-            request.getRefreshToken().substring(0, Math.min(20, request.getRefreshToken().length())) + "...");
+            refreshToken.substring(0, Math.min(20, refreshToken.length())) + "...");
         
         // 리프레시 토큰 검증 (선택적)
         try {
-            jwtTokenProvider.validateToken(request.getRefreshToken());
+            jwtTokenProvider.validateToken(refreshToken);
             log.info(SERVICE + "로그아웃 성공");
         } catch (Exception e) {
             log.warn(SERVICE + "유효하지 않은 리프레시 토큰으로 로그아웃 시도");

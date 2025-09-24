@@ -1,13 +1,11 @@
 package com.samsamotot.otboo.auth.controller;
 
 import com.samsamotot.otboo.auth.dto.LoginRequest;
-import com.samsamotot.otboo.auth.dto.LogoutRequest;
 import com.samsamotot.otboo.auth.service.AuthService;
 import com.samsamotot.otboo.common.security.jwt.JwtDto;
 import com.samsamotot.otboo.common.config.SecurityProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -80,10 +78,17 @@ public class AuthController {
      */
     @PostMapping("/sign-out")
     @Operation(summary = "로그아웃", description = "리프레시 토큰을 사용하여 로그아웃합니다.")
-    public ResponseEntity<Map<String, String>> signOut(@Valid @RequestBody LogoutRequest request) {
+    public ResponseEntity<Map<String, String>> signOut(
+            @CookieValue(value = "REFRESH_TOKEN", required = false) String refreshToken) {
         log.info("[AuthController] 로그아웃 요청");
         
-        authService.logout(request);
+        // 쿠키에서 리프레시 토큰이 없는 경우
+        if (refreshToken == null || refreshToken.trim().isEmpty()) {
+            log.warn("[AuthController] 쿠키에서 리프레시 토큰을 찾을 수 없음");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "리프레시 토큰이 필요합니다.");
+        }
+        
+        authService.logout(refreshToken);
         
         log.info("[AuthController] 로그아웃 성공");
         

@@ -1,7 +1,6 @@
 package com.samsamotot.otboo.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.samsamotot.otboo.auth.dto.LogoutRequest;
 import com.samsamotot.otboo.auth.service.AuthService;
 import com.samsamotot.otboo.common.security.jwt.JwtDto;
 import com.samsamotot.otboo.user.dto.UserDto;
@@ -14,7 +13,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
@@ -85,8 +83,6 @@ class AuthControllerTest {
     @Test
     @DisplayName("/api/auth/sign-out 성공: REFRESH_TOKEN 삭제 쿠키와 메시지 반환")
     void signOut_success() throws Exception {
-        LogoutRequest request = LogoutRequest.builder().refreshToken("refresh.jwt").build();
-
         // SecurityProperties 모킹
         SecurityProperties.Cookie cookie = new SecurityProperties.Cookie();
         cookie.setSecure(false);
@@ -94,11 +90,45 @@ class AuthControllerTest {
         given(securityProperties.getCookie()).willReturn(cookie);
 
         mockMvc.perform(post("/api/auth/sign-out")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
+            .cookie(new jakarta.servlet.http.Cookie("REFRESH_TOKEN", "refresh.jwt")))
         .andExpect(status().isOk())
         .andExpect(header().string("Set-Cookie", containsString("REFRESH_TOKEN")))
         .andExpect(header().string("Set-Cookie", containsString("Max-Age=0")))
         .andExpect(jsonPath("$.message").value("로그아웃되었습니다."));
+    }
+
+    @Test
+    @DisplayName("/api/auth/sign-out 실패: 리프레시 토큰이 없을 때 400 에러")
+    void signOut_failure_noToken() throws Exception {
+        mockMvc.perform(post("/api/auth/sign-out"))
+        .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("/api/auth/refresh 성공: 쿠키의 리프레시 토큰으로 새로운 액세스 토큰 발급")
+    void refreshToken_success() throws Exception {
+        UUID userId = UUID.randomUUID();
+        JwtDto jwtDto = JwtDto.builder()
+        .userDto(UserDto.builder().id(userId).email("test@example.com").name("tester").locked(false).build())
+        .accessToken("new.access.jwt")
+        .refreshToken("new.refresh.jwt")
+        .expiresIn(3600L)
+        .build();
+
+        given(authService.refreshToken("refresh.jwt")).willReturn(jwtDto);
+
+        mockMvc.perform(post("/api/auth/refresh")
+            .cookie(new jakarta.servlet.http.Cookie("REFRESH_TOKEN", "refresh.jwt")))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.accessToken").value("new.access.jwt"))
+        .andExpect(jsonPath("$.userDto.id").exists())
+        .andExpect(jsonPath("$.refreshToken").doesNotExist()); // 리프레시 토큰이 JSON 응답에 없어야 함
+    }
+
+    @Test
+    @DisplayName("/api/auth/refresh 실패: 리프레시 토큰이 없을 때 400 에러")
+    void refreshToken_failure_noToken() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh"))
+        .andExpect(status().isBadRequest());
     }
 }

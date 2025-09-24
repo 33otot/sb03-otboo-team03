@@ -151,6 +151,11 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        // ResponseStatusException은 Spring에서 자동으로 처리되므로 제외
+        if (e instanceof org.springframework.web.server.ResponseStatusException) {
+            throw (org.springframework.web.server.ResponseStatusException) e;
+        }
+        
         log.error("Unexpected error occurred", e);
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR);
         return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus()).body(errorResponse);

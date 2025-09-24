@@ -1,7 +1,6 @@
 package com.samsamotot.otboo.auth.service;
 
 import com.samsamotot.otboo.auth.dto.LoginRequest;
-import com.samsamotot.otboo.auth.dto.LogoutRequest;
 import com.samsamotot.otboo.auth.service.impl.AuthServiceImpl;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.csrf.CsrfTokenService;
@@ -160,15 +159,14 @@ class AuthServiceImplTest {
     @DisplayName("로그아웃은 유효/무효 토큰 모두 예외 없이 통과")
     void logout_alwaysOk() {
         // given
-        LogoutRequest request = LogoutRequest.builder().refreshToken("any.jwt").build();
         given(jwtTokenProvider.validateToken("any.jwt")).willReturn(true);
 
         // when/then (no exception)
-        authService.logout(request);
+        authService.logout("any.jwt");
 
         // invalid token path
         given(jwtTokenProvider.validateToken("bad.jwt")).willThrow(new RuntimeException("invalid"));
-        authService.logout(LogoutRequest.builder().refreshToken("bad.jwt").build());
+        authService.logout("bad.jwt");
     }
 }
 
