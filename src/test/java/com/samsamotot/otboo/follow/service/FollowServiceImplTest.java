@@ -26,8 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.*;
 
 /**
  * PackageName  : com.samsamotot.otboo.follow.service
@@ -508,5 +508,39 @@ class FollowServiceImplTest {
         // when n then
         assertThatThrownBy(() -> followService.getFollowers(req))
             .isInstanceOf(OtbooException.class);
+    }
+
+    /*
+        언팔로우 단위 테스트
+     */
+
+    @Test
+    void 팔로우_여부_확인한다_실패() throws Exception {
+        // given
+        UUID followId = UUID.randomUUID();
+        given(followRepository.existsById(followId)).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> followService.unfollow(followId))
+            .isInstanceOf(OtbooException.class);
+
+        then(followRepository).should(times(1)).existsById(followId);
+        then(followRepository).should(never()).deleteById(any());
+        then(followRepository).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    void 팔로우_취소한다() throws Exception {
+        // given
+        UUID followId = UUID.randomUUID();
+        given(followRepository.existsById(followId)).willReturn(true);
+
+        // when
+        followService.unfollow(followId);
+
+        // then
+        then(followRepository).should(times(1)).deleteById(followId);
+        then(followRepository).shouldHaveNoMoreInteractions();
+
     }
 }

@@ -5,12 +5,12 @@ import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefUpdateRequest;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeOption;
+import com.samsamotot.otboo.clothes.exception.definition.ClothesAttributeDefAlreadyExistException;
+import com.samsamotot.otboo.clothes.exception.definition.ClothesAttributeDefNotFoundException;
 import com.samsamotot.otboo.clothes.mapper.ClothesAttributeDefMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.service.ClothesAttributeDefService;
 import com.samsamotot.otboo.common.exception.ErrorCode;
-import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttributeDefAlreadyExistException;
-import com.samsamotot.otboo.common.exception.clothes.definition.ClothesAttributeDefNotFoundException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

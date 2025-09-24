@@ -31,6 +31,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class FollowServiceImpl implements FollowService {
     private static final String FOLLOW_SERVICE = "[FollowService] ";
+
     private static final String SORT_DIRECTION_DESCENDING = "DESCENDING";
     private static final String SORT_BY = "createdAt";
 
@@ -297,6 +298,28 @@ public class FollowServiceImpl implements FollowService {
             request.followerId(), data.size(), hasNext);
 
         return response;
+    }
+
+    /**
+     * 기존 팔로우 관계를 취소(언팔로우)한다.
+     *
+     * 1. 전달된 followId(팔로우 관계 고유 ID)를 기준으로 존재 여부 확인
+     *    - 존재하지 않으면 {@link OtbooException} 발생 (ErrorCode.FOLLOW_NOT_FOUND)
+     * 2. 존재할 경우 해당 팔로우 관계를 삭제
+     * 3. 시작/완료 로그 기록
+     *
+     * @param followId 언팔로우할 팔로우 관계의 고유 ID
+     * @throws OtbooException followId가 존재하지 않을 경우 발생
+     */
+    @Transactional
+    @Override
+    public void unfollow(UUID followId) {
+        log.info(FOLLOW_SERVICE + "언팔로우 시작: followeeId={}", followId);
+        if (!followRepository.existsById(followId)) {
+            throw new OtbooException(ErrorCode.FOLLOW_NOT_FOUND);
+        }
+        followRepository.deleteById(followId);
+        log.info(FOLLOW_SERVICE + "언팔로우 완료");
     }
 
     private static Instant parseCursorToInstant(String cursor) {

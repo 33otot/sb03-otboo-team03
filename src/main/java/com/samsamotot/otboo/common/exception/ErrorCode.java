@@ -60,6 +60,7 @@ public enum ErrorCode {
 
     // 다이렉트 메시지 관련 에러
     DM_NOT_FOUND(HttpStatus.NOT_FOUND, "DM001", "메시지를 찾을 수 없습니다."),
+    INVALID_REQUEST_PARAMETER(HttpStatus.BAD_REQUEST, "DM002", "잘못된 커서 요청입니다."),
 
     // 알림 관련 에러
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NO001", "알림을 찾을 수 없습니다."),
