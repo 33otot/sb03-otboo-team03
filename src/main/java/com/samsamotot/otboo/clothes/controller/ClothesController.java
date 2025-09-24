@@ -32,14 +32,14 @@ public class ClothesController implements ClothesControllerApi{
     ) {
         ClothesDto result;
         if (image != null) {
-            log.info("[ClothesController] 이미지 있는 의상 등록 요청 - clothesService.create 호출");
+            log.debug("[ClothesController] 이미지 있는 의상 등록 요청 - clothesService.create 호출");
             result = clothesService.create(request, image);
-            log.info("[ClothesController] 이미지 있는 의상 등록 요청 - clothesService.create 결과 반환: {}", result);
+            log.debug("[ClothesController] 이미지 있는 의상 등록 요청 - 결과 반환: id: {}", result.id());
         }
         else {
-            log.info("[ClothesController] 이미지 없는 의상 등록 요청 - clothesService.create 호출");
+            log.debug("[ClothesController] 이미지 없는 의상 등록 요청 - clothesService.create 호출");
             result = clothesService.create(request);
-            log.info("[ClothesController] 이미지 없는 의상 등록 요청 - clothesService.create 결과 반환: {}", result);
+            log.debug("[ClothesController] 이미지 없는 의상 등록 요청 - 결과 반환: id: {}", result.id());
         }
 
         return ResponseEntity
