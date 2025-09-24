@@ -131,6 +131,14 @@ public class ClothesServiceImpl implements ClothesService {
                 // def 객체 조회
                 ClothesAttributeDef definition = defRepository.findById(dto.definitionId())
                     .orElseThrow(() -> new ClothesAttributeDefNotFoundException());
+
+                boolean valid = definition.getOptions().stream()
+                    .map(ClothesAttributeOption::getValue)
+                    .anyMatch(v -> v.equals(dto.value()));
+                if (!valid) {
+                    log.warn("[ClothesServiceImpl] 정의에 없는 속성 값: defId: {}, value: {}", dto.definitionId(), dto.value());
+                    throw new IllegalArgumentException("정의된 옵션에 없는 속성 값입니다.");
+                    }
                 ClothesAttribute attribute = ClothesAttribute.createClothesAttribute(definition, dto.value());
 
                 // 연관관계 세팅
