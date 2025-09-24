@@ -75,11 +75,15 @@ class AuthServiceImplTest {
         .password("plain-password")
         .build();
 
+        // 현재 시간을 고정하여 테스트 일관성 확보
+        long currentEpoch = Instant.now().getEpochSecond();
+        long expirationEpoch = currentEpoch + 3600L; // 1시간 후
+
         given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(user));
         given(passwordEncoder.matches("plain-password", "encoded-password")).willReturn(true);
         given(jwtTokenProvider.createAccessToken(userId)).willReturn("access.jwt");
         given(jwtTokenProvider.createRefreshToken(userId)).willReturn("refresh.jwt");
-        given(jwtTokenProvider.getExpirationTime("access.jwt")).willReturn(3600L);
+        given(jwtTokenProvider.getExpirationTime("access.jwt")).willReturn(expirationEpoch);
         given(userMapper.toDto(user)).willReturn(UserDto.builder().id(userId).email("test@example.com").name("tester").locked(false).build());
 
         // when
@@ -89,7 +93,8 @@ class AuthServiceImplTest {
         assertThat(result).isNotNull();
         assertThat(result.getAccessToken()).isEqualTo("access.jwt");
         assertThat(result.getRefreshToken()).isEqualTo("refresh.jwt");
-        assertThat(result.getExpiresIn()).isEqualTo(3600L);
+        // expiresIn은 남은 시간(초)이므로 대략 3600초 근처여야 함 (실행 시간 고려하여 범위로 검증)
+        assertThat(result.getExpiresIn()).isBetween(3550L, 3600L);
         assertThat(result.getUserDto()).isNotNull();
         assertThat(result.getUserDto().getId()).isEqualTo(userId);
     }

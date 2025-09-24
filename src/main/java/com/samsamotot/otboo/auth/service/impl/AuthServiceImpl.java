@@ -62,7 +62,8 @@ public class AuthServiceImpl implements AuthService {
         // JWT 토큰 생성
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
-        Long expiresIn = jwtTokenProvider.getExpirationTime(accessToken);
+        Long expirationEpoch = jwtTokenProvider.getExpirationTime(accessToken);
+        Long expiresIn = Math.max(0, expirationEpoch - java.time.Instant.now().getEpochSecond());
         
         // 사용자 정보 DTO 변환
         UserDto userDto = userMapper.toDto(user);
@@ -79,12 +80,16 @@ public class AuthServiceImpl implements AuthService {
     
     @Override
     public void logout(String refreshToken) {
-        log.info(SERVICE + "로그아웃 시도 - 리프레시 토큰: {}", 
-            refreshToken.substring(0, Math.min(20, refreshToken.length())) + "...");
+        String tokenInfo = (refreshToken != null && refreshToken.length() > 4) 
+            ? "****" + refreshToken.substring(refreshToken.length() - 4)
+            : "<redacted>";
+        log.info(SERVICE + "로그아웃 시도 - 리프레시 토큰: {}", tokenInfo);
         
         // 리프레시 토큰 검증 (선택적)
         try {
-            jwtTokenProvider.validateToken(refreshToken);
+            if (refreshToken != null) {
+                jwtTokenProvider.validateToken(refreshToken);
+            }
             log.info(SERVICE + "로그아웃 성공");
         } catch (Exception e) {
             log.warn(SERVICE + "유효하지 않은 리프레시 토큰으로 로그아웃 시도");
@@ -126,7 +131,8 @@ public class AuthServiceImpl implements AuthService {
             // 새로운 JWT 토큰 생성
             String newAccessToken = jwtTokenProvider.createAccessToken(user.getId());
             String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getId());
-            Long expiresIn = jwtTokenProvider.getExpirationTime(newAccessToken);
+            Long expirationEpoch = jwtTokenProvider.getExpirationTime(newAccessToken);
+            Long expiresIn = Math.max(0, expirationEpoch - java.time.Instant.now().getEpochSecond());
             
             // 사용자 정보 DTO 변환
             UserDto userDto = userMapper.toDto(user);
