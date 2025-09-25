@@ -2,6 +2,7 @@ package com.samsamotot.otboo.common.util;
 
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import java.util.UUID;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,7 +22,7 @@ public class AuthUtil {
     public static UUID getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken || !authentication.isAuthenticated()) {
             throw new AuthenticationCredentialsNotFoundException("인증 정보가 없습니다.");
         }
 
