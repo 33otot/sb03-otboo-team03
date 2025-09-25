@@ -1,7 +1,6 @@
 package com.samsamotot.otboo.weather.entity;
 
 import com.samsamotot.otboo.common.entity.BaseEntity;
-import com.samsamotot.otboo.location.entity.Location;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
@@ -13,8 +12,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "weathers",
     uniqueConstraints = @UniqueConstraint(
-        name = "uq_weathers_loc_forecast",
-        columnNames = {"location_id", "forecast_at", "forecasted_at"}
+        name = "uq_weathers_grid_forecast",
+        columnNames = {"grid_id", "forecast_at", "forecasted_at"}
     )
 )
 @Getter
@@ -29,9 +28,9 @@ public class Weather extends BaseEntity {
     private Instant forecastedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id", nullable = false)
+    @JoinColumn(name = "grid_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private Location location;
+    private Grid grid;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "sky_status", length = 32)

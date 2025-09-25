@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.weather.service;
 
 import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.weather.entity.Grid;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -17,7 +18,7 @@ public interface WeatherService {
     /**
      * 특정 격자 좌표에 대한 최신 날씨 정보를 가져와 DB를 업데이트합니다.
      * 이 메소드는 하나의 트랜잭션으로 동작해야 합니다.
-     * @location 날씨 업데이트할 대한민국 위치 정보
+     * @param grid 날씨 업데이트할 대한민국 위치 정보 격자
      */
-    CompletableFuture<Void> updateWeatherDataForCoordinate(Location location);
+    CompletableFuture<Void> updateWeatherDataForGrid(Grid grid);
 }

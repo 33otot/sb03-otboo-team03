@@ -1,24 +1,18 @@
 package com.samsamotot.otboo.weather.service.impl;
 
-import com.samsamotot.otboo.common.exception.ErrorCode;
-import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.location.entity.Location;
-import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
 import com.samsamotot.otboo.weather.client.WeatherKmaClient;
-import com.samsamotot.otboo.weather.entity.Precipitation;
-import com.samsamotot.otboo.weather.entity.SkyStatus;
-import com.samsamotot.otboo.weather.entity.Weather;
-import com.samsamotot.otboo.weather.entity.WindAsWord;
+import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
+import com.samsamotot.otboo.weather.entity.*;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import com.samsamotot.otboo.weather.service.WeatherService;
+import com.samsamotot.otboo.weather.service.WeatherTransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -48,42 +42,36 @@ public class WeatherServiceImpl implements WeatherService {
     private final WeatherRepository weatherRepository;
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+    private final WeatherTransactionService weatherTransactionService;
 
     @Async("weatherApiTaskExecutor")
     @Override
-    @Transactional
-    public CompletableFuture<Void> updateWeatherDataForCoordinate(Location location) {
-        try {
-            // 1. API 호출
-            Mono<WeatherForecastResponse> responseDtoMono = weatherKmaClient.fetchWeather(location.getX(), location.getY());
-            WeatherForecastResponse responseDto = responseDtoMono.block(Duration.ofSeconds(10));
+    public CompletableFuture<Void> updateWeatherDataForGrid(Grid grid) {
+        return weatherKmaClient.fetchWeather(grid.getX(), grid.getY())
+                .publishOn(Schedulers.boundedElastic())
+                .flatMap(weatherForecastResponse -> {
+                    if (!isValid(weatherForecastResponse)) {
+                        log.warn(SERVICE_NAME + "API 응답 데이터가 비어있습니다. X={}, Y={}.", grid.getX(), grid.getY());
+                        return Mono.empty(); // 데이터가 유효하지 않으면 여기서 체인 종료
+                    }
 
-            if (responseDto == null) {
-                // KmaClient의 onErrorResume에 의해 Mono.empty()가 반환된 경우.
-                // API 호출 자체에 실패했음을 명확히 알려주는 예외를 던집니다.
-                throw new OtbooException(ErrorCode.WEATHER_API_ERROR, "기상청 API 호출에 실패했습니다. KmaClient 로그를 확인하세요.");
-            }
-            if (!isValid(responseDto)) {
-                // API 호출은 성공했으나, 응답 내용이 비어있는 경우.
-                log.warn(SERVICE_NAME + "API 응답 데이터가 비어있습니다. Location ID: {}", location.getId());
-                return CompletableFuture.completedFuture(null); // 실패가 아니므로 정상 종료
-            }
+                    List<Weather> weatherList = convertToEntities(weatherForecastResponse, grid);
 
-            // 3. API 응답(DTO)을 DB에 저장할 Weather 엔티티 리스트로 변환
-            List<Weather> newWeatherList = convertToEntities(responseDto, location);
-
-            // 4. DB 업데이트
-            weatherRepository.deleteAllByLocation(location);
-            weatherRepository.saveAll(newWeatherList);
-
-            return CompletableFuture.completedFuture(null);
-        } catch (Exception e) {
-            log.error(SERVICE_NAME + "비동기 날씨 업데이트 작업 실패. Location ID: {}", location.getId(), e);
-            return CompletableFuture.failedFuture(e);
-        }
+                    // 3. DB 날씨 데이터 갱신
+                    return Mono.fromRunnable(() ->
+                            weatherTransactionService.updateWeatherData(grid, weatherList));
+                })
+                .doOnError(e -> log.error(SERVICE_NAME + "비동기 날씨 업데이트 작업 실패. X={}, Y={}", grid.getX(), grid.getY(), e))
+                .then() // Mono<Void>로 변환
+                .toFuture() // CompletableFuture<Void>로 최종 변환
+                .exceptionally(e -> {
+                    // doOnError에서 로그를 이미 남겼으므로, 여기서는 예외를 처리하고 null을 반환하여 CompletableFuture를 정상 완료시킵니다.
+                    // 이렇게 해야 CompletableFuture.allOf() 등에서 전체 작업이 중단되지 않습니다.
+                    return null;
+                });
     }
 
-    private List<Weather> convertToEntities(WeatherForecastResponse dto, Location location) {
+    private List<Weather> convertToEntities(WeatherForecastResponse dto, Grid grid) {
         List<WeatherForecastResponse.Item> items = dto.response().body().items().item();
 
         // 1. '예보 대상 시간' (fcstDate + fcstTime)을 기준으로 모든 아이템 그룹화
@@ -109,7 +97,7 @@ public class WeatherServiceImpl implements WeatherService {
                     Weather.WeatherBuilder builder = Weather.builder()
                             .forecastAt(forecastAt)
                             .forecastedAt(forecastedAt)
-                            .location(location);
+                            .grid(grid);
 
                     // 3-2. 해당 시간대의 모든 카테고리(TMP, REH, SKY 등) 값을 빌더에 채워넣음
                     entry.getValue().forEach(item -> setFieldByCategory(builder, item.category(), item.fcstValue()));
