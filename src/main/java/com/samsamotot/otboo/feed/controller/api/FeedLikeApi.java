@@ -39,8 +39,7 @@ public interface FeedLikeApi {
         )
     })
     ResponseEntity<Void> create(
-        @PathVariable UUID feedId,
-        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
+        @PathVariable UUID feedId
     );
 
     @Operation(summary = "피드 좋아요 취소")
@@ -64,7 +63,6 @@ public interface FeedLikeApi {
         )
     })
     ResponseEntity<Void> delete(
-        @PathVariable UUID feedId,
-        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
+        @PathVariable UUID feedId
     );
 }

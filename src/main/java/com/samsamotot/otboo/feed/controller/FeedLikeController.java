@@ -34,16 +34,14 @@ public class FeedLikeController implements FeedLikeApi {
      * 피드에 좋아요를 추가합니다.
      *
      * @param feedId 좋아요를 추가할 피드의 ID
-     * @param principal 현재 인증된 사용자 정보
      * @return 204 No Content
      */
     @Override
     @PostMapping
     public ResponseEntity<Void> create(
-        @PathVariable UUID feedId,
-        @AuthenticationPrincipal CustomUserDetails principal
+        @PathVariable UUID feedId
     ) {
-        UUID userId = getAuthenticatedUserId(principal);
+        UUID userId = getAuthenticatedUserId();
         log.info(CONTROLLER + "피드 좋아요 요청 - feedId = {}, userId = {}", feedId, userId);
 
         FeedLike result = feedLikeService.create(feedId, userId);
@@ -59,16 +57,14 @@ public class FeedLikeController implements FeedLikeApi {
      * 피드에 추가된 좋아요를 취소합니다.
      *
      * @param feedId 좋아요를 취소할 피드의 ID
-     * @param principal 현재 인증된 사용자 정보
      * @return 204 No Content
      */
     @Override
     @DeleteMapping
     public ResponseEntity<Void> delete(
-        @PathVariable UUID feedId,
-        @AuthenticationPrincipal CustomUserDetails principal
+        @PathVariable UUID feedId
     ) {
-        UUID userId = getAuthenticatedUserId(principal);
+        UUID userId = getAuthenticatedUserId();
         log.info(CONTROLLER + "피드 좋아요 취소 요청 - feedId = {}, userId = {}", feedId, userId);
 
         feedLikeService.delete(feedId, userId);
