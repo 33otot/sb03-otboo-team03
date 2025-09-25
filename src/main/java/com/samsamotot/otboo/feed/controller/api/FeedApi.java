@@ -76,8 +76,7 @@ public interface FeedApi {
         )
     })
     ResponseEntity<CursorResponse<FeedDto>> getFeeds(
-        @Valid @ModelAttribute FeedCursorRequest feedCursorRequest,
-        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
+        @Valid @ModelAttribute FeedCursorRequest feedCursorRequest
     );
 
     @Operation(summary = "피드 수정")
@@ -117,8 +116,7 @@ public interface FeedApi {
     })
     ResponseEntity<FeedDto> updateFeed(
         @PathVariable UUID feedId,
-        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest,
-        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
+        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest
     );
 
     @Operation(summary = "피드 삭제")
@@ -153,7 +151,6 @@ public interface FeedApi {
         )
     })
     ResponseEntity<Void> deleteFeed(
-        @PathVariable UUID feedId,
-        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
+        @PathVariable UUID feedId
     );
 }
