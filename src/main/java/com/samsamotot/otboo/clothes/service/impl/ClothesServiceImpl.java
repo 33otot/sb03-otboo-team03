@@ -187,20 +187,27 @@ public class ClothesServiceImpl implements ClothesService {
 
         // 속성 업데이트 - 기존에 있는 def면 옵션을 수정, 없으면 새로 추가 (이미 선택된 정의를 제거할 수는 없음)
         attributesUpdate(updateRequest.attributes(), currentAttrs, clothes);
+        clothesRepository.save(clothes);
 
+        // 기존 이미지 경로 보관
+        String previousImageUrl = clothes.getImageUrl();
+
+        // 요청 들어온 새 이미지 업로드
+        log.debug(SERVICE_NAME + "S3에 의상 이미지 업로드 요청: {}", clothesImage.getOriginalFilename());
+        String imageUrl = s3ImageStorage.uploadImage(clothesImage, "clothes/");
+
+        // 엔티티 반영 및 저장
+        clothes.updateImageUrl(imageUrl);
         Clothes saved = clothesRepository.save(clothes);
 
-        // 기존에 이미지 있다면 제거
-        if (clothes.getImageUrl() != null) {
-            s3ImageStorage.deleteImage(clothes.getImageUrl());
+        // 기존 이미지 삭제 (실패해도 흐름 지속)
+        if (previousImageUrl != null) {
+            try {
+                s3ImageStorage.deleteImage(previousImageUrl);
+            } catch (Exception e) {
+                log.warn(SERVICE_NAME + "이전 이미지 삭제 실패 - url: {}, err: {}", previousImageUrl, e.getMessage(), e);
+            }
         }
-
-        // 요청 들어온 이미지 저장
-        String imageUrl;
-        log.debug(SERVICE_NAME + "S3에 의상 이미지 업로드 요청: {}", clothesImage.getOriginalFilename());
-        imageUrl = s3ImageStorage.uploadImage(clothesImage, "clothes/");
-
-        clothes.updateImageUrl(imageUrl);
 
         return clothesMapper.toClothesDto(saved);
     }
