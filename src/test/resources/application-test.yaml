@@ -51,7 +51,7 @@ spring:
   # Batch 설정
   batch:
     jdbc:
-      initialize-schema: never
+      initialize-schema: always
 
 # 테스트용 로깅 설정
 logging:
@@ -59,6 +59,8 @@ logging:
     com.samsamotot.otboo: DEBUG
     org.springframework.web: DEBUG
     org.springframework.test: DEBUG
+    org.hibernate.tool.hbm2ddl: DEBUG
+    org.springframework.jdbc.core.StatementCreatorUtils: DEBUG
 
 # 테스트용 서버 설정
 server:

@@ -34,6 +34,7 @@ import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
@@ -338,7 +339,7 @@ public class FeedControllerTest {
             Weather weather = Weather.builder()
                 .forecastAt(Instant.now())
                 .forecastedAt(Instant.now())
-                .location(LocationFixture.createLocation())
+                .grid(LocationFixture.createLocation().getGrid())
                 .skyStatus(skyStatus)
                 .precipitationType(precipitation)
                 .build();
@@ -505,7 +506,8 @@ public class FeedControllerTest {
             ReflectionTestUtils.setField(user, "id", userId);
 
             Location location = LocationFixture.createLocation();
-            Weather weather = WeatherFixture.createWeather(location);
+            Grid grid = location.getGrid();
+            Weather weather = WeatherFixture.createWeather(grid);
 
             UUID feedId = UUID.randomUUID();
             Feed originFeed = FeedFixture.createFeed(user, weather);
@@ -565,7 +567,8 @@ public class FeedControllerTest {
             User user = UserFixture.createUser();
 
             Location location = LocationFixture.createLocation();
-            Weather weather = WeatherFixture.createWeather(location);
+            Grid grid = location.getGrid();
+            Weather weather = WeatherFixture.createWeather(grid);
 
             UUID feedId = UUID.randomUUID();
             Feed originFeed = FeedFixture.createFeed(user, weather);
@@ -598,7 +601,8 @@ public class FeedControllerTest {
             ReflectionTestUtils.setField(user, "id", userId);
 
             Location location = LocationFixture.createLocation();
-            Weather weather = WeatherFixture.createWeather(location);
+            Grid grid = location.getGrid();
+            Weather weather = WeatherFixture.createWeather(grid);
 
             UUID feedId = UUID.randomUUID();
             Feed originFeed = FeedFixture.createFeed(user, weather);
@@ -632,7 +636,8 @@ public class FeedControllerTest {
 
             User user = UserFixture.createUser();
             Location location = LocationFixture.createLocation();
-            Weather weather = WeatherFixture.createWeather(location);
+            Grid grid = location.getGrid();
+            Weather weather = WeatherFixture.createWeather(grid);
             Feed feed = FeedFixture.createFeed(user, weather);
 
             /* 컨트롤러 테스트이므로, 반환되는 Feed 객체의 isDeleted는 신경쓰지 않음 */

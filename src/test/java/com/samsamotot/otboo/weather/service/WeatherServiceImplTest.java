@@ -5,11 +5,7 @@ import com.samsamotot.otboo.common.fixture.LocationFixture;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.weather.client.WeatherKmaClient;
 import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
-import com.samsamotot.otboo.weather.entity.Precipitation;
-import com.samsamotot.otboo.weather.entity.SkyStatus;
-import com.samsamotot.otboo.weather.entity.Weather;
-import com.samsamotot.otboo.weather.entity.WindAsWord;
-import com.samsamotot.otboo.weather.repository.WeatherRepository;
+import com.samsamotot.otboo.weather.entity.*;
 import com.samsamotot.otboo.weather.service.impl.WeatherServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,13 +41,15 @@ public class WeatherServiceImplTest {
     @Mock
     private WeatherKmaClient weatherKmaClient;
 
+
     @Mock
-    private WeatherRepository weatherRepository;
+    private WeatherTransactionService weatherTransactionService;
 
     @Test
     void 날씨_정보_업데이트_성공() {
         // Given
         Location testLocation = LocationFixture.createValidLocation(); // "서울특별시", "중구", "명동", ""
+        Grid grid = testLocation.getGrid();
 
         // 기상청 API 가짜 응답 데이터
         List<WeatherForecastResponse.Item> fakeItems = List.of(
@@ -67,25 +65,25 @@ public class WeatherServiceImplTest {
         );
 
         // Mockito를 사용하여 가짜 객체들 행동 정의
-        given(weatherKmaClient.fetchWeather(testLocation.getX(), testLocation.getY()))
+        given(weatherKmaClient.fetchWeather(grid.getX(), grid.getY()))
                 .willReturn(Mono.just(fakeFcstResponse));
 
 
         // When
         // @Async로 비동기 처리 join()으로 비동기 작업 끝날 때까지 기다림
-        weatherService.updateWeatherDataForCoordinate(testLocation).join();
+        weatherService.updateWeatherDataForGrid(grid).join();
 
 
         // Then
         // 각 메소드가 정확히 1번 호출 됐나 검증
-        verify(weatherRepository, times(1)).deleteAllByLocation(testLocation);
-        verify(weatherRepository, times(1)).saveAll(any(List.class));
+        verify(weatherTransactionService, times(1)).updateWeatherData(any(Grid.class), any(List.class));
     }
 
     @Test
-    void 날씨_정보_업데이트_잘못된_요청으로_API_응답_없으면_비동기예외() {
+    void 날씨_정보_업데이트_잘못된_요청으로_API_응답_없으면_정상완료() {
         // Given
         Location testLocation = LocationFixture.createLocationWithCoordinates();
+        Grid grid = testLocation.getGrid();
 
         // 기상청 API의 header는 정상이지만, body의 items가 비어있거나 null인 경우
         WeatherForecastResponse fakeFcstResponse = new WeatherForecastResponse(
@@ -97,53 +95,54 @@ public class WeatherServiceImplTest {
 
         // Mockito 설정:
         // weatherKmaClient.fetchWeather가 호출되면, 비어있는 가짜 응답을 반환
-        given(weatherKmaClient.fetchWeather(testLocation.getX(), testLocation.getY()))
+        given(weatherKmaClient.fetchWeather(grid.getX(), grid.getY()))
                 .willReturn(Mono.just(fakeFcstResponse));
 
 
         // When
+        CompletableFuture<Void> future = weatherService.updateWeatherDataForGrid(grid);
+        
         // Then
-        // 비동기 작업 도중 발생한 예외인 CompletionException 검증
-        assertThatThrownBy(() -> weatherService.updateWeatherDataForCoordinate(testLocation).join())
-                .isInstanceOf(CompletionException.class)
-                .hasMessageContaining(ErrorCode.INVALID_LOCATION.getMessage());
+        // WeatherServiceImpl의 exceptionally 블록으로 인해 예외가 발생하지 않고 정상 완료됨
+        assertThat(future.isCompletedExceptionally()).isFalse();
+        assertThat(future.join()).isNull(); // exceptionally에서 null을 반환
 
         // 유효하지 않은 데이터이므로 DB 접근 불가
-        verify(weatherRepository, times(0)).deleteAllByLocation(any(Location.class));
-        verify(weatherRepository, times(0)).saveAll(any(List.class));
+        verify(weatherTransactionService, times(0)).updateWeatherData(any(Grid.class), any(List.class));
+
     }
 
     @Test
-    void 날씨_정보_업데이트_API_호출_실패하면_런타임예외() {
+    void 날씨_정보_업데이트_API_호출_실패하면_정상완료() {
         // Given
         Location testLocation = LocationFixture.createValidLocation();
+        Grid grid = testLocation.getGrid();
 
         // API 호출 실패 시 발생할 가짜 예외 객체
         RuntimeException apiException = new RuntimeException("API 서버에 연결할 수 없습니다.");
 
         // weatherKmaClient.fetchWeather가 호출되면, Mono.error()을 통해 예외 발생
-        given(weatherKmaClient.fetchWeather(testLocation.getX(), testLocation.getY()))
+        given(weatherKmaClient.fetchWeather(grid.getX(), grid.getY()))
                 .willReturn(Mono.error(apiException));
 
 
         // When
-        CompletableFuture<Void> future = weatherService.updateWeatherDataForCoordinate(testLocation);
+        CompletableFuture<Void> future = weatherService.updateWeatherDataForGrid(grid);
 
         // Then
-        // 반환된 CompletableFuture가 실패(exceptionally) 상태로 완료됐는지, 그 원인이 apiException이 맞는지 검증
-        assertThat(future.isCompletedExceptionally()).isTrue();
-        assertThatThrownBy(future::join) // Spring의 트랜잭션이나 비동기 처리가 예외를 몇 겹으로 감싸도
-                .hasRootCause(apiException); // 가장 깊은 곳의 원인을 찾아내는 hasRootCause() 사용
+        // WeatherServiceImpl의 exceptionally 블록으로 인해 예외가 발생하지 않고 정상 완료됨
+        assertThat(future.isCompletedExceptionally()).isFalse();
+        assertThat(future.join()).isNull(); // exceptionally에서 null을 반환
 
         // API 호출 자체가 실패했으므로 DB 접근 불가
-        verify(weatherRepository, times(0)).deleteAllByLocation(any(Location.class));
-        verify(weatherRepository, times(0)).saveAll(any(List.class));
+        verify(weatherTransactionService, times(0)).updateWeatherData(any(Grid.class), any(List.class));
     }
 
     @Test
     void 데이터_변환_성공() {
         // Given
         Location testLocation = LocationFixture.createValidLocation();
+        Grid grid = testLocation.getGrid();
 
         // 습도(REH) 예보가 포함되지 않은 데이터
         List<WeatherForecastResponse.Item> fakeItems = List.of(
@@ -178,24 +177,25 @@ public class WeatherServiceImplTest {
         given(weatherKmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                 .willReturn(Mono.just(fakeFcstResponse));
 
-        // saveAll 메소드가 호출될 때, 전달되는 List<Weather>를 캡쳐하기 위한 설정
+        // updateWeatherData 메소드가 호출될 때, 전달되는 List<Weather>를 캡쳐하기 위한 설정
+        @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Weather>> savedWeatherCaptor = ArgumentCaptor.forClass(List.class);
 
 
         // When (실행)
-        weatherService.updateWeatherDataForCoordinate(testLocation).join();
+        weatherService.updateWeatherDataForGrid(grid).join();
 
 
         // Then (검증)
-        // saveAll이 호출됐는지 확인 후, 전달된 인자 캡쳐
-        verify(weatherRepository).saveAll(savedWeatherCaptor.capture());
+        // updateWeatherData가 호출됐는지 확인 후, 전달된 인자 캡쳐
+        verify(weatherTransactionService).updateWeatherData(any(Grid.class), savedWeatherCaptor.capture());
 
         List<Weather> savedWeathers = savedWeatherCaptor.getValue();
 
         assertThat(savedWeathers).hasSize(1);
         Weather savedWeather = savedWeathers.get(0);
 
-        assertThat(savedWeather.getLocation()).isEqualTo(testLocation);
+        assertThat(savedWeather.getGrid()).isEqualTo(grid);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
         ZoneId seoulZoneId = ZoneId.of("Asia/Seoul");
@@ -222,6 +222,7 @@ public class WeatherServiceImplTest {
     void 데이터_변환_시_습도_누락된_경우() {
         // Given
         Location testLocation = LocationFixture.createValidLocation();
+        Grid grid = testLocation.getGrid();
 
         // 습도(REH) 예보가 포함되지 않은 데이터
         List<WeatherForecastResponse.Item> fakeItems = List.of(
@@ -254,24 +255,25 @@ public class WeatherServiceImplTest {
         given(weatherKmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                 .willReturn(Mono.just(fakeFcstResponse));
 
-        // saveAll 메소드가 호출될 때, 전달되는 List<Weather>를 캡쳐하기 위한 설정
+        // updateWeatherData 메소드가 호출될 때, 전달되는 List<Weather>를 캡쳐하기 위한 설정
+        @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Weather>> savedWeatherCaptor = ArgumentCaptor.forClass(List.class);
 
 
         // When (실행)
-        weatherService.updateWeatherDataForCoordinate(testLocation).join();
+        weatherService.updateWeatherDataForGrid(grid).join();
 
 
         // Then (검증)
-        // saveAll이 호출됐는지 확인 후, 전달된 인자 캡쳐
-        verify(weatherRepository).saveAll(savedWeatherCaptor.capture());
+        // updateWeatherData가 호출됐는지 확인 후, 전달된 인자 캡쳐
+        verify(weatherTransactionService).updateWeatherData(any(Grid.class), savedWeatherCaptor.capture());
 
         List<Weather> savedWeathers = savedWeatherCaptor.getValue();
 
         assertThat(savedWeathers).hasSize(1);
         Weather savedWeather = savedWeathers.get(0);
 
-        assertThat(savedWeather.getLocation()).isEqualTo(testLocation);
+        assertThat(savedWeather.getGrid()).isEqualTo(grid);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
         ZoneId seoulZoneId = ZoneId.of("Asia/Seoul");
@@ -296,8 +298,9 @@ public class WeatherServiceImplTest {
 
     @Test
     void 데이터_변환_최저_최고_기온이_특정_시간대에만_존재() {
-        // --- 1. 준비 (Given) ---
+        // Given
         Location testLocation = LocationFixture.createValidLocation();
+        Grid grid = testLocation.getGrid();
 
         // 05시 예보에는 TMN, TMX가 포함되어 있고, 08시 예보에는 포함되어 있지 않음
         List<WeatherForecastResponse.Item> fakeItems = List.of(
@@ -318,13 +321,14 @@ public class WeatherServiceImplTest {
         given(weatherKmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                 .willReturn(Mono.just(fakeResponse));
 
+        @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Weather>> captor = ArgumentCaptor.forClass(List.class);
 
         // When (실행)
-        weatherService.updateWeatherDataForCoordinate(testLocation).join();
+        weatherService.updateWeatherDataForGrid(grid).join();
 
         // Then (검증)
-        verify(weatherRepository).saveAll(captor.capture());
+        verify(weatherTransactionService).updateWeatherData(any(Grid.class), captor.capture());
         List<Weather> savedWeathers = captor.getValue();
 
         // 05시와 08시, 총 2개의 Weather 엔티티가 생성되었는지 확인
@@ -360,6 +364,7 @@ public class WeatherServiceImplTest {
     void 데이터_변환_강수량_값이_강수없음_일_때() {
         // Given (준비)
         Location testLocation = LocationFixture.createValidLocation();
+        Grid grid = testLocation.getGrid();
 
         // 강수량(PCP) 값이 "강수없음"인 가짜 응답 데이터
         List<WeatherForecastResponse.Item> fakeItems = List.of(
@@ -375,13 +380,14 @@ public class WeatherServiceImplTest {
         given(weatherKmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                 .willReturn(Mono.just(fakeResponse));
 
+        @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Weather>> captor = ArgumentCaptor.forClass(List.class);
 
         // When (실행)
-        weatherService.updateWeatherDataForCoordinate(testLocation).join();
+        weatherService.updateWeatherDataForGrid(grid).join();
 
         // Then (검증)
-        verify(weatherRepository).saveAll(captor.capture());
+        verify(weatherTransactionService).updateWeatherData(any(Grid.class), captor.capture());
         List<Weather> savedWeathers = captor.getValue();
 
         assertThat(savedWeathers).hasSize(1);

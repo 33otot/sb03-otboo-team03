@@ -28,6 +28,7 @@ import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -71,7 +72,8 @@ public class CommentServiceTest {
     void setUp() {
         mockUser = UserFixture.createUser();
         Location mockLocation = LocationFixture.createLocation();
-        Weather mockWeather = WeatherFixture.createWeather(mockLocation);
+        Grid grid = mockLocation.getGrid();
+        Weather mockWeather = WeatherFixture.createWeather(grid);
         mockFeed = FeedFixture.createFeed(mockUser, mockWeather);
 
         ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());

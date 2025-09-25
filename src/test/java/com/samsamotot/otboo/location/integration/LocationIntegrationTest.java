@@ -6,6 +6,8 @@ import com.samsamotot.otboo.location.entity.WeatherAPILocation;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.weather.controller.WeatherController;
+import com.samsamotot.otboo.weather.entity.Grid;
+import com.samsamotot.otboo.weather.repository.GridRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -54,6 +55,9 @@ class LocationIntegrationTest {
     }
 
     @Autowired
+    private GridRepository gridRepository;
+
+    @Autowired
     private LocationService locationService;
 
     @Autowired
@@ -68,6 +72,7 @@ class LocationIntegrationTest {
     @BeforeEach
     void setUp() {
         locationRepository.deleteAll();
+        gridRepository.deleteAll();
     }
 
     @Test
@@ -75,6 +80,11 @@ class LocationIntegrationTest {
     void 기존_유효한_위치_있으면_데이터베이스에서_조회하여_반환() {
         // Given
         Location existingLocation = LocationFixture.createValidLocation();
+
+        // Grid 먼저 저장
+        Grid savedGrid = gridRepository.save(existingLocation.getGrid());
+        existingLocation.setGrid(savedGrid);
+
         existingLocation.setLongitude(TEST_LONGITUDE);
         existingLocation.setLatitude(TEST_LATITUDE);
         locationRepository.save(existingLocation);
@@ -86,8 +96,8 @@ class LocationIntegrationTest {
         assertThat(result).isNotNull();
         assertThat(result.latitude()).isEqualTo(TEST_LATITUDE);
         assertThat(result.longitude()).isEqualTo(TEST_LONGITUDE);
-        assertThat(result.x()).isEqualTo(existingLocation.getX());
-        assertThat(result.y()).isEqualTo(existingLocation.getY());
+        assertThat(result.x()).isEqualTo(savedGrid.getX());
+        assertThat(result.y()).isEqualTo(savedGrid.getY());
         assertThat(result.locationNames()).isEqualTo(existingLocation.getLocationNames());
     }
 
@@ -107,6 +117,9 @@ class LocationIntegrationTest {
     void 기존_위치_오래된_경우_예외_발생() {
         // Given
         Location staleLocation = LocationFixture.createStaleLocation();
+        Grid savedGrid = gridRepository.save(staleLocation.getGrid());
+        staleLocation.setGrid(savedGrid);
+
         staleLocation.setLongitude(TEST_LONGITUDE);
         staleLocation.setLatitude(TEST_LATITUDE);
         locationRepository.save(staleLocation);
@@ -122,8 +135,10 @@ class LocationIntegrationTest {
     void 컨트롤러_위치_정보_조회_정상_동작() {
         // Given
         Location existingLocation = LocationFixture.createValidLocation();
+        Grid grid = existingLocation.getGrid();
         existingLocation.setLongitude(TEST_LONGITUDE);
         existingLocation.setLatitude(TEST_LATITUDE);
+        gridRepository.save(grid);
         locationRepository.save(existingLocation);
 
         // When
@@ -136,8 +151,8 @@ class LocationIntegrationTest {
         WeatherAPILocation result = response.getBody();
         assertThat(result.latitude()).isEqualTo(TEST_LATITUDE);
         assertThat(result.longitude()).isEqualTo(TEST_LONGITUDE);
-        assertThat(result.x()).isEqualTo(existingLocation.getX());
-        assertThat(result.y()).isEqualTo(existingLocation.getY());
+        assertThat(result.x()).isEqualTo(grid.getX());
+        assertThat(result.y()).isEqualTo(grid.getY());
         assertThat(result.locationNames()).isEqualTo(existingLocation.getLocationNames());
     }
 }

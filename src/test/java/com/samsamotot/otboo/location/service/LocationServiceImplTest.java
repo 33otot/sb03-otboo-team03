@@ -2,6 +2,7 @@ package com.samsamotot.otboo.location.service;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.LocationFixture;
 import com.samsamotot.otboo.common.fixture.dto.KakaoAddressResponseFixture;
 import com.samsamotot.otboo.location.client.KakaoApiClient;
@@ -10,6 +11,8 @@ import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.entity.WeatherAPILocation;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.location.service.impl.LocationServiceImpl;
+import com.samsamotot.otboo.weather.entity.Grid;
+import com.samsamotot.otboo.weather.repository.GridRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("LocationServiceImpl 단위 테스트")
 class LocationServiceImplTest {
+
+    @Mock
+    private GridRepository gridRepository;
 
     @Mock
     private LocationRepository locationRepository;
@@ -55,6 +61,7 @@ class LocationServiceImplTest {
         Location existingLocation = LocationFixture.createValidLocation();
         when(locationRepository.findByLongitudeAndLatitude(TEST_LONGITUDE, TEST_LATITUDE))
                 .thenReturn(Optional.of(existingLocation));
+        Grid existingLocationGrid = existingLocation.getGrid();
 
         // When
         WeatherAPILocation result = locationService.getCurrentLocation(TEST_LONGITUDE, TEST_LATITUDE);
@@ -63,8 +70,8 @@ class LocationServiceImplTest {
         assertThat(result).isNotNull();
         assertThat(result.latitude()).isEqualTo(existingLocation.getLatitude());
         assertThat(result.longitude()).isEqualTo(existingLocation.getLongitude());
-        assertThat(result.x()).isEqualTo(existingLocation.getX());
-        assertThat(result.y()).isEqualTo(existingLocation.getY());
+        assertThat(result.x()).isEqualTo(existingLocationGrid.getX());
+        assertThat(result.y()).isEqualTo(existingLocationGrid.getY());
         assertThat(result.locationNames()).isEqualTo(existingLocation.getLocationNames());
 
         // 카카오 API 호출하지 않음
@@ -86,6 +93,11 @@ class LocationServiceImplTest {
 
         when(locationRepository.save(any(Location.class))).thenReturn(staleLocation);
 
+        // Grid Mock 설정 추가
+        Grid mockGrid = GridFixture.createGrid();
+        when(gridRepository.findByXAndY(60, 127))
+                .thenReturn(Optional.of(mockGrid)); // findByXAndY 먼저 설정
+
         // When
         WeatherAPILocation result = locationService.getCurrentLocation(TEST_LONGITUDE, TEST_LATITUDE);
 
@@ -97,6 +109,7 @@ class LocationServiceImplTest {
         // 검증
         verify(locationRepository).findByLongitudeAndLatitude(TEST_LONGITUDE, TEST_LATITUDE);
         verify(kakaoApiClient).getRegionByCoordinates(TEST_LONGITUDE, TEST_LATITUDE);
+        verify(gridRepository).findByXAndY(60, 127); // Grid 조회 검증 추가
         verify(locationRepository).save(staleLocation);
     }
 
@@ -110,6 +123,10 @@ class LocationServiceImplTest {
         KakaoAddressResponse kakaoResponse = KakaoAddressResponseFixture.createKakaoAddressResponse();
         when(kakaoApiClient.getRegionByCoordinates(TEST_LONGITUDE, TEST_LATITUDE))
                 .thenReturn(Mono.just(kakaoResponse));
+
+        Grid mockGrid = GridFixture.createGrid();
+        when(gridRepository.findByXAndY(60, 127))
+                .thenReturn(Optional.of(mockGrid)); // findByXAndY 먼저 설정
 
         Location savedLocation = LocationFixture.createValidLocation();
         when(locationRepository.save(any(Location.class))).thenReturn(savedLocation);
@@ -128,6 +145,7 @@ class LocationServiceImplTest {
         // 검증
         verify(locationRepository).findByLongitudeAndLatitude(TEST_LONGITUDE, TEST_LATITUDE);
         verify(kakaoApiClient).getRegionByCoordinates(TEST_LONGITUDE, TEST_LATITUDE);
+        verify(gridRepository).findByXAndY(60, 127);
         verify(locationRepository).save(any(Location.class));
     }
 
@@ -238,6 +256,10 @@ class LocationServiceImplTest {
         when(kakaoApiClient.getRegionByCoordinates(TEST_LONGITUDE, TEST_LATITUDE))
                 .thenReturn(Mono.just(kakaoResponse));
 
+        Grid mockGrid = GridFixture.createGrid();
+        when(gridRepository.findByXAndY(60, 127))
+                .thenReturn(Optional.of(mockGrid));
+
         when(locationRepository.save(any(Location.class))).thenReturn(locationWithUnknown);
 
         // When
@@ -248,6 +270,7 @@ class LocationServiceImplTest {
 
         // 검증
         verify(kakaoApiClient).getRegionByCoordinates(TEST_LONGITUDE, TEST_LATITUDE);
+        verify(gridRepository).findByXAndY(60, 127);
         verify(locationRepository).save(locationWithUnknown);
     }
 
@@ -264,6 +287,10 @@ class LocationServiceImplTest {
         when(kakaoApiClient.getRegionByCoordinates(TEST_LONGITUDE, TEST_LATITUDE))
                 .thenReturn(Mono.just(kakaoResponse));
 
+        Grid mockGrid = GridFixture.createGrid();
+        when(gridRepository.findByXAndY(60, 127))
+                .thenReturn(Optional.of(mockGrid));
+
         when(locationRepository.save(any(Location.class))).thenReturn(locationWithZeroCoords);
 
         // When
@@ -274,6 +301,7 @@ class LocationServiceImplTest {
 
         // 검증
         verify(kakaoApiClient).getRegionByCoordinates(TEST_LONGITUDE, TEST_LATITUDE);
+        verify(gridRepository).findByXAndY(60, 127);
         verify(locationRepository).save(locationWithZeroCoords);
     }
 }
