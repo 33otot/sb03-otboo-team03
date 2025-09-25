@@ -67,6 +67,14 @@ public class Clothes extends BaseEntity {
         this.imageUrl = imageUrl;
     }
 
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateType(ClothesType type) {
+        this.type = type;
+    }
+
     // 명시적으로 빌더 메서드 추가
     public static Clothes createClothes(String name, ClothesType type, User owner) {
         return Clothes.builder()
