@@ -39,12 +39,10 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
     private final DirectMessageMapper directMessageMapper;
 
-    // TODO DM 목록 조회 : me 정보 가져오는 로직 수정 필요
     @Override
     public DirectMessageListResponse getMessages(MessageRequest request) {
         log.info(DM_SERVICE + "DM 목록 조회 시작 - request: {}", request);
-//        UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001"); // TODO 추후 currentUserId() 로 수정
-        UUID myId = currentUserId(); // 추가됨 9/25
+        UUID myId = currentUserId();
         UUID otherId = request.userId();
 
         User me = userRepository.findById(myId)
@@ -113,7 +111,6 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         }
     }
 
-    // TODO 로그인 로직 추가되면 사용 예정
     private UUID currentUserId() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {

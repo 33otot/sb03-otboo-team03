@@ -21,6 +21,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -57,8 +58,8 @@ class DirectMessageServiceImplTest {
     private DirectMessageMapper directMessageMapper;
 
 
-    private final UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001");
     private final String myEmail = "me@example.com";
+    private final UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001");
     private final UUID otherId = UUID.fromString("a0000000-0000-0000-0000-000000000002");
 
 
@@ -67,10 +68,6 @@ class DirectMessageServiceImplTest {
         SecurityContextHolder.clearContext();
     }
 
-    //    private static void loginAs(UUID userId) {
-//        var auth = new UsernamePasswordAuthenticationToken(userId.toString(), null, null);
-//        SecurityContextHolder.getContext().setAuthentication(auth);
-//    }
     private static void loginAsEmail(String email) {
         var auth = new UsernamePasswordAuthenticationToken(email, null, null);
         SecurityContextHolder.getContext().setAuthentication(auth);
@@ -93,6 +90,20 @@ class DirectMessageServiceImplTest {
         lenient().when(m.getId()).thenReturn(id);
         lenient().when(m.getCreatedAt()).thenReturn(createdAt);
         return m;
+    }
+
+    private static Instant invokeParse(String cursor) {
+        try {
+            Method m = DirectMessageServiceImpl.class.getDeclaredMethod("parseCursor", String.class);
+            m.setAccessible(true);
+            return (Instant) m.invoke(null, cursor);
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            Throwable target = e.getTargetException();
+            if (target instanceof RuntimeException re) throw re;
+            throw new RuntimeException(target);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
@@ -223,6 +234,14 @@ class DirectMessageServiceImplTest {
     }
 
     @Test
+    void parseCursor_형식오류면_INVALID_REQUEST_PARAMETER() {
+        assertThatThrownBy(() -> invokeParse("NOT-INSTANT"))
+            .isInstanceOf(OtbooException.class)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.INVALID_REQUEST_PARAMETER);
+    }
+
+    @Test
     void parseCursor_느슨하게_null_blank_그리고_정상문자열_반환한다() {
         Instant r1 = ReflectionTestUtils.invokeMethod(DirectMessageServiceImpl.class, "parseCursor", new Object[]{null});
         Instant r2 = ReflectionTestUtils.invokeMethod(DirectMessageServiceImpl.class, "parseCursor", "  ");
@@ -232,4 +251,5 @@ class DirectMessageServiceImplTest {
         Instant r3 = ReflectionTestUtils.invokeMethod(DirectMessageServiceImpl.class, "parseCursor", "2025-09-22T09:10:11Z");
         assertThat(r3).isNotNull();
     }
+
 }
