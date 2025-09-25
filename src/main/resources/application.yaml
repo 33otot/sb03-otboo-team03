@@ -18,7 +18,7 @@ spring:
 
 kma:
   base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
-  service-key: ${KMA_ENCODING_KEY}
+  service-key: ${KMA_DECODING_KEY}
 
 kakao.api:
   base-url: https://dapi.kakao.com
