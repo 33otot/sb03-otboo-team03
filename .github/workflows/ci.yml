@@ -42,6 +42,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      # Gradle 캐시/Wrapper 다운로드 최적화
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}  # 포크 PR은 읽기 전용 유지
+
       # Gradle wrapper 실행 권한 부여
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
@@ -50,7 +56,7 @@ jobs:
       - name: Build with Gradle and check coverage
         run: ./gradlew clean build check --parallel --build-cache
         env:
-          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g -Dorg.gradle.daemon=false"
+          GRADLE_OPTS: "-Dorg.gradle.wrapper.networkTimeout=60000 -Dorg.gradle.jvmargs=-Xmx2g -Dorg.gradle.daemon=false"
 
       # JaCoCo 코드 커버리지 리포트 생성
       - name: Generate JaCoCo coverage report

@@ -1,10 +1,14 @@
 package com.samsamotot.otboo.common.security.config;
 
+
+import com.samsamotot.otboo.common.security.csrf.SpaCsrfTokenRequestHandler;
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,9 +21,6 @@ import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Spring Security 설정 클래스
@@ -74,6 +75,7 @@ public class SecurityConfig {
             // CSRF 보호 활성화 (쿠키 기반)
             .csrf(csrf -> csrf
                 .csrfTokenRepository(csrfTokenRepository)
+                .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
                 .ignoringRequestMatchers(
                     "/api/auth/sign-in",
                     "/api/auth/sign-out",  // 로그아웃 CSRF 무시

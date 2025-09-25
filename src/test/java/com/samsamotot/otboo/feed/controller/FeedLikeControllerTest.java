@@ -5,24 +5,33 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.samsamotot.otboo.common.config.SecurityTestConfig;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.feed.entity.FeedLike;
 import com.samsamotot.otboo.feed.service.FeedLikeService;
+import com.samsamotot.otboo.user.entity.User;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(FeedLikeController.class)
+@Import(SecurityTestConfig.class)
 @DisplayName("FeedLike 컨트롤러 슬라이스 테스트")
 public class FeedLikeControllerTest {
 
@@ -31,6 +40,16 @@ public class FeedLikeControllerTest {
 
     @MockitoBean
     private FeedLikeService feedLikeService;
+
+    User mockUser;
+    CustomUserDetails mockPrincipal;
+
+    @BeforeEach
+    void setUp() {
+        mockUser = UserFixture.createValidUser();
+        ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
+        mockPrincipal = new CustomUserDetails(mockUser);
+    }
 
     @Nested
     @DisplayName("피드 좋아요 생성 테스트")
@@ -41,7 +60,7 @@ public class FeedLikeControllerTest {
 
             // given
             UUID feedId = UUID.randomUUID();
-            UUID userId = UUID.randomUUID();
+            UUID userId = mockUser.getId();
 
             FeedLike mockFeedLike = mock(FeedLike.class);
             given(mockFeedLike.getId()).willReturn(UUID.randomUUID());
@@ -49,7 +68,7 @@ public class FeedLikeControllerTest {
 
             // when & then
             mockMvc.perform(post("/api/feeds/{feedId}/like", feedId)
-                    .param("userId", userId.toString()))
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isNoContent());
         }
 
@@ -58,14 +77,14 @@ public class FeedLikeControllerTest {
 
             // given
             UUID invalidFeedId = UUID.randomUUID();
-            UUID userId = UUID.randomUUID();
+            UUID userId = mockUser.getId();
 
             given(feedLikeService.create(eq(invalidFeedId), eq(userId)))
                 .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
             // when & then
             mockMvc.perform(post("/api/feeds/{feedId}/like", invalidFeedId)
-                    .param("userId", userId.toString()))
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isNotFound());
         }
 
@@ -74,14 +93,14 @@ public class FeedLikeControllerTest {
 
             // given
             UUID feedId = UUID.randomUUID();
-            UUID invalidUserId = UUID.randomUUID();
+            UUID invalidUserId = mockUser.getId();
 
             given(feedLikeService.create(eq(feedId), eq(invalidUserId)))
                 .willThrow(new OtbooException(ErrorCode.USER_NOT_FOUND));
 
             // when & then
             mockMvc.perform(post("/api/feeds/{feedId}/like", feedId)
-                    .param("userId", invalidUserId.toString()))
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isNotFound());
         }
 
@@ -90,14 +109,14 @@ public class FeedLikeControllerTest {
 
             // given
             UUID feedId = UUID.randomUUID();
-            UUID userId = UUID.randomUUID();
+            UUID userId = mockUser.getId();
 
             given(feedLikeService.create(eq(feedId), eq(userId)))
                 .willThrow(new OtbooException(ErrorCode.FEED_ALREADY_LIKED));
 
             // when & then
             mockMvc.perform(post("/api/feeds/{feedId}/like", feedId)
-                    .param("userId", userId.toString()))
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isConflict());
         }
     }
@@ -111,7 +130,7 @@ public class FeedLikeControllerTest {
 
             // given
             UUID feedId = UUID.randomUUID();
-            UUID userId = UUID.randomUUID();
+            UUID userId = mockUser.getId();
 
             willDoNothing()
                 .given(feedLikeService)
@@ -119,7 +138,7 @@ public class FeedLikeControllerTest {
 
             // when & then
             mockMvc.perform(delete("/api/feeds/{feedId}/like", feedId)
-                    .param("userId", userId.toString()))
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isNoContent());
         }
 
@@ -128,7 +147,7 @@ public class FeedLikeControllerTest {
 
             // given
             UUID invalidFeedId = UUID.randomUUID();
-            UUID userId = UUID.randomUUID();
+            UUID userId = mockUser.getId();
 
             willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND))
                 .given(feedLikeService)
@@ -136,7 +155,7 @@ public class FeedLikeControllerTest {
 
             // when & then
             mockMvc.perform(delete("/api/feeds/{feedId}/like", invalidFeedId)
-                    .param("userId", userId.toString()))
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isNotFound());
         }
 
@@ -145,7 +164,7 @@ public class FeedLikeControllerTest {
 
             // given
             UUID feedId = UUID.randomUUID();
-            UUID userId = UUID.randomUUID();
+            UUID userId = mockUser.getId();
 
             willThrow(new OtbooException(ErrorCode.FEED_LIKE_NOT_FOUND))
                 .given(feedLikeService)
@@ -153,7 +172,7 @@ public class FeedLikeControllerTest {
 
             // when & then
             mockMvc.perform(delete("/api/feeds/{feedId}/like", feedId)
-                    .param("userId", userId.toString()))
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isNotFound());
         }
     }
