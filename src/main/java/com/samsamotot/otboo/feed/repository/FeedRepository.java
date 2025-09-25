@@ -18,20 +18,20 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedRepositor
     // 특정 피드의 좋아요 수를 1 증가시킵니다.
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Feed f set f.likeCount = f.likeCount + 1 where f.id = :feedId")
-    int incrementLikeCount(UUID feedId);
+    int incrementLikeCount(@Param("feedId") UUID feedId);
 
     // 특정 피드의 좋아요 수를 1 감소시킵니다. (0 이하로 내려가지 않음)
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Feed f set f.likeCount = case when f.likeCount > 0 then f.likeCount - 1 else 0 end where f.id = :feedId")
-    int decrementLikeCount(UUID feedId);
+    int decrementLikeCount(@Param("feedId") UUID feedId);
 
     // 특정 피드의 댓글 수를 1 증가시킵니다.
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Feed f set f.commentCount = f.commentCount + 1 where f.id = :feedId")
-    int incrementCommentCount(UUID feedId);
+    int incrementCommentCount(@Param("feedId") UUID feedId);
 
     // 특정 피드의 댓글 수를 1 감소시킵니다. (0 이하로 내려가지 않음)
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Feed f set f.commentCount = case when f.commentCount > 0 then f.commentCount - 1 else 0 end where f.id = :feedId")
-    int decrementCommentCount(UUID feedId);
+    int decrementCommentCount(@Param("feedId") UUID feedId);
 }
