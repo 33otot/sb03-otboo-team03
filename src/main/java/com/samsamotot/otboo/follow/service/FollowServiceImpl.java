@@ -343,13 +343,16 @@ public class FollowServiceImpl implements FollowService {
     private UUID currentUserId() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
-            // 인증 실패 로그
+            log.warn(FOLLOW_SERVICE + "인증 실패: Authentication 비어있음/미인증 (auth={}, principal={})", auth, (auth != null ? auth.getPrincipal() : null));
             throw new OtbooException(ErrorCode.UNAUTHORIZED);
         }
 
         String email = auth.getName();
         return userRepository.findByEmail(email)
             .map(User::getId)
-            .orElseThrow(() -> new OtbooException(ErrorCode.UNAUTHORIZED));
+            .orElseThrow(() -> {
+                log.warn(FOLLOW_SERVICE + "인증 사용자 조회 실패: email={} (DB에 없음)", email);
+                return new OtbooException(ErrorCode.UNAUTHORIZED);
+            });
     }
 }
