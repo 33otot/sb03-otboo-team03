@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.common.storage;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -122,28 +123,44 @@ public class S3ImageStorage {
             log.warn(CLASS_NAME + "삭제하려는 이미지의 URL이 비어 있습니다.");
             return;
         }
-        String splitStr = ".com/";
 
-        // 이미지 파일 경로 추출
-        String fileName = imageUrl.substring(imageUrl.lastIndexOf(splitStr) + splitStr.length());
-        log.info(CLASS_NAME + "삭제하려는 이미지: {}", fileName);
+        try {
+            String s3Key = extractKey(imageUrl);
+            log.info(CLASS_NAME + "삭제하려는 이미지: {}", s3Key);
 
-        // 요청 객체 생성
-        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-            .bucket(bucketName)
-            .key(fileName)
-            .build();
+            // 요청 객체 생성
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(s3Key)
+                .build();
 
-        try{
-            log.debug(CLASS_NAME + "이미지 삭제 작업 시작");
-            s3Client.deleteObject(deleteObjectRequest);
-            log.debug(CLASS_NAME + "이미지 삭제 성공");
+            try{
+                log.debug(CLASS_NAME + "이미지 삭제 작업 시작");
+                s3Client.deleteObject(deleteObjectRequest);
+                log.debug(CLASS_NAME + "이미지 삭제 성공");
+            }
+            catch (Exception e) {
+                log.error(CLASS_NAME + "이미지 삭제 작업 실패, 오류 발생: {}", e.getMessage());
+                throw new RuntimeException("이미지 삭제 중 오류가 발생했습니다.", e);
+            }
         }
-        catch (Exception e) {
-            log.error(CLASS_NAME + "이미지 삭제 작업 실패, 오류 발생: {}", e.getMessage());
+        catch (IllegalArgumentException e) {
+            log.error(CLASS_NAME + "S3 key 추출 실패: {}", e.getMessage());
             throw new RuntimeException("이미지 삭제 중 오류가 발생했습니다.", e);
         }
+    }
 
+    // s3 key 추출 메서드
+    private String extractKey(String url) {
+        String baseUrl = String.format("https://%s.s3.%s.amazonaws.com/", bucketName, region);
+        if (!url.startsWith(baseUrl)) {
+            throw new IllegalArgumentException("유효한 S3 공개 URL이 아닙니다: " + url);
+        }
+        String key = url.substring(baseUrl.length());
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("S3 key가 비어 있습니다: " + url);
+        }
+        return key;
     }
 
 }
