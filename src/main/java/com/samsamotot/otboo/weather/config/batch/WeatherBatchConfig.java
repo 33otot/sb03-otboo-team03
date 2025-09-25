@@ -3,8 +3,8 @@ package com.samsamotot.otboo.weather.config.batch;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +26,7 @@ public class WeatherBatchConfig {
     public Job weatherJob() {
         return new JobBuilder("weatherJob", jobRepository)
                 .start(weatherTaskletStep())
+                .incrementer(new RunIdIncrementer()) // 재실행을 위해 run.id 파라미터 자동 증가
                 .build();
     }
 

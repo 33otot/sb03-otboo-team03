@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
@@ -56,16 +57,16 @@ public class WeatherKmaClient {
 
         log.info(CLIENT_NAME + "기상청 Open API 단기예보 호출 시작. {} {}",baseDateTime.baseDate, baseDateTime.baseTime);
         return webClient.get()
-                .uri(uri -> uri.path(SERVICE_PATH)
-                        .queryParam("serviceKey", serviceKey)
-                        .queryParam("numOfRows", NUM_OF_ROWS)
-                        .queryParam("pageNo", PAGE_NO)
-                        .queryParam("dataType", DATA_TYPE)
-                        .queryParam("base_date", baseDateTime.baseDate)
-                        .queryParam("base_time", baseDateTime.baseTime)
-                        .queryParam("nx", nx)
-                        .queryParam("ny", ny)
-                        .build())
+                .uri(uri -> uri
+                        .path(SERVICE_PATH)
+                            .queryParam("serviceKey", serviceKey)                            .queryParam("numOfRows", NUM_OF_ROWS)
+                            .queryParam("pageNo", PAGE_NO)
+                            .queryParam("dataType", DATA_TYPE)
+                            .queryParam("base_date", baseDateTime.baseDate)
+                            .queryParam("base_time", baseDateTime.baseTime)
+                            .queryParam("nx", nx)
+                            .queryParam("ny", ny)
+                            .build())
                 .retrieve()
                 .bodyToMono(WeatherForecastResponse.class);
     }
@@ -110,4 +111,23 @@ public class WeatherKmaClient {
     }
 
     private record BaseDateTime(String baseDate, String baseTime) { }
+
+    /**
+     * 주어진 예외가 재시도할 가치가 있는지 판단합니다.
+     * - 5xx 서버 오류 또는 타임아웃과 같은 일시적인 네트워크 오류는 재시도 대상으로 간주합니다.
+     * - 4xx 클라이언트 오류는 재시도해도 성공할 가능성이 없으므로 대상으로 삼지 않습니다.
+     * @param throwable 발생한 예외
+     * @return 재시도 대상이면 true
+     */
+    private boolean isRetryable(Throwable throwable) {
+        if (throwable instanceof WebClientRequestException) {
+            // 타임아웃 또는 연결 실패 등
+            return true;
+        }
+        if (throwable instanceof WebClientResponseException e) {
+            // 5xx 서버 오류
+            return e.getStatusCode().is5xxServerError();
+        }
+        return false;
+    }
 }
