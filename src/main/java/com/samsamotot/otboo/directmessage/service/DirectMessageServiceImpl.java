@@ -43,7 +43,8 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     @Override
     public DirectMessageListResponse getMessages(MessageRequest request) {
         log.info(DM_SERVICE + "DM 목록 조회 시작 - request: {}", request);
-        UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001"); // TODO 추후 currentUserId() 로 수정
+//        UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001"); // TODO 추후 currentUserId() 로 수정
+        UUID myId = currentUserId(); // 추가됨 9/25
         UUID otherId = request.userId();
 
         User me = userRepository.findById(myId)
@@ -112,10 +113,17 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         }
     }
 
-    // TODO 로그인 로직 추가되면 사용 예정 - 커버리지 문제로 제거 상태
-//    private static UUID currentUserId() {
-//        var auth = SecurityContextHolder.getContext().getAuthentication();
-//        if (auth == null || auth.getName() == null) throw new OtbooException(ErrorCode.UNAUTHORIZED);
-//        return UUID.fromString(auth.getName());
-//    }
+    // TODO 로그인 로직 추가되면 사용 예정
+    private UUID currentUserId() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
+            // 인증 실패 로그
+            throw new OtbooException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String email = auth.getName();
+        return userRepository.findByEmail(email)
+            .map(User::getId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.UNAUTHORIZED));
+    }
 }
