@@ -18,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "피드 관리", description = "피드 관련 API")
 public interface FeedApi {
@@ -74,8 +73,7 @@ public interface FeedApi {
         )
     })
     ResponseEntity<CursorResponse<FeedDto>> getFeeds(
-        @Valid @ModelAttribute FeedCursorRequest feedCursorRequest,
-        @RequestParam UUID userId
+        @Valid @ModelAttribute FeedCursorRequest feedCursorRequest
     );
 
     @Operation(summary = "피드 수정")
@@ -115,8 +113,7 @@ public interface FeedApi {
     })
     ResponseEntity<FeedDto> updateFeed(
         @PathVariable UUID feedId,
-        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest,
-        @RequestParam UUID userId
+        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest
     );
 
     @Operation(summary = "피드 삭제")
@@ -151,7 +148,6 @@ public interface FeedApi {
         )
     })
     ResponseEntity<Void> deleteFeed(
-        @PathVariable UUID feedId,
-        @RequestParam UUID userId
+        @PathVariable UUID feedId
     );
 }

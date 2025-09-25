@@ -87,6 +87,7 @@ public class FeedLikeServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.getFeed()).isEqualTo(mockFeed);
             assertThat(result.getUser()).isEqualTo(mockUser);
+            verify(feedRepository, times(1)).incrementLikeCount(feedId);
         }
 
         @Test
@@ -161,6 +162,7 @@ public class FeedLikeServiceTest {
             // then
             verify(feedRepository, times(1)).findByIdAndIsDeletedFalse(feedId);
             verify(feedLikeRepository, times(1)).deleteByFeedIdAndUserId(feedId, userId);
+            verify(feedRepository, times(1)).decrementLikeCount(feedId);
         }
 
         @Test

@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "피드 관리", description = "피드 관련 API")
 public interface FeedLikeApi {
@@ -36,8 +35,7 @@ public interface FeedLikeApi {
         )
     })
     ResponseEntity<Void> create(
-        @PathVariable UUID feedId,
-        @RequestParam UUID userId
+        @PathVariable UUID feedId
     );
 
     @Operation(summary = "피드 좋아요 취소")
@@ -61,7 +59,6 @@ public interface FeedLikeApi {
         )
     })
     ResponseEntity<Void> delete(
-        @PathVariable UUID feedId,
-        @RequestParam UUID userId
+        @PathVariable UUID feedId
     );
 }

@@ -64,6 +64,8 @@ public class CommentRepositoryTest {
     @Autowired
     private TestEntityManager em;
 
+    private static final Instant baseTime = Instant.parse("2024-01-01T00:00:00Z");
+
     User author;
     Feed feed;
 
@@ -93,10 +95,11 @@ public class CommentRepositoryTest {
 
         // given
         int limit = 5;
+
         for (int i = 0; i < 5; i ++) {
             Comment comment = CommentFixture.createComment(feed, author);
             // createdAt을 서로 다르게 설정하여 정렬을 결정적으로 만듦
-            ReflectionTestUtils.setField(comment, "createdAt", Instant.now().plusSeconds(i));
+            ReflectionTestUtils.setField(comment, "createdAt", baseTime.plusSeconds(i));
             em.persist(comment);
         }
         em.flush();
@@ -137,7 +140,7 @@ public class CommentRepositoryTest {
         List<Comment> savedComments = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             Comment comment = CommentFixture.createComment(feed, author);
-            ReflectionTestUtils.setField(comment, "createdAt", Instant.now().plusSeconds(i));
+            ReflectionTestUtils.setField(comment, "createdAt", baseTime.plusSeconds(i));
             em.persist(comment);
             savedComments.add(comment);
         }
@@ -183,12 +186,11 @@ public class CommentRepositoryTest {
     void 생성시각이_동일한_댓글이_있을_때_ID로_2차정렬하여_누락없이_조회한다() {
 
         // given
-        Instant fixedTime = Instant.now();
         int totalComments = 5;
 
         for (int i = 0; i < totalComments; i++) {
             Comment comment = CommentFixture.createComment(feed, author);
-            ReflectionTestUtils.setField(comment, "createdAt", fixedTime);
+            ReflectionTestUtils.setField(comment, "createdAt", baseTime);
             em.persist(comment);
         }
         em.flush();
