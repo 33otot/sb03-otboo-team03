@@ -70,6 +70,10 @@ public class CommentServiceImpl implements CommentService {
             .build();
 
         Comment saved = commentRepository.save(comment);
+
+        feed.incrementCommentCount(); // 댓글 수 증가
+        feedRepository.save(feed); // Feed 엔티티 업데이트
+
         CommentDto result = commentMapper.toDto(saved);
 
         log.debug(SERVICE + "댓글 생성 완료: commentId = {}", saved.getId());
