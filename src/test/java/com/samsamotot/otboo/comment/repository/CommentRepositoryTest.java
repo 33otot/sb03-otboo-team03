@@ -183,12 +183,11 @@ public class CommentRepositoryTest {
     void 생성시각이_동일한_댓글이_있을_때_ID로_2차정렬하여_누락없이_조회한다() {
 
         // given
-        Instant fixedTime = Instant.parse("2024-01-01T00:00:00Z");
         int totalComments = 5;
 
         for (int i = 0; i < totalComments; i++) {
             Comment comment = CommentFixture.createComment(feed, author);
-            ReflectionTestUtils.setField(comment, "createdAt", fixedTime);
+            ReflectionTestUtils.setField(comment, "createdAt", baseTime);
             em.persist(comment);
         }
         em.flush();
