@@ -191,7 +191,8 @@ public class SecurityConfig {
      * 
      * @return 보안 속성이 적용된 CSRF 토큰 저장소
      */
-    private CsrfTokenRepository createSecureCsrfTokenRepository() {
+    @Bean
+    public CsrfTokenRepository createSecureCsrfTokenRepository() {
         // Spring Security의 기본 CSRF 토큰 저장소 사용
         // HttpOnly=false로 설정하여 SPA에서 JavaScript로 접근 가능
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
