@@ -3,7 +3,6 @@ package com.samsamotot.otboo.feed.controller;
 import static com.samsamotot.otboo.common.util.AuthUtil.getAuthenticatedUserId;
 
 import com.samsamotot.otboo.common.dto.CursorResponse;
-import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.feed.controller.api.FeedApi;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
@@ -16,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -63,18 +61,16 @@ public class FeedController implements FeedApi {
      * 피드 목록을 커서 기반 페이징으로 조회합니다.
      *
      * @param request 커서, 정렬 기준/방향, limit 크기, 검색 조건 등 페이징 요청 DTO
-     * @param principal 현재 인증된 사용자 정보
      * @return 조회된 피드 목록, 다음 커서 정보, 전체 개수 등을 포함하는 ResponseEntity (HTTP 200 OK)
      */
     @GetMapping
     @Override
     public ResponseEntity<CursorResponse<FeedDto>> getFeeds(
-        @Valid @ModelAttribute FeedCursorRequest request,
-        @AuthenticationPrincipal CustomUserDetails principal
+        @Valid @ModelAttribute FeedCursorRequest request
     ) {
         log.info("[FeedController] 피드 목록 조회 요청: request = {}", request);
 
-        UUID userId = getAuthenticatedUserId(principal);
+        UUID userId = getAuthenticatedUserId();
         CursorResponse<FeedDto> result = feedService.getFeeds(request, userId);
 
         log.info("[FeedController] 피드 목록 조회 완료: {}개", result.totalCount());
@@ -89,19 +85,17 @@ public class FeedController implements FeedApi {
      *
      * @param feedId 수정할 피드의 ID
      * @param feedUpdateRequest 피드 수정 요청 DTO
-     * @param principal 현재 인증된 사용자 정보
      * @return 수정된 피드 정보를 담은 ResponseEntity (HTTP 200 OK)
      */
     @Override
     @PatchMapping("/{feedId}")
     public ResponseEntity<FeedDto> updateFeed(
         @PathVariable UUID feedId,
-        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest,
-        @AuthenticationPrincipal CustomUserDetails principal
+        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest
     ) {
         log.info("[FeedController] 피드 수정 요청: {}", feedUpdateRequest);
 
-        UUID userId = getAuthenticatedUserId(principal);
+        UUID userId = getAuthenticatedUserId();
         FeedDto result = feedService.update(feedId, userId, feedUpdateRequest);
 
         log.info("[FeedController] 피드 수정 완료: {}", result);
@@ -115,16 +109,14 @@ public class FeedController implements FeedApi {
      * 특정 피드를 삭제합니다. (논리 삭제)
      *
      * @param feedId 삭제할 피드의 ID
-     * @param principal 현재 인증된 사용자 정보
      * @return 내용 없이 HTTP 204 No Content 상태 코드를 담은 ResponseEntity
      */
     @Override
     @DeleteMapping("/{feedId}")
     public ResponseEntity<Void> deleteFeed(
-        @PathVariable UUID feedId,
-        @AuthenticationPrincipal CustomUserDetails principal
+        @PathVariable UUID feedId
     ) {
-        UUID userId = getAuthenticatedUserId(principal);
+        UUID userId = getAuthenticatedUserId();
         log.info("[FeedController] 피드 삭제 요청: feedId = {}, userId = {}", feedId, userId);
 
         feedService.delete(feedId, userId);

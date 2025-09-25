@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.samsamotot.otboo.comment.dto.CommentCreateRequest;
@@ -101,7 +102,7 @@ public class CommentServiceTest {
             CommentDto expectedDto = CommentFixture.createCommentDto(savedComment);
 
             given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(mockUser));
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.save(any(Comment.class))).willReturn(savedComment);
             given(commentMapper.toDto(any(Comment.class))).willReturn(expectedDto);
 
@@ -114,6 +115,7 @@ public class CommentServiceTest {
             assertThat(result.author().userId()).isEqualTo(authorId);
             assertThat(result.feedId()).isEqualTo(feedId);
             assertThat(result.content()).isEqualTo(content);
+            verify(feedRepository, times(1)).incrementCommentCount(feedId);
         }
 
         @Test
@@ -152,7 +154,7 @@ public class CommentServiceTest {
                 .build();
 
             given(userRepository.findById(any(UUID.class))).willReturn(Optional.of(mockUser));
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.empty());
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> commentService.create(invalidFeedId, request))
@@ -173,7 +175,7 @@ public class CommentServiceTest {
             UUID feedId = mockFeed.getId();
             CommentCursorRequest request = createDefaultRequest();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), anyInt())).willReturn(List.of());
             given(commentRepository.countByFeedId(any(UUID.class))).willReturn(1L);
 
@@ -181,7 +183,7 @@ public class CommentServiceTest {
             commentService.getComments(feedId, request);
 
             // then
-            verify(feedRepository).findById(any(UUID.class));
+            verify(feedRepository).findByIdAndIsDeletedFalse(any(UUID.class));
             verify(commentRepository).findByFeedIdWithCursor(
                 eq(feedId),
                 isNull(String.class),
@@ -204,7 +206,7 @@ public class CommentServiceTest {
                 .limit(limit)
                 .build();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), anyInt())).willReturn(List.of());
             given(commentRepository.countByFeedId(any(UUID.class))).willReturn(1L);
 
@@ -228,7 +230,7 @@ public class CommentServiceTest {
             UUID invalidFeedId = UUID.randomUUID();
             CommentCursorRequest request = createDefaultRequest();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.empty());
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> commentService.getComments(invalidFeedId, request))
@@ -262,7 +264,7 @@ public class CommentServiceTest {
 
             Comment lastComment = comments.get(limit - 1);
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), eq(limit + 1))).willReturn(comments);
             given(commentRepository.countByFeedId(any(UUID.class))).willReturn(11L);
 
@@ -304,7 +306,7 @@ public class CommentServiceTest {
                 .map(CommentFixture::createCommentDto)
                 .toList();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), eq(limit + 1))).willReturn(comments);
             given(commentRepository.countByFeedId(any(UUID.class))).willReturn(10L);
 
@@ -336,7 +338,7 @@ public class CommentServiceTest {
                 .limit(limit)
                 .build();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(mockFeed));
 
             // when
             assertThatThrownBy(() -> commentService.getComments(mockFeed.getId(), request))
@@ -351,7 +353,7 @@ public class CommentServiceTest {
             // given
             CommentCursorRequest request = createDefaultRequest();
 
-            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(mockFeed));
+            given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.findByFeedIdWithCursor(any(UUID.class), any(), any(), anyInt())).willReturn(List.of());
 
             // when

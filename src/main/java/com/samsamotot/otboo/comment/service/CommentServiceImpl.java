@@ -60,7 +60,7 @@ public class CommentServiceImpl implements CommentService {
 
         User user = userRepository.findById(authorId)
             .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
-        Feed feed = feedRepository.findById(feedId)
+        Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
         Comment comment = Comment.builder()
@@ -70,6 +70,9 @@ public class CommentServiceImpl implements CommentService {
             .build();
 
         Comment saved = commentRepository.save(comment);
+
+        feedRepository.incrementCommentCount(feedId); // 댓글 수 증가
+
         CommentDto result = commentMapper.toDto(saved);
 
         log.debug(SERVICE + "댓글 생성 완료: commentId = {}", saved.getId());
@@ -90,7 +93,7 @@ public class CommentServiceImpl implements CommentService {
 
         log.debug(SERVICE + "댓글 목록 조회 시작: request = {}, feedId = {}", request, feedId);
 
-        Feed feed = feedRepository.findById(feedId)
+        Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
         String cursor = request.cursor();

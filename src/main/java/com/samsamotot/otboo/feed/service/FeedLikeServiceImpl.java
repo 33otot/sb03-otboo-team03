@@ -61,6 +61,7 @@ public class FeedLikeServiceImpl implements FeedLikeService {
             .build();
         try {
             feedLikeRepository.save(feedLike);
+            feedRepository.incrementLikeCount(feedId); // 좋아요 수 증가
         } catch (DataIntegrityViolationException e) {
             // 유니크 제약 위반 등 동시성 충돌 → 멱등하게 409로 매핑
             throw new OtbooException(ErrorCode.FEED_ALREADY_LIKED);
@@ -84,7 +85,7 @@ public class FeedLikeServiceImpl implements FeedLikeService {
 
         log.debug(SERVICE + "피드 좋아요 취소 시작: feedId = {}, userId = {}", feedId, userId);
 
-        feedRepository.findByIdAndIsDeletedFalse(feedId)
+        Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
 
         int deletedCnt = feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId);
@@ -92,6 +93,8 @@ public class FeedLikeServiceImpl implements FeedLikeService {
         if (deletedCnt == 0) {
             throw new OtbooException(ErrorCode.FEED_LIKE_NOT_FOUND);
         }
+
+        feedRepository.decrementLikeCount(feedId); // 좋아요 수 감소
 
         log.debug(SERVICE + "피드 좋아요 취소 완료 feedId = {}, userId = {}", feedId, userId);
     }

@@ -2,13 +2,11 @@ package com.samsamotot.otboo.feed.controller.api;
 
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorResponse;
-import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,7 +15,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -76,8 +73,7 @@ public interface FeedApi {
         )
     })
     ResponseEntity<CursorResponse<FeedDto>> getFeeds(
-        @Valid @ModelAttribute FeedCursorRequest feedCursorRequest,
-        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
+        @Valid @ModelAttribute FeedCursorRequest feedCursorRequest
     );
 
     @Operation(summary = "피드 수정")
@@ -117,8 +113,7 @@ public interface FeedApi {
     })
     ResponseEntity<FeedDto> updateFeed(
         @PathVariable UUID feedId,
-        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest,
-        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
+        @Valid @RequestBody FeedUpdateRequest feedUpdateRequest
     );
 
     @Operation(summary = "피드 삭제")
@@ -153,7 +148,6 @@ public interface FeedApi {
         )
     })
     ResponseEntity<Void> deleteFeed(
-        @PathVariable UUID feedId,
-        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
+        @PathVariable UUID feedId
     );
 }
