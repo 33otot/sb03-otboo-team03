@@ -79,6 +79,7 @@ public class SecurityConfig {
                     "/api/auth/sign-out",  // 로그아웃 CSRF 무시
                     "/api/auth/refresh",
                     "/api/users",
+                    "/api/auth/csrf-token", // CSRF 토큰 조회 허용
                     "/api/weathers/**",
                     "/actuator/**"
                 )
@@ -156,6 +157,9 @@ public class SecurityConfig {
         
         // 허용할 헤더 설정
         configuration.setAllowedHeaders(Arrays.asList("*"));
+        
+        // CSRF 토큰 헤더 노출
+        configuration.setExposedHeaders(Arrays.asList("X-XSRF-TOKEN"));
         
         // 인증 정보 포함 허용
         configuration.setAllowCredentials(true);
