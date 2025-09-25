@@ -35,6 +35,8 @@ public class AuthUtil {
             throw new AuthenticationCredentialsNotFoundException("사용자 ID가 존재하지 않습니다.");
         }
 
-        throw new AuthenticationCredentialsNotFoundException("유효한 사용자 정보가 아닙니다. Principal: " + principal);
+        String principalType = principal != null ? principal.getClass().getName() : "null";
+
+        throw new AuthenticationCredentialsNotFoundException("유효한 사용자 정보가 아닙니다. Principal type: " + principalType);
     }
 }
