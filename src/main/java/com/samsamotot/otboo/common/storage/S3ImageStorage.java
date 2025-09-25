@@ -141,7 +141,7 @@ public class S3ImageStorage {
             }
             catch (Exception e) {
                 log.error(CLASS_NAME + "이미지 삭제 작업 실패, 오류 발생: {}", e.getMessage());
-                throw new RuntimeException("이미지 삭제 중 오류가 발생했습니다.", e);
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "S3 이미지 삭제 중 외부 서비스 오류가 발생했습니다.");
             }
         }
         catch (IllegalArgumentException e) {
