@@ -1,16 +1,15 @@
 package com.samsamotot.otboo.feed.controller;
 
+import static com.samsamotot.otboo.common.util.AuthUtil.getAuthenticatedUserId;
+
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
-import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.controller.api.FeedApi;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import com.samsamotot.otboo.feed.service.FeedService;
-import com.samsamotot.otboo.weather.entity.Precipitation;
-import com.samsamotot.otboo.weather.entity.SkyStatus;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -76,7 +74,7 @@ public class FeedController implements FeedApi {
     ) {
         log.info("[FeedController] 피드 목록 조회 요청: request = {}", request);
 
-        UUID userId = principal.getId();
+        UUID userId = getAuthenticatedUserId(principal);
         CursorResponse<FeedDto> result = feedService.getFeeds(request, userId);
 
         log.info("[FeedController] 피드 목록 조회 완료: {}개", result.totalCount());
@@ -103,7 +101,7 @@ public class FeedController implements FeedApi {
     ) {
         log.info("[FeedController] 피드 수정 요청: {}", feedUpdateRequest);
 
-        UUID userId = principal.getId();
+        UUID userId = getAuthenticatedUserId(principal);
         FeedDto result = feedService.update(feedId, userId, feedUpdateRequest);
 
         log.info("[FeedController] 피드 수정 완료: {}", result);
@@ -126,7 +124,7 @@ public class FeedController implements FeedApi {
         @PathVariable UUID feedId,
         @AuthenticationPrincipal CustomUserDetails principal
     ) {
-        UUID userId = principal.getId();
+        UUID userId = getAuthenticatedUserId(principal);
         log.info("[FeedController] 피드 삭제 요청: feedId = {}, userId = {}", feedId, userId);
 
         feedService.delete(feedId, userId);

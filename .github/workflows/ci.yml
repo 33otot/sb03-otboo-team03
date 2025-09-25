@@ -46,7 +46,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          cache-read-only: false  # 캐시 읽고/쓰기
+          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}  # 포크 PR은 읽기 전용 유지
 
       # Gradle wrapper 실행 권한 부여
       - name: Grant execute permission for gradlew

@@ -8,6 +8,7 @@ import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -76,7 +77,7 @@ public interface FeedApi {
     })
     ResponseEntity<CursorResponse<FeedDto>> getFeeds(
         @Valid @ModelAttribute FeedCursorRequest feedCursorRequest,
-        @AuthenticationPrincipal CustomUserDetails principal
+        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
     );
 
     @Operation(summary = "피드 수정")
@@ -117,7 +118,7 @@ public interface FeedApi {
     ResponseEntity<FeedDto> updateFeed(
         @PathVariable UUID feedId,
         @Valid @RequestBody FeedUpdateRequest feedUpdateRequest,
-        @AuthenticationPrincipal CustomUserDetails principal
+        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
     );
 
     @Operation(summary = "피드 삭제")
@@ -153,6 +154,6 @@ public interface FeedApi {
     })
     ResponseEntity<Void> deleteFeed(
         @PathVariable UUID feedId,
-        @AuthenticationPrincipal CustomUserDetails principal
+        @AuthenticationPrincipal @Parameter(hidden = true) CustomUserDetails principal
     );
 }

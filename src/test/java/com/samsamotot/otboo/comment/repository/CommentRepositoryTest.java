@@ -67,6 +67,8 @@ public class CommentRepositoryTest {
     @Autowired
     private TestEntityManager em;
 
+    private static final Instant baseTime = Instant.parse("2024-01-01T00:00:00Z");
+
     User author;
     Feed feed;
 
@@ -90,7 +92,7 @@ public class CommentRepositoryTest {
 
         // given
         int limit = 5;
-        Instant baseTime = Instant.parse("2024-01-01T00:00:00Z");
+
         for (int i = 0; i < 5; i ++) {
             Comment comment = CommentFixture.createComment(feed, author);
             // createdAt을 서로 다르게 설정하여 정렬을 결정적으로 만듦
@@ -132,7 +134,6 @@ public class CommentRepositoryTest {
 
         // given
         int limit = 5;
-        Instant baseTime = Instant.parse("2024-01-01T00:00:00Z");
         List<Comment> savedComments = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             Comment comment = CommentFixture.createComment(feed, author);

@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.feed.controller;
 
+import static com.samsamotot.otboo.common.util.AuthUtil.getAuthenticatedUserId;
+
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.feed.controller.api.FeedLikeApi;
 import com.samsamotot.otboo.feed.entity.FeedLike;
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -42,7 +43,7 @@ public class FeedLikeController implements FeedLikeApi {
         @PathVariable UUID feedId,
         @AuthenticationPrincipal CustomUserDetails principal
     ) {
-        UUID userId = principal.getId();
+        UUID userId = getAuthenticatedUserId(principal);
         log.info(CONTROLLER + "피드 좋아요 요청 - feedId = {}, userId = {}", feedId, userId);
 
         FeedLike result = feedLikeService.create(feedId, userId);
@@ -67,7 +68,7 @@ public class FeedLikeController implements FeedLikeApi {
         @PathVariable UUID feedId,
         @AuthenticationPrincipal CustomUserDetails principal
     ) {
-        UUID userId = principal.getId();
+        UUID userId = getAuthenticatedUserId(principal);
         log.info(CONTROLLER + "피드 좋아요 취소 요청 - feedId = {}, userId = {}", feedId, userId);
 
         feedLikeService.delete(feedId, userId);
