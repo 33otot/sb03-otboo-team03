@@ -72,7 +72,6 @@ public class CommentServiceImpl implements CommentService {
         Comment saved = commentRepository.save(comment);
 
         feed.incrementCommentCount(); // 댓글 수 증가
-        feedRepository.save(feed); // Feed 엔티티 업데이트
 
         CommentDto result = commentMapper.toDto(saved);
 

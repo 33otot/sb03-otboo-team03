@@ -3,7 +3,6 @@ package com.samsamotot.otboo.feed.controller;
 import static com.samsamotot.otboo.common.util.AuthUtil.getAuthenticatedUserId;
 
 import com.samsamotot.otboo.common.dto.CursorResponse;
-import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.feed.controller.api.FeedApi;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
@@ -16,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
