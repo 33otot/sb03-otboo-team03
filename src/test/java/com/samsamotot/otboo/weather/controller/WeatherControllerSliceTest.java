@@ -37,6 +37,37 @@ public class WeatherControllerSliceTest {
     private LocationService locationService;
 
     @Test
+    void 위치_정보_조회_성공() throws Exception {
+        // Given
+        Grid grid = GridFixture.createGrid();
+        Location location = LocationFixture.createLocation();
+        location.setGrid(grid);
+
+        WeatherAPILocation result = WeatherAPILocation.builder()
+                .longitude(location.getLongitude())
+                .latitude(location.getLatitude())
+                .x(grid.getX())
+                .y(grid.getY())
+                .locationNames(location.getLocationNames())
+                .build();
+
+        given(locationService.getCurrentLocation(location.getLongitude(), location.getLatitude()))
+                .willReturn(result);
+
+        // When
+        // Then
+        mockMvc.perform(get("/api/weathers/location")
+                .param("longitude", String.valueOf(location.getLongitude()))
+                .param("latitude", String.valueOf(location.getLatitude())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.longitude").value(result.longitude()))
+                .andExpect(jsonPath("$.latitude").value(result.latitude()))
+                .andExpect(jsonPath("$.x").value(result.x()))
+                .andExpect(jsonPath("$.y").value(result.y()))
+                .andDo(print());
+    }
+
+    @Test
     void 유효한_위치정보로_날씨_예보_조회_성공() throws Exception {
         // Given
         Grid grid = GridFixture.createGrid();
