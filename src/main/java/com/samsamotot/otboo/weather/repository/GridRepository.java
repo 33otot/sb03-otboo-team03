@@ -1,13 +1,12 @@
 package com.samsamotot.otboo.weather.repository;
 
 import com.samsamotot.otboo.weather.entity.Grid;
-import com.samsamotot.otboo.weather.entity.Weather;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
 import java.util.UUID;
 
-public interface WeatherRepository extends JpaRepository<Weather, UUID> {
+public interface GridRepository extends JpaRepository<Grid, UUID> {
 
-    void deleteAllByGrid(Grid grid);
-
+    Optional<Grid> findByXAndY(int x, int y);
 }

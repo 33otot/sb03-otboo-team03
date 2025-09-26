@@ -1,17 +1,5 @@
 package com.samsamotot.otboo.feed.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
 import com.samsamotot.otboo.common.dto.CursorResponse;
@@ -34,26 +22,29 @@ import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.Instant;
+import java.util.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Feed 서비스 단위 테스트")
@@ -87,7 +78,8 @@ public class FeedServiceTest {
     void setUp() {
         mockUser = UserFixture.createUser();
         Location location = LocationFixture.createLocation();
-        mockWeather = WeatherFixture.createWeather(location);
+        Grid grid = location.getGrid();
+        mockWeather = WeatherFixture.createWeather(grid);
         ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
         ReflectionTestUtils.setField(mockWeather, "id", UUID.randomUUID());
     }

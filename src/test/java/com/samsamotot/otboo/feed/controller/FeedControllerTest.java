@@ -1,20 +1,5 @@
 package com.samsamotot.otboo.feed.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.clothes.dto.OotdDto;
 import com.samsamotot.otboo.common.config.SecurityTestConfig;
@@ -22,7 +7,7 @@ import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.fixture.FeedFixture;
-import com.samsamotot.otboo.common.fixture.LocationFixture;
+import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
@@ -33,29 +18,41 @@ import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.service.FeedService;
-import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
+import com.samsamotot.otboo.weather.entity.Grid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @WebMvcTest(FeedController.class)
@@ -97,39 +94,39 @@ public class FeedControllerTest {
             List<UUID> clothesIds = List.of(clothesId);
 
             FeedCreateRequest feedCreateRequest = FeedCreateRequest.builder()
-                .authorId(authorId)
-                .weatherId(weatherId)
-                .clothesIds(clothesIds)
-                .content(content)
-                .build();
+                    .authorId(authorId)
+                    .weatherId(weatherId)
+                    .clothesIds(clothesIds)
+                    .content(content)
+                    .build();
 
             AuthorDto authorDto = AuthorDto.builder()
-                .userId(authorId)
-                .build();
+                    .userId(authorId)
+                    .build();
             WeatherDto weatherDto = WeatherDto.builder()
-                .id(weatherId)
-                .build();
+                    .id(weatherId)
+                    .build();
             OotdDto ootdDto = OotdDto.builder()
-                .clothesId(clothesId)
-                .build();
+                    .clothesId(clothesId)
+                    .build();
             FeedDto feedDto = FeedFixture.createFeedDto(content, authorDto, weatherDto, List.of(ootdDto));
 
             given(feedService.create(any(FeedCreateRequest.class))).willReturn(feedDto);
 
             // when & then
             mockMvc.perform(post("/api/feeds")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(feedCreateRequest))
-                    .with(user(mockPrincipal)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.author.userId").value(authorId.toString()))
-                .andExpect(jsonPath("$.weather.id").value(weatherId.toString()))
-                .andExpect(jsonPath("$.ootds", hasSize(1)))
-                .andExpect(jsonPath("$.ootds[0].clothesId").value(clothesId.toString()))
-                .andExpect(jsonPath("$.content").value(content))
-                .andExpect(jsonPath("$.likeCount").value(0))
-                .andExpect(jsonPath("$.commentCount").value(0))
-                .andExpect(jsonPath("$.likedByMe").value(false));
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(feedCreateRequest))
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.author.userId").value(authorId.toString()))
+                    .andExpect(jsonPath("$.weather.id").value(weatherId.toString()))
+                    .andExpect(jsonPath("$.ootds", hasSize(1)))
+                    .andExpect(jsonPath("$.ootds[0].clothesId").value(clothesId.toString()))
+                    .andExpect(jsonPath("$.content").value(content))
+                    .andExpect(jsonPath("$.likeCount").value(0))
+                    .andExpect(jsonPath("$.commentCount").value(0))
+                    .andExpect(jsonPath("$.likedByMe").value(false));
         }
 
         @Test
@@ -143,24 +140,24 @@ public class FeedControllerTest {
             List<UUID> clothesIds = List.of(clothesId);
 
             FeedCreateRequest feedCreateRequest = FeedCreateRequest.builder()
-                .authorId(invalidAuthorId)
-                .weatherId(weatherId)
-                .clothesIds(clothesIds)
-                .content(content)
-                .build();
+                    .authorId(invalidAuthorId)
+                    .weatherId(weatherId)
+                    .clothesIds(clothesIds)
+                    .content(content)
+                    .build();
 
             given(feedService.create(any(FeedCreateRequest.class)))
-                .willThrow(new OtbooException(ErrorCode.USER_NOT_FOUND));
+                    .willThrow(new OtbooException(ErrorCode.USER_NOT_FOUND));
 
             // when & then
             mockMvc.perform(post("/api/feeds")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(feedCreateRequest))
-                    .with(user(mockPrincipal)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.USER_NOT_FOUND.toString()))
-                .andExpect(jsonPath("$.message").value(ErrorCode.USER_NOT_FOUND.getMessage()))
-                .andExpect(jsonPath("$.code").value(ErrorCode.USER_NOT_FOUND.getCode()));
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(feedCreateRequest))
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.exceptionName").value(ErrorCode.USER_NOT_FOUND.toString()))
+                    .andExpect(jsonPath("$.message").value(ErrorCode.USER_NOT_FOUND.getMessage()))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.USER_NOT_FOUND.getCode()));
         }
 
         @Test
@@ -174,24 +171,24 @@ public class FeedControllerTest {
             List<UUID> clothesIds = List.of(clothesId);
 
             FeedCreateRequest feedCreateRequest = FeedCreateRequest.builder()
-                .authorId(authorId)
-                .weatherId(invalidWeatherId)
-                .clothesIds(clothesIds)
-                .content(content)
-                .build();
+                    .authorId(authorId)
+                    .weatherId(invalidWeatherId)
+                    .clothesIds(clothesIds)
+                    .content(content)
+                    .build();
 
             given(feedService.create(any(FeedCreateRequest.class)))
-                .willThrow(new OtbooException(ErrorCode.WEATHER_NOT_FOUND));
+                    .willThrow(new OtbooException(ErrorCode.WEATHER_NOT_FOUND));
 
             // when & then
             mockMvc.perform(post("/api/feeds")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(feedCreateRequest))
-                    .with(user(mockPrincipal)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.WEATHER_NOT_FOUND.toString()))
-                .andExpect(jsonPath("$.message").value(ErrorCode.WEATHER_NOT_FOUND.getMessage()))
-                .andExpect(jsonPath("$.code").value(ErrorCode.WEATHER_NOT_FOUND.getCode()));
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(feedCreateRequest))
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.exceptionName").value(ErrorCode.WEATHER_NOT_FOUND.toString()))
+                    .andExpect(jsonPath("$.message").value(ErrorCode.WEATHER_NOT_FOUND.getMessage()))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.WEATHER_NOT_FOUND.getCode()));
         }
 
         @Test
@@ -205,24 +202,24 @@ public class FeedControllerTest {
             List<UUID> invalidClothesIds = List.of(invalidClothesId);
 
             FeedCreateRequest feedCreateRequest = FeedCreateRequest.builder()
-                .authorId(authorId)
-                .weatherId(weatherId)
-                .clothesIds(invalidClothesIds)
-                .content(content)
-                .build();
+                    .authorId(authorId)
+                    .weatherId(weatherId)
+                    .clothesIds(invalidClothesIds)
+                    .content(content)
+                    .build();
 
             given(feedService.create(any(FeedCreateRequest.class)))
-                .willThrow(new OtbooException(ErrorCode.CLOTHES_NOT_FOUND));
+                    .willThrow(new OtbooException(ErrorCode.CLOTHES_NOT_FOUND));
 
             // when & then
             mockMvc.perform(post("/api/feeds")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(feedCreateRequest))
-                    .with(user(mockPrincipal)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.CLOTHES_NOT_FOUND.toString()))
-                .andExpect(jsonPath("$.message").value(ErrorCode.CLOTHES_NOT_FOUND.getMessage()))
-                .andExpect(jsonPath("$.code").value(ErrorCode.CLOTHES_NOT_FOUND.getCode()));
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(feedCreateRequest))
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.exceptionName").value(ErrorCode.CLOTHES_NOT_FOUND.toString()))
+                    .andExpect(jsonPath("$.message").value(ErrorCode.CLOTHES_NOT_FOUND.getMessage()))
+                    .andExpect(jsonPath("$.code").value(ErrorCode.CLOTHES_NOT_FOUND.getCode()));
         }
 
         @Test
@@ -231,18 +228,18 @@ public class FeedControllerTest {
             // given
             String over = "a".repeat(1001); // 1001자
             FeedCreateRequest req = FeedCreateRequest.builder()
-                .authorId(UUID.randomUUID())
-                .weatherId(UUID.randomUUID())
-                .clothesIds(List.of(UUID.randomUUID()))
-                .content(over)
-                .build();
+                    .authorId(UUID.randomUUID())
+                    .weatherId(UUID.randomUUID())
+                    .clothesIds(List.of(UUID.randomUUID()))
+                    .content(over)
+                    .build();
 
             // when & then
             mockMvc.perform(post("/api/feeds")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(req))
-                    .with(user(mockPrincipal)))
-                .andExpect(status().isBadRequest());
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req))
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isBadRequest());
 
             verifyNoInteractions(feedService);
         }
@@ -262,30 +259,30 @@ public class FeedControllerTest {
             List<FeedDto> feedDtos = List.of(newFeed, oldFeed);
 
             CursorResponse<FeedDto> expected = new CursorResponse<>(
-                feedDtos,
-                null,
-                null,
-                false,
-                2L,
-                "createdAt",
-                SortDirection.DESCENDING
+                    feedDtos,
+                    null,
+                    null,
+                    false,
+                    2L,
+                    "createdAt",
+                    SortDirection.DESCENDING
             );
 
             given(feedService.getFeeds(any(FeedCursorRequest.class), any(UUID.class)))
-                .willReturn(expected);
+                    .willReturn(expected);
 
             // when & then
             mockMvc.perform(get("/api/feeds")
-                    .param("limit", String.valueOf(10))
-                    .param("sortBy", "createdAt")
-                    .param("sortDirection", SortDirection.DESCENDING.toString())
-                    .with(user(mockPrincipal))
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.data[0].content").value("content2"))
-                .andExpect(jsonPath("$.data[1].content").value("content1"))
-                .andExpect(jsonPath("$.totalCount").value(2L));
+                            .param("limit", String.valueOf(10))
+                            .param("sortBy", "createdAt")
+                            .param("sortDirection", SortDirection.DESCENDING.toString())
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data", hasSize(2)))
+                    .andExpect(jsonPath("$.data[0].content").value("content2"))
+                    .andExpect(jsonPath("$.data[1].content").value("content1"))
+                    .andExpect(jsonPath("$.totalCount").value(2L));
         }
 
         @Test
@@ -302,34 +299,34 @@ public class FeedControllerTest {
             UUID idAfter = cursorFeed.id();
 
             CursorResponse<FeedDto> expected = new CursorResponse<>(
-                feedDtos,
-                null,
-                null,
-                false,
-                2L,
-                "createdAt",
-                SortDirection.DESCENDING
+                    feedDtos,
+                    null,
+                    null,
+                    false,
+                    2L,
+                    "createdAt",
+                    SortDirection.DESCENDING
             );
 
             given(feedService.getFeeds(any(FeedCursorRequest.class), any(UUID.class)))
-                .willReturn(expected);
+                    .willReturn(expected);
 
             ArgumentCaptor<FeedCursorRequest> captor = ArgumentCaptor.forClass(FeedCursorRequest.class);
 
             // when & then
             mockMvc.perform(get("/api/feeds")
-                    .param("cursor", cursor)
-                    .param("idAfter", idAfter.toString())
-                    .param("limit", "10")
-                    .param("sortBy", "createdAt")
-                    .param("sortDirection", SortDirection.DESCENDING.name())
-                    .with(user(mockPrincipal))
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.data[0].content").value("content3"))
-                .andExpect(jsonPath("$.data[1].content").value("content4"))
-                .andExpect(jsonPath("$.totalCount").value(2L));
+                            .param("cursor", cursor)
+                            .param("idAfter", idAfter.toString())
+                            .param("limit", "10")
+                            .param("sortBy", "createdAt")
+                            .param("sortDirection", SortDirection.DESCENDING.name())
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data", hasSize(2)))
+                    .andExpect(jsonPath("$.data[0].content").value("content3"))
+                    .andExpect(jsonPath("$.data[1].content").value("content4"))
+                    .andExpect(jsonPath("$.totalCount").value(2L));
 
             verify(feedService).getFeeds(captor.capture(), any(UUID.class));
             FeedCursorRequest actual = captor.getValue();
@@ -350,20 +347,20 @@ public class FeedControllerTest {
             Precipitation precipitation = Precipitation.NONE;
 
             User author = User.builder()
-                .email("testUser@test.com")
-                .password("testUser1234!")
-                .username("testUser")
-                .build();
+                    .email("testUser@test.com")
+                    .password("testUser1234!")
+                    .username("testUser")
+                    .build();
             ReflectionTestUtils.setField(author, "id", authorId);
             ReflectionTestUtils.setField(author, "createdAt", Instant.now());
 
             Weather weather = Weather.builder()
-                .forecastAt(Instant.now())
-                .forecastedAt(Instant.now())
-                .location(LocationFixture.createLocation())
-                .skyStatus(skyStatus)
-                .precipitationType(precipitation)
-                .build();
+                    .forecastAt(Instant.now())
+                    .forecastedAt(Instant.now())
+                    .grid(GridFixture.createGrid())
+                    .skyStatus(skyStatus)
+                    .precipitationType(precipitation)
+                    .build();
             ReflectionTestUtils.setField(weather, "id", UUID.randomUUID());
             ReflectionTestUtils.setField(weather, "createdAt", Instant.now());
 
@@ -371,35 +368,35 @@ public class FeedControllerTest {
             FeedDto feedDto = FeedFixture.createFeedDto(feed);
 
             CursorResponse<FeedDto> expected = new CursorResponse<>(
-                List.of(feedDto),
-                null,
-                null,
-                false,
-                1L,
-                "createdAt",
-                SortDirection.DESCENDING
+                    List.of(feedDto),
+                    null,
+                    null,
+                    false,
+                    1L,
+                    "createdAt",
+                    SortDirection.DESCENDING
             );
 
             given(feedService.getFeeds(any(FeedCursorRequest.class), any(UUID.class)))
-                .willReturn(expected);
+                    .willReturn(expected);
 
             ArgumentCaptor<FeedCursorRequest> captor = ArgumentCaptor.forClass(FeedCursorRequest.class);
 
             // when & then
             mockMvc.perform(get("/api/feeds")
-                    .param("limit", "10")
-                    .param("sortBy", "createdAt")
-                    .param("sortDirection", SortDirection.DESCENDING.name())
-                    .param("keywordLike", keyword)
-                    .param("skyStatusEqual", skyStatus.name())
-                    .param("precipitationTypeEqual", precipitation.name())
-                    .param("authorIdEqual", authorId.toString())
-                    .with(user(mockPrincipal))
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].content").value(keyword))
-                .andExpect(jsonPath("$.totalCount").value(1L));
+                            .param("limit", "10")
+                            .param("sortBy", "createdAt")
+                            .param("sortDirection", SortDirection.DESCENDING.name())
+                            .param("keywordLike", keyword)
+                            .param("skyStatusEqual", skyStatus.name())
+                            .param("precipitationTypeEqual", precipitation.name())
+                            .param("authorIdEqual", authorId.toString())
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data", hasSize(1)))
+                    .andExpect(jsonPath("$.data[0].content").value(keyword))
+                    .andExpect(jsonPath("$.totalCount").value(1L));
 
             verify(feedService).getFeeds(captor.capture(), any(UUID.class));
             FeedCursorRequest actual = captor.getValue();
@@ -417,54 +414,54 @@ public class FeedControllerTest {
 
             // given
             CursorResponse<FeedDto> empty = new CursorResponse<>(
-                List.of(), null, null, false, 0L, "createdAt", SortDirection.DESCENDING
+                    List.of(), null, null, false, 0L, "createdAt", SortDirection.DESCENDING
             );
             given(feedService.getFeeds(any(FeedCursorRequest.class), any(UUID.class)))
-                .willReturn(empty);
+                    .willReturn(empty);
 
             // when & then
             mockMvc.perform(get("/api/feeds")
-                    .param("limit", "10")
-                    .param("sortBy", "createdAt")
-                    .param("sortDirection", SortDirection.DESCENDING.name())
-                    .with(user(mockPrincipal))
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(0)))
-                .andExpect(jsonPath("$.totalCount").value(0L))
-                .andExpect(jsonPath("$.hasNext").value(false));
+                            .param("limit", "10")
+                            .param("sortBy", "createdAt")
+                            .param("sortDirection", SortDirection.DESCENDING.name())
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data", hasSize(0)))
+                    .andExpect(jsonPath("$.totalCount").value(0L))
+                    .andExpect(jsonPath("$.hasNext").value(false));
         }
 
         @Test
         void limit_조건이_없으면_400이_반환된다() throws Exception {
 
             mockMvc.perform(get("/api/feeds")
-                    .param("sortBy", "createdAt")
-                    .param("sortDirection", "DESCENDING")
-                    .with(user(mockPrincipal))
-                )
-                .andExpect(status().isBadRequest());
+                            .param("sortBy", "createdAt")
+                            .param("sortDirection", "DESCENDING")
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
         void sortBy_조건이_없으면_400이_반환된다() throws Exception {
 
             mockMvc.perform(get("/api/feeds")
-                    .param("limit", "10")
-                    .param("sortDirection", "DESCENDING")
-                    .with(user(mockPrincipal))
-                )
-                .andExpect(status().isBadRequest());
+                            .param("limit", "10")
+                            .param("sortDirection", "DESCENDING")
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
         void sortDirection_조건이_없으면_400이_반환된다() throws Exception {
 
             mockMvc.perform(get("/api/feeds")
-                    .param("limit", "10")
-                    .param("sortBy", "createdAt")
-                    .with(user(mockPrincipal)))
-                .andExpect(status().isBadRequest());
+                            .param("limit", "10")
+                            .param("sortBy", "createdAt")
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -472,16 +469,16 @@ public class FeedControllerTest {
 
             // given
             given(feedService.getFeeds(any(FeedCursorRequest.class), any(UUID.class)))
-                .willThrow(new OtbooException(ErrorCode.INVALID_SORT_FIELD));
+                    .willThrow(new OtbooException(ErrorCode.INVALID_SORT_FIELD));
 
             // when & then
             mockMvc.perform(get("/api/feeds")
-                    .param("limit", "10")
-                    .param("sortBy", "invalidSortBy")
-                    .param("sortDirection", SortDirection.DESCENDING.name())
-                    .with(user(mockPrincipal))
-                )
-                .andExpect(status().isBadRequest());
+                            .param("limit", "10")
+                            .param("sortBy", "invalidSortBy")
+                            .param("sortDirection", SortDirection.DESCENDING.name())
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -489,28 +486,28 @@ public class FeedControllerTest {
 
             // given
             given(feedService.getFeeds(any(FeedCursorRequest.class), any(UUID.class)))
-                .willThrow(new OtbooException(ErrorCode.INVALID_CURSOR_FORMAT));
+                    .willThrow(new OtbooException(ErrorCode.INVALID_CURSOR_FORMAT));
 
             // when & then
             mockMvc.perform(get("/api/feeds")
-                    .param("cursor", "invalidCursor")
-                    .param("limit", "10")
-                    .param("sortBy", "createdAt")
-                    .param("sortDirection", SortDirection.DESCENDING.name())
-                    .with(user(mockPrincipal))
-                )
-                .andExpect(status().isBadRequest());
+                            .param("cursor", "invalidCursor")
+                            .param("limit", "10")
+                            .param("sortBy", "createdAt")
+                            .param("sortDirection", SortDirection.DESCENDING.name())
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
         void limit가_음수이면_400이_반환된다() throws Exception {
 
             mockMvc.perform(get("/api/feeds")
-                    .param("limit", "-1")
-                    .param("sortBy", "createdAt")
-                    .param("sortDirection", SortDirection.DESCENDING.name())
-                    .with(user(mockPrincipal)))
-                .andExpect(status().isBadRequest());
+                            .param("limit", "-1")
+                            .param("sortBy", "createdAt")
+                            .param("sortDirection", SortDirection.DESCENDING.name())
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isBadRequest());
         }
     }
 
@@ -524,8 +521,8 @@ public class FeedControllerTest {
             // given
             UUID userId = mockUser.getId();
 
-            Location location = LocationFixture.createLocation();
-            Weather weather = WeatherFixture.createWeather(location);
+            Grid grid = GridFixture.createGrid();
+            Weather weather = WeatherFixture.createWeather(grid);
 
             UUID feedId = UUID.randomUUID();
             Feed originFeed = FeedFixture.createFeed(mockUser, weather);
@@ -534,23 +531,23 @@ public class FeedControllerTest {
             String newContent = "피드 수정 테스트";
 
             FeedUpdateRequest request = FeedUpdateRequest.builder()
-                .content(newContent)
-                .build();
+                    .content(newContent)
+                    .build();
 
             FeedDto expected = FeedFixture.createFeedDtoWithContent(originFeed, newContent);
 
             given(feedService.update(any(UUID.class), any(UUID.class), any(FeedUpdateRequest.class)))
-                .willReturn(expected);
+                    .willReturn(expected);
 
             // when & then
             mockMvc.perform(patch("/api/feeds/{id}", feedId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .with(user(mockPrincipal))
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(feedId.toString()))
-                .andExpect(jsonPath("$.content").value(newContent))
-                .andExpect(jsonPath("$.author.userId").value(userId.toString()));
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .with(user(mockPrincipal))
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(feedId.toString()))
+                    .andExpect(jsonPath("$.content").value(newContent))
+                    .andExpect(jsonPath("$.author.userId").value(userId.toString()));
         }
 
         @Test
@@ -561,19 +558,19 @@ public class FeedControllerTest {
             String newContent = "피드 수정 테스트";
 
             FeedUpdateRequest request = FeedUpdateRequest.builder()
-                .content(newContent)
-                .build();
+                    .content(newContent)
+                    .build();
 
             given(feedService.update(any(UUID.class), any(UUID.class), any(FeedUpdateRequest.class)))
-                .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
+                    .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
             // when & then
             mockMvc.perform(patch("/api/feeds/{id}", invalidFeedId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .with(user(mockPrincipal))
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FEED_NOT_FOUND.name()));
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .with(user(mockPrincipal))
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FEED_NOT_FOUND.name()));
         }
 
         @Test
@@ -583,8 +580,8 @@ public class FeedControllerTest {
             UUID invalidUserId = UUID.randomUUID();
             User user = UserFixture.createUser();
 
-            Location location = LocationFixture.createLocation();
-            Weather weather = WeatherFixture.createWeather(location);
+            Grid grid = GridFixture.createGrid();
+            Weather weather = WeatherFixture.createWeather(grid);
 
             UUID feedId = UUID.randomUUID();
             Feed originFeed = FeedFixture.createFeed(user, weather);
@@ -593,19 +590,19 @@ public class FeedControllerTest {
             String newContent = "피드 수정 테스트";
 
             FeedUpdateRequest request = FeedUpdateRequest.builder()
-                .content(newContent)
-                .build();
+                    .content(newContent)
+                    .build();
 
             given(feedService.update(any(UUID.class), any(UUID.class), any(FeedUpdateRequest.class)))
-                .willThrow(new OtbooException(ErrorCode.FORBIDDEN_FEED_MODIFICATION));
+                    .willThrow(new OtbooException(ErrorCode.FORBIDDEN_FEED_MODIFICATION));
 
             // when & then
             mockMvc.perform(patch("/api/feeds/{id}", feedId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .with(user(mockPrincipal))
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FORBIDDEN_FEED_MODIFICATION.name()));
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .with(user(mockPrincipal))
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FORBIDDEN_FEED_MODIFICATION.name()));
         }
 
         @Test
@@ -614,8 +611,8 @@ public class FeedControllerTest {
             // given
             UUID userId = mockUser.getId();
 
-            Location location = LocationFixture.createLocation();
-            Weather weather = WeatherFixture.createWeather(location);
+            Grid grid = GridFixture.createGrid();
+            Weather weather = WeatherFixture.createWeather(grid);
 
             UUID feedId = UUID.randomUUID();
             Feed originFeed = FeedFixture.createFeed(mockUser, weather);
@@ -624,15 +621,15 @@ public class FeedControllerTest {
             String newContent = " ";
 
             FeedUpdateRequest request = FeedUpdateRequest.builder()
-                .content(newContent)
-                .build();
+                    .content(newContent)
+                    .build();
 
             // when & then
             mockMvc.perform(patch("/api/feeds/{id}", feedId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .with(user(mockPrincipal))
-                    .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .with(user(mockPrincipal))
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
         }
     }
 
@@ -647,8 +644,8 @@ public class FeedControllerTest {
             UUID feedId = UUID.randomUUID();
             UUID userId = mockUser.getId();
 
-            Location location = LocationFixture.createLocation();
-            Weather weather = WeatherFixture.createWeather(location);
+            Grid grid = GridFixture.createGrid();
+            Weather weather = WeatherFixture.createWeather(grid);
             Feed feed = FeedFixture.createFeed(mockUser, weather);
 
             /* 컨트롤러 테스트이므로, 반환되는 Feed 객체의 isDeleted는 신경쓰지 않음 */
@@ -656,8 +653,8 @@ public class FeedControllerTest {
 
             // when & then
             mockMvc.perform(delete("/api/feeds/{id}", feedId)
-                .with(user(mockPrincipal)))
-                .andExpect(status().isNoContent());
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isNoContent());
         }
 
         @Test
@@ -668,13 +665,13 @@ public class FeedControllerTest {
             UUID invalidFeedId = UUID.randomUUID();
 
             given(feedService.delete(eq(invalidFeedId), eq(userId)))
-                .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
+                    .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
             // when & then
             mockMvc.perform(delete("/api/feeds/{id}", invalidFeedId)
-                .with(user(mockPrincipal)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FEED_NOT_FOUND.name()));
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FEED_NOT_FOUND.name()));
         }
 
         @Test
@@ -685,13 +682,13 @@ public class FeedControllerTest {
             UUID userId = mockUser.getId();
 
             given(feedService.delete(eq(feedId), eq(userId)))
-                .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
+                    .willThrow(new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
             // when & then
             mockMvc.perform(delete("/api/feeds/{id}", feedId)
-                    .with(user(mockPrincipal)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FEED_NOT_FOUND.name()));
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FEED_NOT_FOUND.name()));
         }
 
         @Test
@@ -702,13 +699,13 @@ public class FeedControllerTest {
             UUID otherUserId = mockUser.getId();
 
             given(feedService.delete(eq(feedId), eq(otherUserId)))
-                .willThrow(new OtbooException(ErrorCode.FORBIDDEN_FEED_DELETION));
+                    .willThrow(new OtbooException(ErrorCode.FORBIDDEN_FEED_DELETION));
 
             // when & then
             mockMvc.perform(delete("/api/feeds/{id}", feedId)
-                    .with(user(mockPrincipal)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FORBIDDEN_FEED_DELETION.name()));
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FORBIDDEN_FEED_DELETION.name()));
         }
     }
 }

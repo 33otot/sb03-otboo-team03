@@ -2,10 +2,11 @@ package com.samsamotot.otboo.location.integration;
 
 import com.samsamotot.otboo.common.fixture.LocationFixture;
 import com.samsamotot.otboo.location.entity.Location;
-import com.samsamotot.otboo.location.entity.WeatherAPILocation;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.location.service.LocationService;
-import com.samsamotot.otboo.weather.controller.WeatherController;
+import com.samsamotot.otboo.weather.entity.Grid;
+import com.samsamotot.otboo.weather.repository.GridRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -54,13 +54,14 @@ class LocationIntegrationTest {
     }
 
     @Autowired
+    private GridRepository gridRepository;
+
+    @Autowired
     private LocationService locationService;
 
     @Autowired
     private LocationRepository locationRepository;
 
-    @Autowired
-    private WeatherController weatherController;
 
     private final double TEST_LONGITUDE = 126.9780;
     private final double TEST_LATITUDE = 37.5665;
@@ -68,6 +69,7 @@ class LocationIntegrationTest {
     @BeforeEach
     void setUp() {
         locationRepository.deleteAll();
+        gridRepository.deleteAll();
     }
 
     @Test
@@ -77,7 +79,7 @@ class LocationIntegrationTest {
         Location existingLocation = LocationFixture.createValidLocation();
         existingLocation.setLongitude(TEST_LONGITUDE);
         existingLocation.setLatitude(TEST_LATITUDE);
-        locationRepository.save(existingLocation);
+        locationRepository.save(existingLocation); // Grid는 cascade로 자동 저장됨
 
         // When
         WeatherAPILocation result = locationService.getCurrentLocation(TEST_LONGITUDE, TEST_LATITUDE);
@@ -86,8 +88,8 @@ class LocationIntegrationTest {
         assertThat(result).isNotNull();
         assertThat(result.latitude()).isEqualTo(TEST_LATITUDE);
         assertThat(result.longitude()).isEqualTo(TEST_LONGITUDE);
-        assertThat(result.x()).isEqualTo(existingLocation.getX());
-        assertThat(result.y()).isEqualTo(existingLocation.getY());
+        assertThat(result.x()).isEqualTo(existingLocation.getGrid().getX());
+        assertThat(result.y()).isEqualTo(existingLocation.getGrid().getY());
         assertThat(result.locationNames()).isEqualTo(existingLocation.getLocationNames());
     }
 
@@ -109,7 +111,7 @@ class LocationIntegrationTest {
         Location staleLocation = LocationFixture.createStaleLocation();
         staleLocation.setLongitude(TEST_LONGITUDE);
         staleLocation.setLatitude(TEST_LATITUDE);
-        locationRepository.save(staleLocation);
+        locationRepository.save(staleLocation); // Grid는 cascade로 자동 저장됨
 
         // When & Then
         assertThatThrownBy(() -> 
@@ -118,26 +120,23 @@ class LocationIntegrationTest {
     }
 
     @Test
-    @DisplayName("컨트롤러를 통해 위치 정보 조회가 정상 동작한다")
-    void 컨트롤러_위치_정보_조회_정상_동작() {
+    @DisplayName("서비스를 통해 위치 정보 조회가 정상 동작한다")
+    void 서비스_위치_정보_조회_정상_동작() {
         // Given
         Location existingLocation = LocationFixture.createValidLocation();
         existingLocation.setLongitude(TEST_LONGITUDE);
         existingLocation.setLatitude(TEST_LATITUDE);
-        locationRepository.save(existingLocation);
+        locationRepository.save(existingLocation); // Grid는 cascade로 자동 저장됨
 
         // When
-        ResponseEntity<WeatherAPILocation> response = weatherController.getCurrentLocation(TEST_LONGITUDE, TEST_LATITUDE);
+        WeatherAPILocation result = locationService.getCurrentLocation(TEST_LONGITUDE, TEST_LATITUDE);
 
         // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        
-        WeatherAPILocation result = response.getBody();
+        assertThat(result).isNotNull();
         assertThat(result.latitude()).isEqualTo(TEST_LATITUDE);
         assertThat(result.longitude()).isEqualTo(TEST_LONGITUDE);
-        assertThat(result.x()).isEqualTo(existingLocation.getX());
-        assertThat(result.y()).isEqualTo(existingLocation.getY());
+        assertThat(result.x()).isEqualTo(existingLocation.getGrid().getX());
+        assertThat(result.y()).isEqualTo(existingLocation.getGrid().getY());
         assertThat(result.locationNames()).isEqualTo(existingLocation.getLocationNames());
     }
 }
