@@ -4,6 +4,7 @@ import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.LocationFixture;
 import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.entity.Grid;
@@ -32,6 +33,9 @@ public class WeatherControllerSliceTest {
     @MockitoBean // 가짜 WeatherService를 SpringContext에 등록
     private WeatherService weatherService;
 
+    @MockitoBean
+    private LocationService locationService;
+
     @Test
     void 유효한_위치정보로_날씨_예보_조회_성공() throws Exception {
         // Given
@@ -57,11 +61,11 @@ public class WeatherControllerSliceTest {
 
         // When
         // Then
-        mockMvc.perform(get("/api/weather")
+        mockMvc.perform(get("/api/weathers")
                 .param("longitude", String.valueOf(location.getLongitude()))
                 .param("latitude", String.valueOf(location.getLatitude())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$").isArray())
                 .andDo(print());
     }
 }
