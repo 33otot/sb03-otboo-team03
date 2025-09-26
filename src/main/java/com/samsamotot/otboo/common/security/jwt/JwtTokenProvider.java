@@ -234,4 +234,50 @@ public class JwtTokenProvider {
             return null;
         }
     }
+
+    /**
+     * 인터셉터/필터에서 쓰기 좋은 얕은 검증. 유효하면 true, 아니면 false를 반환한다.
+     */
+    public boolean validate(String token) {
+        if (token == null || token.isBlank()) return false;
+        try {
+            SignedJWT jwt = SignedJWT.parse(token);
+
+            // 서명 검증
+            JWSVerifier verifier = new MACVerifier(secretKey);
+            if (!jwt.verify(verifier)) return false;
+
+            JWTClaimsSet claims = jwt.getJWTClaimsSet();
+
+            // 만료/발급자 검증
+            Date exp = claims.getExpirationTime();
+            if (exp == null || exp.before(new Date())) return false;
+            if (!issuer.equals(claims.getIssuer())) return false;
+
+            // 필수 클레임 검증 (userId 존재 여부)
+            String userIdStr = claims.getStringClaim(USER_ID_CLAIM);
+            if (userIdStr == null) return false;
+
+            // 파싱 가능해야 함
+            UUID.fromString(userIdStr);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 유효한 토큰에서 사용자 ID를 반환한다.
+     * 유효하지 않으면 OtbooException(TOKEN_INVALID/TOKEN_EXPIRED)을 던진다.
+     */
+    public UUID getUserId(String token) {
+        try {
+            return getUserIdFromToken(token); // 이미 서명/만료/issuer 검증 포함
+        } catch (OtbooException e) {
+            // getUserIdFromToken 이 내부에서 적절한 코드로 던지므로 그대로 전파
+            throw e;
+        } catch (Exception e) {
+            throw new OtbooException(ErrorCode.TOKEN_INVALID);
+        }
+    }
 }

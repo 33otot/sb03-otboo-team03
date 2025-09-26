@@ -2,13 +2,13 @@ package com.samsamotot.otboo.directmessage.service;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
-import com.samsamotot.otboo.directmessage.dto.MessageRequest;
+import com.samsamotot.otboo.directmessage.dto.*;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.mapper.DirectMessageMapper;
 import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +38,8 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     private final UserRepository userRepository;
 
     private final DirectMessageMapper directMessageMapper;
+
+    private final EntityManager em;
 
     // TODO DM 목록 조회 : me 정보 가져오는 로직 수정 필요
     @Override
@@ -118,4 +120,35 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 //        if (auth == null || auth.getName() == null) throw new OtbooException(ErrorCode.UNAUTHORIZED);
 //        return UUID.fromString(auth.getName());
 //    }
+
+
+    @Transactional
+    public DmEvent persistAndBuildEvent(UUID senderId, SendDmRequest request) {
+        User senderRef   = em.getReference(User.class, senderId);
+        User receiverRef = em.getReference(User.class, request.toUserId());
+
+        DirectMessage entity = DirectMessage.builder()
+            .sender(senderRef)
+            .receiver(receiverRef)
+            .message(request.content())
+            .build();
+
+        directMessageRepository.save(entity);
+
+        return DmEvent.builder()
+            .id(entity.getId())
+            .senderId(senderId)
+            .receiverId(request.toUserId())
+            .content(entity.getMessage())
+            .createdAt(entity.getCreatedAt())
+            .status("SENT")
+            .tempId(request.tempId())
+            .build();
+    }
+
+    @Transactional
+    public DmReadEvent markRead(UUID me, DmReadRequest request) {
+        int updated = directMessageRepository.markAsReadBetween(me, request.peerId(), request.lastMessageId());
+        return new DmReadEvent(request.peerId(), me, request.lastMessageId(), updated);
+    }
 }

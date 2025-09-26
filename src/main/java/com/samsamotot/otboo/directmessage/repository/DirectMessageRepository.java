@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.directmessage.repository;
 
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -46,4 +47,17 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
                 OR (m.sender.id = :other AND m.receiver.id = :me))
         """)
     long countBetween(@Param("me") UUID me, @Param("other") UUID other);
+
+
+    @Modifying
+    @Query("""
+       UPDATE DirectMessage m
+          SET m.isRead = true
+        WHERE (m.sender.id = :peer AND m.receiver.id = :me)
+          AND (m.id <= :lastMessageId)
+          AND m.isRead = false
+    """)
+    int markAsReadBetween(@Param("me") UUID me,
+                          @Param("peer") UUID peer,
+                          @Param("lastMessageId") UUID lastMessageId);
 }

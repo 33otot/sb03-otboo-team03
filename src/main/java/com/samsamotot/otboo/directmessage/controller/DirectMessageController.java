@@ -1,18 +1,20 @@
 package com.samsamotot.otboo.directmessage.controller;
 
 import com.samsamotot.otboo.common.dto.CursorResponse;
-import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
-import com.samsamotot.otboo.directmessage.dto.MessageRequest;
+import com.samsamotot.otboo.directmessage.dto.*;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.Principal;
 import java.util.UUID;
 
 /**
@@ -29,6 +31,7 @@ import java.util.UUID;
 public class DirectMessageController {
 
     private final DirectMessageService directMessageService;
+    private final SimpMessagingTemplate template;
 
 
     /**
@@ -50,4 +53,26 @@ public class DirectMessageController {
         MessageRequest request = new MessageRequest(userId, cursor, idAfter, limit);
         return ResponseEntity.ok().body(directMessageService.getMessages(request));
     }
+
+    @MessageMapping("/dm.send")
+    public void send(SendDmRequest req, Principal principal) {
+        UUID me = UUID.fromString(principal.getName());
+        DmEvent event = directMessageService.persistAndBuildEvent(me, req);
+        template.convertAndSendToUser(event.receiverId().toString(), "/queue/dm", event);
+        template.convertAndSendToUser(event.senderId().toString(),   "/queue/dm", event);
+    }
+
+    // ★ 읽음 처리: 클라가 "/app/dm.read" 로 DmReadRequest 발행
+    @MessageMapping("/dm.read")
+    public void read(DmReadRequest req, Principal principal) {
+        UUID me = UUID.fromString(principal.getName());
+        DmReadEvent ev = directMessageService.markRead(me, req);
+
+        // 상대에게: 내가 읽었다는 신호
+        template.convertAndSendToUser(req.peerId().toString(), "/queue/dm.read", ev);
+
+        // 나에게도(동기화용)
+        template.convertAndSendToUser(me.toString(), "/queue/dm.read", ev);
+    }
+
 }
