@@ -48,6 +48,9 @@ class CsrfControllerTest {
     @DisplayName("GET /api/auth/csrf-token: 204, 저장소에 토큰 저장 호출")
     void getCsrfToken_success() throws Exception {
         CsrfToken mockToken = Mockito.mock(CsrfToken.class);
+        given(mockToken.getHeaderName()).willReturn("X-XSRF-TOKEN");
+        given(mockToken.getParameterName()).willReturn("_csrf");
+        given(mockToken.getToken()).willReturn("test-token");
         given(csrfTokenRepository.generateToken(any(HttpServletRequest.class))).willReturn(mockToken);
 
         mockMvc.perform(get("/api/auth/csrf-token"))

@@ -35,6 +35,11 @@ public class CsrfController {
     public ResponseEntity<Void> getCsrfToken(HttpServletRequest request, HttpServletResponse response) {
         CsrfToken token = csrfTokenRepository.generateToken(request);
         csrfTokenRepository.saveToken(token, request, response);
+        
+        request.setAttribute(CsrfToken.class.getName(), token);
+        request.setAttribute(token.getParameterName(), token);
+        response.setHeader(token.getHeaderName(), token.getToken());
+        
         return ResponseEntity.noContent().build();
     }
 }
