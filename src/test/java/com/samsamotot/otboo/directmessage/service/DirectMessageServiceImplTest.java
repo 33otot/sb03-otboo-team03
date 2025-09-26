@@ -69,7 +69,7 @@ class DirectMessageServiceImplTest {
     }
 
     private static void loginAsEmail(String email) {
-        var auth = new UsernamePasswordAuthenticationToken(email, null, null);
+        var auth = new UsernamePasswordAuthenticationToken(email, "N/A", java.util.List.of());
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
