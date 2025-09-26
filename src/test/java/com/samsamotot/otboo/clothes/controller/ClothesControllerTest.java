@@ -2,7 +2,10 @@ package com.samsamotot.otboo.clothes.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -14,6 +17,7 @@ import com.samsamotot.otboo.clothes.dto.request.ClothesCreateRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesUpdateRequest;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
+import com.samsamotot.otboo.clothes.exception.ClothesNotFoundException;
 import com.samsamotot.otboo.clothes.service.ClothesService;
 import java.util.Collections;
 import java.util.List;
@@ -279,6 +283,38 @@ public class ClothesControllerTest {
                 .andExpect(jsonPath("$.exceptionName").exists())
                 .andExpect(jsonPath("$.message").exists())
                 .andExpect(jsonPath("$.status").value(400));
+        }
+    }
+
+    @Nested
+    @DisplayName("의상 삭제 컨트롤러 테스트")
+    class ClothesDeleteTest {
+
+        @Test
+        void 유효한_ID로_삭제요청시_204를_반환한다() throws Exception {
+            // given
+            UUID clothesId = UUID.randomUUID();
+
+            // when & then
+            mockMvc.perform(delete("/api/clothes/{clothesId}", clothesId))
+                .andExpect(status().isNoContent());
+
+            verify(clothesService).delete(clothesId);
+        }
+
+        @Test
+        void 존재하지_않는_ID로_삭제요청시_404를_반환한다() throws Exception {
+            // given
+            UUID notExistId = UUID.randomUUID();
+            doThrow(new ClothesNotFoundException()).when(clothesService).delete(notExistId);
+
+            // when & then
+            mockMvc.perform(delete("/api/clothes/{clothesId}", notExistId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.exceptionName").value("CLOTHES_NOT_FOUND"))
+                .andExpect(jsonPath("$.status").value(404));
+
+            verify(clothesService).delete(notExistId);
         }
     }
 }
