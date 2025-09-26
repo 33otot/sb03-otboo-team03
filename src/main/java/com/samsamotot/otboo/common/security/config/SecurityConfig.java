@@ -81,6 +81,7 @@ public class SecurityConfig {
                     "/api/auth/sign-out",  // 로그아웃 CSRF 무시
                     "/api/auth/refresh",
                     "/api/users",
+                    "/api/auth/csrf-token", // CSRF 토큰 조회 허용
                     "/api/weathers/**",
                     "/actuator/**"
                 )
@@ -159,6 +160,9 @@ public class SecurityConfig {
         // 허용할 헤더 설정
         configuration.setAllowedHeaders(Arrays.asList("*"));
         
+        // CSRF 토큰 헤더 노출
+        configuration.setExposedHeaders(Arrays.asList("X-XSRF-TOKEN"));
+        
         // 인증 정보 포함 허용
         configuration.setAllowCredentials(true);
         
@@ -187,7 +191,8 @@ public class SecurityConfig {
      * 
      * @return 보안 속성이 적용된 CSRF 토큰 저장소
      */
-    private CsrfTokenRepository createSecureCsrfTokenRepository() {
+    @Bean
+    public CsrfTokenRepository createSecureCsrfTokenRepository() {
         // Spring Security의 기본 CSRF 토큰 저장소 사용
         // HttpOnly=false로 설정하여 SPA에서 JavaScript로 접근 가능
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
