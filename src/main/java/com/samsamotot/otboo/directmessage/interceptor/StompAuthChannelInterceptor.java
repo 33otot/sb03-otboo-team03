@@ -30,22 +30,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
     private final JwtTokenProvider jwt;
-    private final UserRepository userRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        StompHeaderAccessor acc = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        var acc = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         if (acc != null && StompCommand.CONNECT.equals(acc.getCommand())) {
             String auth = Optional.ofNullable(acc.getFirstNativeHeader("Authorization")).orElse("");
             String token = auth.startsWith("Bearer ") ? auth.substring(7) : null;
             if (token == null || !jwt.validate(token)) throw new AccessDeniedException("Invalid token");
             UUID userId = jwt.getUserId(token);
-
-            // 잠금 계정 차단
-            User user = userRepository.findById(userId)
-                .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
-            if (user.isLocked()) throw new OtbooException(ErrorCode.USER_LOCKED);
-
             acc.setUser(new UsernamePasswordAuthenticationToken(userId.toString(), null, List.of()));
         }
         return message;

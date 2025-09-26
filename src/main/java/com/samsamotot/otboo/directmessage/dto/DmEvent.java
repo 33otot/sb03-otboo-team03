@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.directmessage.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 
 import java.time.Instant;
@@ -18,6 +19,17 @@ public record DmEvent(
     UUID receiverId,
     String content,
     Instant createdAt,
-    String status, // "SENT" | "DELIVERED" | "READ"
-    UUID tempId    // 요청 tempId를 에코해 클라가 매칭
-) {}
+    String status,
+    UUID tempId,
+    @JsonProperty("message") String _messageAlias
+) {
+    public static DmEvent of(UUID id, UUID senderId, UUID receiverId, String content,
+                             Instant createdAt, String status, UUID tempId) {
+        return DmEvent.builder()
+            .id(id).senderId(senderId).receiverId(receiverId)
+            .content(content)
+            .createdAt(createdAt).status(status).tempId(tempId)
+            ._messageAlias(content)
+            .build();
+    }
+}

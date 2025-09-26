@@ -57,25 +57,24 @@ public class DirectMessageController implements DirectMessageApi {
         return ResponseEntity.ok().body(directMessageService.getMessages(request));
     }
 
-    @MessageMapping("/dm.send")
+    @MessageMapping("/direct-messages_send")
     public void send(SendDmRequest req, Principal principal) {
         UUID me = UUID.fromString(principal.getName());
-        DmEvent event = directMessageService.persistAndBuildEvent(me, req);
-        template.convertAndSendToUser(event.receiverId().toString(), "/queue/dm", event);
-        template.convertAndSendToUser(event.senderId().toString(),   "/queue/dm", event);
+        var event = directMessageService.persistAndBuildEvent(me, req);
+
+        String topic = DmTopicKey.topic(event.senderId(), event.receiverId());
+        template.convertAndSend(topic, event);
     }
 
-    // ★ 읽음 처리: 클라가 "/app/dm.read" 로 DmReadRequest 발행
-    @MessageMapping("/dm.read")
-    public void read(DmReadRequest req, Principal principal) {
-        UUID me = UUID.fromString(principal.getName());
-        DmReadEvent ev = directMessageService.markRead(me, req);
-
-        // 상대에게: 내가 읽었다는 신호
-        template.convertAndSendToUser(req.peerId().toString(), "/queue/dm.read", ev);
-
-        // 나에게도(동기화용)
-        template.convertAndSendToUser(me.toString(), "/queue/dm.read", ev);
-    }
-
+//    @MessageMapping("/dm.read")
+//    public void read(DmReadRequest req, Principal principal) {
+//        UUID me = UUID.fromString(principal.getName());
+//        DmReadEvent ev = directMessageService.markRead(me, req);
+//
+//        // 상대에게: 내가 읽었다는 신호
+//        template.convertAndSendToUser(req.peerId().toString(), "/queue/dm.read", ev);
+//
+//        // 나에게도(동기화용)
+//        template.convertAndSendToUser(me.toString(), "/queue/dm.read", ev);
+//    }
 }

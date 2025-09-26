@@ -8,7 +8,9 @@ import com.samsamotot.otboo.follow.service.FollowService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -29,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Date         : 2025. 9. 22.
  */
 @WebMvcTest(DirectMessageController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("Direct Message 컨트롤러 슬라이스 테스트")
 class DirectMessageControllerTest {
 
@@ -40,6 +43,9 @@ class DirectMessageControllerTest {
 
     @MockitoBean
     private DirectMessageService directMessageService;
+
+    @MockitoBean
+    SimpMessagingTemplate simpMessagingTemplate;
 
     @Test
     void dm을_목록을_정상적으로_가져온다() throws Exception {

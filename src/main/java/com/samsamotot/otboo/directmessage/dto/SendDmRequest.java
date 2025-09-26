@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.directmessage.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -11,7 +13,6 @@ import java.util.UUID;
  */
 public record SendDmRequest(
     UUID toUserId,
-    String content,
-    Instant clientSentAt, // optional: 클라 타임스탬프
-    UUID tempId          // optional: 낙관적 UI 매칭용
+    @JsonAlias({"message"}) String content,
+    UUID tempId
 ) {}

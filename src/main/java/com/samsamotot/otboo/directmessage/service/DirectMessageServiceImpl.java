@@ -131,28 +131,28 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
 
     @Transactional
-    public DmEvent persistAndBuildEvent(UUID senderId, SendDmRequest request) {
+    public DmEvent persistAndBuildEvent(UUID senderId, SendDmRequest req) {
         User senderRef   = em.getReference(User.class, senderId);
-        User receiverRef = em.getReference(User.class, request.toUserId());
+        User receiverRef = em.getReference(User.class, req.toUserId());
 
         DirectMessage entity = DirectMessage.builder()
             .sender(senderRef)
             .receiver(receiverRef)
-            .message(request.content())
+            .message(req.content())   // ← 엔티티는 message
             .build();
-
         directMessageRepository.save(entity);
 
-        return DmEvent.builder()
-            .id(entity.getId())
-            .senderId(senderId)
-            .receiverId(request.toUserId())
-            .content(entity.getMessage())
-            .createdAt(entity.getCreatedAt())
-            .status("SENT")
-            .tempId(request.tempId())
-            .build();
+        return DmEvent.of(
+            entity.getId(),
+            senderId,
+            req.toUserId(),
+            entity.getMessage(),
+            entity.getCreatedAt(),
+            "SENT",
+            req.tempId()
+        );
     }
+
 
     @Transactional
     public DmReadEvent markRead(UUID me, DmReadRequest request) {
