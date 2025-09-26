@@ -180,3 +180,30 @@ INSERT INTO recommendation_clothes (id, recommendation_id, clothes_id, created_a
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000003', NOW()),
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000004', 'e0000000-0000-0000-0000-000000000004', NOW()),
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000005', 'e0000000-0000-0000-0000-000000000005', NOW());
+
+
+-- 좋아요 카운트 백필
+UPDATE feeds f
+SET like_count = COALESCE(sub.cnt, 0),
+    updated_at = NOW()
+FROM (
+         SELECT feed_id, COUNT(*) AS cnt
+         FROM feed_likes
+         GROUP BY feed_id
+     ) sub
+WHERE f.id = sub.feed_id;
+
+-- 댓글 카운트 백필
+UPDATE feeds f
+SET comment_count = COALESCE(sub.cnt, 0),
+    updated_at = NOW()
+FROM (
+         SELECT feed_id, COUNT(*) AS cnt
+         FROM comments
+         GROUP BY feed_id
+     ) sub
+WHERE f.id = sub.feed_id;
+
+-- 혹시 남아있을 NULL 정리
+UPDATE feeds SET like_count = COALESCE(like_count, 0);
+UPDATE feeds SET comment_count = COALESCE(comment_count, 0);
