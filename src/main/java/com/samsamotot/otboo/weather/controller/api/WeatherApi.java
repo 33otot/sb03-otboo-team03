@@ -1,7 +1,7 @@
 package com.samsamotot.otboo.weather.controller.api;
 
 import com.samsamotot.otboo.common.exception.ErrorResponse;
-import com.samsamotot.otboo.location.entity.WeatherAPILocation;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

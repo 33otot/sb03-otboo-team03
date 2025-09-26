@@ -8,7 +8,7 @@ import com.samsamotot.otboo.common.fixture.dto.KakaoAddressResponseFixture;
 import com.samsamotot.otboo.location.client.KakaoApiClient;
 import com.samsamotot.otboo.location.dto.KakaoAddressResponse;
 import com.samsamotot.otboo.location.entity.Location;
-import com.samsamotot.otboo.location.entity.WeatherAPILocation;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.location.service.impl.LocationServiceImpl;
 import com.samsamotot.otboo.weather.entity.Grid;

@@ -2,7 +2,7 @@ package com.samsamotot.otboo.location.integration;
 
 import com.samsamotot.otboo.common.fixture.LocationFixture;
 import com.samsamotot.otboo.location.entity.Location;
-import com.samsamotot.otboo.location.entity.WeatherAPILocation;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.weather.controller.WeatherController;
