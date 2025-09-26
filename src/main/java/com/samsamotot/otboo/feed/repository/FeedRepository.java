@@ -30,9 +30,10 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedRepositor
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
         update feeds
-           set like_count = case when like_count > 0 then like_count - 1 else 0 end,
+           set like_count = like_count - 1,
                updated_at = CURRENT_TIMESTAMP
          where id = :feedId
+            and like_count > 0
         """, nativeQuery = true)
     int decrementLikeCount(@Param("feedId") UUID feedId);
 
@@ -50,9 +51,10 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedRepositor
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
         update feeds
-           set comment_count = case when comment_count > 0 then comment_count - 1 else 0 end,
+           set comment_count = comment_count - 1,
                updated_at = CURRENT_TIMESTAMP
          where id = :feedId
+            and comment_count > 0
         """, nativeQuery = true)
     int decrementCommentCount(@Param("feedId") UUID feedId);
 }

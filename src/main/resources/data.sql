@@ -205,5 +205,5 @@ FROM (
 WHERE f.id = sub.feed_id;
 
 -- 혹시 남아있을 NULL 정리
-UPDATE feeds SET like_count = COALESCE(like_count, 0);
-UPDATE feeds SET comment_count = COALESCE(comment_count, 0);
+UPDATE feeds SET like_count = 0 WHERE like_count IS NULL;
+UPDATE feeds SET comment_count = 0 WHERE comment_count IS NULL;
