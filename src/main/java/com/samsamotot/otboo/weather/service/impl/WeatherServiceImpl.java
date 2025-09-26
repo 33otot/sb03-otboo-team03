@@ -1,6 +1,6 @@
 package com.samsamotot.otboo.weather.service.impl;
 
-import com.samsamotot.otboo.weather.client.WeatherKmaClient;
+import com.samsamotot.otboo.weather.client.KmaClient;
 import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
 import com.samsamotot.otboo.weather.entity.*;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
@@ -38,7 +38,7 @@ public class WeatherServiceImpl implements WeatherService {
 
     private static final String SERVICE_NAME = "[WeatherServiceImpl] ";
 
-    private final WeatherKmaClient weatherKmaClient;
+    private final KmaClient kmaClient;
     private final WeatherRepository weatherRepository;
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
@@ -47,7 +47,7 @@ public class WeatherServiceImpl implements WeatherService {
     @Async("weatherApiTaskExecutor")
     @Override
     public CompletableFuture<Void> updateWeatherDataForGrid(Grid grid) {
-        return weatherKmaClient.fetchWeather(grid.getX(), grid.getY())
+        return kmaClient.fetchWeather(grid.getX(), grid.getY())
                 .publishOn(Schedulers.boundedElastic())
                 .flatMap(weatherForecastResponse -> {
                     if (!isValid(weatherForecastResponse)) {
@@ -63,12 +63,8 @@ public class WeatherServiceImpl implements WeatherService {
                 })
                 .doOnError(e -> log.error(SERVICE_NAME + "비동기 날씨 업데이트 작업 실패. X={}, Y={}", grid.getX(), grid.getY(), e))
                 .then() // Mono<Void>로 변환
-                .toFuture() // CompletableFuture<Void>로 최종 변환
-                .exceptionally(e -> {
-                    // doOnError에서 로그를 이미 남겼으므로, 여기서는 예외를 처리하고 null을 반환하여 CompletableFuture를 정상 완료시킵니다.
-                    // 이렇게 해야 CompletableFuture.allOf() 등에서 전체 작업이 중단되지 않습니다.
-                    return null;
-                });
+                .toFuture(); // CompletableFuture<Void>로 최종 변환
+
     }
 
     private List<Weather> convertToEntities(WeatherForecastResponse dto, Grid grid) {
@@ -158,9 +154,14 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     private Double parsePrecipitationAmount(String value) {
-        if (value == null || value.contains("없음")) return 0.0;
-        return Double.parseDouble(value.replaceAll("[^0-9.]", ""));
-    }
+        if (value == null) return 0.0;
+        String normalized = value.replaceAll("\\s+", "");
+        if (normalized.contains("없음")) return 0.0;
+        if (normalized.contains("미만")) return 0.0;
+        String number = normalized.replaceAll("[^0-9.]", "");
+        if (number.isEmpty()) return 0.0;
+        return Double.parseDouble(number);
+        }
 
     private boolean isValid(WeatherForecastResponse dto) {
         return dto.response() != null &&

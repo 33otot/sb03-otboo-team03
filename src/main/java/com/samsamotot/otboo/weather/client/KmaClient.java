@@ -25,9 +25,9 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 @Component
-public class WeatherKmaClient {
+public class KmaClient {
 
-    private static final String CLIENT_NAME = "[WeatherKmaClient] ";
+    private static final String CLIENT_NAME = "[KmaClient] ";
 
     private final WebClient webClient;
     private final String serviceKey;
@@ -37,8 +37,8 @@ public class WeatherKmaClient {
     private static final String NUM_OF_ROWS = "1000";
     private static final String DATA_TYPE = "JSON";
 
-    public WeatherKmaClient(@Qualifier("kmaWebClient") WebClient webClient,
-                            @Value("${kma.service-key}") String serviceKey) {
+    public KmaClient(@Qualifier("kmaWebClient") WebClient webClient,
+                     @Value("${kma.service-key}") String serviceKey) {
         this.webClient = webClient;
         this.serviceKey = serviceKey;
     }
@@ -48,7 +48,7 @@ public class WeatherKmaClient {
      *
      * @param nx 격자 X
      * @param ny 격자 Y
-     * @return VillageForecastResponse를 담은 Mono
+     * @return WeatherForecastResponse를 담은 Mono
      * @exception WebClientResponseException
      */
     public Mono<WeatherForecastResponse> fetchWeather(int nx, int ny) {

@@ -26,6 +26,7 @@ public class DataLoader implements ApplicationRunner {
     private static final String CONFIG_NAME = "[DataLoader] ";
 
     private static final String CSV_FILE_PATH = "locations_korea.csv";
+    private static final int GRID_COUNT = 1600;
 
     private final LocationRepository locationRepository;
     private final GridRepository gridRepository;
@@ -34,8 +35,8 @@ public class DataLoader implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (locationRepository.count() > 3800) {
-            log.info(CONFIG_NAME + "대한민국 위치 정보가 이미 존재합니다.");
+        if (gridRepository.count() > GRID_COUNT) {
+            log.info(CONFIG_NAME + "대한민국 격자 정보가 이미 존재합니다.");
             return;
         }
 
@@ -44,6 +45,10 @@ public class DataLoader implements ApplicationRunner {
         gridRepository.deleteAllInBatch();
 
         ClassPathResource resource = new ClassPathResource(CSV_FILE_PATH);
+        if (!resource.exists()) {
+            log.warn(CONFIG_NAME + "CSV 파일({})이 존재하지 않아 초기화를 건너뜁니다.", CSV_FILE_PATH);
+            return;
+        }
         Map<String, Grid> grids = new HashMap<>();
         List<Location> locations = new ArrayList<>();
 

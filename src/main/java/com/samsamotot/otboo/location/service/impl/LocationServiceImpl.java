@@ -125,7 +125,7 @@ public class LocationServiceImpl implements LocationService {
         }
 
         // x, y가 0인 경우 갱신 필요
-        if (location.getGrid().getX() == 0 && location.getGrid().getY() == 0) {
+        if (location.getGrid().getX() == 0 || location.getGrid().getY() == 0) {
             return true;
         }
 

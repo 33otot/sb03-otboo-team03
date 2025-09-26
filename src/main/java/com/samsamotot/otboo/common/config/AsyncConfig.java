@@ -3,6 +3,8 @@ package com.samsamotot.otboo.common.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +22,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class AsyncConfig implements AsyncConfigurer {
 
     private static final String CONFIG = "[AsyncConfig] ";
+
+    @Autowired
+    private ApplicationContext applicationContext;
 
     /**
      * 스레드 풀 실행자를 생성하는 공통 메소드입니다.
@@ -64,7 +69,7 @@ public class AsyncConfig implements AsyncConfigurer {
      */
     @Override
     public Executor getAsyncExecutor() {
-        return mainTaskExecutor(4, 8, 200, 60);
+        return applicationContext.getBean("mainTaskExecutor", ThreadPoolTaskExecutor.class);
     }
 
     /**
