@@ -2,6 +2,9 @@ package com.samsamotot.otboo.directmessage.controller;
 
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.directmessage.dto.*;
+import com.samsamotot.otboo.directmessage.controller.api.DirectMessageApi;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +31,7 @@ import java.util.UUID;
 @RestController
 @Validated
 @RequestMapping("api/direct-messages")
-public class DirectMessageController {
+public class DirectMessageController implements DirectMessageApi {
 
     private final DirectMessageService directMessageService;
     private final SimpMessagingTemplate template;

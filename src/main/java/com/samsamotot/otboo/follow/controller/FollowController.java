@@ -47,7 +47,6 @@ public class FollowController implements FollowApi {
     }
 
 
-    // TODO 팔로우 요약 정보 조회 - 주석 추가
     @GetMapping("/summary")
     public ResponseEntity<FollowSummaryDto> followSummary(@RequestParam UUID userId) {
         return ResponseEntity.ok().body(followService.findFollowSummaries(userId));
@@ -79,7 +78,7 @@ public class FollowController implements FollowApi {
     public ResponseEntity<FollowListResponse> getFollowings(
         @RequestParam UUID followerId,
         @RequestParam(required = false) String cursor,
-        @RequestParam(required = false) UUID idAfter, //
+        @RequestParam(required = false) UUID idAfter,
         @RequestParam Integer limit,
         @RequestParam(required = false) String nameLike
     ) {
