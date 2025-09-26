@@ -11,6 +11,7 @@ import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -108,13 +109,11 @@ public class FollowServiceImpl implements FollowService {
         }
     }
 
-    // TODO 팔로우 요약 정보 조회 - 주석 추가
+
     @Override
     public FollowSummaryDto findFollowSummaries(UUID userId) {
-        // TODO: 임시 구현 - Authentication/Security 적용 후 실제 로그인 사용자 ID로 교체 필요
-        UUID loggedInUserId = UUID.randomUUID(); // 임시값: 항상 USER_NOT_FOUND 발생
         log.info(FOLLOW_SERVICE + "팔로우 요약 조회 시작: targetUserId={}", userId);
-        log.warn(FOLLOW_SERVICE + "임시 UUID 사용 중. Security 적용 후 Authentication 기반으로 교체 필요: tempLoggedInUserId={}", loggedInUserId);
+        UUID loggedInUserId = currentUserId();
 
 
         User loggedInUser = userRepository.findById(loggedInUserId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
@@ -339,5 +338,21 @@ public class FollowServiceImpl implements FollowService {
         } catch (Exception ignore) {
         }
         return null;
+    }
+
+    private UUID currentUserId() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
+            log.warn(FOLLOW_SERVICE + "인증 실패: Authentication 비어있음/미인증 (auth={}, principal={})", auth, (auth != null ? auth.getPrincipal() : null));
+            throw new OtbooException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String email = auth.getName();
+        return userRepository.findByEmail(email)
+            .map(User::getId)
+            .orElseThrow(() -> {
+                log.warn(FOLLOW_SERVICE + "인증 사용자 조회 실패: email={} (DB에 없음)", email);
+                return new OtbooException(ErrorCode.UNAUTHORIZED);
+            });
     }
 }
