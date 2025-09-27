@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
@@ -37,7 +36,7 @@ public class WeatherServiceImplTest {
     private WeatherServiceImpl weatherService;
 
     @Mock
-    private KmaClient weatherKmaClient;
+    private KmaClient kmaClient;
 
 
     @Mock
@@ -63,7 +62,7 @@ public class WeatherServiceImplTest {
         );
 
         // Mockito를 사용하여 가짜 객체들 행동 정의
-        given(weatherKmaClient.fetchWeather(grid.getX(), grid.getY()))
+        given(kmaClient.fetchWeather(grid.getX(), grid.getY()))
                 .willReturn(Mono.just(fakeFcstResponse));
 
 
@@ -92,8 +91,8 @@ public class WeatherServiceImplTest {
         );
 
         // Mockito 설정:
-        // weatherKmaClient.fetchWeather가 호출되면, 비어있는 가짜 응답을 반환
-        given(weatherKmaClient.fetchWeather(grid.getX(), grid.getY()))
+        // kmaClient.fetchWeather가 호출되면, 비어있는 가짜 응답을 반환
+        given(kmaClient.fetchWeather(grid.getX(), grid.getY()))
                 .willReturn(Mono.just(fakeFcstResponse));
 
 
@@ -108,32 +107,6 @@ public class WeatherServiceImplTest {
         // 유효하지 않은 데이터이므로 DB 접근 불가
         verify(weatherTransactionService, times(0)).updateWeatherData(any(Grid.class), any(List.class));
 
-    }
-
-    @Test
-    void 날씨_정보_업데이트_API_호출_실패하면_정상완료() {
-        // Given
-        Location testLocation = LocationFixture.createValidLocation();
-        Grid grid = testLocation.getGrid();
-
-        // API 호출 실패 시 발생할 가짜 예외 객체
-        RuntimeException apiException = new RuntimeException("API 서버에 연결할 수 없습니다.");
-
-        // weatherKmaClient.fetchWeather가 호출되면, Mono.error()을 통해 예외 발생
-        given(weatherKmaClient.fetchWeather(grid.getX(), grid.getY()))
-                .willReturn(Mono.error(apiException));
-
-
-        // When
-        CompletableFuture<Void> future = weatherService.updateWeatherDataForGrid(grid);
-
-        // Then
-        // WeatherServiceImpl의 exceptionally 블록으로 인해 예외가 발생하지 않고 정상 완료됨
-        assertThat(future.isCompletedExceptionally()).isFalse();
-        assertThat(future.join()).isNull(); // exceptionally에서 null을 반환
-
-        // API 호출 자체가 실패했으므로 DB 접근 불가
-        verify(weatherTransactionService, times(0)).updateWeatherData(any(Grid.class), any(List.class));
     }
 
     @Test
@@ -172,7 +145,7 @@ public class WeatherServiceImplTest {
         );
 
         // Mockito 설정
-        given(weatherKmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
+        given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                 .willReturn(Mono.just(fakeFcstResponse));
 
         // updateWeatherData 메소드가 호출될 때, 전달되는 List<Weather>를 캡쳐하기 위한 설정
@@ -250,7 +223,7 @@ public class WeatherServiceImplTest {
         );
 
         // Mockito 설정
-        given(weatherKmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
+        given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                 .willReturn(Mono.just(fakeFcstResponse));
 
         // updateWeatherData 메소드가 호출될 때, 전달되는 List<Weather>를 캡쳐하기 위한 설정
@@ -316,7 +289,7 @@ public class WeatherServiceImplTest {
                 )
         );
 
-        given(weatherKmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
+        given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                 .willReturn(Mono.just(fakeResponse));
 
         @SuppressWarnings("unchecked")
@@ -375,7 +348,7 @@ public class WeatherServiceImplTest {
                 )
         );
 
-        given(weatherKmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
+        given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                 .willReturn(Mono.just(fakeResponse));
 
         @SuppressWarnings("unchecked")

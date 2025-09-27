@@ -48,7 +48,7 @@ public class KmaClient {
      *
      * @param nx 격자 X
      * @param ny 격자 Y
-     * @return VillageForecastResponse를 담은 Mono
+     * @return WeatherForecastResponse를 담은 Mono
      * @exception WebClientResponseException
      */
     public Mono<WeatherForecastResponse> fetchWeather(int nx, int ny) {

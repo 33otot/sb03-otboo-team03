@@ -26,7 +26,7 @@ public class Location extends BaseEntity {
     @Column(name = "longitude", nullable = false)
     private double longitude;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "grid_id", nullable = false)
     private Grid grid;
 
