@@ -1,8 +1,14 @@
 package com.samsamotot.otboo.weather.service.impl;
 
-import com.samsamotot.otboo.weather.client.WeatherKmaClient;
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.location.repository.LocationRepository;
+import com.samsamotot.otboo.weather.client.KmaClient;
+import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
 import com.samsamotot.otboo.weather.entity.*;
+import com.samsamotot.otboo.weather.mapper.WeatherMapper;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import com.samsamotot.otboo.weather.service.WeatherService;
 import com.samsamotot.otboo.weather.service.WeatherTransactionService;
@@ -13,12 +19,9 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -38,16 +41,18 @@ public class WeatherServiceImpl implements WeatherService {
 
     private static final String SERVICE_NAME = "[WeatherServiceImpl] ";
 
-    private final WeatherKmaClient weatherKmaClient;
+    private final KmaClient kmaClient;
     private final WeatherRepository weatherRepository;
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
     private final WeatherTransactionService weatherTransactionService;
+    private final LocationRepository locationRepository;
+    private final WeatherMapper weatherMapper;
 
     @Async("weatherApiTaskExecutor")
     @Override
     public CompletableFuture<Void> updateWeatherDataForGrid(Grid grid) {
-        return weatherKmaClient.fetchWeather(grid.getX(), grid.getY())
+        return kmaClient.fetchWeather(grid.getX(), grid.getY())
                 .publishOn(Schedulers.boundedElastic())
                 .flatMap(weatherForecastResponse -> {
                     if (!isValid(weatherForecastResponse)) {
@@ -57,7 +62,7 @@ public class WeatherServiceImpl implements WeatherService {
 
                     List<Weather> weatherList = convertToEntities(weatherForecastResponse, grid);
 
-                    // 3. DB 날씨 데이터 갱신
+                    // DB 날씨 데이터 갱신
                     return Mono.fromRunnable(() ->
                             weatherTransactionService.updateWeatherData(grid, weatherList));
                 })
@@ -69,6 +74,97 @@ public class WeatherServiceImpl implements WeatherService {
                     // 이렇게 해야 CompletableFuture.allOf() 등에서 전체 작업이 중단되지 않습니다.
                     return null;
                 });
+    }
+
+    @Override
+    public List<WeatherDto> getSixDayWeather(double longitude, double latitude) {
+
+        // 경도/위도로 grid_id 가져와서 grid 호출
+        Location location = locationRepository.findByLongitudeAndLatitude(longitude, latitude)
+                .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_LOCATION));
+        Grid grid = locationRepository.findGridByLongitudeAndLatitude(longitude, latitude)
+                .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_GRID));
+
+        // grid로 당일 포함 6일치 WeatherList 출력
+        List<Weather> weatherList = weatherRepository.findAllByGrid(grid);
+        
+        // DB에 데이터가 없으면 API 호출하여 데이터 수집
+        if (weatherList.isEmpty()) {
+            log.info(SERVICE_NAME + "DB에 날씨 데이터가 없어 API 호출하여 수집합니다. X={}, Y={}", grid.getX(), grid.getY());
+            try {
+                // 동기적으로 API 호출하여 데이터 수집
+                kmaClient.fetchWeather(grid.getX(), grid.getY())
+                        .publishOn(Schedulers.boundedElastic())
+                        .flatMap(weatherForecastResponse -> {
+                            if (!isValid(weatherForecastResponse)) {
+                                log.warn(SERVICE_NAME + "API 응답 데이터가 비어있습니다. X={}, Y={}.", grid.getX(), grid.getY());
+                                return Mono.empty();
+                            }
+
+                            List<Weather> newWeatherList = convertToEntities(weatherForecastResponse, grid);
+                            weatherTransactionService.updateWeatherData(grid, newWeatherList);
+                            return Mono.just(newWeatherList);
+                        })
+                        .doOnError(e -> log.error(SERVICE_NAME + "날씨 데이터 수집 실패. X={}, Y={}", grid.getX(), grid.getY(), e))
+                        .block(); // 동기적으로 완료 대기
+                
+                // 수집 후 다시 조회
+                weatherList = weatherRepository.findAllByGrid(grid);
+            } catch (Exception e) {
+                log.error(SERVICE_NAME + "날씨 데이터 수집 중 오류 발생. X={}, Y={}", grid.getX(), grid.getY(), e);
+                return Collections.emptyList();
+            }
+        }
+
+        Instant now = Instant.now();
+        ZoneId seoulZoneId = ZoneId.of("Asia/Seoul");
+
+            // WeatherList를 기준 시간을 기준으로 총 6일치, 6개의 날씨 데이터만 필터링
+        // 1. '기준 시간(Target Hour)' 정하기
+        Optional<Weather> recentWeatherOpt = weatherList.stream()
+                .filter(weather -> weather.getForecastAt().isAfter(now)) // 현재 시각 이후 예보
+                .min(Comparator.comparing(Weather::getForecastAt)); // 가장 최근 예보
+
+        if (recentWeatherOpt.isEmpty()) {
+            return Collections.emptyList(); // 서비스 장애를 보일 순 없으니 예외 처리하지 않고 빈 리스트 반환
+        }
+
+            // 찾은 기준 예보의 '시간(hour)' 추출 (예: 8)
+        int targetHour = recentWeatherOpt.get().getForecastAt().atZone(seoulZoneId).getHour();
+
+        // 2. '기준 시간'으로 6일치 데이터 필터링 및 정렬
+        List<Weather> dailyWeatherList = weatherList.stream()
+                .filter(w -> {
+                    ZonedDateTime zdt = w.getForecastAt().atZone(seoulZoneId);
+                    return zdt.getHour() == targetHour;
+                })
+                .sorted(Comparator.comparing(Weather::getForecastAt))
+                .toList();
+
+            // '전날 대비' 값 계산을 위해 전체 날씨 데이터 임시 저장
+        Map<LocalDate, Weather> weatherByDate = weatherList.stream()
+                .collect(Collectors.toMap(
+                        // Key: 한국 시간 기준 날짜
+                        weather -> LocalDate.ofInstant(weather.getForecastAt(), seoulZoneId),
+                        // Value: Weather 객체
+                        weather -> weather,
+                        // 혹시 같은 날짜에 데이터가 여러 개일 경우, 기존 것을 유지
+                        (existing, replacement) -> existing
+                ));
+
+        // 3. 필터링한 6일치 날씨 데이터를 DTO로 변환
+        List<WeatherDto> weatherDtoList = dailyWeatherList.stream()
+                .map(todayWeather -> {
+                    // 어제 날씨
+                    LocalDate today = LocalDate.ofInstant(todayWeather.getForecastAt(), seoulZoneId);
+                    LocalDate yesterday = today.minusDays(1);
+                    Weather yesterdayWeather = weatherByDate.get(yesterday); // 첫날은 전날이 없음
+
+                    return weatherMapper.toDto(todayWeather, location, yesterdayWeather);
+                })
+                .toList();
+
+        return weatherDtoList;
     }
 
     private List<Weather> convertToEntities(WeatherForecastResponse dto, Grid grid) {

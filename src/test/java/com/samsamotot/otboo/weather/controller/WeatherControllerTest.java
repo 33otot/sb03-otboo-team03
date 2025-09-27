@@ -2,15 +2,11 @@ package com.samsamotot.otboo.weather.controller;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.LocationFixture;
-import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
-import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.entity.Grid;
-import com.samsamotot.otboo.weather.entity.Weather;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,8 +16,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

@@ -1,16 +1,14 @@
 package com.samsamotot.otboo.weather.mapper;
 
-import com.samsamotot.otboo.weather.dto.HumidityDto;
-import com.samsamotot.otboo.weather.dto.PrecipitationDto;
-import com.samsamotot.otboo.weather.dto.TemperatureDto;
-import com.samsamotot.otboo.weather.dto.WeatherDto;
-import com.samsamotot.otboo.weather.dto.WindSpeedDto;
+import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.weather.dto.*;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface WeatherMapper {
@@ -21,6 +19,34 @@ public interface WeatherMapper {
     @Mapping(target = "windSpeed", expression = "java(toWindSpeedDto(weather))")
     @Mapping(target = "location", ignore = true)
     WeatherDto toDto(Weather weather);
+
+    @Mapping(source = "weather.id", target = "id")
+    @Mapping(source = "weather", target = "precipitation")
+    @Mapping(source = "weather", target = "humidity")
+    @Mapping(source = "weather", target = "temperature")
+    @Mapping(source = "weather", target = "windSpeed")
+    @Mapping(source = "location", target = "location")
+    WeatherDto toDto(Weather weather, Location location, @Context Weather yesterdayWeather);
+
+    @AfterMapping
+    default void calculateComparedValues(
+            @MappingTarget WeatherDto.WeatherDtoBuilder dtoBuilder,
+            Weather todayWeather,
+            @Context Weather yesterdayWeather
+    ) {
+        if (yesterdayWeather != null) {
+            Double humidityCompared = todayWeather.getHumidityCurrent() - yesterdayWeather.getHumidityCurrent();
+            Double temperatureCompared = todayWeather.getTemperatureCurrent() - yesterdayWeather.getTemperatureCurrent();
+
+            dtoBuilder.humidity(new HumidityDto(todayWeather.getHumidityCurrent(), humidityCompared));
+            dtoBuilder.temperature(new TemperatureDto(
+                    todayWeather.getTemperatureCurrent(),
+                    temperatureCompared,
+                    yesterdayWeather.getTemperatureMin(),
+                    yesterdayWeather.getTemperatureMax()
+            ));
+        }
+    }
 
     default LocalDateTime toLocalDateTime(Instant instant) {
         if (instant == null) {
@@ -61,6 +87,20 @@ public interface WeatherMapper {
         return WindSpeedDto.builder()
             .speed(weather.getWindSpeed())
             .asWord(weather.getWindAsWord())
+            .build();
+    }
+
+    default WeatherAPILocation toWeatherAPILocation(Location location, Weather weather) {
+        if (location == null || weather == null || weather.getGrid() == null) return null;
+
+        Grid grid = weather.getGrid();
+
+        return WeatherAPILocation.builder()
+            .latitude(location.getLatitude())
+            .longitude(location.getLongitude())
+            .x(grid.getX())
+            .y(grid.getY())
+            .locationNames(location.getLocationNames())
             .build();
     }
 }

@@ -1,9 +1,8 @@
 package com.samsamotot.otboo.weather.service;
 
-import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.fixture.LocationFixture;
 import com.samsamotot.otboo.location.entity.Location;
-import com.samsamotot.otboo.weather.client.WeatherKmaClient;
+import com.samsamotot.otboo.weather.client.KmaClient;
 import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
 import com.samsamotot.otboo.weather.entity.*;
 import com.samsamotot.otboo.weather.service.impl.WeatherServiceImpl;
@@ -22,7 +21,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,7 +37,7 @@ public class WeatherServiceImplTest {
     private WeatherServiceImpl weatherService;
 
     @Mock
-    private WeatherKmaClient weatherKmaClient;
+    private KmaClient weatherKmaClient;
 
 
     @Mock

@@ -1,6 +1,6 @@
 package com.samsamotot.otboo.location.service;
 
-import com.samsamotot.otboo.location.entity.WeatherAPILocation;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 
 /**
  * 위치 정보 조회 서비스 인터페이스

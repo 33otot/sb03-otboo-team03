@@ -87,11 +87,11 @@ public class WeatherController implements WeatherApi {
             @RequestParam double longitude,
             @RequestParam double latitude
     ) {
-        log.info(CONTROLLER_NAME + "날씨 데이터 조회: longitude={}, latutude={}", longitude, latitude);
+        log.info(CONTROLLER_NAME + "날씨 데이터 조회: longitude={}, latitude={}", longitude, latitude);
 
         List<WeatherDto> weathers = weatherService.getSixDayWeather(longitude, latitude);
 
-        log.info(CONTROLLER_NAME + "날씨 데이터 조회 완료: longitude={}, latutude={}", longitude, latitude);
+        log.info(CONTROLLER_NAME + "날씨 데이터 조회 완료: longitude={}, latitude={}", longitude, latitude);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
