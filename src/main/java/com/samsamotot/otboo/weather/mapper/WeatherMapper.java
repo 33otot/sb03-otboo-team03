@@ -19,6 +19,7 @@ public interface WeatherMapper {
     @Mapping(target = "humidity", expression = "java(toHumidityDto(weather))")
     @Mapping(target = "temperature", expression = "java(toTemperatureDto(weather))")
     @Mapping(target = "windSpeed", expression = "java(toWindSpeedDto(weather))")
+    @Mapping(target = "location", ignore = true)
     WeatherDto toDto(Weather weather);
 
     default LocalDateTime toLocalDateTime(Instant instant) {

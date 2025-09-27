@@ -5,14 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.samsamotot.otboo.comment.entity.Comment;
 import com.samsamotot.otboo.common.config.QueryDslConfig;
 import com.samsamotot.otboo.common.config.TestJpaAuditingConfig;
-import com.samsamotot.otboo.common.fixture.CommentFixture;
-import com.samsamotot.otboo.common.fixture.FeedFixture;
-import com.samsamotot.otboo.common.fixture.LocationFixture;
-import com.samsamotot.otboo.common.fixture.UserFixture;
-import com.samsamotot.otboo.common.fixture.WeatherFixture;
+import com.samsamotot.otboo.common.fixture.*;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -75,12 +72,18 @@ public class CommentRepositoryTest {
     @BeforeEach
     void setUp() {
         author = UserFixture.createUser();
-        Location location = LocationFixture.createLocation();
-        Weather weather = WeatherFixture.createWeather(location);
-        feed = FeedFixture.createFeed(author, weather);
         em.persist(author);
+
+        Grid grid = GridFixture.createGrid();
+        em.persist(grid);
+
+        Location location = LocationFixture.createLocation(grid);
         em.persist(location);
+
+        Weather weather = WeatherFixture.createWeather(grid);
         em.persist(weather);
+
+        feed = FeedFixture.createFeed(author, weather);
         em.persist(feed);
 
         em.flush();
