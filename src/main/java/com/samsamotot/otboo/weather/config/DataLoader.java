@@ -41,16 +41,23 @@ public class DataLoader implements ApplicationRunner {
         }
 
         log.info(CONFIG_NAME + "Location 및 Grid 데이터베이스 초기화 시작");
-        locationRepository.deleteAllInBatch();
-        gridRepository.deleteAllInBatch();
+        
+        // 기존 데이터 조회
+        Map<String, Grid> existingGrids = gridRepository.findAll().stream()
+                .collect(Collectors.toMap(grid -> grid.getX() + "_" + grid.getY(), grid -> grid));
+        
+        // 기존 Location 데이터 조회 (중복 체크용)
+        Set<String> existingLocationKeys = locationRepository.findAll().stream()
+                .map(loc -> loc.getLongitude() + "_" + loc.getLatitude())
+                .collect(Collectors.toSet());
 
         ClassPathResource resource = new ClassPathResource(CSV_FILE_PATH);
         if (!resource.exists()) {
             log.warn(CONFIG_NAME + "CSV 파일({})이 존재하지 않아 초기화를 건너뜁니다.", CSV_FILE_PATH);
             return;
         }
-        Map<String, Grid> grids = new HashMap<>();
-        List<Location> locations = new ArrayList<>();
+        Map<String, Grid> newGrids = new HashMap<>();
+        List<Location> newLocations = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
             reader.readLine(); // 헤더 라인 건너뛰기
@@ -66,28 +73,44 @@ public class DataLoader implements ApplicationRunner {
                     int x = Integer.parseInt(parts[0]);
                     int y = Integer.parseInt(parts[1]);
                     String gridKey = x + "_" + y;
+                    double longitude = Double.parseDouble(parts[parts.length - 2].trim());
+                    double latitude = Double.parseDouble(parts[parts.length - 1].trim());
+                    String locationKey = longitude + "_" + latitude;
 
-                    // 1. Map을 사용하여 Grid 객체를 재사용. 없으면 새로 생성하여 추가
-                    Grid grid = grids.computeIfAbsent(gridKey, k -> Grid.builder().x(x).y(y).build());
+                    // 1. Grid 중복 체크 - 기존에 없으면 새로 생성
+                    Grid grid = existingGrids.get(gridKey);
+                    if (grid == null) {
+                        grid = newGrids.computeIfAbsent(gridKey, k -> Grid.builder().x(x).y(y).build());
+                    }
 
-                    // 2. Location 객체 생성
-                    Location location = Location.builder()
-                            .longitude(Double.parseDouble(parts[parts.length - 2].trim()))
-                            .latitude(Double.parseDouble(parts[parts.length - 1].trim()))
-                            .grid(grid)
-                            .locationNames(buildLocationNames(parts))
-                            .build();
-
-                    locations.add(location);
+                    // 2. Location 중복 체크 - 기존에 없으면 새로 생성
+                    if (!existingLocationKeys.contains(locationKey)) {
+                        Location location = Location.builder()
+                                .longitude(longitude)
+                                .latitude(latitude)
+                                .grid(grid)
+                                .locationNames(buildLocationNames(parts))
+                                .build();
+                        newLocations.add(location);
+                    }
                 } catch (Exception e) {
                     log.warn(CONFIG_NAME + "CSV 파일 파싱 중 숫자 변환 오류. 라인 건너뜀: {}", line);
                 }
             }
-            // 3. Grid들과 Location들을 DB에 저장
-            gridRepository.saveAll(grids.values());
-            locationRepository.saveAll(locations);
+            
+            // 3. 새로운 Grid들과 Location들만 DB에 저장
+            if (!newGrids.isEmpty()) {
+                gridRepository.saveAll(newGrids.values());
+                log.info(CONFIG_NAME + "{}개의 새로운 Grid 데이터 저장 완료", newGrids.size());
+            }
+            
+            if (!newLocations.isEmpty()) {
+                locationRepository.saveAll(newLocations);
+                log.info(CONFIG_NAME + "{}개의 새로운 Location 데이터 저장 완료", newLocations.size());
+            }
 
-            log.info(CONFIG_NAME + "{}개의 Grid와 {}개의 Location 데이터 초기화 완료", grids.size(), locations.size());
+            log.info(CONFIG_NAME + "데이터 초기화 완료 - 기존 Grid: {}, 새 Grid: {}, 새 Location: {}", 
+                    existingGrids.size(), newGrids.size(), newLocations.size());
 
         } catch (Exception e) {
             log.error(CONFIG_NAME + "CSV 파일({})을 읽는 중 심각한 오류가 발생하여 초기화를 중단합니다.", CSV_FILE_PATH, e);
