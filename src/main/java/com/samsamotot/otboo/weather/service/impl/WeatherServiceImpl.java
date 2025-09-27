@@ -25,6 +25,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toMap;
+
 /**
  * 단기예보 수집/저장 서비스 구현체.
  * <p>
@@ -75,13 +77,13 @@ public class WeatherServiceImpl implements WeatherService {
     @Override
     public List<WeatherDto> getSixDayWeather(double longitude, double latitude) {
 
-        // 경도/위도로 grid_id 가져와서 grid 호출
+        // --- 1. 데이터 준비: Location, Grid 조회 ---
         Location location = locationRepository.findByLongitudeAndLatitude(longitude, latitude)
                 .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_LOCATION));
         Grid grid = locationRepository.findGridByLongitudeAndLatitude(longitude, latitude)
                 .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_GRID));
 
-        // grid로 당일 포함 6일치 WeatherList 출력
+        // --- 2. 데이터 조회 및 API 호출 (기존 코드와 동일) ---
         List<Weather> weatherList = weatherRepository.findAllByGrid(grid);
 
         // DB에 데이터가 없으면 API 호출하여 데이터 수집
@@ -112,52 +114,38 @@ public class WeatherServiceImpl implements WeatherService {
             }
         }
 
+        // --- 3. 데이터 전처리: 중복된 예보 제거 (가장 최신 forecastedAt만 남김) ---
+        // '예보 시간'(forecastAt)을 기준으로 그룹화하고, 각 그룹 내에서 가장 최신 '예보된 시간'(forecastedAt)을 가진 Weather만 선택
+        weatherList = new ArrayList<>(weatherList.stream()
+                .collect(toMap(
+                        Weather::getForecastAt,
+                        w -> w,
+                        (w1, w2) -> w1.getForecastedAt().isAfter(w2.getForecastedAt()) ? w1 : w2
+                )).values());
+
+
         Instant now = Instant.now();
         ZoneId seoulZoneId = ZoneId.of("Asia/Seoul");
 
-            // WeatherList를 기준 시간을 기준으로 총 6일치, 6개의 날씨 데이터만 필터링
-        // 1. '기준 시간(Target Hour)' 정하기
+        // WeatherList를 기준 시간을 기준으로 총 6일치, 6개의 날씨 데이터만 필터링
+        // --- 4. '기준 시간(Target Hour)' 정하기
         Optional<Weather> recentWeatherOpt = weatherList.stream()
-                .filter(weather -> weather.getForecastAt().isAfter(now)) // 현재 시각 이후 예보
-                .min(Comparator.comparing(Weather::getForecastAt)); // 가장 최근 예보
+                .filter(weather -> !weather.getForecastAt().isAfter(now)) // 현재 시각 또는 그 이전의 예보들만
+                .max(Comparator.comparing(Weather::getForecastAt)); // 그 중 가장 최근 예보
 
         if (recentWeatherOpt.isEmpty()) {
             return Collections.emptyList(); // 서비스 장애를 보일 순 없으니 예외 처리하지 않고 빈 리스트 반환
         }
 
-            // 찾은 기준 예보의 '시간(hour)' 추출 (예: 8)
+        // 찾은 기준 예보의 '시간(hour)' 추출 (예: 8)
         int targetHour = recentWeatherOpt.get().getForecastAt().atZone(seoulZoneId).getHour();
 
-        // 2. '기준 시간'으로 6일치 데이터 필터링 및 정렬
-        List<Weather> dailyWeatherList = weatherList.stream()
-                .filter(w -> {
-                    ZonedDateTime zdt = w.getForecastAt().atZone(seoulZoneId);
-                    return zdt.getHour() == targetHour;
-                })
-                .sorted(Comparator.comparing(Weather::getForecastAt))
-                .toList();
-
-            // '전날 대비' 값 계산을 위해 전체 날씨 데이터 임시 저장
-        Map<LocalDate, Weather> weatherByDate = weatherList.stream()
-                .collect(Collectors.toMap(
-                        // Key: 한국 시간 기준 날짜
-                        weather -> LocalDate.ofInstant(weather.getForecastAt(), seoulZoneId),
-                        // Value: Weather 객체
-                        weather -> weather,
-                        // 혹시 같은 날짜에 데이터가 여러 개일 경우, 기존 것을 유지
-                        (existing, replacement) -> existing
-                ));
-
-        // 3. 필터링한 6일치 날씨 데이터를 DTO로 변환
-        List<WeatherDto> weatherDtoList = dailyWeatherList.stream()
-                .map(todayWeather -> {
-                    // 어제 날씨
-                    LocalDate today = LocalDate.ofInstant(todayWeather.getForecastAt(), seoulZoneId);
-                    LocalDate yesterday = today.minusDays(1);
-                    Weather yesterdayWeather = weatherByDate.get(yesterday); // 첫날은 전날이 없음
-
-                    return weatherMapper.toDto(todayWeather, location, yesterdayWeather);
-                })
+        // --- 5. 최종 6일치 데이터 필터링 및 DTO 변환 ---
+        List<WeatherDto> weatherDtoList = weatherList.stream()
+                .filter(w -> w.getForecastAt().atZone(seoulZoneId).getHour() == targetHour) // 기준 시간에 맞는 데이터만 필터링
+                .sorted(Comparator.comparing(Weather::getForecastAt)) // 날짜순 정렬
+                .limit(6) // 최대 6개 데이터만 선택
+                .map(weather -> weatherMapper.toDto(weather, location))
                 .toList();
 
         return weatherDtoList;
@@ -251,7 +239,7 @@ public class WeatherServiceImpl implements WeatherService {
 
     private Double parsePrecipitationAmount(String value) {
         if (value == null) return 0.0;
-        String normalized = value.replaceAll("\\s+", "");
+        String normalized = value.replaceAll("\s+", "");
         if (normalized.contains("없음")) return 0.0;
         if (normalized.contains("미만")) return 0.0;
         String number = normalized.replaceAll("[^0-9.]", "");

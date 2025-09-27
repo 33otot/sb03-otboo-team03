@@ -21,32 +21,12 @@ public interface WeatherMapper {
     WeatherDto toDto(Weather weather);
 
     @Mapping(source = "weather.id", target = "id")
-    @Mapping(source = "weather", target = "precipitation")
-    @Mapping(source = "weather", target = "humidity")
-    @Mapping(source = "weather", target = "temperature")
-    @Mapping(source = "weather", target = "windSpeed")
-    @Mapping(source = "location", target = "location")
-    WeatherDto toDto(Weather weather, Location location, @Context Weather yesterdayWeather);
-
-    @AfterMapping
-    default void calculateComparedValues(
-            @MappingTarget WeatherDto.WeatherDtoBuilder dtoBuilder,
-            Weather todayWeather,
-            @Context Weather yesterdayWeather
-    ) {
-        if (yesterdayWeather != null) {
-            Double humidityCompared = todayWeather.getHumidityCurrent() - yesterdayWeather.getHumidityCurrent();
-            Double temperatureCompared = todayWeather.getTemperatureCurrent() - yesterdayWeather.getTemperatureCurrent();
-
-            dtoBuilder.humidity(new HumidityDto(todayWeather.getHumidityCurrent(), humidityCompared));
-            dtoBuilder.temperature(new TemperatureDto(
-                    todayWeather.getTemperatureCurrent(),
-                    temperatureCompared,
-                    yesterdayWeather.getTemperatureMin(),
-                    yesterdayWeather.getTemperatureMax()
-            ));
-        }
-    }
+    @Mapping(target = "location", expression = "java(toWeatherAPILocation(location, weather))")
+    @Mapping(target = "precipitation", expression = "java(toPrecipitationDto(weather))")
+    @Mapping(target = "humidity", expression = "java(toHumidityDto(weather))")
+    @Mapping(target = "temperature", expression = "java(toTemperatureDto(weather))")
+    @Mapping(target = "windSpeed", expression =  "java(toWindSpeedDto(weather))")
+    WeatherDto toDto(Weather weather, Location location);
 
     default LocalDateTime toLocalDateTime(Instant instant) {
         if (instant == null) {
@@ -92,9 +72,7 @@ public interface WeatherMapper {
 
     default WeatherAPILocation toWeatherAPILocation(Location location, Weather weather) {
         if (location == null || weather == null || weather.getGrid() == null) return null;
-
         Grid grid = weather.getGrid();
-
         return WeatherAPILocation.builder()
             .latitude(location.getLatitude())
             .longitude(location.getLongitude())
