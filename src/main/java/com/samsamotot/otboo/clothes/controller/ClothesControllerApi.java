@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -37,8 +38,8 @@ public interface ClothesControllerApi {
     )
     @PostMapping
     ResponseEntity<ClothesDto> createClothes(
-        @Parameter ClothesCreateRequest request,
-        @Parameter(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE)) MultipartFile image
+        @Parameter @RequestPart("request") ClothesCreateRequest request,
+        @Parameter(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE)) @RequestPart(value = "image", required = false) MultipartFile image
     );
 
     @Operation(summary = "옷 수정", description = "옷 수정 API")
@@ -53,8 +54,8 @@ public interface ClothesControllerApi {
     @PatchMapping("/{clothesId}")
     ResponseEntity<ClothesDto> updateClothes(
         @PathVariable UUID clothesId,
-        @Parameter ClothesUpdateRequest request,
-        @Parameter(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE)) MultipartFile image
+        @Parameter @RequestPart("request") ClothesUpdateRequest request,
+        @Parameter(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE)) @RequestPart(value = "image", required = false) MultipartFile image
     );
 
     @Operation(summary = "옷 삭제", description = "옷 삭제 API")

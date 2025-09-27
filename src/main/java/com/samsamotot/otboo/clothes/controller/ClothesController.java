@@ -32,8 +32,8 @@ public class ClothesController implements ClothesControllerApi{
 
     @PostMapping
     public ResponseEntity<ClothesDto> createClothes(
-        @Valid @RequestPart("clothesCreateRequest") ClothesCreateRequest request,
-        @RequestPart(value = "clothesImage", required = false) MultipartFile image
+        @Valid @RequestPart("request") ClothesCreateRequest request,
+        @RequestPart(value = "image", required = false) MultipartFile image
     ) {
         ClothesDto result;
         if (image != null) {
@@ -55,8 +55,8 @@ public class ClothesController implements ClothesControllerApi{
     @PatchMapping("/{clothesId}")
     public ResponseEntity<ClothesDto> updateClothes(
         @PathVariable("clothesId") UUID clothesId,
-        @Valid @RequestPart("clothesUpdateRequest") ClothesUpdateRequest request,
-        @RequestPart(value = "clothesImage", required = false) MultipartFile image
+        @Valid @RequestPart("request") ClothesUpdateRequest request,
+        @RequestPart(value = "image", required = false) MultipartFile image
     ) {
         ClothesDto result;
         if (image != null) {
