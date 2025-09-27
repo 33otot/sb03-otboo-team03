@@ -9,6 +9,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -41,7 +42,7 @@ public class ClothesRepositoryCustomImpl implements ClothesRepositoryCustom {
         List<Clothes> content = queryFactory
             .selectFrom(clothes)
             .where(builder.hasValue() ? builder : null)
-            .orderBy(clothes.createdAt.desc())
+            .orderBy(clothes.createdAt.desc(), clothes.id.desc())
             .limit(request.limit() + 1)
             .fetch();
 
@@ -61,18 +62,26 @@ public class ClothesRepositoryCustomImpl implements ClothesRepositoryCustom {
         // 마지막 요소의 createdAt
         String cursorStr = request.cursor();
 
+        UUID idAfter = request.idAfter();
+
         // 첫 페이지라면 조건 추가 안 함
         if (cursorStr == null || cursorStr.isBlank()) {
             return;
         }
 
         try {
-            // 마지막 요소의 createdAt
-            Instant cursor = Instant.parse(request.cursor());
+            Instant cursor = Instant.parse(cursorStr);
 
-            builder.and(clothes.createdAt.lt(cursor));
-        }
-        catch (Exception e){
+            if (idAfter != null) {
+                builder.and(
+                    clothes.createdAt.lt(cursor)
+                        .or(clothes.createdAt.eq(cursor)
+                            .and(clothes.id.lt(idAfter)))
+                );
+            } else {
+                builder.and(clothes.createdAt.lt(cursor));
+            }
+        } catch (Exception e){
             log.warn("커서 조건을 위한 값 파싱 실패: {} ", request.cursor());
         }
     }
