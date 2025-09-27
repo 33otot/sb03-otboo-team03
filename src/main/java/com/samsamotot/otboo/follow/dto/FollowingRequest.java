@@ -26,8 +26,6 @@ public record FollowingRequest(
     Integer limit,
 
     @Size(max = 100)
-
-
     String nameLike
 ) {
     @AssertTrue(message = "cursor와 idAfter는 둘 다 null이거나 둘 다 값이 있어야 합니다.")

@@ -18,8 +18,23 @@ spring:
 
 kma:
   base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
-  service-key: ${KMA_ENCODING_KEY}
+  service-key: ${KMA_DECODING_KEY}
 
 kakao.api:
   base-url: https://dapi.kakao.com
   key: ${KAKAO_API_KEY}
+
+# 비동기 실행 설정
+async:
+  executors:
+    main:
+      core-size: 4
+      max-size: 8
+      queue-capacity: 200
+      keep-alive-seconds: 60
+    weather:
+      core-size: 5
+      max-size: 10
+      queue-capacity: 1000
+      keep-alive-seconds: 60
+

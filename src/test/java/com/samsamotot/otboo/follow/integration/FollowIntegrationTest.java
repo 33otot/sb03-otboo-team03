@@ -216,4 +216,26 @@ public class FollowIntegrationTest {
         page2.data().forEach(d -> assertThat(d.followee().userId()).isEqualTo(me.getId()));
 
     }
+    
+    @Test
+    void 팔로우를_정상_삭제한다() throws Exception {
+        // given
+        User follower = User.createUser("uf1@test.com", "uf1", "password#A", BCRYPT_PASSWORD_ENCODER);
+        User followee = User.createUser("ue1@test.com", "ue1", "password#A", BCRYPT_PASSWORD_ENCODER);
+        userRepository.save(follower);
+        userRepository.save(followee);
+
+        FollowDto created = followService.follow(new FollowCreateRequest(follower.getId(), followee.getId()));
+        UUID followId = created.id();
+
+        assertThat(followRepository.existsById(followId)).isTrue();
+
+        // when
+        followService.unfollow(followId);
+
+        // then
+        assertThat(followRepository.existsById(followId)).isFalse();
+        assertThat(followRepository.countTotalFollowings(follower.getId(), null)).isEqualTo(0L);
+        assertThat(followRepository.countTotalFollowers(followee.getId(), null)).isEqualTo(0L);
+    }
 }

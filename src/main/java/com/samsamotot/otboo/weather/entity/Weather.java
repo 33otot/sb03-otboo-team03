@@ -1,7 +1,6 @@
 package com.samsamotot.otboo.weather.entity;
 
 import com.samsamotot.otboo.common.entity.BaseEntity;
-import com.samsamotot.otboo.location.entity.Location;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
@@ -13,8 +12,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "weathers",
     uniqueConstraints = @UniqueConstraint(
-        name = "uq_weathers_loc_forecast",
-        columnNames = {"location_id", "forecast_at", "forecasted_at"}
+        name = "uq_weathers_grid_forecast",
+        columnNames = {"grid_id", "forecast_at", "forecasted_at"}
     )
 )
 @Getter
@@ -29,43 +28,43 @@ public class Weather extends BaseEntity {
     private Instant forecastedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id", nullable = false)
+    @JoinColumn(name = "grid_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private Location location;
+    private Grid grid;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "sky_status", length = 32)
     private SkyStatus skyStatus;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "precipitation_type", length = 32)
+    @Column(name = "precipitation_type", length = 32) // PTY
     private Precipitation precipitationType;
     
-    @Column(name = "precipitation_amount")
+    @Column(name = "precipitation_amount") // PCP
     private Double precipitationAmount;
     
-    @Column(name = "precipitation_prob")
+    @Column(name = "precipitation_prob") // POP
     private Double precipitationProbability;
     
-    @Column(name = "humidity_current")
+    @Column(name = "humidity_current") // REH
     private Double humidityCurrent;
 
     @Column(name = "humidity_compared")
     private Double humidityComparedToDayBefore;
 
-    @Column(name = "temperature_current")
+    @Column(name = "temperature_current") // TMP
     private Double temperatureCurrent;
 
     @Column(name = "temperature_compared")
     private Double temperatureComparedToDayBefore;
 
-    @Column(name = "temperature_min")
+    @Column(name = "temperature_min") // TMN
     private Double temperatureMin;
 
-    @Column(name = "temperature_max")
+    @Column(name = "temperature_max") // TMX
     private Double temperatureMax;
 
-    @Column(name = "wind_speed")
+    @Column(name = "wind_speed") // WSD
     private Double windSpeed;
 
     @Enumerated(EnumType.STRING)

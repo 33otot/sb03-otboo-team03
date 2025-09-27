@@ -2,6 +2,8 @@ package com.samsamotot.otboo.clothes.mapper;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeWithDefDto;
 import com.samsamotot.otboo.clothes.dto.OotdDto;
+import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
+import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.entity.ClothesAttribute;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeOption;
 import com.samsamotot.otboo.feed.entity.FeedClothes;
@@ -11,6 +13,14 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface ClothesMapper {
+
+    @Mapping(source = "clothes.id", target = "id")
+    @Mapping(source = "clothes.owner.id", target = "ownerId")
+    @Mapping(source = "clothes.name", target = "name")
+    @Mapping(source = "clothes.imageUrl", target = "imageUrl")
+    @Mapping(source = "clothes.type", target = "type")
+    @Mapping(source = "clothes.attributes", target = "attributes")
+    ClothesDto toClothesDto(Clothes clothes);
 
     @Mapping(source = "clothes.id", target = "clothesId")
     @Mapping(source = "clothes.name", target = "name")

@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.feed.controller;
 
+import static com.samsamotot.otboo.common.util.AuthUtil.getAuthenticatedUserId;
+
 import com.samsamotot.otboo.feed.controller.api.FeedLikeApi;
 import com.samsamotot.otboo.feed.entity.FeedLike;
 import com.samsamotot.otboo.feed.service.FeedLikeService;
@@ -12,7 +14,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -31,21 +32,18 @@ public class FeedLikeController implements FeedLikeApi {
      * 피드에 좋아요를 추가합니다.
      *
      * @param feedId 좋아요를 추가할 피드의 ID
-     * @param userId 좋아요를 누른 사용자의 ID
      * @return 204 No Content
      */
     @Override
     @PostMapping
     public ResponseEntity<Void> create(
-        @PathVariable UUID feedId,
-        @RequestParam UUID userId
+        @PathVariable UUID feedId
     ) {
-        // TODO : Security 구현 후 @RequestParam userId 제거하고 인증 컨텍스트에서 조회하도록 변경
-        //  ex) @AuthenticationPrincipal CustomUserPrincipal principal → UUID userId = principal.getId()
-        //  컨트롤러 테스트도 함께 수정 필요
-
+        UUID userId = getAuthenticatedUserId();
         log.info(CONTROLLER + "피드 좋아요 요청 - feedId = {}, userId = {}", feedId, userId);
+
         FeedLike result = feedLikeService.create(feedId, userId);
+
         log.info(CONTROLLER + "피드 좋아요 완료 - feedLikeId = {}", result.getId());
 
         return ResponseEntity
@@ -57,21 +55,18 @@ public class FeedLikeController implements FeedLikeApi {
      * 피드에 추가된 좋아요를 취소합니다.
      *
      * @param feedId 좋아요를 취소할 피드의 ID
-     * @param userId 좋아요를 취소하는 사용자의 ID
      * @return 204 No Content
      */
     @Override
     @DeleteMapping
     public ResponseEntity<Void> delete(
-        @PathVariable UUID feedId,
-        @RequestParam UUID userId
+        @PathVariable UUID feedId
     ) {
-        // TODO : Security 구현 후 @RequestParam userId 제거하고 인증 컨텍스트에서 조회하도록 변경
-        //  ex) @AuthenticationPrincipal CustomUserPrincipal principal → UUID userId = principal.getId()
-        //  컨트롤러 테스트도 함께 수정 필요
-
+        UUID userId = getAuthenticatedUserId();
         log.info(CONTROLLER + "피드 좋아요 취소 요청 - feedId = {}, userId = {}", feedId, userId);
+
         feedLikeService.delete(feedId, userId);
+
         log.info(CONTROLLER + "피드 좋아요 취소 완료 - feedId = {}, userId = {}", feedId, userId);
 
         return ResponseEntity

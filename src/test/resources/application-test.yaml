@@ -4,6 +4,10 @@ spring:
       on-profile: test
   main:
     allow-bean-definition-overriding: true
+  autoconfigure: # 테스트 보안 자동 설정 비활성화
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration
 
   # 테스트용 인메모리 DB 설정
   datasource:
@@ -47,7 +51,7 @@ spring:
   # Batch 설정
   batch:
     jdbc:
-      initialize-schema: never
+      initialize-schema: always
 
 # 테스트용 로깅 설정
 logging:
@@ -55,6 +59,8 @@ logging:
     com.samsamotot.otboo: DEBUG
     org.springframework.web: DEBUG
     org.springframework.test: DEBUG
+    org.hibernate.tool.hbm2ddl: DEBUG
+    org.springframework.jdbc.core.StatementCreatorUtils: DEBUG
 
 # 테스트용 서버 설정
 server:
@@ -71,6 +77,11 @@ management:
     health:
       show-details: always
 
+# 기상청 API 테스트용 설정
+kma:
+  base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
+  service-key: test-kma-api-key
+
 # Kakao API 테스트용 설정
 kakao.api:
   base-url: https://dapi.kakao.com
@@ -85,3 +96,11 @@ otboo:
       secret-key: dummy-secret
       region: ap-northeast-2
       bucket: test-bucket
+  # 테스트용 JWT 설정
+  jwt:
+    secret: test-secret
+    access-token-expiration: 3600000      # 1시간 (ms)
+    refresh-token-expiration: 604800000   # 7일 (ms)
+    issuer: otboo-test
+  security:
+    enable-filters: false

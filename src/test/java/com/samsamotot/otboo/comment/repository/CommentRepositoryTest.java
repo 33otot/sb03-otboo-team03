@@ -5,14 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.samsamotot.otboo.comment.entity.Comment;
 import com.samsamotot.otboo.common.config.QueryDslConfig;
 import com.samsamotot.otboo.common.config.TestJpaAuditingConfig;
-import com.samsamotot.otboo.common.fixture.CommentFixture;
-import com.samsamotot.otboo.common.fixture.FeedFixture;
-import com.samsamotot.otboo.common.fixture.LocationFixture;
-import com.samsamotot.otboo.common.fixture.UserFixture;
-import com.samsamotot.otboo.common.fixture.WeatherFixture;
+import com.samsamotot.otboo.common.fixture.*;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -67,18 +64,26 @@ public class CommentRepositoryTest {
     @Autowired
     private TestEntityManager em;
 
+    private static final Instant baseTime = Instant.parse("2024-01-01T00:00:00Z");
+
     User author;
     Feed feed;
 
     @BeforeEach
     void setUp() {
         author = UserFixture.createUser();
-        Location location = LocationFixture.createLocation();
-        Weather weather = WeatherFixture.createWeather(location);
-        feed = FeedFixture.createFeed(author, weather);
         em.persist(author);
+
+        Grid grid = GridFixture.createGrid();
+        em.persist(grid);
+
+        Location location = LocationFixture.createLocation(grid);
         em.persist(location);
+
+        Weather weather = WeatherFixture.createWeather(grid);
         em.persist(weather);
+
+        feed = FeedFixture.createFeed(author, weather);
         em.persist(feed);
 
         em.flush();
@@ -90,8 +95,11 @@ public class CommentRepositoryTest {
 
         // given
         int limit = 5;
+
         for (int i = 0; i < 5; i ++) {
             Comment comment = CommentFixture.createComment(feed, author);
+            // createdAt을 서로 다르게 설정하여 정렬을 결정적으로 만듦
+            ReflectionTestUtils.setField(comment, "createdAt", baseTime.plusSeconds(i));
             em.persist(comment);
         }
         em.flush();
@@ -105,12 +113,22 @@ public class CommentRepositoryTest {
             limit + 1
         );
 
-        // then
+        // then: DB 정렬(createdAt DESC, id DESC) 기준의 상위 limit과 동일해야 함
+        List<Comment> expectedOrder = em.getEntityManager()
+            .createQuery("""
+                SELECT c
+                FROM Comment c
+                WHERE c.feed.id = :feedId
+                ORDER BY c.createdAt DESC, c.id DESC
+            """, Comment.class)
+            .setParameter("feedId", feed.getId())
+            .setMaxResults(limit)
+            .getResultList();
+
         assertThat(result).hasSize(limit);
-        assertThat(result).isSortedAccordingTo(
-            Comparator.comparing(Comment::getCreatedAt).reversed()
-                .thenComparing(Comment::getId, Comparator.reverseOrder())
-        );
+        for (int i = 0; i < limit; i++) {
+            assertThat(result.get(i).getId()).isEqualTo(expectedOrder.get(i).getId());
+        }
         assertThat(result).allMatch(c -> c.getFeed().getId().equals(feed.getId()));
     }
 
@@ -122,15 +140,26 @@ public class CommentRepositoryTest {
         List<Comment> savedComments = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             Comment comment = CommentFixture.createComment(feed, author);
-            ReflectionTestUtils.setField(comment, "createdAt", Instant.now().plusSeconds(i));
+            ReflectionTestUtils.setField(comment, "createdAt", baseTime.plusSeconds(i));
             em.persist(comment);
             savedComments.add(comment);
         }
         em.flush();
         em.clear();
 
+        // DB 정렬(createdAt DESC, id DESC) 기준으로 기대 순서를 구한다
+        List<Comment> expectedOrder = em.getEntityManager()
+            .createQuery("""
+                SELECT c
+                FROM Comment c
+                WHERE c.feed.id = :feedId
+                ORDER BY c.createdAt DESC, c.id DESC
+            """, Comment.class)
+            .setParameter("feedId", feed.getId())
+            .getResultList();
+
         // 커서 = 정렬상 3번째 댓글
-        Comment cursorComment = savedComments.get(2);
+        Comment cursorComment = expectedOrder.get(2);
         String cursor = cursorComment.getCreatedAt().toString();
         UUID idAfter = cursorComment.getId();
 
@@ -144,6 +173,9 @@ public class CommentRepositoryTest {
 
         // then
         assertThat(result).hasSize(2);
+        // 기대 순서의 4번째, 5번째와 동일해야 함
+        assertThat(result.get(0).getId()).isEqualTo(expectedOrder.get(3).getId());
+        assertThat(result.get(1).getId()).isEqualTo(expectedOrder.get(4).getId());
         assertThat(result).isSortedAccordingTo(
             Comparator.comparing(Comment::getCreatedAt).reversed()
                 .thenComparing(Comment::getId, Comparator.reverseOrder())
@@ -154,12 +186,11 @@ public class CommentRepositoryTest {
     void 생성시각이_동일한_댓글이_있을_때_ID로_2차정렬하여_누락없이_조회한다() {
 
         // given
-        Instant fixedTime = Instant.now();
         int totalComments = 5;
 
         for (int i = 0; i < totalComments; i++) {
             Comment comment = CommentFixture.createComment(feed, author);
-            ReflectionTestUtils.setField(comment, "createdAt", fixedTime);
+            ReflectionTestUtils.setField(comment, "createdAt", baseTime);
             em.persist(comment);
         }
         em.flush();

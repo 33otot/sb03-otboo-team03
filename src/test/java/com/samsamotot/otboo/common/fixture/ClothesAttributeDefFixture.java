@@ -16,4 +16,8 @@ public class ClothesAttributeDefFixture {
     public static ClothesAttributeDef createClothesAttributeDef(){
         return ClothesAttributeDef.createClothesAttributeDef(name, options);
     }
+
+    public static ClothesAttributeDef createClothesAttributeDef(String customName, List<String> customOptions){
+        return ClothesAttributeDef.createClothesAttributeDef(customName, customOptions);
+    }
 }

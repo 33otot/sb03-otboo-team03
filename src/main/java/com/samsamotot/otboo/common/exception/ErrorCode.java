@@ -60,6 +60,7 @@ public enum ErrorCode {
 
     // 다이렉트 메시지 관련 에러
     DM_NOT_FOUND(HttpStatus.NOT_FOUND, "DM001", "메시지를 찾을 수 없습니다."),
+    INVALID_REQUEST_PARAMETER(HttpStatus.BAD_REQUEST, "DM002", "잘못된 커서 요청입니다."),
 
     // 알림 관련 에러
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NO001", "알림을 찾을 수 없습니다."),
@@ -68,6 +69,7 @@ public enum ErrorCode {
     WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "WE001", "날씨 정보를 찾을 수 없습니다."),
     WEATHER_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "WE002", "날씨 API 호출에 실패했습니다."),
     INVALID_LOCATION(HttpStatus.BAD_REQUEST, "WE003", "올바르지 않은 위치 정보입니다."),
+
 
     // KAKAO API 관련 에러
     NO_KAKAO_KEY(HttpStatus.INTERNAL_SERVER_ERROR, "KA001", "KAKAO API 키가 설정되지 않았습니다."),

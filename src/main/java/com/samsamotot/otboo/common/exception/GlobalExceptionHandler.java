@@ -7,6 +7,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.csrf.InvalidCsrfTokenException;
+import org.springframework.security.web.csrf.MissingCsrfTokenException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -61,6 +63,26 @@ public class GlobalExceptionHandler {
         log.warn("AccessDeniedException: {}", e.getMessage());
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.HANDLE_ACCESS_DENIED);
         return ResponseEntity.status(ErrorCode.HANDLE_ACCESS_DENIED.getHttpStatus()).body(errorResponse);
+    }
+
+    /**
+     * CSRF 토큰 누락 예외 처리
+     */
+    @ExceptionHandler(MissingCsrfTokenException.class)
+    public ResponseEntity<ErrorResponse> handleMissingCsrfTokenException(MissingCsrfTokenException e) {
+        log.warn("MissingCsrfTokenException: {}", e.getMessage());
+        ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.HANDLE_ACCESS_DENIED, "CSRF 토큰이 누락되었습니다.");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    /**
+     * CSRF 토큰 무효 예외 처리
+     */
+    @ExceptionHandler(InvalidCsrfTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCsrfTokenException(InvalidCsrfTokenException e) {
+        log.warn("InvalidCsrfTokenException: {}", e.getMessage());
+        ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.HANDLE_ACCESS_DENIED, "유효하지 않은 CSRF 토큰입니다.");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
     /**
@@ -137,10 +159,26 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 잘못된 인수 예외 처리 (IllegalArgumentException)
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.warn("Invalid input value provided");
+        log.debug("IllegalArgumentException", e);
+        ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE);
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus()).body(errorResponse);
+    }
+
+    /**
      * 기타 예외 처리
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        // ResponseStatusException은 Spring에서 자동으로 처리되므로 제외
+        if (e instanceof org.springframework.web.server.ResponseStatusException) {
+            throw (org.springframework.web.server.ResponseStatusException) e;
+        }
+        
         log.error("Unexpected error occurred", e);
         ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR);
         return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus()).body(errorResponse);

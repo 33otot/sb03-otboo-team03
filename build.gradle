@@ -84,8 +84,8 @@ dependencies {
 	// Mockito
     testImplementation 'org.mockito:mockito-core' // 모킹 프레임워크
     testImplementation 'org.mockito:mockito-junit-jupiter' // JUnit 5 통합
-	
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // JUnit 플랫폼 런처
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // JUnit 플랫폼 런처
 
 	// WebClient
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
@@ -110,6 +110,7 @@ clean.doLast {
 tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy jacocoTestReport // 테스트 후 JaCoCo 리포트 생성
+  	systemProperty 'spring.profiles.active', 'test' // 테스트 실행 시 프로필을 test로 강제
 }
 
 // JaCoCo 코드 커버리지 리포트 설정

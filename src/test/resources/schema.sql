@@ -14,6 +14,7 @@
 --     clothes_attribute_options,
 --     clothes_attribute_defs,
 --     locations,
+--     grids,
 --     follows,
 --     users
 --     CASCADE;
@@ -38,27 +39,39 @@ CREATE TABLE IF NOT EXISTS users
     CONSTRAINT ck_users_role CHECK (role IN ('USER','ADMIN'))
 );
 
+CREATE TABLE IF NOT EXISTS grids
+(
+    id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    x INT NOT NULL,
+    y INT NOT NULL,
+
+    CONSTRAINT pk_grids PRIMARY KEY (id),
+    CONSTRAINT uq_grids UNIQUE (x, y)
+);
+
 -- locations 테이블
 CREATE TABLE IF NOT EXISTS locations
 (
     id UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
+    grid_id UUID NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
-    x INT NOT NULL,
-    y INT NOT NULL,
-    location_names VARCHAR(255) NOT NULL,
+    location_names TEXT[] NOT NULL,
 
     CONSTRAINT pk_locations PRIMARY KEY (id),
     CONSTRAINT ck_locations_lat CHECK (latitude BETWEEN -90 AND 90),
     CONSTRAINT ck_locations_lng CHECK (longitude BETWEEN -180 AND 180)
 );
+ALTER TABLE locations
+    ADD CONSTRAINT fk_locations_grid FOREIGN KEY (grid_id) REFERENCES grids (id) ON DELETE CASCADE;
 
 -- clothes_attribute_defs
 CREATE TABLE IF NOT EXISTS clothes_attribute_defs
 (
     id UUID NOT NULL,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ,
 
@@ -76,7 +89,7 @@ CREATE TABLE IF NOT EXISTS clothes_attribute_options
 
     CONSTRAINT pk_clothes_attribute_options PRIMARY KEY (id),
     CONSTRAINT fk_cao_def FOREIGN KEY (definition_id)
-        REFERENCES clothes_attribute_defs (id) ON DELETE CASCADE,
+    REFERENCES clothes_attribute_defs (id) ON DELETE CASCADE,
     -- 같은 정의 내 value의 유일성 (복합 FK 대상)
     CONSTRAINT uq_cao_definition_value UNIQUE (definition_id, value),
     -- (definition_id,id)로도 유일
@@ -97,18 +110,18 @@ CREATE TABLE IF NOT EXISTS clothes
     CONSTRAINT pk_clothes PRIMARY KEY (id),
     CONSTRAINT fk_clothes_owner FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT ck_clothes_type CHECK (
-        type IN (
+             type IN (
                  'TOP','BOTTOM','DRESS','OUTER','UNDERWEAR',
                  'ACCESSORY','SHOES','SOCKS','HAT','BAG','SCARF','ETC'
-            )
-        )
+             )
+    )
 );
 
 -- weathers 테이블
 CREATE TABLE IF NOT EXISTS weathers
 (
     id UUID NOT NULL,
-    location_id UUID NOT NULL,
+    grid_id UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     forecasted_at TIMESTAMPTZ NOT NULL,
     forecast_at TIMESTAMPTZ NOT NULL,
@@ -126,9 +139,9 @@ CREATE TABLE IF NOT EXISTS weathers
     wind_as_word VARCHAR(32),
 
     CONSTRAINT pk_weathers PRIMARY KEY (id),
-    CONSTRAINT fk_weathers_location FOREIGN KEY (location_id) REFERENCES locations (id) ON DELETE CASCADE,
+    CONSTRAINT fk_weathers_grid FOREIGN KEY (grid_id) REFERENCES grids (id) ON DELETE CASCADE,
     CONSTRAINT ck_weathers_time_order CHECK (forecasted_at <= forecast_at),
-    CONSTRAINT uq_weathers_loc_forecast UNIQUE (location_id, forecast_at, forecasted_at)
+    CONSTRAINT uq_weathers_grid_forecast UNIQUE (grid_id, forecast_at, forecasted_at)
 );
 
 
@@ -216,8 +229,8 @@ CREATE TABLE IF NOT EXISTS clothes_attributes
 
     -- 선택한 값이 해당 정의에 존재하는 옵션이어야 함
     CONSTRAINT fk_ca_definition_value FOREIGN KEY (definition_id, value)
-        REFERENCES clothes_attribute_options (definition_id, value)
-        ON DELETE CASCADE,
+    REFERENCES clothes_attribute_options (definition_id, value)
+                                                                              ON DELETE CASCADE,
 
     -- 한 의상에서 같은 '정의'는 1번만 선택 가능
     CONSTRAINT uq_ca_clothes_definition UNIQUE (clothes_id, definition_id)
@@ -234,7 +247,7 @@ CREATE TABLE IF NOT EXISTS comments
 
     CONSTRAINT fk_comments_feed FOREIGN KEY (feed_id) REFERENCES feeds (id) ON DELETE CASCADE,
     CONSTRAINT fk_comments_author FOREIGN KEY (author_id) REFERENCES users (id) ON DELETE CASCADE
-);
+    );
 
 -- notifications 테이블
 CREATE TABLE IF NOT EXISTS notifications
@@ -310,16 +323,16 @@ CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_ca_clothes ON clothes_attributes (clothes_id);
 CREATE INDEX IF NOT EXISTS idx_cao_definition ON clothes_attribute_options (definition_id);
 
--- follows index
+-- follow index
 CREATE INDEX IF NOT EXISTS idx_follows_follower_created_id_desc ON follows (follower_id, created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_follows_followee ON follows (followee_id);
 CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows (follower_id);
 
 -- notification index
-CREATE INDEX IF NOT EXISTS idx_notifications_receiver_created_at ON notifications (receiver_id, created_at DESC); -- 알림
+CREATE INDEX IF NOT EXISTS idx_notifications_receiver_created_at ON notifications (receiver_id, created_at DESC); --알림
 
 -- DM index
-CREATE INDEX IF NOT EXISTS idx_dm_pair_created_at ON direct_messages (sender_id, receiver_id, created_at DESC); -- 대화
+CREATE INDEX IF NOT EXISTS idx_dm_pair_created_at ON direct_messages (sender_id, receiver_id, created_at DESC); --대화
 
 -- Location index
 CREATE INDEX IF NOT EXISTS idx_locations_coordinates ON locations (longitude, latitude); -- 경도/위도

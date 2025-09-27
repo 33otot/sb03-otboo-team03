@@ -1,22 +1,9 @@
 package com.samsamotot.otboo.feed.service;
 
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willDoNothing;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.common.fixture.FeedFixture;
-import com.samsamotot.otboo.common.fixture.FeedLikeFixture;
-import com.samsamotot.otboo.common.fixture.LocationFixture;
-import com.samsamotot.otboo.common.fixture.UserFixture;
-import com.samsamotot.otboo.common.fixture.WeatherFixture;
+import com.samsamotot.otboo.common.fixture.*;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.entity.FeedLike;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
@@ -24,9 +11,8 @@ import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
-import java.util.Optional;
-import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +23,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("FeedLike 서비스 단위 테스트")
@@ -61,7 +55,8 @@ public class FeedLikeServiceTest {
     void setUp() {
         mockUser = UserFixture.createUser();
         Location location = LocationFixture.createLocation();
-        Weather weather = WeatherFixture.createWeather(location);
+        Grid grid = location.getGrid();
+        Weather weather = WeatherFixture.createWeather(grid);
         ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
         mockFeed = FeedFixture.createFeed(mockUser, weather);
         ReflectionTestUtils.setField(mockFeed, "id", UUID.randomUUID());
@@ -92,6 +87,7 @@ public class FeedLikeServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.getFeed()).isEqualTo(mockFeed);
             assertThat(result.getUser()).isEqualTo(mockUser);
+            verify(feedRepository, times(1)).incrementLikeCount(feedId);
         }
 
         @Test
@@ -166,6 +162,7 @@ public class FeedLikeServiceTest {
             // then
             verify(feedRepository, times(1)).findByIdAndIsDeletedFalse(feedId);
             verify(feedLikeRepository, times(1)).deleteByFeedIdAndUserId(feedId, userId);
+            verify(feedRepository, times(1)).decrementLikeCount(feedId);
         }
 
         @Test

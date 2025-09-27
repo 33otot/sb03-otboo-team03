@@ -7,7 +7,11 @@ spring:
   sql:
     init:
       mode: never
-  
+
+  batch:
+    jdbc:
+      initialize-schema: never
+
   # PostgreSQL DB 접속 정보
   datasource:
     url: ${SPRING_DATASOURCE_URL}
@@ -38,6 +42,17 @@ management:
     health:
       show-details: when-authorized
       show-components: when-authorized
+
+otboo:
+  # 보안 설정
+  security:
+    cookie:
+      secure: true  # 운영환경에서는 true
+      same-site: Strict  # 운영환경에서는 Strict
+  
+  # CORS 설정
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
 
 server:
   port: ${SERVER_PORT:80}
