@@ -25,9 +25,9 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 @Component
-public class WeatherKmaClient {
+public class KmaClient {
 
-    private static final String CLIENT_NAME = "[WeatherKmaClient] ";
+    private static final String CLIENT_NAME = "[KmaClient] ";
 
     private final WebClient webClient;
     private final String serviceKey;
@@ -37,8 +37,8 @@ public class WeatherKmaClient {
     private static final String NUM_OF_ROWS = "1000";
     private static final String DATA_TYPE = "JSON";
 
-    public WeatherKmaClient(@Qualifier("kmaWebClient") WebClient webClient,
-                            @Value("${kma.service-key}") String serviceKey) {
+    public KmaClient(@Qualifier("kmaWebClient") WebClient webClient,
+                     @Value("${kma.service-key}") String serviceKey) {
         this.webClient = webClient;
         this.serviceKey = serviceKey;
     }
@@ -59,7 +59,8 @@ public class WeatherKmaClient {
         return webClient.get()
                 .uri(uri -> uri
                         .path(SERVICE_PATH)
-                            .queryParam("serviceKey", serviceKey)                            .queryParam("numOfRows", NUM_OF_ROWS)
+                            .queryParam("serviceKey", serviceKey)
+                            .queryParam("numOfRows", NUM_OF_ROWS)
                             .queryParam("pageNo", PAGE_NO)
                             .queryParam("dataType", DATA_TYPE)
                             .queryParam("base_date", baseDateTime.baseDate)
