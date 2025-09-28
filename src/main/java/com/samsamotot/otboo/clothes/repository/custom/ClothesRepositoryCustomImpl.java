@@ -41,7 +41,7 @@ public class ClothesRepositoryCustomImpl implements ClothesRepositoryCustom {
             .selectFrom(clothes)
             .where(builder.hasValue() ? builder : null)
             .orderBy(clothes.createdAt.desc(), clothes.id.desc())
-            .limit(request.limit() + 1)
+            .limit(pageSize + 1)
             .fetch();
 
         // hasNext 판단
