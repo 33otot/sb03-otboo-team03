@@ -27,6 +27,12 @@ public class RecommendationController implements RecommendationApi {
     private final static String CONTROLLER = "[RecommendationController] ";
     private final RecommendationService recommendationService;
 
+    /**
+     * 주어진 날씨 ID에 대해 사용자에게 의상 추천 결과를 반환합니다.
+     *
+     * @param weatherId 추천을 받을 날씨 ID
+     * @return 추천된 의상 정보를 담은 ResponseEntity (HTTP 200 OK)
+     */
     @Override
     @GetMapping
     public ResponseEntity<RecommendationDto> getRecommendations(
