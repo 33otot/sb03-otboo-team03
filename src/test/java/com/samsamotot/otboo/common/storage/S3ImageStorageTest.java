@@ -2,9 +2,15 @@ package com.samsamotot.otboo.common.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.samsamotot.otboo.common.fixture.S3ImageFixture;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,6 +20,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 @ExtendWith(MockitoExtension.class)
 class S3ImageStorageTest {
@@ -34,45 +41,97 @@ class S3ImageStorageTest {
         ReflectionTestUtils.setField(s3ImageStorage, "region", region);
     }
 
-    @Test
-    void 이미지_S3_업로드에_성공하면_URL을_반환한다() {
+    @Nested
+    @DisplayName("S3 이미지 업로드 테스트")
+    class S3UploadTest {
 
-        // given
-        MockMultipartFile file = S3ImageFixture.createSampleImageFile();
-        String folderPath = "profile/";
+        @Test
+        void 이미지_S3_업로드에_성공하면_URL을_반환한다() {
 
-        // when
-        String resultUrl = s3ImageStorage.uploadImage(file, folderPath);
+            // given
+            MockMultipartFile file = S3ImageFixture.createSampleImageFile();
+            String folderPath = "profile/";
 
-        // then
-        assertThat(resultUrl)
-            .startsWith("https://" + bucketName + ".s3." + region + ".amazonaws.com/" + folderPath);
+            // when
+            String resultUrl = s3ImageStorage.uploadImage(file, folderPath);
+
+            // then
+            assertThat(resultUrl)
+                .startsWith("https://" + bucketName + ".s3." + region + ".amazonaws.com/" + folderPath);
+        }
+
+        @Test
+        void 파일이_null이면_BAD_REQUEST_예외가_발생한다() {
+            assertThatThrownBy(() -> s3ImageStorage.uploadImage(null, "profile/"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("업로드할 파일이 없습니다.");
+        }
+
+        @Test
+        void 파일이_비어있으면_BAD_REQUEST_예외를_던진다() {
+            // given
+            MockMultipartFile emptyFile = S3ImageFixture.createEmptyImageFile();
+
+            assertThatThrownBy(() -> s3ImageStorage.uploadImage(emptyFile, "profile/"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("업로드할 파일이 없습니다.");
+        }
+
+        @Test
+        void folderPath가_비어있으면_BAD_REQUEST_예외가_발생한다() {
+            MockMultipartFile file = S3ImageFixture.createSampleImageFile();
+
+            assertThatThrownBy(() -> s3ImageStorage.uploadImage(file, ""))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("S3 업로드 경로(folderPath)가 비어있습니다.");
+        }
     }
 
-    @Test
-    void 파일이_null이면_BAD_REQUEST_예외가_발생한다() {
-        assertThatThrownBy(() -> s3ImageStorage.uploadImage(null, "profile/"))
-            .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("업로드할 파일이 없습니다.");
+    @Nested
+    @DisplayName("S3 이미지 삭제 테스트")
+    class S3DeleteTest {
+
+        @Test
+        void 유효한_URL이면_S3에서_이미지를_삭제한다() {
+            // given
+            MockMultipartFile file = S3ImageFixture.createSampleImageFile();
+            String folderPath = "profile/";
+            String imageUrl = s3ImageStorage.uploadImage(file, folderPath);
+
+            // when
+            s3ImageStorage.deleteImage(imageUrl);
+
+            // then
+            verify(s3Client, times(1)).deleteObject(any(DeleteObjectRequest.class));
+        }
+
+        @Test
+        void URL이_null이면_S3삭제를_호출하지_않는다() {
+            // when
+            s3ImageStorage.deleteImage(null);
+
+            // then
+            verify(s3Client, never()).deleteObject(any(DeleteObjectRequest.class));
+        }
+
+        @Test
+        void URL이_비어있으면_S3삭제를_호출하지_않는다() {
+            // when
+            s3ImageStorage.deleteImage("");
+
+            // then
+            verify(s3Client, never()).deleteObject(any(DeleteObjectRequest.class));
+        }
+
+        @Test
+        void 유효하지_않은_URL이면_RuntimeException을_던진다() {
+            // given
+            String invalidUrl = "https://wrong-bucket.s3.ap-northeast-2.amazonaws.com/profile/test.jpg";
+
+            // when & then
+            assertThatThrownBy(() -> s3ImageStorage.deleteImage(invalidUrl))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("이미지 삭제 중 오류가 발생했습니다.");
+        }
     }
-
-    @Test
-    void 파일이_비어있으면_BAD_REQUEST_예외를_던진다() {
-        // given
-        MockMultipartFile emptyFile = S3ImageFixture.createEmptyImageFile();
-
-        assertThatThrownBy(() -> s3ImageStorage.uploadImage(emptyFile, "profile/"))
-            .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("업로드할 파일이 없습니다.");
-    }
-
-    @Test
-    void folderPath가_비어있으면_BAD_REQUEST_예외가_발생한다() {
-        MockMultipartFile file = S3ImageFixture.createSampleImageFile();
-
-        assertThatThrownBy(() -> s3ImageStorage.uploadImage(file, ""))
-            .isInstanceOf(ResponseStatusException.class)
-            .hasMessageContaining("S3 업로드 경로(folderPath)가 비어있습니다.");
-    }
-
 }

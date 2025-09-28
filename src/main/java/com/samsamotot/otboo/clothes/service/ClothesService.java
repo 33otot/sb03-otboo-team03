@@ -15,4 +15,7 @@ public interface ClothesService {
     // update
     ClothesDto update(UUID clothesId, ClothesUpdateRequest updateRequest);
     ClothesDto update(UUID clothesId, ClothesUpdateRequest updateRequest, MultipartFile clothesImage);
+
+    // delete
+    void delete(UUID clothesId);
 }

@@ -1,6 +1,9 @@
 package com.samsamotot.otboo.clothes.service;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDto;
@@ -13,6 +16,7 @@ import com.samsamotot.otboo.clothes.entity.ClothesAttribute;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeOption;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
+import com.samsamotot.otboo.clothes.exception.ClothesNotFoundException;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
@@ -353,4 +357,61 @@ class ClothesServiceTest {
 
     }
 
-}
+    @Nested
+    @DisplayName("의상 삭제 서비스 테스트")
+    class ClothesDeleteServiceTest {
+
+        @Test
+        void 의상을_삭제하면_DB와_S3에서_삭제된다() {
+            // given
+            Clothes clothes = Clothes.createClothes("청자켓", ClothesType.OUTER, mockUser);
+            String imageUrl = "https://s3.test-bucket/clothes/test.png";
+            clothes.updateImageUrl(imageUrl);
+
+            when(clothesRepository.findById(clothes.getId())).thenReturn(Optional.of(clothes));
+
+            // when
+            clothesService.delete(clothes.getId());
+
+            // then
+            verify(clothesRepository).delete(clothes);
+            verify(s3ImageStorage).deleteImage(imageUrl);
+
+        }
+
+        @Test
+        void 이미지가_없는_의상은_S3삭제가_호출되지_않는다() {
+            // given
+            Clothes clothes = Clothes.createClothes("바지", ClothesType.BOTTOM, mockUser);
+
+            when(clothesRepository.findById(clothes.getId()))
+                .thenReturn(Optional.of(clothes));
+
+            // when
+            clothesService.delete(clothes.getId());
+
+            // then
+            verify(clothesRepository).findById(clothes.getId());
+            verify(clothesRepository).delete(clothes);
+            verify(s3ImageStorage, never()).deleteImage(any());
+        }
+
+        @Test
+        void 의상이_존재하지_않는다면_예외가_발생한다() {
+            // given
+            UUID notExistId = UUID.randomUUID();
+            when(clothesRepository.findById(notExistId))
+                .thenReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> clothesService.delete(notExistId))
+                .isInstanceOf(ClothesNotFoundException.class);
+
+            verify(clothesRepository).findById(notExistId);
+            verify(clothesRepository, never()).delete(any());
+            verify(s3ImageStorage, never()).deleteImage(any());
+        }
+    }
+
+
+    }
