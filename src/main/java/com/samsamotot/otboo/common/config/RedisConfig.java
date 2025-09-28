@@ -1,9 +1,9 @@
 package com.samsamotot.otboo.common.config;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,9 +47,11 @@ public class RedisConfig {
         // ObjectMapper 복사 및 타입 정보 활성화 (다양한 객체 타입 지원)
         ObjectMapper redisObjectMapper = objectMapper.copy();
         redisObjectMapper.activateDefaultTyping(
-            LaissezFaireSubTypeValidator.instance,
-            DefaultTyping.EVERYTHING,
-            As.PROPERTY
+            BasicPolymorphicTypeValidator.builder()
+                .allowIfSubType("com.samsamotot.otboo")
+                .build(),
+            DefaultTyping.NON_FINAL,
+            JsonTypeInfo.As.PROPERTY
         );
         return new GenericJackson2JsonRedisSerializer(redisObjectMapper);
     }

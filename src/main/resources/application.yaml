@@ -14,13 +14,13 @@ spring:
     type: redis
     redis:
       enable-statistics: true
-    data:
-      redis:
-        host: ${REDIS_HOST:redis}
-        port: ${REDIS_PORT:6379}
-        password: ${REDIS_PASSWORD:}
-        repositories:
-          enabled: false  # 개발 단계 Redis Repository 비활성화
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      repositories:
+        enabled: false  # 개발 단계 Redis Repository 비활성화
 
 kma:
   base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
