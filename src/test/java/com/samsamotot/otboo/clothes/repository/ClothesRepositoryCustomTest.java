@@ -4,11 +4,9 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.samsamotot.otboo.clothes.dto.request.ClothesSearchRequest;
 import com.samsamotot.otboo.clothes.entity.Clothes;
-import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.common.config.QueryDslConfig;
 import com.samsamotot.otboo.common.config.TestJpaAuditingConfig;
-import com.samsamotot.otboo.common.fixture.ClothesAttributeDefFixture;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.user.entity.User;
 import java.time.Instant;
