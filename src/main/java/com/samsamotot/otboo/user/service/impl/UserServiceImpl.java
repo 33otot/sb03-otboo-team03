@@ -122,12 +122,14 @@ public class UserServiceImpl implements UserService {
         
         if (userSlice.hasNext()) {
             User lastUser = userSlice.getContent().get(userSlice.getContent().size() - 1);
+            log.info(SERVICE + "lastUser createdAt: {}", lastUser.getCreatedAt());
             if ("email".equals(request.sortBy())) {
                 nextCursor = lastUser.getEmail();
             } else { // createdAt
                 nextCursor = lastUser.getCreatedAt().toString();
             }
             nextIdAfter = lastUser.getId();
+            log.info(SERVICE + "nextCursor: {}, nextIdAfter: {}", nextCursor, nextIdAfter);
         }
         
         log.info(SERVICE + "사용자 목록 조회 완료 - 조회된 수: {}, 전체 수: {}, hasNext: {}", 

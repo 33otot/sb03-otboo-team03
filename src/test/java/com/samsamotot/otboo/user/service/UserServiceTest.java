@@ -10,6 +10,8 @@ import static org.mockito.Mockito.verify;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
+import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
+import com.samsamotot.otboo.user.dto.UserListRequest;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.exception.DuplicateEmailException;
@@ -27,7 +29,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
@@ -240,6 +248,246 @@ class UserServiceTest {
 
             // 로그 검증은 실제로는 별도의 로그 검증 도구를 사용
             verify(userRepository).existsByEmail(validRequest.getEmail());
+        }
+    }
+
+    @Nested
+    @DisplayName("사용자 목록 조회 테스트")
+    class GetUserListTests {
+
+        @Test
+        @DisplayName("기본_사용자_목록_조회")
+        void 기본_사용자_목록_조회() {
+            // Given
+            UserListRequest request = UserListRequest.builder()
+                    .limit(10)
+                    .sortBy("createdAt")
+                    .sortDirection("DESCENDING")
+                    .build();
+
+            User user1 = UserFixture.createValidUser();
+            User user2 = UserFixture.createValidUser();
+            ReflectionTestUtils.setField(user1, "createdAt", Instant.now());
+            ReflectionTestUtils.setField(user2, "createdAt", Instant.now().plusSeconds(1));
+            List<User> users = List.of(user1, user2);
+            Pageable pageable = PageRequest.of(0, 10);
+            Slice<User> userSlice = new SliceImpl<>(users, pageable, false);
+
+            UserDto userDto1 = UserFixture.createUserDtoWithId(user1.getId());
+            UserDto userDto2 = UserFixture.createUserDtoWithId(user2.getId());
+
+            given(userRepository.findUsersWithCursor(request)).willReturn(userSlice);
+            given(userRepository.countUsersWithFilters(request)).willReturn(2L);
+            given(userMapper.toDto(user1)).willReturn(userDto1);
+            given(userMapper.toDto(user2)).willReturn(userDto2);
+
+            // When
+            UserDtoCursorResponse result = userService.getUserList(request);
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result.data()).hasSize(2);
+            assertThat(result.totalCount()).isEqualTo(2L);
+            assertThat(result.hasNext()).isFalse();
+            assertThat(result.sortBy()).isEqualTo("createdAt");
+            assertThat(result.sortDirection()).isEqualTo("DESCENDING");
+
+            verify(userRepository).findUsersWithCursor(request);
+            verify(userRepository).countUsersWithFilters(request);
+            verify(userMapper).toDto(user1);
+            verify(userMapper).toDto(user2);
+        }
+
+        @Test
+        @DisplayName("이메일_검색으로_사용자_목록_조회")
+        void 이메일_검색으로_사용자_목록_조회() {
+            // Given
+            UserListRequest request = UserListRequest.builder()
+                    .limit(10)
+                    .sortBy("email")
+                    .sortDirection("ASCENDING")
+                    .emailLike("test")
+                    .build();
+
+            User user = UserFixture.createValidUser();
+            List<User> users = List.of(user);
+            Pageable pageable = PageRequest.of(0, 10);
+            Slice<User> userSlice = new SliceImpl<>(users, pageable, false);
+
+            UserDto userDto = UserFixture.createUserDtoWithId(user.getId());
+
+            given(userRepository.findUsersWithCursor(request)).willReturn(userSlice);
+            given(userRepository.countUsersWithFilters(request)).willReturn(1L);
+            given(userMapper.toDto(user)).willReturn(userDto);
+
+            // When
+            UserDtoCursorResponse result = userService.getUserList(request);
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result.data()).hasSize(1);
+            assertThat(result.totalCount()).isEqualTo(1L);
+            assertThat(result.sortBy()).isEqualTo("email");
+            assertThat(result.sortDirection()).isEqualTo("ASCENDING");
+
+            verify(userRepository).findUsersWithCursor(request);
+            verify(userRepository).countUsersWithFilters(request);
+        }
+
+        @Test
+        @DisplayName("권한별_필터링으로_사용자_목록_조회")
+        void 권한별_필터링으로_사용자_목록_조회() {
+            // Given
+            UserListRequest request = UserListRequest.builder()
+                    .limit(10)
+                    .sortBy("createdAt")
+                    .sortDirection("DESCENDING")
+                    .roleEqual(Role.ADMIN)
+                    .build();
+
+            User adminUser = UserFixture.createValidUser();
+            ReflectionTestUtils.setField(adminUser, "role", Role.ADMIN);
+            ReflectionTestUtils.setField(adminUser, "createdAt", Instant.now());
+            List<User> users = List.of(adminUser);
+            Pageable pageable = PageRequest.of(0, 10);
+            Slice<User> userSlice = new SliceImpl<>(users, pageable, false);
+
+            UserDto adminDto = UserFixture.createUserDtoWithId(adminUser.getId());
+
+            given(userRepository.findUsersWithCursor(request)).willReturn(userSlice);
+            given(userRepository.countUsersWithFilters(request)).willReturn(1L);
+            given(userMapper.toDto(adminUser)).willReturn(adminDto);
+
+            // When
+            UserDtoCursorResponse result = userService.getUserList(request);
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result.data()).hasSize(1);
+            assertThat(result.totalCount()).isEqualTo(1L);
+
+            verify(userRepository).findUsersWithCursor(request);
+            verify(userRepository).countUsersWithFilters(request);
+        }
+
+        @Test
+        @DisplayName("잠금_상태_필터링으로_사용자_목록_조회")
+        void 잠금_상태_필터링으로_사용자_목록_조회() {
+            // Given
+            UserListRequest request = UserListRequest.builder()
+                    .limit(10)
+                    .sortBy("createdAt")
+                    .sortDirection("DESCENDING")
+                    .locked(true)
+                    .build();
+
+            User lockedUser = UserFixture.createValidUser();
+            ReflectionTestUtils.setField(lockedUser, "isLocked", true);
+            ReflectionTestUtils.setField(lockedUser, "createdAt", Instant.now());
+            List<User> users = List.of(lockedUser);
+            Pageable pageable = PageRequest.of(0, 10);
+            Slice<User> userSlice = new SliceImpl<>(users, pageable, false);
+
+            UserDto lockedDto = UserFixture.createUserDtoWithId(lockedUser.getId());
+
+            given(userRepository.findUsersWithCursor(request)).willReturn(userSlice);
+            given(userRepository.countUsersWithFilters(request)).willReturn(1L);
+            given(userMapper.toDto(lockedUser)).willReturn(lockedDto);
+
+            // When
+            UserDtoCursorResponse result = userService.getUserList(request);
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result.data()).hasSize(1);
+            assertThat(result.totalCount()).isEqualTo(1L);
+
+            verify(userRepository).findUsersWithCursor(request);
+            verify(userRepository).countUsersWithFilters(request);
+        }
+
+        @Test
+        @DisplayName("페이지네이션_커서가_있는_사용자_목록_조회")
+        void 페이지네이션_커서가_있는_사용자_목록_조회() {
+            // Given
+            UserListRequest request = UserListRequest.builder()
+                    .limit(5)
+                    .sortBy("createdAt")
+                    .sortDirection("DESCENDING")
+                    .cursor("2025-01-01T00:00:00Z")
+                    .idAfter(UUID.randomUUID())
+                    .build();
+
+            User user1 = UserFixture.createValidUser();
+            User user2 = UserFixture.createValidUser();
+            User user3 = UserFixture.createValidUser();
+            User user4 = UserFixture.createValidUser();
+            User user5 = UserFixture.createValidUser();
+            User user6 = UserFixture.createValidUser(); // limit + 1 = 6개
+            
+            // User 엔티티에 ID 설정
+            UUID user1Id = UUID.randomUUID();
+            UUID user2Id = UUID.randomUUID();
+            UUID user3Id = UUID.randomUUID();
+            UUID user4Id = UUID.randomUUID();
+            UUID user5Id = UUID.randomUUID();
+            UUID user6Id = UUID.randomUUID();
+            
+            ReflectionTestUtils.setField(user1, "id", user1Id);
+            ReflectionTestUtils.setField(user2, "id", user2Id);
+            ReflectionTestUtils.setField(user3, "id", user3Id);
+            ReflectionTestUtils.setField(user4, "id", user4Id);
+            ReflectionTestUtils.setField(user5, "id", user5Id);
+            ReflectionTestUtils.setField(user6, "id", user6Id);
+            
+            Instant createdAt = Instant.now();
+            ReflectionTestUtils.setField(user1, "createdAt", createdAt);
+            ReflectionTestUtils.setField(user2, "createdAt", createdAt.plusSeconds(1));
+            ReflectionTestUtils.setField(user3, "createdAt", createdAt.plusSeconds(2));
+            ReflectionTestUtils.setField(user4, "createdAt", createdAt.plusSeconds(3));
+            ReflectionTestUtils.setField(user5, "createdAt", createdAt.plusSeconds(4));
+            ReflectionTestUtils.setField(user6, "createdAt", createdAt.plusSeconds(5));
+            
+            // Repository에서 limit + 1개를 조회한 후, limit개로 자름
+            List<User> allUsers = List.of(user1, user2, user3, user4, user5, user6);
+            // hasNext 판단: allUsers.size() > 5 = true
+            boolean hasNext = allUsers.size() > 5;
+            // hasNext가 true이므로 limit개로 자름
+            List<User> users = allUsers.subList(0, 5);
+            
+            Pageable pageable = PageRequest.of(0, 5);
+            Slice<User> userSlice = new SliceImpl<>(users, pageable, hasNext);
+            
+            // 디버깅: User 엔티티의 createdAt 확인
+            System.out.println("User1 createdAt: " + user1.getCreatedAt());
+
+            UserDto userDto1 = UserFixture.createUserDtoWithId(user1Id);
+            UserDto userDto2 = UserFixture.createUserDtoWithId(user2Id);
+            UserDto userDto3 = UserFixture.createUserDtoWithId(user3Id);
+            UserDto userDto4 = UserFixture.createUserDtoWithId(user4Id);
+            UserDto userDto5 = UserFixture.createUserDtoWithId(user5Id);
+
+            given(userRepository.findUsersWithCursor(request)).willReturn(userSlice);
+            given(userRepository.countUsersWithFilters(request)).willReturn(10L);
+            given(userMapper.toDto(user1)).willReturn(userDto1);
+            given(userMapper.toDto(user2)).willReturn(userDto2);
+            given(userMapper.toDto(user3)).willReturn(userDto3);
+            given(userMapper.toDto(user4)).willReturn(userDto4);
+            given(userMapper.toDto(user5)).willReturn(userDto5);
+
+            // When
+            UserDtoCursorResponse result = userService.getUserList(request);
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result.data()).hasSize(5);
+            assertThat(result.totalCount()).isEqualTo(10L);
+            assertThat(result.hasNext()).isTrue();
+            assertThat(result.nextCursor()).isNotNull();
+            assertThat(result.nextIdAfter()).isNotNull();
+
+            verify(userRepository).findUsersWithCursor(request);
+            verify(userRepository).countUsersWithFilters(request);
         }
     }
 }
