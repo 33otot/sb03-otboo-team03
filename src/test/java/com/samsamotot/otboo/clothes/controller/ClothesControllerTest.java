@@ -81,7 +81,7 @@ public class ClothesControllerTest {
             when(clothesService.create(any())).thenReturn(responseDto);
 
             MockMultipartFile jsonPart = new MockMultipartFile(
-                "clothesCreateRequest",
+                "request",
                 "",
                 MediaType.APPLICATION_JSON_VALUE,
                 objectMapper.writeValueAsBytes(request)
@@ -120,14 +120,14 @@ public class ClothesControllerTest {
             when(clothesService.create(any(), any())).thenReturn(responseDto);
 
             MockMultipartFile jsonPart = new MockMultipartFile(
-                "clothesCreateRequest",
+                "request",
                 "",
                 MediaType.APPLICATION_JSON_VALUE,
                 objectMapper.writeValueAsBytes(request)
             );
 
             MockMultipartFile imagePart = new MockMultipartFile(
-                "clothesImage",
+                "image",
                 "test.png",
                 MediaType.IMAGE_PNG_VALUE,
                 "fake-image-content".getBytes()
@@ -155,7 +155,7 @@ public class ClothesControllerTest {
             );
 
             MockMultipartFile jsonPart = new MockMultipartFile(
-                "clothesCreateRequest",
+                "request",
                 "",
                 MediaType.APPLICATION_JSON_VALUE,
                 objectMapper.writeValueAsBytes(invalidRequest)
@@ -199,7 +199,7 @@ public class ClothesControllerTest {
                 .thenReturn(responseDto);
 
             MockMultipartFile jsonPart = new MockMultipartFile(
-                "clothesUpdateRequest",
+                "request",
                 "",
                 MediaType.APPLICATION_JSON_VALUE,
                 objectMapper.writeValueAsBytes(request)
@@ -239,14 +239,14 @@ public class ClothesControllerTest {
                 .thenReturn(responseDto);
 
             MockMultipartFile jsonPart = new MockMultipartFile(
-                "clothesUpdateRequest",
+                "request",
                 "",
                 MediaType.APPLICATION_JSON_VALUE,
                 objectMapper.writeValueAsBytes(request)
             );
 
             MockMultipartFile imagePart = new MockMultipartFile(
-                "clothesImage",
+                "image",
                 "test.png",
                 MediaType.IMAGE_PNG_VALUE,
                 "fake-image-content".getBytes()
@@ -274,7 +274,7 @@ public class ClothesControllerTest {
             );
 
             MockMultipartFile jsonPart = new MockMultipartFile(
-                "clothesUpdateRequest",
+                "request",
                 "",
                 MediaType.APPLICATION_JSON_VALUE,
                 objectMapper.writeValueAsBytes(invalidRequest)
