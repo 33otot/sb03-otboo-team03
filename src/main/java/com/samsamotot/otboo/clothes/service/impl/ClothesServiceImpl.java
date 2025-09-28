@@ -250,7 +250,7 @@ public class ClothesServiceImpl implements ClothesService {
 
     // 의상 목록 조회
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public CursorResponse<ClothesDto> find(ClothesSearchRequest request) {
         log.info(SERVICE_NAME + "find - 의상 목록 조회 메서드 호출됨");
 
