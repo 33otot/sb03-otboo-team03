@@ -7,13 +7,17 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.samsamotot.otboo.clothes.dto.OotdDto;
+import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
+import com.samsamotot.otboo.clothes.repository.ClothesRepository;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.ClothesFixture;
 import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.ProfileFixture;
 import com.samsamotot.otboo.common.fixture.UserFixture;
@@ -26,7 +30,6 @@ import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,7 +42,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -55,13 +60,19 @@ public class RecommendationServiceTest {
     private WeatherRepository weatherRepository;
 
     @Mock
+    private ClothesRepository clothesRepository;
+
+    @Mock
     private ItemSelectorEngine itemSelectorEngine;
 
     @Mock
-    private RedisTemplate<String, String> redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Mock
-    private ValueOperations<String, String> valueOperations;
+    private ValueOperations<String, Object> valueOperations;
+
+    @Mock
+    private HashOperations<String, Object, Object> hashOperations;
 
     @InjectMocks
     private RecommendationServiceImpl recommendationService;
@@ -69,19 +80,27 @@ public class RecommendationServiceTest {
     User mockUser;
     Profile mockProfile;
     Weather mockWeather;
+    List<Clothes> mockClothesList;
 
     @BeforeEach
     void setUp() {
 
-        // redisTemplate.opsForValue()가 호출되면 항상 가짜 valueOperations를 반환
-        given(redisTemplate.opsForValue()).willReturn(valueOperations);
+        // Redis ValueOperations,HashOperations 모킹 설정 (테스트마다 필요하지 않을 수 있어 lenient 사용)
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.opsForHash()).thenReturn(hashOperations);
 
         mockUser = UserFixture.createUser();
+        ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
         mockProfile = ProfileFixture.createProfile(mockUser);
+        ReflectionTestUtils.setField(mockProfile, "id", UUID.randomUUID());
+
         Grid grid = GridFixture.createGrid();
         mockWeather = WeatherFixture.createWeather(grid);
-        ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
         ReflectionTestUtils.setField(mockWeather, "id", UUID.randomUUID());
+
+        Clothes clothes = ClothesFixture.createClothes();
+        ReflectionTestUtils.setField(clothes, "id", UUID.randomUUID());
+        mockClothesList = List.of(clothes);
     }
 
     @Test
@@ -95,11 +114,16 @@ public class RecommendationServiceTest {
 
         given(profileRepository.findByUserId(userId)).willReturn(Optional.of(profile));
         given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
 
         ArgumentCaptor<RecommendationContextDto> captor = ArgumentCaptor.forClass(RecommendationContextDto.class);
 
         // 보정 전 기본 체감 온도
-        double baseApparentTemp = mockWeather.getTemperatureCurrent();
+        double baseApparentTemp = RecommendationServiceImpl.calculateFeelsLike(
+            mockWeather.getTemperatureCurrent(),
+            mockWeather.getWindSpeed(),
+            mockWeather.getHumidityCurrent()
+        );
 
         // when
         recommendationService.recommendClothes(userId, weatherId);
@@ -122,11 +146,16 @@ public class RecommendationServiceTest {
 
         given(profileRepository.findByUserId(userId)).willReturn(Optional.of(profile));
         given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
 
         ArgumentCaptor<RecommendationContextDto> captor = ArgumentCaptor.forClass(RecommendationContextDto.class);
 
         // 보정 전 기본 체감 온도
-        double baseApparentTemp = mockWeather.getTemperatureCurrent();
+        double baseApparentTemp = RecommendationServiceImpl.calculateFeelsLike(
+            mockWeather.getTemperatureCurrent(),
+            mockWeather.getWindSpeed(),
+            mockWeather.getHumidityCurrent()
+        );
 
         // when
         recommendationService.recommendClothes(userId, weatherId);
@@ -144,20 +173,22 @@ public class RecommendationServiceTest {
         // given
         UUID userId = mockUser.getId();
         UUID weatherId = mockWeather.getId();
-        String rollCountKey = "reco:" + userId + ":roll";
-        String cooldownKey = "reco:" + userId + ":" + ClothesType.TOP + ":cooldown";
+        String rollCountKey = "rollCounter:" + userId;
+        String cooldownKey = "cooldownIdMap:" + userId;
+        Object cooldownField = ClothesType.TOP;
 
         given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
         given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
-        given(valueOperations.get(rollCountKey)).willReturn("5");
-        given(valueOperations.get(cooldownKey)).willReturn("101");
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+        given(valueOperations.get(rollCountKey)).willReturn(5L);
+        given(hashOperations.entries(cooldownKey)).willReturn(Map.of(cooldownField, UUID.randomUUID().toString()));
 
         // when
         recommendationService.recommendClothes(userId, weatherId);
 
         // then
         verify(valueOperations, times(1)).get(rollCountKey);
-        verify(valueOperations, times(1)).get(cooldownKey);
+        verify(hashOperations, times(1)).entries(cooldownKey);
     }
 
     @Test
@@ -166,16 +197,19 @@ public class RecommendationServiceTest {
         // given
         UUID userId = mockUser.getId();
         UUID weatherId = mockWeather.getId();
-        String rollCountKey = "reco:" + userId + ":roll";
-        String cooldownKey = "reco:" + userId + ":" + ClothesType.TOP + ":cooldown";
+        UUID randomClothesId = UUID.randomUUID();
+        String rollCountKey = "rollCounter:" + userId;
+        String cooldownKey = "cooldownIdMap:" + userId;
+        Object cooldownField = ClothesType.TOP;
 
         given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
         given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
-        given(valueOperations.get(rollCountKey)).willReturn("5");
-        given(valueOperations.get(cooldownKey)).willReturn("101");
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+        given(valueOperations.get(rollCountKey)).willReturn(5L);
+        given(hashOperations.entries(cooldownKey)).willReturn(Map.of(cooldownField, randomClothesId.toString()));
 
         ArgumentCaptor<Long> rollCountCaptor = ArgumentCaptor.forClass(Long.class);
-        ArgumentCaptor<Map<ClothesType, Long>> cooldownCaptor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map> cooldownCaptor = ArgumentCaptor.forClass(Map.class);
 
         // when
         recommendationService.recommendClothes(userId, weatherId);
@@ -185,7 +219,7 @@ public class RecommendationServiceTest {
         verify(itemSelectorEngine).createRecommendation(any(), any(), rollCountCaptor.capture(), cooldownCaptor.capture());
         // 캡처된 파라미터가 Redis에서 조회한 값과 일치하는지 검증
         assertThat(rollCountCaptor.getValue()).isEqualTo(5L);
-        assertThat(cooldownCaptor.getValue()).containsEntry(ClothesType.TOP, 101L);
+        assertThat(cooldownCaptor.getValue()).containsEntry(ClothesType.TOP, randomClothesId);
     }
 
     @Test
@@ -197,17 +231,17 @@ public class RecommendationServiceTest {
 
         given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
         given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
         given(valueOperations.get(any())).willReturn(null); // Redis에서 null 반환
 
         ArgumentCaptor<Long> rollCountCaptor = ArgumentCaptor.forClass(Long.class);
-        ArgumentCaptor<Map<ClothesType, Long>> cooldownCaptor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map> cooldownCaptor = ArgumentCaptor.forClass(Map.class);
 
         // when
         recommendationService.recommendClothes(userId, weatherId);
 
         // then
         verify(itemSelectorEngine).createRecommendation(any(), any(), rollCountCaptor.capture(), cooldownCaptor.capture());
-
         // rollCount는 0L, cooldownIds는 비어있는 상태로 호출되어야 함
         assertThat(rollCountCaptor.getValue()).isEqualTo(0L);
         assertThat(cooldownCaptor.getValue()).isEmpty();
@@ -219,12 +253,10 @@ public class RecommendationServiceTest {
         // given
         UUID userId = mockUser.getId();
         UUID weatherId = mockWeather.getId();
-        String rollCountKey = "reco:" + userId + ":roll";
-        String cooldownKey = "reco:" + userId + ":" + ClothesType.TOP + ":cooldown";
-        Long newRecommendedTopId = 102L;
-
-        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
-        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        UUID randomClothesId = UUID.randomUUID();
+        String rollCountKey = "rollCounter:" + userId;
+        String cooldownKey = "cooldownIdMap:" + userId;
+        Object cooldownField = ClothesType.TOP;
 
         OotdDto topDto = OotdDto.builder()
                 .clothesId(UUID.randomUUID())
@@ -234,23 +266,17 @@ public class RecommendationServiceTest {
 
         List<OotdDto> clothes = List.of(topDto);
 
-        RecommendationDto dummyResult = RecommendationDto.builder()
-            .userId(userId)
-            .weatherId(weatherId)
-            .clothes(clothes)
-            .build();
-
-        given(itemSelectorEngine.createRecommendation(any(), any(), any(), any())).willReturn(dummyResult);
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(clothes);
 
         // when
         recommendationService.recommendClothes(userId, weatherId);
 
         // then
-        // rollCounter가 1 증가했는지 검증
-        verify(valueOperations, times(1)).increment(rollCountKey);
-        // 새로운 cooldown ID가 TTL과 함께 저장되었는지 검증
-        verify(valueOperations, times(1)).set(eq(cooldownKey),
-            eq(topDto.clothesId().toString()), anyLong(), eq(TimeUnit.MINUTES));
+        verify(valueOperations, times(1)).set(eq(rollCountKey), eq(1L));
+        verify(hashOperations, times(1)).put(eq(cooldownKey), eq(topDto.type()), eq(topDto.clothesId().toString()));
     }
 
     @Test
@@ -262,14 +288,11 @@ public class RecommendationServiceTest {
 
         given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
         given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
 
-        RecommendationDto expected = RecommendationDto.builder()
-            .userId(userId)
-            .weatherId(weatherId)
-            .clothes(Collections.emptyList())
-            .build();
+        List<OotdDto> clothes = List.of();
 
-        given(itemSelectorEngine.createRecommendation(any(), any(), any(), any())).willReturn(expected);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(clothes);
 
         // when
         RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
@@ -285,6 +308,7 @@ public class RecommendationServiceTest {
         UUID userId = mockUser.getId();
         UUID invalidWeatherId = UUID.randomUUID();
 
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
         given(weatherRepository.findById(invalidWeatherId)).willReturn(Optional.empty());
 
         // when & then

@@ -136,6 +136,16 @@ public class RecommendationServiceImpl implements RecommendationService {
         // 추천 횟수 증가 후 Redis에 저장
         redisTemplate.opsForValue().set("rollCounter:" + userId, rollCounter + 1);
 
+        // 추천 결과 Redis에 저장 (의상 타입별 cooldown ID)
+        for (OotdDto dto : recommendResult) {
+            String cooldownKey = "cooldownIdMap:" + userId;
+            ClothesType type = dto.type();
+            UUID clothesId = dto.clothesId();
+            // Redis Hash에 저장
+            redisTemplate.opsForHash().put(cooldownKey, type, clothesId.toString());
+            // TODO: TTL 설정 추가
+        }
+
         return result;
     }
 
@@ -169,6 +179,10 @@ public class RecommendationServiceImpl implements RecommendationService {
                     continue;
                 }
             }
+
+            if (type != null && value != null) {
+                cooldownIdMap.put(type, value);
+            }
         }
         return cooldownIdMap;
     }
@@ -177,7 +191,7 @@ public class RecommendationServiceImpl implements RecommendationService {
      * 온도, 풍속, 습도를 기반으로 계절별 체감온도를 계산합니다.
      * 겨울/여름/그 외 공식 적용 (기상청 및 Steadman)
      */
-    private static double calculateFeelsLike(double temperature, double windSpeed, double humidity) {
+    public static double calculateFeelsLike(double temperature, double windSpeed, double humidity) {
 
         final double KMH_THRESHOLD = 4.8;
         final double WINTER_MAX_C = 10.0;

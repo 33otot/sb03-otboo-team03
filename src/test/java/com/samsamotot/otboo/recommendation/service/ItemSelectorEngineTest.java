@@ -3,13 +3,17 @@ package com.samsamotot.otboo.recommendation.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
 
+import com.samsamotot.otboo.clothes.dto.OotdDto;
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.entity.ClothesAttribute;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
+import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
-import com.samsamotot.otboo.recommendation.dto.RecommendationDto;
+import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
+import java.time.Month;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,6 +32,10 @@ public class ItemSelectorEngineTest {
     @Mock
     private ClothesRepository clothesRepository;
 
+    @Mock
+    private ClothesMapper clothesMapper;
+
+    @Spy
     @InjectMocks
     private ItemSelectorEngine itemSelectorEngine;
 
@@ -36,9 +45,9 @@ public class ItemSelectorEngineTest {
 
     @BeforeEach
     void setUp() {
-        thickness = ClothesAttributeDef.createClothesAttributeDef("두께", List.of("LIGHT", "MID", "HEAVY"));
-        season = ClothesAttributeDef.createClothesAttributeDef("계절", List.of("SPRING", "SUMMER", "FALL", "WINTER"));
-        waterproof = ClothesAttributeDef.createClothesAttributeDef("방수", List.of("TRUE", "FALSE"));
+        thickness = ClothesAttributeDef.createClothesAttributeDef("두께", List.of("얇음", "보통", "두꺼움"));
+        season = ClothesAttributeDef.createClothesAttributeDef("계절", List.of("봄", "여름", "가을", "겨울"));
+        waterproof = ClothesAttributeDef.createClothesAttributeDef("방수", List.of("가능", "불가능"));
     }
 
     @Test
@@ -49,12 +58,12 @@ public class ItemSelectorEngineTest {
 
         ClothesAttribute lightAttr = ClothesAttribute.builder()
             .definition(thickness)
-            .value("LIGHT")
+            .value("얇음")
             .build();
 
         ClothesAttribute heavyAttr = ClothesAttribute.builder()
             .definition(thickness)
-            .value("HEAVY")
+            .value("두꺼움")
             .build();
 
         Clothes lightClothes = Clothes.builder()
@@ -69,10 +78,9 @@ public class ItemSelectorEngineTest {
             .attributes(List.of(heavyAttr))
             .build();
 
-
         // when
-        double lightScore = itemSelectorEngine.calculateScore(lightClothes, hotTemperature, "SUMMER", false);
-        double heavyScore = itemSelectorEngine.calculateScore(heavyClothes, hotTemperature, "SUMMER", false);
+        double lightScore = itemSelectorEngine.calculateScore(lightClothes, hotTemperature, Month.JUNE, false);
+        double heavyScore = itemSelectorEngine.calculateScore(heavyClothes, hotTemperature, Month.JUNE, false);
 
         // then
         assertThat(lightScore).isGreaterThan(heavyScore);
@@ -86,12 +94,12 @@ public class ItemSelectorEngineTest {
 
         ClothesAttribute lightAttr = ClothesAttribute.builder()
             .definition(thickness)
-            .value("LIGHT")
+            .value("얇음")
             .build();
 
         ClothesAttribute heavyAttr = ClothesAttribute.builder()
             .definition(thickness)
-            .value("HEAVY")
+            .value("두꺼움")
             .build();
 
         Clothes lightClothes = Clothes.builder()
@@ -107,8 +115,8 @@ public class ItemSelectorEngineTest {
             .build();
 
         // when
-        double lightScore = itemSelectorEngine.calculateScore(lightClothes, coldTemperature, "WINTER", false);
-        double heavyScore = itemSelectorEngine.calculateScore(heavyClothes, coldTemperature, "WINTER", false);
+        double lightScore = itemSelectorEngine.calculateScore(lightClothes, coldTemperature, Month.FEBRUARY, false);
+        double heavyScore = itemSelectorEngine.calculateScore(heavyClothes, coldTemperature, Month.FEBRUARY, false);
 
         // then
         assertThat(heavyScore).isGreaterThan(lightScore);
@@ -122,17 +130,17 @@ public class ItemSelectorEngineTest {
 
         ClothesAttribute lightAttr = ClothesAttribute.builder()
             .definition(thickness)
-            .value("LIGHT")
+            .value("얇음")
             .build();
 
         ClothesAttribute midAttr = ClothesAttribute.builder()
             .definition(thickness)
-            .value("MID")
+            .value("보통")
             .build();
 
         ClothesAttribute heavyAttr = ClothesAttribute.builder()
             .definition(thickness)
-            .value("HEAVY")
+            .value("두꺼움")
             .build();
 
         Clothes lightClothes = Clothes.builder()
@@ -154,9 +162,10 @@ public class ItemSelectorEngineTest {
             .build();
 
         // when
-        double lightScore = itemSelectorEngine.calculateScore(lightClothes, mildTemperature, "FALL", false);
-        double midScore = itemSelectorEngine.calculateScore(midClothes, mildTemperature, "FALL", false);
-        double heavyScore = itemSelectorEngine.calculateScore(heavyClothes, mildTemperature, "FALL", false);
+        double lightScore = itemSelectorEngine.calculateScore(lightClothes, mildTemperature,
+            Month.OCTOBER, false);
+        double midScore = itemSelectorEngine.calculateScore(midClothes, mildTemperature, Month.OCTOBER, false);
+        double heavyScore = itemSelectorEngine.calculateScore(heavyClothes, mildTemperature, Month.OCTOBER, false);
 
         // then
         assertThat(midScore).isGreaterThan(heavyScore);
@@ -167,16 +176,16 @@ public class ItemSelectorEngineTest {
     void 계절_일치_옷은_추가_점수를_받는다() {
 
         // given
-        String currentSeason = "SUMMER";
+        Month currentMonth = Month.JUNE;
 
         ClothesAttribute summerSeasonAttr = ClothesAttribute.builder()
             .definition(season)
-            .value("SUMMER")
+            .value("여름")
             .build();
 
         ClothesAttribute winterSeasonAttr = ClothesAttribute.builder()
             .definition(season)
-            .value("WINTER")
+            .value("겨울")
             .build();
 
         Clothes summerClothes = Clothes.builder()
@@ -192,8 +201,8 @@ public class ItemSelectorEngineTest {
             .build();
 
         // when
-        double summerScore = itemSelectorEngine.calculateScore(summerClothes, 30, currentSeason, false);
-        double winterScore = itemSelectorEngine.calculateScore(winterClothes, 30, currentSeason, false);
+        double summerScore = itemSelectorEngine.calculateScore(summerClothes, 30, currentMonth, false);
+        double winterScore = itemSelectorEngine.calculateScore(winterClothes, 30, currentMonth, false);
 
         // then
         assertThat(summerScore).isGreaterThan(winterScore);
@@ -207,12 +216,12 @@ public class ItemSelectorEngineTest {
 
         ClothesAttribute waterproofAttr = ClothesAttribute.builder()
             .definition(waterproof)
-            .value("TRUE")
+            .value("가능")
             .build();
 
         ClothesAttribute nonWaterproofAttr = ClothesAttribute.builder()
             .definition(waterproof)
-            .value("FALSE")
+            .value("불가능")
             .build();
 
         Clothes waterproofClothes = Clothes.builder()
@@ -228,8 +237,8 @@ public class ItemSelectorEngineTest {
             .build();
 
         // when
-        double waterproofScore = itemSelectorEngine.calculateScore(waterproofClothes, 20, "SPRING", isRaining);
-        double nonWaterproofScore = itemSelectorEngine.calculateScore(nonWaterproofClothes, 20, "SPRING", isRaining);
+        double waterproofScore = itemSelectorEngine.calculateScore(waterproofClothes, 20, Month.APRIL, isRaining);
+        double nonWaterproofScore = itemSelectorEngine.calculateScore(nonWaterproofClothes, 20, Month.APRIL, isRaining);
 
         // then
         assertThat(waterproofScore).isGreaterThan(nonWaterproofScore);
@@ -243,12 +252,12 @@ public class ItemSelectorEngineTest {
 
         ClothesAttribute waterproofAttr = ClothesAttribute.builder()
             .definition(waterproof)
-            .value("TRUE")
+            .value("가능")
             .build();
 
         ClothesAttribute nonWaterproofAttr = ClothesAttribute.builder()
             .definition(waterproof)
-            .value("FALSE")
+            .value("불가능")
             .build();
 
         Clothes waterproofClothes = Clothes.builder()
@@ -264,8 +273,8 @@ public class ItemSelectorEngineTest {
             .build();
 
         // when
-        double waterproofScore = itemSelectorEngine.calculateScore(waterproofClothes, 20, "SPRING", isRaining);
-        double nonWaterproofScore = itemSelectorEngine.calculateScore(nonWaterproofClothes, 20, "SPRING", isRaining);
+        double waterproofScore = itemSelectorEngine.calculateScore(waterproofClothes, 20, Month.APRIL, isRaining);
+        double nonWaterproofScore = itemSelectorEngine.calculateScore(nonWaterproofClothes, 20, Month.APRIL, isRaining);
 
         // then
         assertThat(waterproofScore).isEqualTo(nonWaterproofScore);
@@ -292,9 +301,8 @@ public class ItemSelectorEngineTest {
     void 점수가_임계값_미만인_아이템은_후보군에서_제외된다() {
 
         // given
-        int MIN_SCORE_THRESHOLD = 10;
-        int temperature = 20;
-        String season = "SPRING";
+        double temperature = 20.0;
+        Month month = Month.APRIL;
         boolean isRainy = false;
 
         Clothes highScoreClothes = Clothes.builder()
@@ -310,21 +318,31 @@ public class ItemSelectorEngineTest {
             .build();
 
         List<Clothes> clothesList = List.of(highScoreClothes, lowScoreClothes);
+        RecommendationContextDto context = RecommendationContextDto.builder()
+            .adjustedTemperature(temperature)
+            .currentMonth(month)
+            .isRainingOrSnowing(isRainy)
+            .build();
 
-        given(clothesRepository.findAllByType(any())).willReturn(clothesList);
-        given(itemSelectorEngine.calculateScore(highScoreClothes, temperature, season, isRainy)).willReturn(15.0);
-        given(itemSelectorEngine.calculateScore(lowScoreClothes, temperature, season, isRainy)).willReturn(5.0);
+        doReturn(0.5).when(itemSelectorEngine).calculateScore(highScoreClothes, temperature, month, isRainy);
+        doReturn(0.3).when(itemSelectorEngine).calculateScore(lowScoreClothes, temperature, month, isRainy);
+
+        given(clothesMapper.toOotdDto(any(Clothes.class)))
+            .willAnswer(invocation -> {
+                Clothes clothes = invocation.getArgument(0);
+                return OotdDto.builder().name(clothes.getName()).build();
+            });
 
         // when
-        RecommendationDto result = itemSelectorEngine.createRecommendation(
-            null,
-            null,
+        List<OotdDto> result = itemSelectorEngine.createRecommendation(
+            clothesList,
+            context,
             0L,
             Map.of()
         );
 
         // then
-        assertThat(result.clothes())
+        assertThat(result)
             .extracting("name")
             .contains("추천될 옷")
             .doesNotContain("제외될 옷");
@@ -334,9 +352,8 @@ public class ItemSelectorEngineTest {
     void 카테고리_내_모든_아이템이_임계값_미만이면_추천하지_않는다() {
 
         // given
-        int MIN_SCORE_THRESHOLD = 10;
-        int temperature = 20;
-        String season = "SPRING";
+        double temperature = 20.0;
+        Month month = Month.APRIL;
         boolean isRainy = false;
 
         Clothes lowScoreClothes1 = Clothes.builder()
@@ -352,38 +369,46 @@ public class ItemSelectorEngineTest {
             .build();
 
         List<Clothes> clothesList = List.of(lowScoreClothes1, lowScoreClothes2);
+        RecommendationContextDto context = RecommendationContextDto.builder()
+            .adjustedTemperature(temperature)
+            .currentMonth(month)
+            .isRainingOrSnowing(isRainy)
+            .build();
 
-        given(clothesRepository.findAllByType(any())).willReturn(clothesList);
-        given(itemSelectorEngine.calculateScore(lowScoreClothes1, temperature, season, isRainy)).willReturn(5.0);
-        given(itemSelectorEngine.calculateScore(lowScoreClothes2, temperature, season, isRainy)).willReturn(0.0);
+        doReturn(0.2).when(itemSelectorEngine).calculateScore(lowScoreClothes1, temperature, month, isRainy);
+        doReturn(0.1).when(itemSelectorEngine).calculateScore(lowScoreClothes2, temperature, month, isRainy);
 
         // when
-        RecommendationDto result = itemSelectorEngine.createRecommendation(
-            null,
-            null,
+        List<OotdDto> result = itemSelectorEngine.createRecommendation(
+            clothesList,
+            context,
             0L,
             Map.of()
         );
 
         // then
-        assertThat(result.clothes()).isEmpty();
+        assertThat(result).isEmpty();
     }
 
     @Test
     void 옷장이_비어있으면_빈_옷추천_리스트를_반환한다() {
 
         // given
-        given(clothesRepository.findAllByType(any())).willReturn(List.of());
+        RecommendationContextDto context = RecommendationContextDto.builder()
+            .adjustedTemperature(20.0)
+            .currentMonth(Month.APRIL)
+            .isRainingOrSnowing(false)
+            .build();
 
         // when
-        RecommendationDto result = itemSelectorEngine.createRecommendation(
-            null,
-            null,
+        List<OotdDto> result = itemSelectorEngine.createRecommendation(
+            List.of(),
+            context,
             0L,
             Map.of()
         );
 
         // then
-        assertThat(result.clothes()).isEmpty();
+        assertThat(result).isEmpty();
     }
 }
