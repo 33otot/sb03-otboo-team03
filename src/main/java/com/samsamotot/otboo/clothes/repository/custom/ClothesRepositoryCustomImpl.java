@@ -5,7 +5,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.samsamotot.otboo.clothes.dto.request.ClothesSearchRequest;
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.entity.QClothes;
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
 import java.util.List;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Repository;
 public class ClothesRepositoryCustomImpl implements ClothesRepositoryCustom {
 
     @PersistenceContext
-    private EntityManager em;
     private final JPAQueryFactory queryFactory;
     private final QClothes clothes = QClothes.clothes;
 
