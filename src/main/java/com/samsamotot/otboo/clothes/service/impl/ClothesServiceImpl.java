@@ -212,6 +212,33 @@ public class ClothesServiceImpl implements ClothesService {
         return clothesMapper.toClothesDto(saved);
     }
 
+    // 삭제 기능
+    @Override
+    @Transactional
+    public void delete(UUID clothesId) {
+        log.info(SERVICE_NAME + "delete - 의상 삭제 메서드 호출됨");
+
+        // Clothes 조회
+        Clothes clothes = clothesRepository.findById(clothesId)
+            .orElseThrow(() -> new ClothesNotFoundException());
+
+        // 기존 이미지 경로 보관
+        String previousImageUrl = clothes.getImageUrl();
+
+        log.info(SERVICE_NAME + "delete - 삭제될 의상 이름: {}", clothes.getName());
+
+        // 의상 삭제
+        clothesRepository.delete(clothes);
+
+        // 의상 이미지 삭제
+        if (previousImageUrl != null) {
+            try {
+                s3ImageStorage.deleteImage(previousImageUrl);
+            } catch (Exception e) {
+                log.warn(SERVICE_NAME + "의상 이미지 삭제 실패 - url: {}, err: {}", previousImageUrl, e.getMessage(), e);
+            }
+        }
+    }
 
     // ===== 공통 로직 메서드 ===== //
 
