@@ -62,6 +62,8 @@ public interface ClothesControllerApi {
         value = {
             @ApiResponse(responseCode = "204", description = "옷 삭제 성공"),
             @ApiResponse(responseCode = "400", description = "옷 삭제 실패",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "옷 찾기 실패",
                 content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
         }
     )
