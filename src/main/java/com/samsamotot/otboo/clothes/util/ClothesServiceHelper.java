@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.clothes.service.util;
+package com.samsamotot.otboo.clothes.util;
 
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import java.util.List;
