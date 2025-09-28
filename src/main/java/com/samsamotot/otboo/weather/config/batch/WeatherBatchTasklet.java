@@ -1,0 +1,70 @@
+package com.samsamotot.otboo.weather.config.batch;
+
+import com.samsamotot.otboo.weather.entity.Grid;
+import com.samsamotot.otboo.weather.repository.GridRepository;
+import com.samsamotot.otboo.weather.service.WeatherService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.StepContribution;
+import org.springframework.batch.core.scope.context.ChunkContext;
+import org.springframework.batch.core.step.tasklet.Tasklet;
+import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class WeatherBatchTasklet implements Tasklet {
+
+    private static final String TASKLET_NAME = "[WeatherBatchTasklet] ";
+
+    private final WeatherService weatherService;
+    private final GridRepository gridRepository;
+
+
+    @Override
+    public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) {
+        log.info(TASKLET_NAME + "전국 격자별 날씨 데이터 병렬 업데이트 배치 시작");
+
+        // 1. DB에서 날씨를 업데이트할 모든 Grid 목록 호출
+        List<Grid> allGrids = gridRepository.findAll();
+        log.info(TASKLET_NAME + "{}개의 고유 격자에 대한 병렬처리 시작.", allGrids.size());
+
+        // 2. 각 Grid에 대해 비동기 날씨 업데이트 작업 생성
+        List<Throwable> errors = new CopyOnWriteArrayList<>();
+        List<CompletableFuture<Void>> futures = allGrids.stream()
+                .map(grid -> weatherService.updateWeatherDataForGrid(grid)
+                        .whenComplete((result, error) -> { if (error != null) errors.add(error); }))
+                .toList();
+
+        // 3. 모든 비동기 작업 완료까지 대기
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            if (!errors.isEmpty()) {
+                int successCount = allGrids.size() - errors.size();
+                int failureCount = errors.size();
+
+                log.warn(TASKLET_NAME + "일부 격자 업데이트 실패 - 성공: {}건, 실패: {}건", successCount, failureCount);
+
+                // 실패율이 너무 높은 경우에만 배치 실패 (예: 50% 이상)
+                double failureRate = (double) failureCount / allGrids.size();
+                if (failureRate > 0.5) {
+                    log.error(TASKLET_NAME + "실패율이 너무 높음 ({}%). 배치를 실패 처리합니다.", failureRate * 100);
+                    throw new RuntimeException("비동기 날씨 업데이트 실패율 초과: " + failureRate * 100 + "%");
+                }
+            }
+        } catch (Exception e) {
+            // 비동기 작업 중 하나라도 실패하면, 전체 Step을 실패 처리하기 위해 예외를 다시 던짐
+            log.error(TASKLET_NAME + "하나 이상의 비동기 날씨 업데이트 작업 실패. Step을 실패 처리합니다.", e);
+            throw new RuntimeException("비동기 날씨 업데이트 작업 중 오류 발생", e);
+        }
+
+        log.info(TASKLET_NAME + "전국 격자별 날씨 데이터 병렬 업데이트 배치 완료.");
+
+        return RepeatStatus.FINISHED;
+    }
+}

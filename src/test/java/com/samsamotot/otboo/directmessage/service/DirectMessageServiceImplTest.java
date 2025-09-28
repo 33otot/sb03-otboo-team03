@@ -21,6 +21,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +58,7 @@ class DirectMessageServiceImplTest {
     private DirectMessageMapper directMessageMapper;
 
 
+    private final String myEmail = "me@example.com";
     private final UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001");
     private final UUID otherId = UUID.fromString("a0000000-0000-0000-0000-000000000002");
 
@@ -66,8 +68,8 @@ class DirectMessageServiceImplTest {
         SecurityContextHolder.clearContext();
     }
 
-    private static void loginAs(UUID userId) {
-        var auth = new UsernamePasswordAuthenticationToken(userId.toString(), null, null);
+    private static void loginAsEmail(String email) {
+        var auth = new UsernamePasswordAuthenticationToken(email, "N/A", java.util.List.of());
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
@@ -90,18 +92,36 @@ class DirectMessageServiceImplTest {
         return m;
     }
 
+    private static Instant invokeParse(String cursor) {
+        try {
+            Method m = DirectMessageServiceImpl.class.getDeclaredMethod("parseCursor", String.class);
+            m.setAccessible(true);
+            return (Instant) m.invoke(null, cursor);
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            Throwable target = e.getTargetException();
+            if (target instanceof RuntimeException re) throw re;
+            throw new RuntimeException(target);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Test
     void dm_sender_확인한다_실패() throws Exception {
         // given
-        loginAs(myId);
+        loginAsEmail(myEmail);
+
+        User principalUser = stubUser(myId, false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principalUser));
+
         given(userRepository.findById(myId)).willReturn(Optional.empty());
+
         var request = newRequest(otherId, 10);
 
         // when n then
         assertThatThrownBy(() -> directMessageService.getMessages(request))
             .isInstanceOf(OtbooException.class)
-            .extracting("errorCode")
-            .isEqualTo(ErrorCode.INVALID_FOLLOW_REQUEST);
+            .extracting("errorCode").isEqualTo(ErrorCode.INVALID_FOLLOW_REQUEST);
 
         verify(directMessageRepository, never()).findBetweenWithCursor(any(), any(), any(), any(), any());
     }
@@ -109,16 +129,20 @@ class DirectMessageServiceImplTest {
     @Test
     void sender_locked_확인한다_실패() throws Exception {
         // given
-        loginAs(myId);
+        loginAsEmail(myEmail);
+
+        User principalUser = stubUser(myId, false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principalUser));
+
         User me = stubUser(myId, true); // 잠금
         given(userRepository.findById(myId)).willReturn(Optional.of(me));
+
         var request = newRequest(otherId, 10);
 
         // when n then
         assertThatThrownBy(() -> directMessageService.getMessages(request))
             .isInstanceOf(OtbooException.class)
-            .extracting("errorCode")
-            .isEqualTo(ErrorCode.USER_LOCKED);
+            .extracting("errorCode").isEqualTo(ErrorCode.USER_LOCKED);
 
         verify(directMessageRepository, never()).findBetweenWithCursor(any(), any(), any(), any(), any());
     }
@@ -126,17 +150,22 @@ class DirectMessageServiceImplTest {
     @Test
     void dm_receiver_확인한다_실패() throws Exception {
         // given
-        loginAs(myId);
+        loginAsEmail(myEmail);
+
+        User principalUser = stubUser(myId, false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principalUser));
+
         User me = stubUser(myId, false);
         given(userRepository.findById(myId)).willReturn(Optional.of(me));
+
         given(userRepository.findById(otherId)).willReturn(Optional.empty());
+
         var request = newRequest(otherId, 10);
 
         // when n then
         assertThatThrownBy(() -> directMessageService.getMessages(request))
             .isInstanceOf(OtbooException.class)
-            .extracting("errorCode")
-            .isEqualTo(ErrorCode.INVALID_FOLLOW_REQUEST);
+            .extracting("errorCode").isEqualTo(ErrorCode.INVALID_FOLLOW_REQUEST);
 
         verify(directMessageRepository, never()).findBetweenWithCursor(any(), any(), any(), any(), any());
     }
@@ -145,18 +174,22 @@ class DirectMessageServiceImplTest {
     @Test
     void receiver_locked_확인한다_실패() throws Exception {
         // given
-        loginAs(myId);
+        loginAsEmail(myEmail);
+
+        User principalUser = stubUser(myId, false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principalUser));
+
         User me = stubUser(myId, false);
         User other = stubUser(otherId, true); // 잠금
         given(userRepository.findById(myId)).willReturn(Optional.of(me));
         given(userRepository.findById(otherId)).willReturn(Optional.of(other));
+
         var request = newRequest(otherId, 10);
 
         // when n then
         assertThatThrownBy(() -> directMessageService.getMessages(request))
             .isInstanceOf(OtbooException.class)
-            .extracting("errorCode")
-            .isEqualTo(ErrorCode.USER_LOCKED);
+            .extracting("errorCode").isEqualTo(ErrorCode.USER_LOCKED);
 
         verify(directMessageRepository, never()).findBetweenWithCursor(any(), any(), any(), any(), any());
     }
@@ -164,7 +197,10 @@ class DirectMessageServiceImplTest {
     @Test
     void 정상적으로_전체_dm수를_가져온다() throws Exception {
         // given
-        loginAs(myId);
+        loginAsEmail(myEmail);
+
+        User principalUser = stubUser(myId, false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principalUser));
 
         User me    = stubUser(myId, false);
         User other = stubUser(otherId, false);
@@ -188,22 +224,21 @@ class DirectMessageServiceImplTest {
 
         // then
         assertThat(resp).isNotNull();
-        assertThat(resp.data()).hasSize(2);          // limit 만큼 반환
-        assertThat(resp.hasNext()).isTrue();         // 초과분 있으므로 true
+        assertThat(resp.data()).hasSize(2);
+        assertThat(resp.hasNext()).isTrue();
         assertThat(resp.totalCount()).isEqualTo(42L);
 
-        then(directMessageRepository)
-            .should()
-            .findBetweenWithCursor(any(), any(), any(), any(), any());
+        then(directMessageRepository).should().findBetweenWithCursor(any(), any(), any(), any(), any());
+        then(directMessageRepository).should().countBetween(myId, otherId);
+        then(directMessageMapper).should(atLeast(2)).toDto(any());
+    }
 
-        then(directMessageRepository)
-            .should()
-            .countBetween(myId, otherId);
-
-        // 매퍼는 최소 두 번 이상 호출됐으면 충분
-        then(directMessageMapper)
-            .should(atLeast(2))
-            .toDto(any());
+    @Test
+    void parseCursor_형식오류면_INVALID_REQUEST_PARAMETER() {
+        assertThatThrownBy(() -> invokeParse("NOT-INSTANT"))
+            .isInstanceOf(OtbooException.class)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.INVALID_REQUEST_PARAMETER);
     }
 
     @Test
@@ -216,4 +251,5 @@ class DirectMessageServiceImplTest {
         Instant r3 = ReflectionTestUtils.invokeMethod(DirectMessageServiceImpl.class, "parseCursor", "2025-09-22T09:10:11Z");
         assertThat(r3).isNotNull();
     }
+
 }

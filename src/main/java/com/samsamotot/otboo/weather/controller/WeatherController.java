@@ -1,8 +1,8 @@
 package com.samsamotot.otboo.weather.controller;
 
-import com.samsamotot.otboo.location.entity.WeatherAPILocation;
 import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.weather.controller.api.WeatherApi;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

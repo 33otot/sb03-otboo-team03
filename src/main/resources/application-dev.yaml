@@ -16,6 +16,11 @@ spring:
       additional-exclude: "**/mapper/**/*MapperImpl.class"
       log-condition-evaluation-delta: true
 
+  # Batch 설정
+  batch:
+    jdbc:
+      initialize-schema: always
+
   # PostgreSQL DB 접속 정보
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:postgres}:${POSTGRES_PORT:5432}/${POSTGRES_DB:otboo}
@@ -34,11 +39,6 @@ spring:
         default_batch_fetch_size: 100
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-
-  # Batch 설정
-  batch:
-    jdbc:
-      initialize-schema: always
 
 management:
   endpoints:

@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.follow.service;
 
+import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.entity.Follow;
@@ -8,6 +9,8 @@ import com.samsamotot.otboo.follow.repository.FollowRepository;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +18,8 @@ import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.lang.reflect.Method;
 import java.time.Instant;
@@ -50,6 +55,15 @@ class FollowServiceImplTest {
     @Mock
     private FollowMapper followMapper;
 
+    private UUID loggedInUserId;
+    private final String myEmail = "me@example.com";
+    private final UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001");
+
+    private static void loginAsEmail(String email) {
+        var auth = new UsernamePasswordAuthenticationToken(email, null, null);
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
     private static Instant invokeParse(String cursor) {
         try {
             Method m = FollowServiceImpl.class.getDeclaredMethod("parseCursorToInstant", String.class);
@@ -58,6 +72,21 @@ class FollowServiceImplTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @BeforeEach
+    void setUpAuth() {
+        // 테스트마다 고정된(또는 랜덤) UUID를 인증 컨텍스트에 심어줌
+        loggedInUserId = UUID.randomUUID();
+        var auth = new UsernamePasswordAuthenticationToken(
+            loggedInUserId.toString(), "N/A", List.of()  // getName() == UUID 문자열
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    @AfterEach
+    void clearAuth() {
+        SecurityContextHolder.clearContext();
     }
 
     /*
@@ -206,17 +235,29 @@ class FollowServiceImplTest {
     @Test
     void 로그인_유저정보_확인_실패() throws Exception {
         // given
-        given(userRepository.findById(any(UUID.class))).willReturn(Optional.empty());
+        loginAsEmail(myEmail);
 
-        // when & then
+        User principal = mock(User.class, Answers.RETURNS_DEFAULTS);
+        lenient().when(principal.getId()).thenReturn(myId);
+        lenient().when(principal.isLocked()).thenReturn(false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principal));
+
+        given(userRepository.findById(myId)).willReturn(Optional.empty());
+
+        // when n then
         assertThatThrownBy(() -> followService.findFollowSummaries(UUID.randomUUID()))
             .isInstanceOf(OtbooException.class);
-
     }
 
     @Test
     void 입력_유저정보_확인_실패() throws Exception {
         // given
+        loginAsEmail(myEmail);
+        User principal = mock(User.class, Answers.RETURNS_DEFAULTS);
+        lenient().when(principal.getId()).thenReturn(myId);
+        lenient().when(principal.isLocked()).thenReturn(false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principal));
+
         User loggedIn = mock(User.class, Answers.RETURNS_DEFAULTS);
         lenient().when(loggedIn.isLocked()).thenReturn(false);
 
@@ -224,28 +265,40 @@ class FollowServiceImplTest {
             .willReturn(Optional.of(loggedIn))
             .willReturn(Optional.empty());
 
-        // when & then
+        // when n then
         assertThatThrownBy(() -> followService.findFollowSummaries(UUID.randomUUID()))
             .isInstanceOf(OtbooException.class);
     }
+
 
     @Test
     void 로그인_유저_locked_확인_실패() throws Exception {
         // given
+        loginAsEmail(myEmail);
+        User principal = mock(User.class, Answers.RETURNS_DEFAULTS);
+        lenient().when(principal.getId()).thenReturn(myId);
+        lenient().when(principal.isLocked()).thenReturn(false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principal));
+
         User loggedIn = mock(User.class, Answers.RETURNS_DEFAULTS);
         given(loggedIn.isLocked()).willReturn(true);
+        given(userRepository.findById(myId)).willReturn(Optional.of(loggedIn));
 
-        given(userRepository.findById(any(UUID.class)))
-            .willReturn(Optional.of(loggedIn));
-
-        // when & then
+        // when n then
         assertThatThrownBy(() -> followService.findFollowSummaries(UUID.randomUUID()))
             .isInstanceOf(OtbooException.class);
     }
 
+
     @Test
     void 입력_유저_locked_확인_실패() throws Exception {
         // given
+        loginAsEmail(myEmail);
+        User principal = mock(User.class, Answers.RETURNS_DEFAULTS);
+        lenient().when(principal.getId()).thenReturn(myId);
+        lenient().when(principal.isLocked()).thenReturn(false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principal));
+
         User loggedIn = mock(User.class, Answers.RETURNS_DEFAULTS);
         User target   = mock(User.class, Answers.RETURNS_DEFAULTS);
         given(loggedIn.isLocked()).willReturn(false);
@@ -255,23 +308,31 @@ class FollowServiceImplTest {
             .willReturn(Optional.of(loggedIn))
             .willReturn(Optional.of(target));
 
-        // when & then
+        // when n then
         assertThatThrownBy(() -> followService.findFollowSummaries(UUID.randomUUID()))
             .isInstanceOf(OtbooException.class);
     }
+
+
     @Test
     void 팔로우_있는지_확인_실패() throws Exception {
         // given
+        loginAsEmail(myEmail);
+        User principal = mock(User.class, Answers.RETURNS_DEFAULTS);
+        lenient().when(principal.getId()).thenReturn(myId);
+        lenient().when(principal.isLocked()).thenReturn(false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principal));
+
         User loggedIn = mock(User.class, Answers.RETURNS_DEFAULTS);
-        User target   = mock(User.class, Answers.RETURNS_DEFAULTS);
+        User target = mock(User.class, Answers.RETURNS_DEFAULTS);
         UUID targetId = UUID.randomUUID();
 
         given(loggedIn.isLocked()).willReturn(false);
         given(target.isLocked()).willReturn(false);
 
         given(userRepository.findById(any(UUID.class)))
-            .willReturn(Optional.of(loggedIn))
-            .willReturn(Optional.of(target));
+            .willReturn(Optional.of(loggedIn)) // me
+            .willReturn(Optional.of(target));  // target
 
         given(followRepository.existsByFollowerIdAndFolloweeId(any(UUID.class), any(UUID.class)))
             .willReturn(false);
@@ -292,9 +353,16 @@ class FollowServiceImplTest {
         assertThat(response.followingMe()).isFalse();
     }
 
+
     @Test
     void 팔로우_여부_확인_실패() throws Exception {
         // given
+        loginAsEmail(myEmail);
+        User principal = mock(User.class, Answers.RETURNS_DEFAULTS);
+        lenient().when(principal.getId()).thenReturn(myId);
+        lenient().when(principal.isLocked()).thenReturn(false);
+        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principal));
+
         User loggedIn = mock(User.class, Answers.RETURNS_DEFAULTS);
         User target   = mock(User.class, Answers.RETURNS_DEFAULTS);
         UUID targetId = UUID.randomUUID();
@@ -328,6 +396,14 @@ class FollowServiceImplTest {
     }
 
 
+    @Test
+    void 인증_없으면_실패() throws Exception{
+        SecurityContextHolder.clearContext();
+
+        assertThatThrownBy(() -> followService.findFollowSummaries(UUID.randomUUID()))
+            .isInstanceOf(OtbooException.class)
+            .hasMessageContaining("인증이 필요");
+    }
 
     /*
         팔로잉 목록 조회 단위 테스트

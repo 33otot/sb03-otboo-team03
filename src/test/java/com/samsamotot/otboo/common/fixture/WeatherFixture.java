@@ -2,6 +2,7 @@ package com.samsamotot.otboo.common.fixture;
 
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -12,11 +13,11 @@ public class WeatherFixture {
     public static final Instant DEFAULT_FORECAST_AT = Instant.now().minusSeconds(1800);
     public static final Instant DEFAULT_FORECASTED_AT = Instant.now().plusSeconds(1800);
 
-    public static Weather createWeather(Location location) {
+    public static Weather createWeather(Grid grid) {
         return Weather.builder()
             .forecastAt(DEFAULT_FORECAST_AT)
             .forecastedAt(DEFAULT_FORECASTED_AT)
-            .location(location)
+            .grid(grid)
             .build();
     }
 
