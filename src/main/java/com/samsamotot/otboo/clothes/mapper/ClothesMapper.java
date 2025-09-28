@@ -29,6 +29,13 @@ public interface ClothesMapper {
     @Mapping(source = "clothes.attributes", target = "attributes")
     OotdDto toOotdDto(FeedClothes feedClothes);
 
+    @Mapping(source = "clothes.id", target = "clothesId")
+    @Mapping(source = "clothes.name", target = "name")
+    @Mapping(source = "clothes.imageUrl", target = "imageUrl")
+    @Mapping(source = "clothes.type", target = "type")
+    @Mapping(source = "clothes.attributes", target = "attributes")
+    OotdDto toOotdDto(Clothes clothes);
+
     @Mapping(source = "definition.id", target = "definitionId")
     @Mapping(source = "definition.name", target = "definitionName")
     @Mapping(target = "selectableValues", expression = "java(mapOptionsToSelectableValues(attribute))")

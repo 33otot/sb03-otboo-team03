@@ -11,4 +11,6 @@ import org.springframework.stereotype.Repository;
 public interface ClothesRepository extends JpaRepository<Clothes, UUID> {
 
     List<Clothes> findAllByType(ClothesType type);
+
+    List<Clothes> findAllByOwnerId(UUID ownerId);
 }
