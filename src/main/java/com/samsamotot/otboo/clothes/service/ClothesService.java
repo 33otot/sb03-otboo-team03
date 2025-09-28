@@ -2,7 +2,9 @@ package com.samsamotot.otboo.clothes.service;
 
 import com.samsamotot.otboo.clothes.dto.request.ClothesCreateRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
+import com.samsamotot.otboo.clothes.dto.request.ClothesSearchRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesUpdateRequest;
+import com.samsamotot.otboo.common.dto.CursorResponse;
 import java.util.UUID;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,4 +20,7 @@ public interface ClothesService {
 
     // delete
     void delete(UUID clothesId);
+
+    // read
+    CursorResponse<ClothesDto> find(ClothesSearchRequest request);
 }
