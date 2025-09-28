@@ -94,7 +94,9 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
 
         // 사용자 온도 민감도(0~5) 및 보정값 계산
-        double sensitivity = clamp(userProfile.getTemperatureSensitivity(), 0.0, 5.0);
+        double sensitivity = userProfile.getTemperatureSensitivity() != null
+            ? clamp(userProfile.getTemperatureSensitivity(), 0.0, 5.0)
+            : SENSITIVITY_BASE; // 기본값 적용
         double correction = clamp((sensitivity - SENSITIVITY_BASE) * CORRECTION_FACTOR, -2.5, 2.5);
 
         // 계절별 체감온도 계산 및 민감도 보정
