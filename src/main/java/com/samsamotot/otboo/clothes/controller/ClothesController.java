@@ -31,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/clothes")
 @RestController
 public class ClothesController implements ClothesControllerApi{
+    private static final String CONTROLLER_NAME = "[ClothesController]";
 
     private final ClothesService clothesService;
 
@@ -42,14 +43,14 @@ public class ClothesController implements ClothesControllerApi{
     ) {
         ClothesDto result;
         if (image != null) {
-            log.debug("[ClothesController] 이미지 있는 의상 등록 요청 - clothesService.create 호출");
+            log.debug(CONTROLLER_NAME + " 이미지 있는 의상 등록 요청 - clothesService.create 호출");
             result = clothesService.create(request, image);
-            log.debug("[ClothesController] 이미지 있는 의상 등록 요청 - 결과 반환: id: {}", result.id());
+            log.debug(CONTROLLER_NAME + " 이미지 있는 의상 등록 요청 - 결과 반환: id: {}", result.id());
         }
         else {
-            log.debug("[ClothesController] 이미지 없는 의상 등록 요청 - clothesService.create 호출");
+            log.debug(CONTROLLER_NAME + " 이미지 없는 의상 등록 요청 - clothesService.create 호출");
             result = clothesService.create(request);
-            log.debug("[ClothesController] 이미지 없는 의상 등록 요청 - 결과 반환: id: {}", result.id());
+            log.debug(CONTROLLER_NAME + " 이미지 없는 의상 등록 요청 - 결과 반환: id: {}", result.id());
         }
 
         return ResponseEntity
@@ -66,14 +67,14 @@ public class ClothesController implements ClothesControllerApi{
     ) {
         ClothesDto result;
         if (image != null) {
-            log.debug("[ClothesController] 이미지 있는 의상 수정 요청 - clothesService.update 호출");
+            log.debug(CONTROLLER_NAME + " 이미지 있는 의상 수정 요청 - clothesService.update 호출");
             result = clothesService.update(clothesId, request, image);
-            log.debug("[ClothesController] 이미지 있는 의상 수정 요청 - 결과 반환: id: {}", result.id());
+            log.debug(CONTROLLER_NAME + " 이미지 있는 의상 수정 요청 - 결과 반환: id: {}", result.id());
         }
         else {
-            log.debug("[ClothesController] 이미지 없는 의상 수정 요청 - clothesService.update 호출");
+            log.debug(CONTROLLER_NAME + " 이미지 없는 의상 수정 요청 - clothesService.update 호출");
             result = clothesService.update(clothesId, request);
-            log.debug("[ClothesController] 이미지 없는 의상 수정 요청 - 결과 반환: id: {}", result.id());
+            log.debug(CONTROLLER_NAME + " 이미지 없는 의상 수정 요청 - 결과 반환: id: {}", result.id());
         }
 
         return ResponseEntity
@@ -86,9 +87,9 @@ public class ClothesController implements ClothesControllerApi{
     public ResponseEntity<Void> deleteClothes (
         @PathVariable("clothesId") UUID clothesId
     ) {
-        log.debug("[ClothesController] 의상 삭제 요청 - clothesService.delete 호출");
+        log.debug(CONTROLLER_NAME + " 의상 삭제 요청 - clothesService.delete 호출");
         clothesService.delete(clothesId);
-        log.debug("[ClothesController] 의상 삭제 요청 - clothesService.delete 종료");
+        log.debug(CONTROLLER_NAME + " 의상 삭제 요청 - clothesService.delete 종료");
 
         return ResponseEntity
             .status(HttpStatus.NO_CONTENT)
@@ -100,9 +101,9 @@ public class ClothesController implements ClothesControllerApi{
     public ResponseEntity<CursorResponse<ClothesDto>> getClothes (
         @Valid @ModelAttribute ClothesSearchRequest request
     ) {
-        log.debug("[ClothesController] 의상 목록 조회 요청 - clothesService.find 호출");
+        log.debug(CONTROLLER_NAME + " 의상 목록 조회 요청 - clothesService.find 호출");
         CursorResponse<ClothesDto> result = clothesService.find(request);
-        log.debug("[ClothesController] 의상 목록 조회 요청 - clothesService.find 종료");
+        log.debug(CONTROLLER_NAME + " 의상 목록 조회 요청 - clothesService.find 종료");
 
         return ResponseEntity
             .status(HttpStatus.OK)
