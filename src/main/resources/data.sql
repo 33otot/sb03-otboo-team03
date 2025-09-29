@@ -155,11 +155,11 @@ INSERT INTO notifications (id, receiver_id, created_at, title, content, level) V
 
 -- profiles (5)
 INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity) VALUES
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', NOW(), NOW(), '김유저일', 'MALE', '1990-01-01', 3.0),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', NOW(), NOW(), '이유저이', 'FEMALE', '1992-02-02', 4.0),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', NOW(), NOW(), '박유저삼', 'MALE', '1993-03-03', 2.5),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', NOW(), NOW(), '최유저사', 'FEMALE', '1994-04-04', 4.5),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5);
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', NOW(), NOW(), '김유저일', 'MALE', '1990-01-01', 3.0, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', NOW(), NOW(), '이유저이', 'FEMALE', '1992-02-02', 4.0, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', NOW(), NOW(), '박유저삼', 'MALE', '1993-03-03', 2.5, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', NOW(), NOW(), '최유저사', 'FEMALE', '1994-04-04', 4.5, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5, null);
 
 -- direct_messages (5)
 INSERT INTO direct_messages (id, sender_id, receiver_id, created_at, message, is_read) VALUES
