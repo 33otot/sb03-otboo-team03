@@ -51,7 +51,10 @@ dependencies {
 	// MapStruct
     implementation 'org.mapstruct:mapstruct:1.6.3' // 객체 매핑
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3' // MapStruct 어노테이션 처리
-	
+
+	// MapStruct와 Lombok 연동
+	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
 	// Swagger UI
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4' // API 문서화
 	// AWS S3

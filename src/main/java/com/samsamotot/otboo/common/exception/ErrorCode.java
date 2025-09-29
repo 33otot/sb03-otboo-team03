@@ -70,6 +70,9 @@ public enum ErrorCode {
     WEATHER_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "WE002", "날씨 API 호출에 실패했습니다."),
     INVALID_LOCATION(HttpStatus.BAD_REQUEST, "WE003", "올바르지 않은 위치 정보입니다."),
 
+    // 위치 정보 관련 에러
+    NOT_FOUND_GRID(HttpStatus.NOT_FOUND, "LO001", "격자 좌표를 찾을 수 없습니다."),
+    NOT_FOUND_LOCATION(HttpStatus.NOT_FOUND, "LO002", "위치 정보를 찾을 수 없습니다."),
 
     // KAKAO API 관련 에러
     NO_KAKAO_KEY(HttpStatus.INTERNAL_SERVER_ERROR, "KA001", "KAKAO API 키가 설정되지 않았습니다."),

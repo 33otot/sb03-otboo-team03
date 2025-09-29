@@ -5,6 +5,7 @@ import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.location.service.LocationService;
+import com.samsamotot.otboo.weather.controller.WeatherController;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.repository.GridRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +63,8 @@ class LocationIntegrationTest {
     @Autowired
     private LocationRepository locationRepository;
 
+    @Autowired
+    private WeatherController weatherController;
 
     private final double TEST_LONGITUDE = 126.9780;
     private final double TEST_LATITUDE = 37.5665;

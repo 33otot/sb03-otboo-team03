@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -53,6 +55,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Slf4j
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
     
@@ -118,8 +121,14 @@ public class SecurityConfig {
                     "/api/follows/**",
                     "api/direct-messages/**"
                 ).permitAll()
+
+                // 의상 속성 정의 C/U/D 기능은 ADMIN 유저만 가능
+                .requestMatchers(HttpMethod.POST,"/api/clothes/attribute-defs").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
+
                 .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
-                
+
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()
             )
@@ -216,4 +225,3 @@ public class SecurityConfig {
     }
     
 }
-
