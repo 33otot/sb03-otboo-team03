@@ -22,5 +22,5 @@ public interface ClothesService {
     void delete(UUID ownerId, UUID clothesId);
 
     // read
-    CursorResponse<ClothesDto> find(ClothesSearchRequest request);
+    CursorResponse<ClothesDto> find(UUID ownerId, ClothesSearchRequest request);
 }

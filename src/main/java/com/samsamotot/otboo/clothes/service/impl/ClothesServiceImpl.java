@@ -266,7 +266,7 @@ public class ClothesServiceImpl implements ClothesService {
     // 의상 목록 조회
     @Override
     @Transactional(readOnly = true)
-    public CursorResponse<ClothesDto> find(ClothesSearchRequest request) {
+    public CursorResponse<ClothesDto> find(UUID ownerId, ClothesSearchRequest request) {
         log.info(SERVICE_NAME + "find - 의상 목록 조회 메서드 호출됨");
 
         // Pageable 생성
@@ -275,7 +275,16 @@ public class ClothesServiceImpl implements ClothesService {
 
         // Slice 메서드 호출
         log.info(SERVICE_NAME + "find - slice 생성을 위해 clothesRepository.findClothesWithCursor 호출");
-        Slice<Clothes> slice = clothesRepository.findClothesWithCursor(request, pageable);
+        Slice<Clothes> slice = clothesRepository.findClothesWithCursor(ownerId, request, pageable);
+
+        // 소유자 검증
+        log.info(SERVICE_NAME + "find - 소유자 검증 시작");
+        boolean mismatchExists = slice.getContent().stream()
+            .anyMatch(clothes -> !clothes.getOwner().getId().equals(ownerId));
+
+        if (mismatchExists) {
+            throw new ClothesOwnerMismatchException();
+        }
 
         // Dto 변환
         List<ClothesDto> returnDto = slice.getContent().stream()
@@ -285,7 +294,7 @@ public class ClothesServiceImpl implements ClothesService {
         log.info(SERVICE_NAME + "find - 의상 목록 조회 완료");
 
         // totalElement 값
-        long totalElement = clothesRepository.totalElementCount(request);
+        long totalElement = clothesRepository.totalElementCount(ownerId, request);
 
         // 다음 커서 생성
         String nextCursor = slice.hasNext() ? clothesServiceHelper.generateCursor(slice.getContent()) : null;

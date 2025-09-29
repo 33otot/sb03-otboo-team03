@@ -108,8 +108,10 @@ public class ClothesController implements ClothesControllerApi{
     public ResponseEntity<CursorResponse<ClothesDto>> getClothes (
         @Valid @ModelAttribute ClothesSearchRequest request
     ) {
+        UUID ownerId = AuthUtil.getAuthenticatedUserId();
+
         log.debug(CONTROLLER_NAME + " 의상 목록 조회 요청 - clothesService.find 호출");
-        CursorResponse<ClothesDto> result = clothesService.find(request);
+        CursorResponse<ClothesDto> result = clothesService.find(ownerId, request);
         log.debug(CONTROLLER_NAME + " 의상 목록 조회 요청 - clothesService.find 종료");
 
         return ResponseEntity
