@@ -50,7 +50,7 @@ public class WeatherBatchTasklet implements Tasklet {
         // 2. 각 Grid에 대해 비동기 날씨 업데이트 작업 생성
         List<Throwable> errors = new CopyOnWriteArrayList<>();
         List<CompletableFuture<Void>> futures = targetGrids.stream()
-                .map(grid -> weatherService.updateWeatherDataForGrid(grid)
+                .map(grid -> weatherService.updateWeatherDataForGrid(grid.getId())
                         .whenComplete((result, error) -> { if (error != null) errors.add(error); }))
                 .toList();
 

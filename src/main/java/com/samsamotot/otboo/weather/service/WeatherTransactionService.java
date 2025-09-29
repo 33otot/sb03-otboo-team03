@@ -1,6 +1,5 @@
 package com.samsamotot.otboo.weather.service;
 
-import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
@@ -13,10 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,56 +21,74 @@ import java.util.stream.Collectors;
 public class WeatherTransactionService {
     
     private final WeatherRepository weatherRepository;
-    private final FeedRepository feedRepository;
-    
-    public void updateWeatherData(Grid grid, List<Weather> newWeatherList) {
+
+    /**
+     * 특정 격자(Grid)의 날씨 예보를 업데이트하고, 전날 대비 값을 계산하여 저장합니다.
+     * @param grid 날씨를 업데이트할 격자
+     * @param newWeatherList API로부터 새로 수신한 예보 목록
+     */
+    public void updateWeather(Grid grid, List<Weather> newWeatherList) {
         // 새 데이터가 비어있으면 기존 데이터를 보존합니다.
         if (newWeatherList == null || newWeatherList.isEmpty()) {
             return;
         }
 
-        // --- 1. '오래된 데이터'만 삭제 ---
-        // '어제' 데이터와 비교를 위해, 최소 2일치 데이터 유지
-        Instant deleteThreshold = Instant.now().minus(3, ChronoUnit.DAYS);
-        weatherRepository.deleteByGridAndForecastAtBefore(grid, deleteThreshold);
+        newWeatherList.sort(Comparator.comparing(Weather::getForecastAt));
 
-        // --- 2. '전날' 데이터 조회 준비 ---
-        LocalDate minDate = newWeatherList.stream()
-                .map(w -> LocalDate.ofInstant(w.getForecastAt(), ZoneId.of("Asia/Seoul")))
-                .min(LocalDate::compareTo)
-                .orElse(LocalDate.now(ZoneId.of("Asia/Seoul")));
+        // 1. [데이터 준비] comparedToDayBefore 필드에 필요한 모든 날씨 데이터 Map
+        Map<Instant, Weather> comparisonWeather = new HashMap<>();
 
-        // '어제' 날씨 데이터를 미리 DB에서 조회하여 Map으로 만듦
-        // (minDate - 1일) 00시부터 (minDate) 00시 전까지의 데이터 조회
-        Instant yesterdayStart = minDate.minusDays(1).atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant();
-        Instant yesterdayEnd = minDate.atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant();
+        // 2. [DB 조회] FETCH 당일의 전날 데이터만 DB에서 조회
+        fetchAndPoolYesterdayWeather(grid, newWeatherList.get(0), comparisonWeather);
 
-        Map<LocalTime, Weather> yesterdayWeatherMap = weatherRepository
-                .findByGridAndForecastAtBetween(grid, yesterdayStart, yesterdayEnd)
-                .stream()
-                .collect(Collectors.toMap(
-                        w -> LocalTime.ofInstant(w.getForecastAt(), ZoneId.of("Asia/Seoul")),
-                        w -> w
-                ));
+        // 3. [계산] 정렬된 예보 리스트를 순회하며 전날 대비 값 계산하고 다음 날 비교 위한 데이터 준비
+        processAndPoolNewWeathers(newWeatherList, comparisonWeather);
 
-        // --- 3. 새로 수집한 데이터에 '전날 대비 값' 계산 및 설정 ---
-        for (Weather todayWeather : newWeatherList) {
-            LocalTime todayTime = LocalTime.ofInstant(todayWeather.getForecastAt(), ZoneId.of("Asia/Seoul"));
+        // 4. [DB 정리] 오래된 데이터와 중복될 수 있는 기존 데이터 삭제하여 DB 최신화
+        cleanupDatabase(grid, newWeatherList.get(0));
 
-            // yesterdayWeatherMap에서 '같은 시간' 어제 데이터 가져옴
-            Weather yesterdayWeather = yesterdayWeatherMap.get(todayTime);
+        // 5. [저장] 전날 대비 값이 계산된 새로운 날씨 데이터 저장
+        weatherRepository.saveAll(newWeatherList);
+    }
+
+    /**
+     * 새로운 예보 목록의 첫날과 비교하기 위한 바로 전날의 데이터를 DB에서 조회하여 데이터 풀에 추가합니다.
+     */
+    private void fetchAndPoolYesterdayWeather(Grid grid, Weather firstDayWeather, Map<Instant, Weather> comparisonWeather) {
+        Instant yesterday = firstDayWeather.getForecastAt().minus(1, ChronoUnit.DAYS);
+
+        Optional<Weather> yesterdayWeather = weatherRepository.findByGridAndForecastAt(grid, yesterday);
+        yesterdayWeather.ifPresent(weather -> comparisonWeather.put(weather.getForecastAt(), weather));
+    }
+
+    /**
+     * 새로운 예보 목록을 순회하며 전날 대비 값을 계산하고, 다음 날의 계산을 위해 현재 데이터를 풀에 추가합니다.
+     */
+    private void processAndPoolNewWeathers(List<Weather> newWeatherList, Map<Instant, Weather> comparisonWeather) {
+        for (Weather currentDayWeather : newWeatherList) {
+            Instant yesterday = currentDayWeather.getForecastAt().minus(1, ChronoUnit.DAYS);
+            Weather yesterdayWeather = comparisonWeather.get(yesterday);
 
             if (yesterdayWeather != null) {
-                // '전날 대비 값' 계산하여 엔티티에 설정 (1단계에서 추가한 Setter 사용)
-                Double tempCompared = todayWeather.getTemperatureCurrent() - yesterdayWeather.getTemperatureCurrent();
-                todayWeather.setTemperatureComparedToDayBefore(tempCompared);
+                double tempComparedToDayBefore = currentDayWeather.getTemperatureCurrent() - yesterdayWeather.getTemperatureCurrent();
+                currentDayWeather.setTemperatureComparedToDayBefore(tempComparedToDayBefore);
 
-                Double humidCompared = todayWeather.getHumidityCurrent() - yesterdayWeather.getHumidityCurrent();
-                todayWeather.setHumidityComparedToDayBefore(humidCompared);
+                double humidComparedToDayBefore = currentDayWeather.getHumidityCurrent() - yesterdayWeather.getHumidityCurrent();
+                currentDayWeather.setHumidityComparedToDayBefore(humidComparedToDayBefore);
             }
-        }
 
-        // --- 4. 최종 데이터 DB에 저장(UPSERT) ---
-        weatherRepository.saveAll(newWeatherList);
+            comparisonWeather.put(currentDayWeather.getForecastAt(), currentDayWeather);
+        }
+    }
+
+    /**
+     * 새로운 데이터를 저장하기 전에 DB를 정리합니다.
+     */
+    private void cleanupDatabase(Grid grid, Weather firstDayWeather) {
+        Instant baseDateTime = firstDayWeather.getForecastedAt();
+        weatherRepository.deleteByGridAndForecastedAt(grid, baseDateTime);
+
+        Instant deleteThreshold = Instant.now().minus(3, ChronoUnit.DAYS);
+        weatherRepository.deleteByGridAndForecastAtBefore(grid, deleteThreshold);
     }
 }

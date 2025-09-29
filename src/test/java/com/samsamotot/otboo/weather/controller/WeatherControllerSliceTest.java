@@ -87,7 +87,7 @@ public class WeatherControllerSliceTest {
         WeatherDto weatherDto = WeatherFixture.createWeatherDto(weather, expectedLocation);
         List<WeatherDto> weatherDtoList = List.of(weatherDto);
 
-        given(weatherService.getSixDayWeather(location.getLongitude(), location.getLatitude()))
+        given(weatherService.getWeatherList(location.getLongitude(), location.getLatitude()))
                 .willReturn(weatherDtoList);
 
         // When

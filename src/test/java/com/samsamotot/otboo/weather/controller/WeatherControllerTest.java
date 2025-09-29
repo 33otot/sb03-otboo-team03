@@ -160,7 +160,7 @@ class WeatherControllerTest {
 //        WeatherDto weatherDto = WeatherFixture.createWeatherDto(weather, expectedLocation);
 //        List<WeatherDto> weatherDtoList = List.of(weatherDto);
 //
-//        when(locationService.getSixDayWeather(location.getLongitude(), location.getLatitude()))
+//        when(locationService.getWeatherList(location.getLongitude(), location.getLatitude()))
 //                .thenReturn(weatherDtoList);
 //    }
 }

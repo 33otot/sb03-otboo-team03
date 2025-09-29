@@ -4,6 +4,7 @@ import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.entity.Grid;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -39,10 +40,10 @@ public interface WeatherService {
      *   <li>새로운 데이터 저장</li>
      * </ol>
      * 
-     * @param grid 날씨 정보를 업데이트할 격자 좌표
+     * @param gridId 날씨 정보를 업데이트할 격자 좌표
      * @return CompletableFuture&lt;Void&gt; 비동기 처리 결과
      */
-    CompletableFuture<Void> updateWeatherDataForGrid(Grid grid);
+    CompletableFuture<Void> updateWeatherDataForGrid(UUID gridId);
 
-    List<WeatherDto> getSixDayWeather(double longitude, double latitude);
+    List<WeatherDto> getWeatherList(double longitude, double latitude);
 }

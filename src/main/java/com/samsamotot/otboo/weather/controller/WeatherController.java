@@ -89,7 +89,7 @@ public class WeatherController implements WeatherApi {
     ) {
         log.info(CONTROLLER_NAME + "날씨 데이터 조회: longitude={}, latitude={}", longitude, latitude);
 
-        List<WeatherDto> weathers = weatherService.getSixDayWeather(longitude, latitude);
+        List<WeatherDto> weathers = weatherService.getWeatherList(longitude, latitude);
 
         log.info(CONTROLLER_NAME + "날씨 데이터 조회 완료: longitude={}, latitude={}", longitude, latitude);
 
