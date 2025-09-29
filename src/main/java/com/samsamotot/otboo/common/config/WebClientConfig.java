@@ -35,7 +35,7 @@ public class WebClientConfig {
     @Value("${kakao.api.base-url}")
     private String baseUrl;
 
-    @Value("${kma.base-url}")
+    @Value("${kma.alt-url}")
     private String kmaBaseUrl;
 
     /**
