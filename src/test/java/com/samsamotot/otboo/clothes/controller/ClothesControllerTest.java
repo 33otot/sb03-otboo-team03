@@ -217,7 +217,7 @@ public class ClothesControllerTest {
                 List.of(new ClothesAttributeWithDefDto(defId, "계절", List.of("봄", "여름", "가을", "겨울"), "여름"))
             );
 
-            when(clothesService.update(eq(clothesId), any(ClothesUpdateRequest.class)))
+            when(clothesService.update(eq(clothesId), any(UUID.class), any(ClothesUpdateRequest.class)))
                 .thenReturn(responseDto);
 
             MockMultipartFile jsonPart = new MockMultipartFile(
@@ -228,7 +228,8 @@ public class ClothesControllerTest {
             );
 
             // when & then
-            mockMvc.perform(multipart(HttpMethod.PATCH, "/api/clothes/{clothesId}", clothesId).file(jsonPart))
+            mockMvc.perform(multipart(HttpMethod.PATCH, "/api/clothes/{clothesId}", clothesId).file(jsonPart)
+                .with(user(mockPrincipal)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(clothesId.toString()))
                 .andExpect(jsonPath("$.name").value("업데이트된 티셔츠"))
@@ -257,7 +258,7 @@ public class ClothesControllerTest {
                 List.of(new ClothesAttributeWithDefDto(defId, "색상", List.of("흑청","진청","연청"), "흑청"))
             );
 
-            when(clothesService.update(eq(clothesId), any(ClothesUpdateRequest.class), any(MultipartFile.class)))
+            when(clothesService.update(eq(clothesId), any(UUID.class), any(ClothesUpdateRequest.class), any(MultipartFile.class)))
                 .thenReturn(responseDto);
 
             MockMultipartFile jsonPart = new MockMultipartFile(
@@ -277,7 +278,8 @@ public class ClothesControllerTest {
             // when & then
             mockMvc.perform(multipart(HttpMethod.PATCH, "/api/clothes/{clothesId}", clothesId)
                     .file(jsonPart)
-                    .file(imagePart))
+                    .file(imagePart)
+                .with(user(mockPrincipal)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(clothesId.toString()))
                 .andExpect(jsonPath("$.name").value("청자켓"))
@@ -304,7 +306,8 @@ public class ClothesControllerTest {
 
             // when & then
             mockMvc.perform(multipart(HttpMethod.PATCH, "/api/clothes/{clothesId}", clothesId)
-                    .file(jsonPart))
+                    .file(jsonPart)
+                .with(user(mockPrincipal)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.exceptionName").exists())
                 .andExpect(jsonPath("$.message").exists())
