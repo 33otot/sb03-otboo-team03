@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -240,6 +241,7 @@ public class LocationServiceImpl implements LocationService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Location findOrCreateLocation(double longitude, double latitude) {
         // 먼저 DB에서 찾아보고,
         return locationRepository.findByLongitudeAndLatitude(longitude, latitude)
