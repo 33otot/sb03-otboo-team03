@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -21,24 +22,32 @@ import com.samsamotot.otboo.clothes.dto.request.ClothesUpdateRequest;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.exception.ClothesNotFoundException;
 import com.samsamotot.otboo.clothes.service.ClothesService;
+import com.samsamotot.otboo.common.config.SecurityTestConfig;
 import com.samsamotot.otboo.common.dto.CursorResponse;
+import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.common.type.SortDirection;
+import com.samsamotot.otboo.user.entity.User;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.multipart.MultipartFile;
 
 @WebMvcTest(ClothesController.class)
+@Import(SecurityTestConfig.class)
 public class ClothesControllerTest {
 
     @Autowired
@@ -49,6 +58,16 @@ public class ClothesControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    User mockUser;
+    CustomUserDetails mockPrincipal;
+
+    @BeforeEach
+    void setUp() {
+        mockUser = UserFixture.createValidUser();
+        ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
+        mockPrincipal = new CustomUserDetails(mockUser);
+    }
 
     @Nested
     @DisplayName("의상 등록 컨트롤러 테스트")
@@ -63,7 +82,7 @@ public class ClothesControllerTest {
             UUID defId2 = UUID.randomUUID();
             // given
             ClothesCreateRequest request = new ClothesCreateRequest(
-                ownerId,
+                UUID.randomUUID(),
                 "챠르르 셔츠",
                 ClothesType.TOP,
                 List.of(new ClothesAttributeDto(defId1, "옵션1"), new ClothesAttributeDto(defId2, "옵션2"))
@@ -78,7 +97,7 @@ public class ClothesControllerTest {
                 List.of(new ClothesAttributeWithDefDto(defId1, "정의1", List.of("옵션1", "옵션12", "옵션13"), "옵션1"), new ClothesAttributeWithDefDto(defId2, "정의2", List.of("옵션2", "옵션22"), "옵션2"))
             );
 
-            when(clothesService.create(any())).thenReturn(responseDto);
+            when(clothesService.create(any(UUID.class), any())).thenReturn(responseDto);
 
             MockMultipartFile jsonPart = new MockMultipartFile(
                 "request",
@@ -88,7 +107,8 @@ public class ClothesControllerTest {
             );
 
             // when & then
-            mockMvc.perform(multipart("/api/clothes").file(jsonPart))
+            mockMvc.perform(multipart("/api/clothes").file(jsonPart)
+                .with(user(mockPrincipal)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("챠르르 셔츠"))
                 .andExpect(jsonPath("$.attributes[0].value").value("옵션1"));
@@ -102,7 +122,7 @@ public class ClothesControllerTest {
             UUID defId = UUID.randomUUID();
 
             ClothesCreateRequest request = new ClothesCreateRequest(
-                ownerId,
+                UUID.randomUUID(),
                 "청자켓",
                 ClothesType.OUTER,
                 List.of(new ClothesAttributeDto(defId, "흑청"))
@@ -117,7 +137,7 @@ public class ClothesControllerTest {
                 List.of(new ClothesAttributeWithDefDto(defId, "색상", List.of("흑청","진청","연청"), "흑청"))
             );
 
-            when(clothesService.create(any(), any())).thenReturn(responseDto);
+            when(clothesService.create(any(UUID.class), any(), any())).thenReturn(responseDto);
 
             MockMultipartFile jsonPart = new MockMultipartFile(
                 "request",
@@ -136,7 +156,8 @@ public class ClothesControllerTest {
             // when & then
             mockMvc.perform(multipart("/api/clothes")
                     .file(jsonPart)
-                    .file(imagePart))
+                    .file(imagePart)
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("청자켓"))
                 .andExpect(jsonPath("$.imageUrl").value("http://fake-s3-url/test.png"))
@@ -162,7 +183,8 @@ public class ClothesControllerTest {
             );
 
             // when & then
-            mockMvc.perform(multipart("/api/clothes").file(jsonPart))
+            mockMvc.perform(multipart("/api/clothes").file(jsonPart)
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.exceptionName").exists())
                 .andExpect(jsonPath("$.message").exists())

@@ -97,7 +97,7 @@ class ClothesServiceTest {
             UUID ownerId = mockUser.getId();
 
             ClothesCreateRequest request = new ClothesCreateRequest(
-                ownerId,
+                UUID.randomUUID(),
                 "부들부들 바지",
                 ClothesType.BOTTOM,
                 Collections.emptyList()
@@ -109,7 +109,7 @@ class ClothesServiceTest {
             when(clothesRepository.save(any(Clothes.class))).thenReturn(savedClothes);
 
             // when
-            ClothesDto result = clothesService.create(request);
+            ClothesDto result = clothesService.create(ownerId, request);
 
             // then
             assertThat(result.name()).isEqualTo("부들부들 바지");
@@ -125,7 +125,7 @@ class ClothesServiceTest {
             ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
             ClothesAttributeDto attrDto = new ClothesAttributeDto(defEntity.getId(), "봄");
             ClothesCreateRequest request = new ClothesCreateRequest(
-                ownerId,
+                UUID.randomUUID(),
                 "부들부들 티셔츠",
                 ClothesType.TOP,
                 List.of(attrDto)
@@ -138,7 +138,7 @@ class ClothesServiceTest {
             when(clothesRepository.save(any(Clothes.class))).thenReturn(savedClothes);
 
             // when
-            ClothesDto result = clothesService.create(request);
+            ClothesDto result = clothesService.create(ownerId, request);
 
             // then
             assertThat(result.attributes()).hasSize(1);
@@ -153,7 +153,7 @@ class ClothesServiceTest {
             UUID ownerId = mockUser.getId();
 
             ClothesCreateRequest request = new ClothesCreateRequest(
-                ownerId,
+                UUID.randomUUID(),
                 "부들부들 셔츠",
                 ClothesType.TOP,
                 Collections.emptyList()
@@ -175,7 +175,7 @@ class ClothesServiceTest {
             when(s3ImageStorage.uploadImage(imageFile, "clothes/")).thenReturn(mockImageUrl);
 
             // when
-            ClothesDto result = clothesService.create(request, imageFile);
+            ClothesDto result = clothesService.create(ownerId, request, imageFile);
 
             // then
             assertThat(result.name()).isEqualTo("부들부들 셔츠");
@@ -194,7 +194,7 @@ class ClothesServiceTest {
             ClothesAttributeDto attrDto = new ClothesAttributeDto(defEntity.getId(), "봄");
 
             ClothesCreateRequest request = new ClothesCreateRequest(
-                ownerId,
+                UUID.randomUUID(),
                 "부들부들 티셔츠",
                 ClothesType.TOP,
                 List.of(attrDto)
@@ -218,7 +218,7 @@ class ClothesServiceTest {
             when(s3ImageStorage.uploadImage(imageFile, "clothes/")).thenReturn(mockImageUrl);
 
             // when
-            ClothesDto result = clothesService.create(request, imageFile);
+            ClothesDto result = clothesService.create(ownerId, request, imageFile);
 
             // then
             assertThat(result.name()).isEqualTo("부들부들 티셔츠");
