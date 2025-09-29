@@ -1,12 +1,10 @@
 package com.samsamotot.otboo.notification.service;
 
-import com.samsamotot.otboo.notification.dto.NotificationPayload;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
-import java.util.function.Consumer;
 
 /**
  * PackageName  : com.samsamotot.otboo.notification.service
@@ -16,7 +14,11 @@ import java.util.function.Consumer;
  */
 @Service
 public interface NotificationService {
-    Notification saveAndPublish(UUID receiverId, String title, String content, NotificationLevel level);
+    Notification save(UUID receiverId, String title, String content, NotificationLevel level);
 
-    void publishJson(Notification n);
-}3
+    void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview);
+
+    void notifyFollow(UUID followerId, UUID followeeId);
+
+    void notifyComment(UUID commenterId, UUID feedOwnerId, String commentPreview);
+}

@@ -11,6 +11,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -83,7 +84,10 @@ public class SecurityConfig {
                     "/api/users",
                     "/api/auth/csrf-token", // CSRF 토큰 조회 허용
                     "/api/weathers/**",
-                    "/actuator/**"
+                    "/actuator/**",
+                    "/api/sse",
+                    "/api/follows/**",
+                    "api/direct-messages/**"
                 )
             )
             
@@ -110,8 +114,11 @@ public class SecurityConfig {
                     "/api/weathers/**", // 공개 API (인증 불필요)
                     "/actuator/**",
                     "/swagger-ui/**",
-                    "/v3/api-docs/**"
+                    "/v3/api-docs/**",
+                    "/api/follows/**",
+                    "api/direct-messages/**"
                 ).permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
                 
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()
@@ -209,3 +216,4 @@ public class SecurityConfig {
     }
     
 }
+

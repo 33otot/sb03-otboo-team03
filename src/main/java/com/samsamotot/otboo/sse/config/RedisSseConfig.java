@@ -13,13 +13,12 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
  * Date         : 2025. 9. 26.
  */
 
-@Configuration
-class RedisSseConfig {
-    @Bean
-    RedisMessageListenerContainer redisContainer(RedisConnectionFactory cf) {
-        var c = new RedisMessageListenerContainer();
-        c.setConnectionFactory(cf);
-        return c;
-    }
-}
-
+//@Configuration
+//class RedisSseConfig {
+//    @Bean
+//    RedisMessageListenerContainer redisContainer(RedisConnectionFactory cf) {
+//        var c = new RedisMessageListenerContainer();
+//        c.setConnectionFactory(cf);
+//        return c;
+//    }
+//}

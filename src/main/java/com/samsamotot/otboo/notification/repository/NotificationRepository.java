@@ -18,6 +18,7 @@ import java.util.UUID;
 
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
+
     @Query("""
         select n from Notification n
         where n.receiver.id = :userId
