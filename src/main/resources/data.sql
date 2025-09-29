@@ -6,11 +6,12 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- users (5)
 INSERT INTO users (id, email, username, password, provider, role, is_locked, created_at, updated_at) VALUES
-('a0000000-0000-0000-0000-000000000001', 'user1@example.com', 'user_one', '$2a$10$somehashedpassword1', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$10$somehashedpassword2', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$10$somehashedpassword3', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$10$somehashedpassword4', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$10$somehashedpassword5', 'LOCAL', 'USER', FALSE, NOW(), NOW());
+('a0000000-0000-0000-0000-000000000001', 'user1@example.com', 'user_one', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW());
+
 -- grids (5)
 INSERT INTO grids (id, created_at, x, y) VALUES
 ('c0000000-0000-0000-0000-000000000001', NOW(), 60, 127), -- 서울
@@ -189,3 +190,30 @@ INSERT INTO recommendation_clothes (id, recommendation_id, clothes_id, created_a
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000003', NOW()),
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000004', 'e0000000-0000-0000-0000-000000000004', NOW()),
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000005', 'e0000000-0000-0000-0000-000000000005', NOW());
+
+
+-- 좋아요 카운트 백필
+UPDATE feeds f
+SET like_count = COALESCE(sub.cnt, 0),
+    updated_at = NOW()
+FROM (
+         SELECT feed_id, COUNT(*) AS cnt
+         FROM feed_likes
+         GROUP BY feed_id
+     ) sub
+WHERE f.id = sub.feed_id;
+
+-- 댓글 카운트 백필
+UPDATE feeds f
+SET comment_count = COALESCE(sub.cnt, 0),
+    updated_at = NOW()
+FROM (
+         SELECT feed_id, COUNT(*) AS cnt
+         FROM comments
+         GROUP BY feed_id
+     ) sub
+WHERE f.id = sub.feed_id;
+
+-- 혹시 남아있을 NULL 정리
+UPDATE feeds SET like_count = 0 WHERE like_count IS NULL;
+UPDATE feeds SET comment_count = 0 WHERE comment_count IS NULL;
