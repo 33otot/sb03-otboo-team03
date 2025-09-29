@@ -28,7 +28,7 @@ public enum ErrorCode {
     CSRF_TOKEN_MISSING(HttpStatus.FORBIDDEN, "AU004", "CSRF 토큰이 누락되었습니다."),
 
     // 프로필 관련 에러
-    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "PR001", "프로필을 찾을 수 없습니다."),
+    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "PR001", "유저 프로필을 찾을 수 없습니다."),
     INVALID_BIRTH_DATE(HttpStatus.BAD_REQUEST, "PR002", "올바르지 않은 생년월일입니다."),
     INVALID_TEMPERATURE_SENSITIVITY(HttpStatus.BAD_REQUEST, "PR003", "온도 민감도는 1-5 사이의 값이어야 합니다."),
 

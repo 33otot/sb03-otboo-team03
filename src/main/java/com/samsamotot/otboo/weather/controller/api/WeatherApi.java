@@ -47,6 +47,7 @@ public interface WeatherApi {
         @RequestParam double latitude
     );
 
+    @Operation(summary = "날씨 정보 조회")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
@@ -66,7 +67,6 @@ public interface WeatherApi {
             ),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    @Operation(summary = "날씨 정보 조회")
     ResponseEntity<List<WeatherDto>> getSixDayWeather(
             @Parameter(description = "경도 (WGS84 좌표계)")
             @RequestParam double longitude,

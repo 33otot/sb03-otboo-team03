@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.entity.Role;
@@ -39,6 +40,9 @@ class UserServiceTest {
 
     @Mock
     private UserMapper userMapper;
+
+    @Mock
+    private ProfileRepository profileRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
