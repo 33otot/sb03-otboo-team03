@@ -8,11 +8,11 @@ services:
     env_file:
       - .env
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       POSTGRES_DB: ${POSTGRES_DB:-otboo}
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER:-otboo_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       KMA_ENCODING_KEY: ${KMA_ENCODING_KEY}
       KMA_DECODING_KEY: ${KMA_DECODING_KEY}
@@ -32,10 +32,16 @@ services:
       AWS_S3_SECRET_KEY: ${AWS_S3_SECRET_KEY}
       AWS_S3_REGION: ${AWS_S3_REGION}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      # Redis 설정
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass}
     ports:
       - "${APP_EXTERNAL_PORT:-8080}:${APP_INTERNAL_PORT:-8080}" # 외부 포트와 내부 포트 매핑
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - otboo-network
@@ -63,16 +69,35 @@ services:
       - otboo-network
     restart: unless-stopped
 
+  # Redis 캐시 서비스
+  redis:
+    image: redis:7.2-alpine
+    ports:
+        - "${REDIS_EXTERNAL_PORT:-6379}:6379"
+    volumes:
+      - otboo-redis:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispass}
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redispass}", "PING" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    networks:
+      - otboo-network
+    restart: unless-stopped
+
 # 볼륨 정의
 volumes:
   otboo-postgres:
     driver: local
-    # 예시
     name: samsamotot-postgres
+  otboo-redis:
+    driver: local
+    name: samsamotot-redis
 
 # 네트워크 정의
 networks:
   otboo-network:
     driver: bridge
-    # 예시
     name: samsamotot-network

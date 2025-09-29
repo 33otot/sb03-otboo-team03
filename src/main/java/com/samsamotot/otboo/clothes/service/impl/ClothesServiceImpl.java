@@ -4,6 +4,7 @@ import com.samsamotot.otboo.clothes.dto.ClothesAttributeDto;
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeWithDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesCreateRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
+import com.samsamotot.otboo.clothes.dto.request.ClothesSearchRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesUpdateRequest;
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.entity.ClothesAttribute;
@@ -16,7 +17,10 @@ import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
 import com.samsamotot.otboo.clothes.service.ClothesService;
+import com.samsamotot.otboo.clothes.util.ClothesServiceHelper;
+import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.storage.S3ImageStorage;
+import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.exception.UserNotFoundException;
 import com.samsamotot.otboo.user.repository.UserRepository;
@@ -27,6 +31,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +52,7 @@ public class ClothesServiceImpl implements ClothesService {
     private final UserRepository userRepository;
     private final S3ImageStorage s3ImageStorage;
     private final ClothesMapper clothesMapper;
+    private final ClothesServiceHelper clothesServiceHelper;
 
     // 이미지 없는 생성
     @Override
@@ -212,6 +220,77 @@ public class ClothesServiceImpl implements ClothesService {
         return clothesMapper.toClothesDto(saved);
     }
 
+    // 삭제 기능
+    @Override
+    @Transactional
+    public void delete(UUID clothesId) {
+        log.info(SERVICE_NAME + "delete - 의상 삭제 메서드 호출됨");
+
+        // Clothes 조회
+        Clothes clothes = clothesRepository.findById(clothesId)
+            .orElseThrow(() -> new ClothesNotFoundException());
+
+        // 기존 이미지 경로 보관
+        String previousImageUrl = clothes.getImageUrl();
+
+        log.info(SERVICE_NAME + "delete - 삭제될 의상 이름: {}", clothes.getName());
+
+        // 의상 삭제
+        clothesRepository.delete(clothes);
+
+        // 의상 이미지 삭제
+        if (previousImageUrl != null) {
+            try {
+                s3ImageStorage.deleteImage(previousImageUrl);
+            } catch (Exception e) {
+                log.warn(SERVICE_NAME + "의상 이미지 삭제 실패 - url: {}, err: {}", previousImageUrl, e.getMessage(), e);
+            }
+        }
+    }
+
+    // 의상 목록 조회
+    @Override
+    @Transactional(readOnly = true)
+    public CursorResponse<ClothesDto> find(ClothesSearchRequest request) {
+        log.info(SERVICE_NAME + "find - 의상 목록 조회 메서드 호출됨");
+
+        // Pageable 생성
+        log.info(SERVICE_NAME + "find - Pageable 생성 중");
+        Pageable pageable = PageRequest.of(0, request.limit());
+
+        // Slice 메서드 호출
+        log.info(SERVICE_NAME + "find - slice 생성을 위해 clothesRepository.findClothesWithCursor 호출");
+        Slice<Clothes> slice = clothesRepository.findClothesWithCursor(request, pageable);
+
+        // Dto 변환
+        List<ClothesDto> returnDto = slice.getContent().stream()
+            .map(clothesMapper::toClothesDto)
+            .toList();
+
+        log.info(SERVICE_NAME + "find - 의상 목록 조회 완료");
+
+        // totalElement 값
+        long totalElement = clothesRepository.totalElementCount(request);
+
+        // 다음 커서 생성
+        String nextCursor = slice.hasNext() ? clothesServiceHelper.generateCursor(slice.getContent()) : null;
+
+        // idAfter 생성
+        UUID idAfter = slice.hasNext() ? slice.getContent().get(slice.getContent().size() - 1).getId() : null;
+
+        log.info(SERVICE_NAME + "의상 목록 조회 커서 생성 완료");
+
+        // 반환값 생성
+        return new CursorResponse<>(
+            returnDto,
+            nextCursor,
+            idAfter,
+            slice.hasNext(),
+            totalElement,
+            "createdAt",
+            SortDirection.DESCENDING
+        );
+    }
 
     // ===== 공통 로직 메서드 ===== //
 
