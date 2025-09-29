@@ -125,7 +125,8 @@ public class ClothesRepositoryCustomTest {
 
             // when
             Slice<Clothes> slice = clothesRepository.findClothesWithCursor(
-                req(owner.getId(), null, null, 10, null),
+                owner.getId(),
+                req(UUID.randomUUID(), null, null, 10, null),
                 PageRequest.of(0, 10)
             );
 
@@ -148,7 +149,8 @@ public class ClothesRepositoryCustomTest {
 
             // when: 커서를 3초짜리로 줌 → 0,1,2초 데이터 조회
             Slice<Clothes> slice = clothesRepository.findClothesWithCursor(
-                req(owner.getId(), null, baseTime.plusSeconds(3), 10, null),
+                owner.getId(),
+                req(UUID.randomUUID(), null, baseTime.plusSeconds(3), 10, null),
                 PageRequest.of(0, 10)
             );
 
@@ -179,7 +181,8 @@ public class ClothesRepositoryCustomTest {
 
             // when
             Slice<Clothes> slice = clothesRepository.findClothesWithCursor(
-                req(owner.getId(), ClothesType.BOTTOM, baseTime.plusSeconds(3), 10, null),
+                owner.getId(),
+                req(UUID.randomUUID(), ClothesType.BOTTOM, baseTime.plusSeconds(3), 10, null),
                 PageRequest.of(0, 10)
             );
 
@@ -215,7 +218,8 @@ public class ClothesRepositoryCustomTest {
             em.clear();
 
             long totalElement = clothesRepository.totalElementCount(
-                req(owner.getId(), null, null, 10, null)
+                owner.getId(),
+                req(UUID.randomUUID(), null, null, 10, null)
             );
 
             // then
@@ -237,7 +241,8 @@ public class ClothesRepositoryCustomTest {
             em.clear();
 
             long totalElement = clothesRepository.totalElementCount(
-                req(owner.getId(), ClothesType.TOP, null, 10, null)
+                owner.getId(),
+                req(UUID.randomUUID(), ClothesType.TOP, null, 10, null)
             );
 
             // then

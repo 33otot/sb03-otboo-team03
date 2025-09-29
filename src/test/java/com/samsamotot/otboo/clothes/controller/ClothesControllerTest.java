@@ -403,12 +403,13 @@ public class ClothesControllerTest {
                 .build();
 
 
-            when(clothesService.find(any(ClothesSearchRequest.class))).thenReturn(response);
+            when(clothesService.find(any(UUID.class), any(ClothesSearchRequest.class))).thenReturn(response);
 
             // when & then
             mockMvc.perform(get("/api/clothes")
                     .param("ownerId", ownerId.toString())
-                    .param("limit", "10"))
+                    .param("limit", "10")
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value(clothesId.toString()))
                 .andExpect(jsonPath("$.data[0].name").value("티셔츠"))
@@ -464,13 +465,14 @@ public class ClothesControllerTest {
                 .sortDirection(SortDirection.DESCENDING)
                 .build();
 
-            when(clothesService.find(any(ClothesSearchRequest.class))).thenReturn(response);
+            when(clothesService.find(any(UUID.class), any(ClothesSearchRequest.class))).thenReturn(response);
 
             // when & then
             mockMvc.perform(get("/api/clothes")
                     .param("ownerId", ownerId.toString())
                     .param("typeEqual", "TOP")
-                    .param("limit", "10"))
+                    .param("limit", "10")
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value(clothesId1.toString()))
                 .andExpect(jsonPath("$.data[0].type").value("TOP"))
@@ -487,7 +489,8 @@ public class ClothesControllerTest {
             // when & then
             mockMvc.perform(get("/api/clothes")
                     .param("ownerId", ownerId.toString())
-                    .param("limit", "0"))
+                    .param("limit", "0")
+                    .with(user(mockPrincipal)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.exceptionName").exists())
                 .andExpect(jsonPath("$.message").exists())

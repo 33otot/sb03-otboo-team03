@@ -506,9 +506,10 @@ class ClothesServiceTest {
         void 조건_없이_조회하면_전체_의상_목록이_조회되어야_한다() {
             // given
             UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
 
             ClothesSearchRequest request = ClothesSearchRequest.builder()
-                .ownerId(ownerId)
+                .ownerId(UUID.randomUUID())
                 .limit(10)
                 .build();
 
@@ -519,8 +520,8 @@ class ClothesServiceTest {
             Pageable pageable = PageRequest.of(0, 10);
             Slice<Clothes> mockSlice = new SliceImpl<>(expectedList, pageable, false);
 
-            when(clothesRepository.findClothesWithCursor(request, pageable)).thenReturn(mockSlice);
-            when(clothesRepository.totalElementCount(request)).thenReturn(2L);
+            when(clothesRepository.findClothesWithCursor(ownerId, request, pageable)).thenReturn(mockSlice);
+            when(clothesRepository.totalElementCount(ownerId, request)).thenReturn(2L);
 
             ClothesDto clothesDto1 = mock(ClothesDto.class);
             ClothesDto clothesDto2 = mock(ClothesDto.class);
@@ -528,8 +529,12 @@ class ClothesServiceTest {
             when(clothesMapper.toClothesDto(expectedClothes1)).thenReturn(clothesDto1);
             when(clothesMapper.toClothesDto(expectedClothes2)).thenReturn(clothesDto2);
 
+            when(expectedClothes1.getOwner()).thenReturn(mockUser);
+            when(expectedClothes2.getOwner()).thenReturn(mockUser);
+
+
             // when
-            CursorResponse<ClothesDto> result = clothesService.find(request);
+            CursorResponse<ClothesDto> result = clothesService.find(ownerId, request);
 
             // then
             assertAll(
@@ -539,10 +544,37 @@ class ClothesServiceTest {
                 () -> assertFalse(result.hasNext())
             );
 
-            verify(clothesRepository).findClothesWithCursor(request, pageable);
-            verify(clothesRepository).totalElementCount(request);
+            verify(clothesRepository).findClothesWithCursor(ownerId, request, pageable);
+            verify(clothesRepository).totalElementCount(ownerId, request);
             verify(clothesMapper).toClothesDto(expectedClothes1);
             verify(clothesMapper).toClothesDto(expectedClothes2);
+        }
+
+        @Test
+        void 조회된_의상_소유자가_요청한_ownerId와_다르면_예외가_발생한다() {
+            // given
+            UUID ownerId = UUID.randomUUID();
+            UUID otherOwnerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", otherOwnerId);
+
+            ClothesSearchRequest request = ClothesSearchRequest.builder()
+                .ownerId(UUID.randomUUID())
+                .limit(10)
+                .build();
+
+            Clothes clothes = mock(Clothes.class);
+
+            when(clothes.getOwner()).thenReturn(mockUser);
+
+            Pageable pageable = PageRequest.of(0, 10);
+            Slice<Clothes> mockSlice = new SliceImpl<>(List.of(clothes), pageable, false);
+
+            when(clothesRepository.findClothesWithCursor(ownerId, request, pageable)).thenReturn(mockSlice);
+
+            // when & then
+            assertThatThrownBy(() -> clothesService.find(ownerId, request))
+                .isInstanceOf(ClothesOwnerMismatchException.class)
+                .hasMessageContaining("해당 의상의 소유자가 아닙니다.");
         }
     }
 }
