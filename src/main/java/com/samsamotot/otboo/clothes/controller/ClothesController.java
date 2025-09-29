@@ -6,6 +6,7 @@ import com.samsamotot.otboo.clothes.dto.request.ClothesSearchRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesUpdateRequest;
 import com.samsamotot.otboo.clothes.service.ClothesService;
 import com.samsamotot.otboo.common.dto.CursorResponse;
+import com.samsamotot.otboo.common.util.AuthUtil;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -41,15 +42,17 @@ public class ClothesController implements ClothesControllerApi{
         @Valid @RequestPart("request") ClothesCreateRequest request,
         @RequestPart(value = "image", required = false) MultipartFile image
     ) {
+        UUID ownerId = AuthUtil.getAuthenticatedUserId();
+
         ClothesDto result;
         if (image != null) {
             log.debug(CONTROLLER_NAME + " 이미지 있는 의상 등록 요청 - clothesService.create 호출");
-            result = clothesService.create(request, image);
+            result = clothesService.create(ownerId, request, image);
             log.debug(CONTROLLER_NAME + " 이미지 있는 의상 등록 요청 - 결과 반환: id: {}", result.id());
         }
         else {
             log.debug(CONTROLLER_NAME + " 이미지 없는 의상 등록 요청 - clothesService.create 호출");
-            result = clothesService.create(request);
+            result = clothesService.create(ownerId, request);
             log.debug(CONTROLLER_NAME + " 이미지 없는 의상 등록 요청 - 결과 반환: id: {}", result.id());
         }
 

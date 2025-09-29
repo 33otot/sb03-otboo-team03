@@ -57,13 +57,13 @@ public class ClothesServiceImpl implements ClothesService {
     // 이미지 없는 생성
     @Override
     @Transactional
-    public ClothesDto create(ClothesCreateRequest request) {
+    public ClothesDto create(UUID ownerId, ClothesCreateRequest request) {
         log.info(SERVICE_NAME + "create - 이미지 없는 의상 생성 호출됨");
 
         List<ClothesAttributeWithDefDto> attributes = new ArrayList<>();
 
         // 유저 조회
-        User owner = userRepository.findById(request.ownerId())
+        User owner = userRepository.findById(ownerId)
             .orElseThrow(() -> new UserNotFoundException());
 
         // Clothes 객체 생성
@@ -82,7 +82,7 @@ public class ClothesServiceImpl implements ClothesService {
         // DTO 반환
         return new ClothesDto(
             saved.getId(),
-            request.ownerId(),
+            ownerId,
             request.name(),
             null,
             request.type(),
@@ -93,14 +93,13 @@ public class ClothesServiceImpl implements ClothesService {
     // 이미지 있는 생성
     @Override
     @Transactional
-    public ClothesDto create(ClothesCreateRequest request,
-        MultipartFile clothesImage) {
+    public ClothesDto create(UUID ownerId, ClothesCreateRequest request, MultipartFile clothesImage) {
         log.info(SERVICE_NAME + "create - 이미지 있는 의상 생성 호출됨");
 
         List<ClothesAttributeWithDefDto> attributes = new ArrayList<>();
 
         // 유저 조회
-        User owner = userRepository.findById(request.ownerId())
+        User owner = userRepository.findById(ownerId)
             .orElseThrow(() -> new UserNotFoundException());
 
         // Clothes 객체 생성
@@ -125,7 +124,7 @@ public class ClothesServiceImpl implements ClothesService {
         // DTO 반환
         return new ClothesDto(
             saved.getId(),
-            request.ownerId(),
+            ownerId,
             request.name(),
             imageUrl,
             request.type(),
