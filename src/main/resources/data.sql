@@ -10,9 +10,7 @@ INSERT INTO users (id, email, username, password, provider, role, is_locked, cre
 ('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$10$somehashedpassword2', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
 ('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$10$somehashedpassword3', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
 ('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$10$somehashedpassword4', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$10$somehashedpassword5', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000006', 'huindol@otboo.com', '흰돌', '$2a$12$EKL0OcxBp/kHsKMJhqpJMe64YQCDzuKRQ4PFnhRJNHFVxKxojbKJ2', 'LOCAL', 'USER', FALSE, NOW(), NOW());
-
+('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$10$somehashedpassword5', 'LOCAL', 'USER', FALSE, NOW(), NOW());
 -- grids (5)
 INSERT INTO grids (id, created_at, x, y) VALUES
 ('c0000000-0000-0000-0000-000000000001', NOW(), 60, 127), -- 서울
@@ -154,14 +152,12 @@ INSERT INTO notifications (id, receiver_id, created_at, title, content, level) V
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', NOW(), '계정 관련', '비밀번호 변경이 필요합니다.', 'CRITICAL');
 
 -- profiles (5)
-INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity) VALUES
+INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity, profile_image_url) VALUES
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', NOW(), NOW(), '김유저일', 'MALE', '1990-01-01', 3.0, null),
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', NOW(), NOW(), '이유저이', 'FEMALE', '1992-02-02', 4.0, null),
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', NOW(), NOW(), '박유저삼', 'MALE', '1993-03-03', 2.5, null),
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', NOW(), NOW(), '최유저사', 'FEMALE', '1994-04-04', 4.5, null),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5, null),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000006', 'b0000000-0000-0000-0000-000000000006', NOW(), NOW(), '흰돌', null, null, null, 3.5, null);
-
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5, null);
 -- direct_messages (5)
 INSERT INTO direct_messages (id, sender_id, receiver_id, created_at, message, is_read) VALUES
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000002', NOW() - interval '4 day', '안녕하세요', false),
