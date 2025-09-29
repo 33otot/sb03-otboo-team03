@@ -6,11 +6,13 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- users (5)
 INSERT INTO users (id, email, username, password, provider, role, is_locked, created_at, updated_at) VALUES
-('a0000000-0000-0000-0000-000000000001', 'user1@example.com', 'user_one', '$2a$10$somehashedpassword1', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$10$somehashedpassword2', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$10$somehashedpassword3', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$10$somehashedpassword4', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$10$somehashedpassword5', 'LOCAL', 'USER', FALSE, NOW(), NOW());
+('a0000000-0000-0000-0000-000000000001', 'user1@example.com', 'user_one', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000006', 'huindol@otboo.com', '흰돌', '$2a$12$EKL0OcxBp/kHsKMJhqpJMe64YQCDzuKRQ4PFnhRJNHFVxKxojbKJ2', 'LOCAL', 'USER', FALSE, NOW(), NOW());
+
 
 -- grids (5)
 INSERT INTO grids (id, created_at, x, y) VALUES
@@ -18,7 +20,9 @@ INSERT INTO grids (id, created_at, x, y) VALUES
 ('c0000000-0000-0000-0000-000000000002', NOW(), 98, 76),  -- 부산
 ('c0000000-0000-0000-0000-000000000003', NOW(), 52, 38),  -- 제주
 ('c0000000-0000-0000-0000-000000000004', NOW(), 67, 100), -- 대전
-('c0000000-0000-0000-0000-000000000005', NOW(), 55, 124); -- 인천
+('c0000000-0000-0000-0000-000000000005', NOW(), 55, 124), -- 인천
+('c0000000-0000-0000-0000-000000000006', NOW(), 61, 126); -- 서울특별시 성동구 송정동
+
 
 -- locations (5) - referencing grids
 INSERT INTO locations (id, created_at, grid_id, latitude, longitude, location_names) VALUES
@@ -26,7 +30,8 @@ INSERT INTO locations (id, created_at, grid_id, latitude, longitude, location_na
 ('b0000000-0000-0000-0000-000000000002', NOW(), 'c0000000-0000-0000-0000-000000000002', 35.1796, 129.0756, '{"부산역"}'),
 ('b0000000-0000-0000-0000-000000000003', NOW(), 'c0000000-0000-0000-0000-000000000003', 33.4996, 126.5312, '{"제주공항"}'),
 ('b0000000-0000-0000-0000-000000000004', NOW(), 'c0000000-0000-0000-0000-000000000004', 36.3504, 127.3845, '{"대전역"}'),
-('b0000000-0000-0000-0000-000000000005', NOW(), 'c0000000-0000-0000-0000-000000000005', 37.4563, 126.7052, '{"인천국제공항"}');
+('b0000000-0000-0000-0000-000000000005', NOW(), 'c0000000-0000-0000-0000-000000000005', 37.4563, 126.7052, '{"인천국제공항"}'),
+('b0000000-0000-0000-0000-000000000006', NOW(), 'c0000000-0000-0000-0000-000000000006', 37.5527, 127.0668, '{"서울특별시, 성동구, 송정동, "}');
 
 -- clothes_attribute_defs (5)
 INSERT INTO clothes_attribute_defs (id, name, created_at, updated_at) VALUES
@@ -188,3 +193,30 @@ INSERT INTO recommendation_clothes (id, recommendation_id, clothes_id, created_a
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000003', NOW()),
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000004', 'e0000000-0000-0000-0000-000000000004', NOW()),
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000005', 'e0000000-0000-0000-0000-000000000005', NOW());
+
+
+-- 좋아요 카운트 백필
+UPDATE feeds f
+SET like_count = COALESCE(sub.cnt, 0),
+    updated_at = NOW()
+FROM (
+         SELECT feed_id, COUNT(*) AS cnt
+         FROM feed_likes
+         GROUP BY feed_id
+     ) sub
+WHERE f.id = sub.feed_id;
+
+-- 댓글 카운트 백필
+UPDATE feeds f
+SET comment_count = COALESCE(sub.cnt, 0),
+    updated_at = NOW()
+FROM (
+         SELECT feed_id, COUNT(*) AS cnt
+         FROM comments
+         GROUP BY feed_id
+     ) sub
+WHERE f.id = sub.feed_id;
+
+-- 혹시 남아있을 NULL 정리
+UPDATE feeds SET like_count = 0 WHERE like_count IS NULL;
+UPDATE feeds SET comment_count = 0 WHERE comment_count IS NULL;

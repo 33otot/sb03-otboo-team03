@@ -77,7 +77,7 @@ class WeatherControllerTest {
                 .thenThrow(new OtbooException(ErrorCode.API_CALL_ERROR));
 
         // When & Then
-        assertThatThrownBy(() -> 
+        assertThatThrownBy(() ->
             weatherController.getCurrentLocation(VALID_LONGITUDE, VALID_LATITUDE)
         )
         .isInstanceOf(OtbooException.class)
@@ -90,7 +90,7 @@ class WeatherControllerTest {
         // Given
         double boundaryLongitude = 125.0; // 서쪽 경계
         double boundaryLatitude = 33.2;   // 남쪽 경계
-        
+
         Location location = LocationFixture.createValidLocation();
         Grid grid = location.getGrid();
         WeatherAPILocation expectedLocation = WeatherAPILocation.builder()
@@ -118,7 +118,7 @@ class WeatherControllerTest {
         // Given
         double northLongitude = 131.5; // 동쪽 경계
         double northLatitude = 38.3;   // 북쪽 경계
-        
+
         Location location = LocationFixture.createValidLocation();
         Grid grid = location.getGrid();
         WeatherAPILocation expectedLocation = WeatherAPILocation.builder()
@@ -139,5 +139,29 @@ class WeatherControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
     }
+
+//    @Test
+//    void 날씨를_요청하면_예보_리스트_응답() {
+//        // Given
+//        Grid grid = GridFixture.createGrid();
+//        Location location = LocationFixture.createLocation();
+//        location.setGrid(grid);
+//
+//        WeatherAPILocation expectedLocation = WeatherAPILocation.builder()
+//                .longitude(location.getLongitude())
+//                .latitude(location.getLatitude())
+//                .x(grid.getX())
+//                .y(grid.getY())
+//                .locationNames(location.getLocationNames())
+//                .build();
+//
+//        Weather weather = WeatherFixture.createWeather(grid);
+//
+//        WeatherDto weatherDto = WeatherFixture.createWeatherDto(weather, expectedLocation);
+//        List<WeatherDto> weatherDtoList = List.of(weatherDto);
+//
+//        when(locationService.getWeatherList(location.getLongitude(), location.getLatitude()))
+//                .thenReturn(weatherDtoList);
+//    }
 }
 
