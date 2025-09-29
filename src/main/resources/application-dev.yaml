@@ -20,6 +20,8 @@ spring:
   batch:
     jdbc:
       initialize-schema: always
+    job:
+      enabled: true
 
   # PostgreSQL DB 접속 정보
   datasource:

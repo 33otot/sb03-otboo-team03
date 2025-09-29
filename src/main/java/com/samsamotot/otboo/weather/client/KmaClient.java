@@ -30,7 +30,7 @@ public class KmaClient {
     private static final String CLIENT_NAME = "[KmaClient] ";
 
     private final WebClient webClient;
-    private final String serviceKey;
+    private final String authKey;
 
     private static final String SERVICE_PATH = "/getVilageFcst";
     private static final String PAGE_NO = "1";
@@ -38,13 +38,13 @@ public class KmaClient {
     private static final String DATA_TYPE = "JSON";
 
     public KmaClient(@Qualifier("kmaWebClient") WebClient webClient,
-                     @Value("${kma.service-key}") String serviceKey) {
+                     @Value("${kma.service-key}") String authKey) {
         this.webClient = webClient;
-        this.serviceKey = serviceKey;
+        this.authKey = authKey;
     }
     /**
      * KMA 단기예보(getVilageFcst) 호출 클라이언트.
-     * 필수 쿼리파라미터(base_date, base_time, nx, ny, dataType=JSON, serviceKey)를 구성하여 호출한다.
+     * 필수 쿼리파라미터(base_date, base_time, nx, ny, dataType=JSON, authKey)를 구성하여 호출한다.
      *
      * @param nx 격자 X
      * @param ny 격자 Y
@@ -59,7 +59,7 @@ public class KmaClient {
         return webClient.get()
                 .uri(uri -> uri
                         .path(SERVICE_PATH)
-                            .queryParam("serviceKey", serviceKey)
+                            .queryParam("authKey", authKey)
                             .queryParam("numOfRows", NUM_OF_ROWS)
                             .queryParam("pageNo", PAGE_NO)
                             .queryParam("dataType", DATA_TYPE)

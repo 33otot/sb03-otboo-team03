@@ -10,7 +10,8 @@ INSERT INTO users (id, email, username, password, provider, role, is_locked, cre
 ('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$10$somehashedpassword2', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
 ('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$10$somehashedpassword3', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
 ('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$10$somehashedpassword4', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$10$somehashedpassword5', 'LOCAL', 'USER', FALSE, NOW(), NOW());
+('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$10$somehashedpassword5', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000006', 'huindol@otboo.com', '흰돌', '$2a$12$EKL0OcxBp/kHsKMJhqpJMe64YQCDzuKRQ4PFnhRJNHFVxKxojbKJ2', 'LOCAL', 'USER', FALSE, NOW(), NOW());
 
 -- grids (5)
 INSERT INTO grids (id, created_at, x, y) VALUES
