@@ -325,25 +325,28 @@ public class ClothesControllerTest {
             UUID clothesId = UUID.randomUUID();
 
             // when & then
-            mockMvc.perform(delete("/api/clothes/{clothesId}", clothesId))
+            mockMvc.perform(delete("/api/clothes/{clothesId}", clothesId)
+                .with(user(mockPrincipal)))
                 .andExpect(status().isNoContent());
 
-            verify(clothesService).delete(clothesId);
+            verify(clothesService).delete(any(UUID.class), eq(clothesId));
         }
 
         @Test
         void 존재하지_않는_ID로_삭제요청시_404를_반환한다() throws Exception {
             // given
             UUID notExistId = UUID.randomUUID();
-            doThrow(new ClothesNotFoundException()).when(clothesService).delete(notExistId);
+
+            doThrow(new ClothesNotFoundException()).when(clothesService).delete(any(UUID.class), eq(notExistId));
 
             // when & then
-            mockMvc.perform(delete("/api/clothes/{clothesId}", notExistId))
+            mockMvc.perform(delete("/api/clothes/{clothesId}", notExistId)
+                .with(user(mockPrincipal)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.exceptionName").value("CLOTHES_NOT_FOUND"))
                 .andExpect(jsonPath("$.status").value(404));
 
-            verify(clothesService).delete(notExistId);
+            verify(clothesService).delete(any(UUID.class), eq(notExistId));
         }
     }
 

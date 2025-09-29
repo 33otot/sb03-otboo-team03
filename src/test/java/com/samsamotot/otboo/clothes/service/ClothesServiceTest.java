@@ -421,6 +421,9 @@ class ClothesServiceTest {
         @Test
         void 의상을_삭제하면_DB와_S3에서_삭제된다() {
             // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
             Clothes clothes = Clothes.createClothes("청자켓", ClothesType.OUTER, mockUser);
             String imageUrl = "https://s3.test-bucket/clothes/test.png";
             clothes.updateImageUrl(imageUrl);
@@ -428,7 +431,7 @@ class ClothesServiceTest {
             when(clothesRepository.findById(clothes.getId())).thenReturn(Optional.of(clothes));
 
             // when
-            clothesService.delete(clothes.getId());
+            clothesService.delete(ownerId, clothes.getId());
 
             // then
             verify(clothesRepository).delete(clothes);
@@ -439,13 +442,16 @@ class ClothesServiceTest {
         @Test
         void 이미지가_없는_의상은_S3삭제가_호출되지_않는다() {
             // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
             Clothes clothes = Clothes.createClothes("바지", ClothesType.BOTTOM, mockUser);
 
             when(clothesRepository.findById(clothes.getId()))
                 .thenReturn(Optional.of(clothes));
 
             // when
-            clothesService.delete(clothes.getId());
+            clothesService.delete(ownerId, clothes.getId());
 
             // then
             verify(clothesRepository).findById(clothes.getId());
@@ -457,16 +463,38 @@ class ClothesServiceTest {
         void 의상이_존재하지_않는다면_예외가_발생한다() {
             // given
             UUID notExistId = UUID.randomUUID();
+            UUID ownerId = UUID.randomUUID();
+
             when(clothesRepository.findById(notExistId))
                 .thenReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> clothesService.delete(notExistId))
+            assertThatThrownBy(() -> clothesService.delete(ownerId, notExistId))
                 .isInstanceOf(ClothesNotFoundException.class);
 
             verify(clothesRepository).findById(notExistId);
             verify(clothesRepository, never()).delete(any());
             verify(s3ImageStorage, never()).deleteImage(any());
+        }
+
+        @Test
+        void 의상_객체의_등록자와_인증객체의_유저가_다르다면_예외가_발생한다() {
+            // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
+            UUID userId = UUID.randomUUID();
+            User mockUser2 = UserFixture.createUser();
+            ReflectionTestUtils.setField(mockUser2, "id", userId);
+
+            Clothes clothes = Clothes.createClothes("속성 셔츠", ClothesType.TOP, mockUser2);
+
+            when(clothesRepository.findById(clothes.getId())).thenReturn(Optional.of(clothes));
+
+            // when & then
+            assertThatThrownBy(() -> clothesService.delete(ownerId, clothes.getId()))
+                .isInstanceOf(ClothesOwnerMismatchException.class)
+                .hasMessageContaining("해당 의상의 소유자가 아닙니다.");
         }
     }
 
