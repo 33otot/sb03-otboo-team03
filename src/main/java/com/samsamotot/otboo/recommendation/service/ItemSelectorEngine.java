@@ -5,6 +5,7 @@ import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
+import com.samsamotot.otboo.recommendation.type.RecommendationAttribute;
 import com.samsamotot.otboo.recommendation.type.Season;
 import com.samsamotot.otboo.recommendation.type.Thickness;
 import com.samsamotot.otboo.recommendation.type.Waterproof;
@@ -17,9 +18,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import software.amazon.awssdk.regions.servicemetadata.ThinclientServiceMetadata;
 
 @Slf4j
 @Service
@@ -27,20 +28,15 @@ import software.amazon.awssdk.regions.servicemetadata.ThinclientServiceMetadata;
 @Transactional
 public class ItemSelectorEngine {
 
-    private static final String ENGINE = "[ItemSelectorEngine] ";
-
-    // 점수 임계값
-    private static final double SCORE_THRESHOLD = 0.4;
-
-    // 의상 속성 이름 및 값 상수
-    private static final String ATTR_THICKNESS = "두께";
-    private static final String ATTR_WATERPROOF = "방수";
-    private static final String ATTR_SEASON = "계절";
+    @Value("${recommendation.score-threshold:0.4}")
+    private double scoreThreshold;
 
     // 점수 계산 가중치 (합이 1.0이 되도록 설정)
     private static final double TEMP_WEIGHT = 0.6;
     private static final double RAIN_WEIGHT = 0.2;
     private static final double SEASON_WEIGHT = 0.2;
+
+    private static final String ENGINE = "[ItemSelectorEngine] ";
 
     private final ClothesMapper clothesMapper;
 
@@ -78,7 +74,7 @@ public class ItemSelectorEngine {
             for (Clothes c : entry.getValue()) {
                 double score = calculateScore(c, context.adjustedTemperature(),
                     context.currentMonth(), context.isRainingOrSnowing());
-                if (score >= SCORE_THRESHOLD) {
+                if (score >= scoreThreshold) {
                     candidates.add(c);
                     scores.add(score);
                 }
@@ -95,13 +91,13 @@ public class ItemSelectorEngine {
                         result.add(ootdDto);
                         log.info(ENGINE + "추천 성공: id={}, type={}, score={}", selected.getId(), selected.getType(), scores.get(selectedIdx));
                     } else {
-                        log.warn(ENGINE + "추천된 의상 DTO 변환 실패: id={}, type={}", selected.getId(), selected.getType());
+                        log.error(ENGINE + "추천된 의상 DTO 변환 실패: id={}, type={}", selected.getId(), selected.getType());
                     }
                 } else {
                     log.warn(ENGINE + "샘플링 결과가 후보 범위를 벗어남: selectedIdx={}, 후보 수={}", selectedIdx, candidates.size());
                 }
             } else {
-                log.info(ENGINE + "추천 가능한 의상이 없습니다. 임계값={}, 쿨다운 맵={}, 필터링 후 후보 수={}", SCORE_THRESHOLD, cooldownIdMap, filtered.size());
+                log.info(ENGINE + "추천 가능한 의상이 없습니다. 임계값={}, 쿨다운 맵={}, 필터링 후 후보 수={}", scoreThreshold, cooldownIdMap, filtered.size());
             }
         }
 
@@ -118,9 +114,16 @@ public class ItemSelectorEngine {
         boolean isRainy
     ) {
         // 옷의 속성 리스트를 Map으로 변환
-        Map<String, String> attributeMap = clothes.getAttributes().stream()
+        Map<RecommendationAttribute, String> attributeMap = clothes.getAttributes().stream()
             .collect(Collectors.toMap(
-                attr -> attr.getDefinition().getName(),
+                attr -> {
+                    try {
+                        return RecommendationAttribute.fromName(attr.getDefinition().getName());
+                    } catch (IllegalArgumentException e) {
+                        log.warn(ENGINE + "의상 속성 변환 오류: name={}, err={}", attr.getDefinition().getName(), e.getMessage());
+                        return null;
+                    }
+                },
                 attr -> attr.getValue(),
                 (value1, value2) -> value1 // 중복 키 발생 시 첫 번째 값 사용
             ));
@@ -128,13 +131,16 @@ public class ItemSelectorEngine {
         Season currentSeason = Season.fromMonth(currentMonth);
 
         // 각 속성별 값 추출 및 기본값 설정
-        Thickness thickness = Thickness.fromName(attributeMap.getOrDefault(ATTR_THICKNESS, Thickness.MEDIUM.getName()));
-        boolean isWaterproof = Waterproof.TRUE.getName().equalsIgnoreCase(attributeMap.getOrDefault(ATTR_WATERPROOF, Waterproof.FALSE.getName()));
-        Season clothesSeason = Season.fromName(attributeMap.getOrDefault(ATTR_SEASON, Season.SPRING.getName()));
+        Thickness thickness = Thickness.fromName(
+            attributeMap.getOrDefault(RecommendationAttribute.THICKNESS, Thickness.MEDIUM.getName()));
+        boolean isWaterproof = Waterproof.TRUE.getName().equalsIgnoreCase(
+            attributeMap.getOrDefault(RecommendationAttribute.WATERPROOF, Waterproof.FALSE.getName()));
+        Season clothesSeason = Season.fromName(
+            attributeMap.getOrDefault(RecommendationAttribute.SEASON, Season.SPRING.getName()));
 
         // 온도, 강수, 계절 적합도 계산
         double tempScore = calculateTempScore(thickness, temperature);
-        double rainScore = isRainy ? (isWaterproof ? 1.0 : 0.5) : 1.0;
+        double rainScore = isRainy ? (isWaterproof ? 10.0 : 0.0) : 5.0;
         double seasonScore = calculateSeasonScore(currentSeason, clothesSeason);
 
         // 계절 적합도가 0점이면 후보 제외 (여름-겨울)
@@ -144,6 +150,8 @@ public class ItemSelectorEngine {
 
         // 최종 점수(가중치 반영)
         double finalScore = (tempScore * TEMP_WEIGHT) + (rainScore * RAIN_WEIGHT) + (seasonScore * SEASON_WEIGHT);
+        log.debug(ENGINE + "최종 점수 계산: tempScore={}, rainScore={}, seasonScore={}, finalScore={}",
+            tempScore, rainScore, seasonScore, finalScore);
         return finalScore;
     }
 
@@ -151,43 +159,47 @@ public class ItemSelectorEngine {
      * 두께와 온도에 따라 온도 적합 점수를 계산합니다.
      */
     private double calculateTempScore(Thickness thickness, double temperature) {
-
+        double score;
         if (temperature > 22.0) {
-            return switch (thickness) {
-                case LIGHT -> 1.0;
-                case MEDIUM -> 0.5;
+            score = switch (thickness) {
+                case LIGHT -> 10.0;
+                case MEDIUM -> 5.0;
                 case HEAVY -> 0.0;
-                default -> 0.5;
+                default -> 5.0;
             };
         } else if (temperature >= 8.0 && temperature <= 22.0 ) {
-            return switch (thickness) {
-                case LIGHT -> 0.7;
-                case MEDIUM -> 1.0;
-                case HEAVY -> 0.3;
-                default -> 0.7;
+            score = switch (thickness) {
+                case LIGHT -> 7.0;
+                case MEDIUM -> 10.0;
+                case HEAVY -> 3.0;
+                default -> 7.0;
             };
         } else {
-            return switch (thickness) {
+            score = switch (thickness) {
                 case LIGHT -> 0.0;
-                case MEDIUM -> 0.7;
-                case HEAVY -> 1.0;
-                default -> 0.7;
+                case MEDIUM -> 7.0;
+                case HEAVY -> 10.0;
+                default -> 7.0;
             };
         }
+        log.debug(ENGINE + "온도 적합도 계산: thickness={}, temperature={}, score={}", thickness, temperature, score);
+        return score;
     }
 
     /**
      * 현재 계절과 옷의 계절 속성에 따라 계절 적합 점수를 계산합니다.
      */
     private double calculateSeasonScore(Season currentSeason, Season clothesSeason) {
+        double score;
         if (currentSeason.equals(clothesSeason)) {
-            return 1.0;
+            score = 10.0;
+        } else if (Season.isCompletelyDifferent(currentSeason, clothesSeason)) {
+            score = 0.0;
+        } else {
+            score = 5.0;
         }
-        // 여름-겨울의 경우 0점
-        if (Season.isCompletelyDifferent(currentSeason, clothesSeason)) {
-            return 0.0;
-        }
-        return 0.5;
+        log.debug(ENGINE + "계절 적합도 계산: currentSeason={}, clothesSeason={}, score={}", currentSeason, clothesSeason, score);
+        return score;
     }
 
 
@@ -202,8 +214,17 @@ public class ItemSelectorEngine {
 
         if (scores == null || scores.isEmpty()) return -1;
 
+        if (scores.stream().distinct().count() == 1) {
+            log.debug(ENGINE + "모든 후보 점수가 동일합니다. 후보 수={}", scores.size());
+            return 0;
+        }
+
         // softmax 변환
+        double min = scores.stream().mapToDouble(Double::doubleValue).min().orElse(0.0);
         double max = scores.stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
+        if (max - min > 5.0) {
+            log.warn(ENGINE + "softmax 점수 분포가 극단적입니다. min={}, max={}", min, max);
+        }
         double[] exp = new double[scores.size()];
         double sum = 0.0;
         for (int i = 0; i < scores.size(); i++) {

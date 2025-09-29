@@ -24,6 +24,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ItemSelectorEngine 단위 테스트")
@@ -48,6 +49,7 @@ public class ItemSelectorEngineTest {
         thickness = ClothesAttributeDef.createClothesAttributeDef("두께", List.of("얇음", "보통", "두꺼움"));
         season = ClothesAttributeDef.createClothesAttributeDef("계절", List.of("봄", "여름", "가을", "겨울"));
         waterproof = ClothesAttributeDef.createClothesAttributeDef("방수", List.of("가능", "불가능"));
+        ReflectionTestUtils.setField(itemSelectorEngine, "scoreThreshold", 0.4);
     }
 
     @Test

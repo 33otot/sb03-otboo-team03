@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -45,6 +46,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -270,6 +272,12 @@ public class RecommendationServiceTest {
         given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
         given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
         given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(clothes);
+
+        doAnswer(invocation -> {
+            RedisCallback<?> callback = invocation.getArgument(0);
+            callback.doInRedis(null);
+            return null;
+        }).when(redisTemplate).executePipelined(any(RedisCallback.class));
 
         // when
         recommendationService.recommendClothes(userId, weatherId);

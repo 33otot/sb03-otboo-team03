@@ -13,6 +13,7 @@ import com.samsamotot.otboo.recommendation.dto.RecommendationDto;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.HashMap;
@@ -22,6 +23,8 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +37,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional
 public class RecommendationServiceImpl implements RecommendationService {
+
+    @Value("${recommendation.cooldown.ttl.minutes:30}")
+    private int cooldownTtlMinutes;
+
+    @Value("${recommendation.rollcount.ttl.days:7}")
+    private int rollCountTtlDays;
 
     private static final double SENSITIVITY_BASE = 2.5;     // 기준값 상수
     private static final double CORRECTION_FACTOR = 1.0;    // 보정 강도
@@ -135,18 +144,21 @@ public class RecommendationServiceImpl implements RecommendationService {
             .clothes(recommendResult)
             .build();
 
-        // 추천 횟수 증가 후 Redis에 저장
-        redisTemplate.opsForValue().set("rollCounter:" + userId, rollCounter + 1);
+        redisTemplate.executePipelined((RedisCallback<?>) (redisConnection) -> {
+            // rollCounter 증가 및 TTL 설정
+            redisTemplate.opsForValue().set("rollCounter:" + userId, rollCounter + 1);
+            redisTemplate.expire("rollCounter:" + userId, Duration.ofDays(rollCountTtlDays));
 
-        // 추천 결과 Redis에 저장 (의상 타입별 cooldown ID)
-        for (OotdDto dto : recommendResult) {
+            // 쿨타임 맵 저장 및 TTL 설정
             String cooldownKey = "cooldownIdMap:" + userId;
-            ClothesType type = dto.type();
-            UUID clothesId = dto.clothesId();
-            // Redis Hash에 저장
-            redisTemplate.opsForHash().put(cooldownKey, type, clothesId.toString());
-            // TODO: TTL 설정 추가
-        }
+            for (OotdDto dto : recommendResult) {
+                ClothesType type = dto.type();
+                UUID clothesId = dto.clothesId();
+                redisTemplate.opsForHash().put(cooldownKey, type, clothesId.toString());
+            }
+            redisTemplate.expire(cooldownKey, Duration.ofMinutes(cooldownTtlMinutes));
+            return null;
+        });
 
         return result;
     }
