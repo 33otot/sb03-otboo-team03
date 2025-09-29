@@ -25,6 +25,13 @@ public class SseServiceImpl implements SseService {
 
     private final Map<UUID, SseEmitter> connections = new ConcurrentHashMap<>();
 
+    /**
+     * 특정 사용자와 SSE 연결을 생성하고 관리 맵에 등록한다.
+     * 연결 종료, 타임아웃, 에러 발생 시 자동으로 맵에서 제거된다.
+     *
+     * @param userId SSE 연결을 요청한 사용자 ID
+     * @return 생성된 SseEmitter 객체
+     */
     public SseEmitter createConnection(UUID userId) {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
 
@@ -48,6 +55,13 @@ public class SseServiceImpl implements SseService {
         return emitter;
     }
 
+    /**
+     * 특정 사용자에게 알림 데이터를 SSE 이벤트로 전송한다.
+     * 연결이 없거나 전송 실패 시 해당 연결을 제거한다.
+     *
+     * @param userId 알림을 받을 사용자 ID
+     * @param notificationData 전송할 알림 데이터 (문자열)
+     */
     public void sendNotification(UUID userId, String notificationData) {
         SseEmitter emitter = connections.get(userId);
         if (emitter != null) {
