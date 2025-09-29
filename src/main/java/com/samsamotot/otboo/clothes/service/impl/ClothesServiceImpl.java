@@ -12,6 +12,7 @@ import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeOption;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.exception.ClothesNotFoundException;
+import com.samsamotot.otboo.clothes.exception.ClothesOwnerMismatchException;
 import com.samsamotot.otboo.clothes.exception.definition.ClothesAttributeDefNotFoundException;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
@@ -135,7 +136,7 @@ public class ClothesServiceImpl implements ClothesService {
     // 이미지 없는 수정
     @Override
     @Transactional
-    public ClothesDto update(UUID clothesId, ClothesUpdateRequest updateRequest) {
+    public ClothesDto update(UUID clothesId, UUID ownerId, ClothesUpdateRequest updateRequest) {
         log.info(SERVICE_NAME + "update - 이미지 없는 의상 수정 호출됨");
 
         String newName = updateRequest.name();
@@ -144,6 +145,11 @@ public class ClothesServiceImpl implements ClothesService {
         // Clothes 조회
         Clothes clothes = clothesRepository.findById(clothesId)
             .orElseThrow(() -> new ClothesNotFoundException());
+
+        // 해당 clothes 객체가 유저의 의상이 맞는지 더블체크
+        if (!clothes.getOwner().getId().equals(ownerId)) {
+            throw new ClothesOwnerMismatchException();
+        }
 
         // 의상 이름 업데이트
         if (!newName.equals(clothes.getName())) {
@@ -169,7 +175,7 @@ public class ClothesServiceImpl implements ClothesService {
     // 이미지 있는 수정
     @Override
     @Transactional
-    public ClothesDto update(UUID clothesId, ClothesUpdateRequest updateRequest, MultipartFile clothesImage) {
+    public ClothesDto update(UUID clothesId, UUID ownerId, ClothesUpdateRequest updateRequest, MultipartFile clothesImage) {
         log.info(SERVICE_NAME + "update - 이미지 있는 의상 수정 호출됨");
 
         String newName = updateRequest.name();
@@ -178,6 +184,11 @@ public class ClothesServiceImpl implements ClothesService {
         // Clothes 조회
         Clothes clothes = clothesRepository.findById(clothesId)
             .orElseThrow(() -> new ClothesNotFoundException());
+
+        // 해당 clothes 객체가 유저의 의상이 맞는지 더블체크
+        if (!clothes.getOwner().getId().equals(ownerId)) {
+            throw new ClothesOwnerMismatchException();
+        }
 
         // 의상 이름 업데이트
         if (!newName.equals(clothes.getName())) {

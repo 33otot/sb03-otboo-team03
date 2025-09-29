@@ -68,15 +68,17 @@ public class ClothesController implements ClothesControllerApi{
         @Valid @RequestPart("request") ClothesUpdateRequest request,
         @RequestPart(value = "image", required = false) MultipartFile image
     ) {
+        UUID ownerId = AuthUtil.getAuthenticatedUserId();
+
         ClothesDto result;
         if (image != null) {
             log.debug(CONTROLLER_NAME + " 이미지 있는 의상 수정 요청 - clothesService.update 호출");
-            result = clothesService.update(clothesId, request, image);
+            result = clothesService.update(clothesId, ownerId, request, image);
             log.debug(CONTROLLER_NAME + " 이미지 있는 의상 수정 요청 - 결과 반환: id: {}", result.id());
         }
         else {
             log.debug(CONTROLLER_NAME + " 이미지 없는 의상 수정 요청 - clothesService.update 호출");
-            result = clothesService.update(clothesId, request);
+            result = clothesService.update(clothesId, ownerId, request);
             log.debug(CONTROLLER_NAME + " 이미지 없는 의상 수정 요청 - 결과 반환: id: {}", result.id());
         }
 

@@ -15,8 +15,8 @@ public interface ClothesService {
     ClothesDto create(UUID ownerId, ClothesCreateRequest request, MultipartFile clothesImage);
 
     // update
-    ClothesDto update(UUID clothesId, ClothesUpdateRequest updateRequest);
-    ClothesDto update(UUID clothesId, ClothesUpdateRequest updateRequest, MultipartFile clothesImage);
+    ClothesDto update(UUID clothesId, UUID ownerId, ClothesUpdateRequest updateRequest);
+    ClothesDto update(UUID clothesId, UUID ownerId, ClothesUpdateRequest updateRequest, MultipartFile clothesImage);
 
     // delete
     void delete(UUID clothesId);
