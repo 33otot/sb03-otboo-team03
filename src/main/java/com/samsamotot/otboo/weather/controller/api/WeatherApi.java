@@ -58,7 +58,7 @@ public interface WeatherApi {
                     )
             ),
             @ApiResponse(
-                    responseCode = "400",
+                    responseCode = "404",
                     description = "날씨 정보 조회 실패",
                     content = @Content(
                             mediaType = "application/json",
@@ -67,7 +67,7 @@ public interface WeatherApi {
             ),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    ResponseEntity<List<WeatherDto>> getSixDayWeather(
+    ResponseEntity<List<WeatherDto>> getWeatherList(
             @Parameter(description = "경도 (WGS84 좌표계)")
             @RequestParam double longitude,
 
