@@ -109,7 +109,7 @@ class NotificationServiceImplTest {
         then(notificationRepository).should().save(notificationCaptor.capture());
         Notification n = notificationCaptor.getValue();
         assertEquals("권한 변경", n.getTitle());
-        assertEquals("변한 변경 확인", n.getContent());
+        assertEquals("변경된 권한을 확인하세요", n.getContent());
         assertEquals(NotificationLevel.INFO, n.getLevel());
         assertNotNull(n.getReceiver());
         then(sseService).should().sendNotification(eq(userId), anyString());
@@ -128,7 +128,7 @@ class NotificationServiceImplTest {
         then(notificationRepository).should().save(notificationCaptor.capture());
         Notification n = notificationCaptor.getValue();
         assertEquals("의상 속성 추가", n.getTitle());
-        assertEquals("의상 속성이 추가 되었습니다.", n.getContent());
+        assertEquals("의상 속성이 추가되었습니다.", n.getContent());
         assertEquals(NotificationLevel.INFO, n.getLevel());
         assertNotNull(n.getReceiver());
         then(sseService).should().sendNotification(eq(userId), anyString());
