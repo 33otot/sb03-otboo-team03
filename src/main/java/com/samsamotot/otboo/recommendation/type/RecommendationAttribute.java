@@ -4,7 +4,8 @@ public enum RecommendationAttribute {
 
     THICKNESS("두께"),
     WATERPROOF("방수"),
-    SEASON("계절");
+    SEASON("계절"),
+    STYLE("스타일");
 
     private final String name;
 

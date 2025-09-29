@@ -2,7 +2,6 @@ package com.samsamotot.otboo.recommendation.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 
 import com.samsamotot.otboo.clothes.dto.OotdDto;
@@ -11,17 +10,18 @@ import com.samsamotot.otboo.clothes.entity.ClothesAttribute;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
-import com.samsamotot.otboo.clothes.repository.ClothesRepository;
 import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
 import java.time.Month;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -29,9 +29,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ItemSelectorEngine 단위 테스트")
 public class ItemSelectorEngineTest {
-
-    @Mock
-    private ClothesRepository clothesRepository;
 
     @Mock
     private ClothesMapper clothesMapper;
@@ -43,13 +40,16 @@ public class ItemSelectorEngineTest {
     ClothesAttributeDef thickness;
     ClothesAttributeDef season;
     ClothesAttributeDef waterproof;
+    ClothesAttributeDef style;
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(itemSelectorEngine, "scoreThreshold", 0.4);
+
         thickness = ClothesAttributeDef.createClothesAttributeDef("두께", List.of("얇음", "보통", "두꺼움"));
         season = ClothesAttributeDef.createClothesAttributeDef("계절", List.of("봄", "여름", "가을", "겨울"));
         waterproof = ClothesAttributeDef.createClothesAttributeDef("방수", List.of("가능", "불가능"));
-        ReflectionTestUtils.setField(itemSelectorEngine, "scoreThreshold", 0.4);
+        style = ClothesAttributeDef.createClothesAttributeDef("스타일", List.of("캐주얼", "포멀", "스포티", "시크", "빈티지", "클래식", "미니멀"));
     }
 
     @Test
@@ -312,12 +312,14 @@ public class ItemSelectorEngineTest {
             .type(ClothesType.TOP)
             .attributes(List.of())
             .build();
+        ReflectionTestUtils.setField(highScoreClothes, "id", UUID.randomUUID());
 
         Clothes lowScoreClothes = Clothes.builder()
             .name("제외될 옷")
             .type(ClothesType.TOP)
             .attributes(List.of())
             .build();
+        ReflectionTestUtils.setField(lowScoreClothes, "id", UUID.randomUUID());
 
         List<Clothes> clothesList = List.of(highScoreClothes, lowScoreClothes);
         RecommendationContextDto context = RecommendationContextDto.builder()
@@ -328,12 +330,8 @@ public class ItemSelectorEngineTest {
 
         doReturn(0.5).when(itemSelectorEngine).calculateScore(highScoreClothes, temperature, month, isRainy);
         doReturn(0.3).when(itemSelectorEngine).calculateScore(lowScoreClothes, temperature, month, isRainy);
-
-        given(clothesMapper.toOotdDto(any(Clothes.class)))
-            .willAnswer(invocation -> {
-                Clothes clothes = invocation.getArgument(0);
-                return OotdDto.builder().name(clothes.getName()).build();
-            });
+        doReturn(OotdDto.builder().name("추천될 옷").build())
+            .when(clothesMapper).toOotdDto(any(Clothes.class));
 
         // when
         List<OotdDto> result = itemSelectorEngine.createRecommendation(
@@ -363,12 +361,14 @@ public class ItemSelectorEngineTest {
             .type(ClothesType.TOP)
             .attributes(List.of())
             .build();
+        ReflectionTestUtils.setField(lowScoreClothes1, "id", UUID.randomUUID());
 
         Clothes lowScoreClothes2 = Clothes.builder()
             .name("제외될 옷2")
             .type(ClothesType.TOP)
             .attributes(List.of())
             .build();
+        ReflectionTestUtils.setField(lowScoreClothes2, "id", UUID.randomUUID());
 
         List<Clothes> clothesList = List.of(lowScoreClothes1, lowScoreClothes2);
         RecommendationContextDto context = RecommendationContextDto.builder()
