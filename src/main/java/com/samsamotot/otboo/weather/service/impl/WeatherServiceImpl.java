@@ -265,7 +265,7 @@ public class WeatherServiceImpl implements WeatherService {
 
     private Double parsePrecipitationAmount(String value) {
         if (value == null) return 0.0;
-        String normalized = value.replaceAll("\s+", "");
+        String normalized = value.replaceAll("\\s+", "");
         if (normalized.contains("없음")) return 0.0;
         if (normalized.contains("미만")) return 0.0;
         String number = normalized.replaceAll("[^0-9.]", "");
