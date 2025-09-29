@@ -36,7 +36,7 @@ public class Feed extends BaseEntity {
     private User author;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "weather_id")
+    @JoinColumn(name = "weather_id", nullable = false)
     private Weather weather;
 
     @Column(name = "content", nullable = false)
