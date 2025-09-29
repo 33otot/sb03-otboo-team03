@@ -56,24 +56,37 @@ public class NotificationServiceImpl implements NotificationService {
             sseService.sendNotification(receiverId, notificationJson);
             log.info(NOTIFICATION_SERVICE+" SSE 보냄 user: {}, title: '{}'", receiverId, title);
         } catch (Exception e) {
-            log.error("[Notification] SSE 발행 실패해도 알림 저장은 성공했으므로 계속 진행 user: {}", receiverId, e);
+            log.error(NOTIFICATION_SERVICE + "SSE 발행 실패해도 알림 저장은 성공했으므로 계속 진행 user: {}", receiverId, e);
         }
 
         return saved;
     }
 
     // 다른 비즈니스 로직에서의 알람
-    public void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview) {
-        save(receiverId, "새 쪽지", "from: " + senderId + ", content: " + messagePreview, NotificationLevel.INFO);
+    public void notifyRole(UUID userId) {
+        save(userId, "권한 변경", "변한 변경 확인", NotificationLevel.INFO);
+    }
+
+    public void notifyClothesAttrbute(UUID userId) {
+        save(userId, "의상 속성 추가", "의상 속성이 추가 되었습니다.", NotificationLevel.INFO);
+    }
+
+    public void notifyLike(UUID commenterId, UUID feedOwnerId) {
+        save(feedOwnerId, "새 좋아요", "from: " + commenterId, NotificationLevel.INFO);
+    }
+
+    public void notifyComment(UUID commenterId, UUID feedOwnerId, String commentPreview) {
+        save(feedOwnerId, "새 댓글", "from: " + commenterId + ", content: " + commentPreview, NotificationLevel.INFO);
     }
 
     public void notifyFollow(UUID followerId, UUID followeeId) {
         save(followeeId, "새 팔로워", "사용자가 팔로우했습니다", NotificationLevel.INFO);
     }
 
-    public void notifyComment(UUID commenterId, UUID feedOwnerId, String commentPreview) {
-        save(feedOwnerId, "새 댓글", "from: " + commenterId + ", content: " + commentPreview, NotificationLevel.INFO);
+    public void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview) {
+        save(receiverId, "새 쪽지", "from: " + senderId + ", content: " + messagePreview, NotificationLevel.INFO);
     }
+
 
     private NotificationDto toDto(Notification notification) {
         return NotificationDto.builder()

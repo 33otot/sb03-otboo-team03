@@ -68,24 +68,4 @@ public class SseServiceImpl implements SseService {
             log.debug(SSE_SERVICE + "연결 없음 user: {}", userId);
         }
     }
-
-
-    public int getConnectionCount() {
-        return connections.size();
-    }
-
-    public boolean isUserConnected(UUID userId) {
-        return connections.containsKey(userId);
-    }
-
-    public void closeAllConnections() {
-        connections.values().forEach(emitter -> {
-            try {
-                emitter.complete();
-            } catch (Exception e) {
-                log.error(SSE_SERVICE+"전체 연결 닫는중 에러", e);
-            }
-        });
-        connections.clear();
-    }
 }

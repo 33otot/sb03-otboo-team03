@@ -16,10 +16,4 @@ public interface SseService {
     SseEmitter createConnection(UUID userId);
 
     void sendNotification(UUID userId, String notificationData);
-
-    int getConnectionCount();
-
-    boolean isUserConnected(UUID userId);
-
-    void closeAllConnections();
 }

@@ -16,9 +16,16 @@ import java.util.UUID;
 public interface NotificationService {
     Notification save(UUID receiverId, String title, String content, NotificationLevel level);
 
-    void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview);
+    void notifyRole(UUID userId);
+
+    void notifyClothesAttrbute(UUID userId);
+
+    void notifyLike(UUID commenterId, UUID feedOwnerId);
+
+    void notifyComment(UUID commenterId, UUID feedOwnerId, String commentPreview);
 
     void notifyFollow(UUID followerId, UUID followeeId);
 
-    void notifyComment(UUID commenterId, UUID feedOwnerId, String commentPreview);
+    void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview);
+
 }
