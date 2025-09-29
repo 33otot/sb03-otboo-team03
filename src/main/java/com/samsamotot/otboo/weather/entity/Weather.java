@@ -17,6 +17,7 @@ import java.time.Instant;
     )
 )
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Weather extends BaseEntity {

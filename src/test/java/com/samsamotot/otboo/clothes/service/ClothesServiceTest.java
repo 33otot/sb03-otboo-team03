@@ -1,27 +1,41 @@
 package com.samsamotot.otboo.clothes.service;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDto;
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeWithDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesCreateRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
+import com.samsamotot.otboo.clothes.dto.request.ClothesSearchRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesUpdateRequest;
 import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.entity.ClothesAttribute;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeOption;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
+import com.samsamotot.otboo.clothes.exception.ClothesNotFoundException;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
 import com.samsamotot.otboo.clothes.service.impl.ClothesServiceImpl;
+import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.fixture.ClothesAttributeDefFixture;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.storage.S3ImageStorage;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +48,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -353,4 +371,107 @@ class ClothesServiceTest {
 
     }
 
+    @Nested
+    @DisplayName("의상 삭제 서비스 테스트")
+    class ClothesDeleteServiceTest {
+
+        @Test
+        void 의상을_삭제하면_DB와_S3에서_삭제된다() {
+            // given
+            Clothes clothes = Clothes.createClothes("청자켓", ClothesType.OUTER, mockUser);
+            String imageUrl = "https://s3.test-bucket/clothes/test.png";
+            clothes.updateImageUrl(imageUrl);
+
+            when(clothesRepository.findById(clothes.getId())).thenReturn(Optional.of(clothes));
+
+            // when
+            clothesService.delete(clothes.getId());
+
+            // then
+            verify(clothesRepository).delete(clothes);
+            verify(s3ImageStorage).deleteImage(imageUrl);
+
+        }
+
+        @Test
+        void 이미지가_없는_의상은_S3삭제가_호출되지_않는다() {
+            // given
+            Clothes clothes = Clothes.createClothes("바지", ClothesType.BOTTOM, mockUser);
+
+            when(clothesRepository.findById(clothes.getId()))
+                .thenReturn(Optional.of(clothes));
+
+            // when
+            clothesService.delete(clothes.getId());
+
+            // then
+            verify(clothesRepository).findById(clothes.getId());
+            verify(clothesRepository).delete(clothes);
+            verify(s3ImageStorage, never()).deleteImage(any());
+        }
+
+        @Test
+        void 의상이_존재하지_않는다면_예외가_발생한다() {
+            // given
+            UUID notExistId = UUID.randomUUID();
+            when(clothesRepository.findById(notExistId))
+                .thenReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> clothesService.delete(notExistId))
+                .isInstanceOf(ClothesNotFoundException.class);
+
+            verify(clothesRepository).findById(notExistId);
+            verify(clothesRepository, never()).delete(any());
+            verify(s3ImageStorage, never()).deleteImage(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("의상 목록 조회 서비스 테스트")
+    class ClothesReadServiceTest {
+
+        @Test
+        void 조건_없이_조회하면_전체_의상_목록이_조회되어야_한다() {
+            // given
+            UUID ownerId = UUID.randomUUID();
+
+            ClothesSearchRequest request = ClothesSearchRequest.builder()
+                .ownerId(ownerId)
+                .limit(10)
+                .build();
+
+            Clothes expectedClothes1 = mock(Clothes.class);
+            Clothes expectedClothes2 = mock(Clothes.class);
+            List<Clothes> expectedList = List.of(expectedClothes1, expectedClothes2);
+
+            Pageable pageable = PageRequest.of(0, 10);
+            Slice<Clothes> mockSlice = new SliceImpl<>(expectedList, pageable, false);
+
+            when(clothesRepository.findClothesWithCursor(request, pageable)).thenReturn(mockSlice);
+            when(clothesRepository.totalElementCount(request)).thenReturn(2L);
+
+            ClothesDto clothesDto1 = mock(ClothesDto.class);
+            ClothesDto clothesDto2 = mock(ClothesDto.class);
+
+            when(clothesMapper.toClothesDto(expectedClothes1)).thenReturn(clothesDto1);
+            when(clothesMapper.toClothesDto(expectedClothes2)).thenReturn(clothesDto2);
+
+            // when
+            CursorResponse<ClothesDto> result = clothesService.find(request);
+
+            // then
+            assertAll(
+                () -> assertEquals(2, result.data().size()),
+                () -> assertNull(result.nextCursor()),
+                () -> assertNull(result.nextIdAfter()),
+                () -> assertFalse(result.hasNext())
+            );
+
+            verify(clothesRepository).findClothesWithCursor(request, pageable);
+            verify(clothesRepository).totalElementCount(request);
+            verify(clothesMapper).toClothesDto(expectedClothes1);
+            verify(clothesMapper).toClothesDto(expectedClothes2);
+        }
+    }
 }

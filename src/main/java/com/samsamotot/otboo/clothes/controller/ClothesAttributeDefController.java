@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/clothes/attribute-defs")
 @RestController
 public class ClothesAttributeDefController implements ClothesAttributeDefApi {
+    private static final String CONTROLLER_NAME = "[ClothesAttributeDefController] ";
 
     private final ClothesAttributeDefService defService;
 
@@ -36,9 +37,9 @@ public class ClothesAttributeDefController implements ClothesAttributeDefApi {
     public ResponseEntity<ClothesAttributeDefDto> createClothesAttributeDef(
         @Valid @RequestBody ClothesAttributeDefCreateRequest request
     ) {
-        log.debug("[ClothesAttributeDefController] createClothesAttributeDef - service.create 호출");
+        log.debug(CONTROLLER_NAME + "의상 속성 정의 생성 요청 - service.create 호출");
         ClothesAttributeDefDto result = defService.create(request);
-        log.debug("[ClothesAttributeDefController] createClothesAttributeDef - service.create 결과: {}", result);
+        log.debug(CONTROLLER_NAME + "의상 속성 정의 생성 요청 - service.create 결과: {}", result.name());
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
@@ -50,9 +51,9 @@ public class ClothesAttributeDefController implements ClothesAttributeDefApi {
         @PathVariable("definitionId") UUID definitionId,
         @Valid @RequestBody ClothesAttributeDefUpdateRequest request
     ) {
-        log.debug("[ClothesAttributeDefController] updateClothesAttributeDef - service.update 호출");
+        log.debug(CONTROLLER_NAME + "의상 속성 정의 수정 요청 - service.update 호출");
         ClothesAttributeDefDto result = defService.update(definitionId, request);
-        log.debug("[ClothesAttributeDefController] updateClothesAttributeDef - service.update 결과: {}", result);
+        log.debug(CONTROLLER_NAME + "의상 속성 정의 수정 요청 - service.update 결과: {}", result.name());
 
         return ResponseEntity
             .status(HttpStatus.OK)
@@ -63,9 +64,9 @@ public class ClothesAttributeDefController implements ClothesAttributeDefApi {
     public ResponseEntity<Void> deleteClothesAttributeDef(
         @PathVariable("definitionId") UUID definitionId
     ) {
-        log.debug("[ClothesAttributeDefController] deleteClothesAttributeDef - service.delete 호출");
+        log.debug(CONTROLLER_NAME + "의상 속성 정의 삭제 요청 - service.delete 호출");
         defService.delete(definitionId);
-        log.debug("[ClothesAttributeDefController] deleteClothesAttributeDef - service.delete 종료");
+        log.debug(CONTROLLER_NAME + "의상 속성 정의 삭제 요청 - service.delete 종료");
 
         return ResponseEntity
             .status(HttpStatus.NO_CONTENT)
@@ -78,11 +79,11 @@ public class ClothesAttributeDefController implements ClothesAttributeDefApi {
         @RequestParam(name = "sortDirection") String sortDirection,
         @RequestParam(name = "keywordLike", required = false) String keywordLike
     ) {
-        log.debug("[ClothesAttributeDefController] getClothesAttributeDef - service.findAll 호출");
+        log.debug(CONTROLLER_NAME + "의상 속성 정의 목록 조회 요청 - service.findAll 호출");
         List<ClothesAttributeDefDto> result = defService.findAll(sortBy, sortDirection, keywordLike);
-        log.debug("[ClothesAttributeDefController] getClothesAttributeDef - service.findAll 결과 리스트 크기: {}", result.size());
+        log.debug(CONTROLLER_NAME + "의상 속성 정의 목록 조회 요청 - service.findAll 결과 리스트 크기: {}", result.size());
         if (!result.isEmpty()) {
-            log.trace("[ClothesAttributeDefController] getClothesAttributeDef - 첫 번째 요소: {}", result.get(0));
+            log.trace(CONTROLLER_NAME + "의상 속성 정의 목록 조회 요청 - 첫 번째 요소: {}", result.get(0).name());
         }
 
         return ResponseEntity
