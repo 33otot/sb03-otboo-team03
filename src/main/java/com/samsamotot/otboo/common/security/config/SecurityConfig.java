@@ -112,6 +112,9 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                 ).permitAll()
+
+                // 의상 속성 정의는 ADMIN 유저만 가능
+                .requestMatchers("/api/clothes/attribute-defs/**").hasRole("ADMIN")
                 
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()
