@@ -19,7 +19,7 @@ public interface ClothesService {
     ClothesDto update(UUID clothesId, UUID ownerId, ClothesUpdateRequest updateRequest, MultipartFile clothesImage);
 
     // delete
-    void delete(UUID clothesId);
+    void delete(UUID ownerId, UUID clothesId);
 
     // read
     CursorResponse<ClothesDto> find(ClothesSearchRequest request);

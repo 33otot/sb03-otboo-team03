@@ -92,8 +92,10 @@ public class ClothesController implements ClothesControllerApi{
     public ResponseEntity<Void> deleteClothes (
         @PathVariable("clothesId") UUID clothesId
     ) {
+        UUID ownerId = AuthUtil.getAuthenticatedUserId();
+
         log.debug(CONTROLLER_NAME + " 의상 삭제 요청 - clothesService.delete 호출");
-        clothesService.delete(clothesId);
+        clothesService.delete(ownerId, clothesId);
         log.debug(CONTROLLER_NAME + " 의상 삭제 요청 - clothesService.delete 종료");
 
         return ResponseEntity

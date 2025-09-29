@@ -233,12 +233,17 @@ public class ClothesServiceImpl implements ClothesService {
     // 삭제 기능
     @Override
     @Transactional
-    public void delete(UUID clothesId) {
+    public void delete(UUID ownerId, UUID clothesId) {
         log.info(SERVICE_NAME + "delete - 의상 삭제 메서드 호출됨");
 
         // Clothes 조회
         Clothes clothes = clothesRepository.findById(clothesId)
             .orElseThrow(() -> new ClothesNotFoundException());
+
+        // 해당 clothes 객체가 유저의 의상이 맞는지 더블체크
+        if (!clothes.getOwner().getId().equals(ownerId)) {
+            throw new ClothesOwnerMismatchException();
+        }
 
         // 기존 이미지 경로 보관
         String previousImageUrl = clothes.getImageUrl();
