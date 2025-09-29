@@ -124,7 +124,6 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
         defRepository.delete(def);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(readOnly = true)
     @Override
     public List<ClothesAttributeDefDto> findAll(String sortBy, String sortDirection,
