@@ -4,6 +4,7 @@ import com.samsamotot.otboo.common.exception.ErrorResponse;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
+import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -70,5 +71,29 @@ public interface UserApi {
         @Parameter(description = "이메일 검색") String emailLike,
         @Parameter(description = "권한 필터") String roleEqual,
         @Parameter(description = "잠금 상태 필터") Boolean locked
+    );
+    
+    @Operation(
+        summary = "권한 수정",
+        description = "권한 수정 API",
+        operationId = "updateRole"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(
+                responseCode = "200",
+                description = "권한 수정 성공",
+                content = @Content(mediaType = "*/*", schema = @Schema(implementation = UserDto.class))
+            ),
+            @ApiResponse(
+                responseCode = "404",
+                description = "권한 수정 실패(사용자 없음)",
+                content = @Content(mediaType = "*/*", schema = @Schema(implementation = ErrorResponse.class))
+            )
+        }
+    )
+    ResponseEntity<UserDto> updateRole(
+        @Parameter(description = "사용자 ID") UUID userId,
+        @Parameter(description = "권한 수정 요청") UserRoleUpdateRequest request
     );
 }
