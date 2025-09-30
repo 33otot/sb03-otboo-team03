@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS feeds
 (
     id UUID PRIMARY KEY,
     author_id UUID NOT NULL,
-    weather_id UUID,
+    weather_id UUID NOT NULL,
     content TEXT NOT NULL,
     like_count BIGINT DEFAULT 0 NOT NULL,
     comment_count BIGINT DEFAULT 0 NOT NULL,
