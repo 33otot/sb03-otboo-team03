@@ -110,6 +110,17 @@ INSERT INTO feeds (id, author_id, weather_id, content, created_at, updated_at) V
 ('f1000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', '부산은 흐리네요', NOW() - interval '4 day', NOW() - interval '4 day'),
 ('f1000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000003', '제주도 대체로 흐림', NOW() - interval '3 day', NOW() - interval '3 day'),
 ('f1000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004', 'd0000000-0000-0000-0000-000000000004', '대전은 흐려요', NOW() - interval '2 day', NOW() - interval '2 day'),
+-- 추가 피드 데이터 (10)
+('f1000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000005', 'd0000000-0000-0000-0000-000000000005', '인천은 맑네요! 오늘 옷차림입니다.', NOW() - interval '1 day', NOW() - interval '1 day'),
+('f1000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000002', '비오는 부산, 그래도 멋지게!', NOW() - interval '12 hour', NOW() - interval '12 hour'),
+('f1000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000003', '제주도 여행 중! 날씨 최고!', NOW() - interval '6 hour', NOW() - interval '6 hour'),
+('f1000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000004', '대전 눈와요! 다들 따뜻하게 입으세요.', NOW() - interval '3 hour', NOW() - interval '3 hour'),
+('f1000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000004', 'd0000000-0000-0000-0000-000000000001', '서울에서 데일리룩 한 컷.', NOW() - interval '1 hour', NOW() - interval '1 hour'),
+('f1000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', '오늘의 OOTD. #데일리룩', NOW() - interval '2 day', NOW() - interval '2 day'),
+('f1000000-0000-0000-0000-000000000011', 'a0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', '부산 바다와 함께. #부산여행', NOW() - interval '2 day', NOW() - interval '2 day'),
+('f1000000-0000-0000-0000-000000000012', 'a0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000003', '제주도에서 힐링. #제주', NOW() - interval '3 day', NOW() - interval '3 day'),
+('f1000000-0000-0000-0000-000000000013', 'a0000000-0000-0000-0000-000000000004', 'd0000000-0000-0000-0000-000000000004', '추운 날씨엔 역시 패딩!', NOW() - interval '4 day', NOW() - interval '4 day'),
+('f1000000-0000-0000-0000-000000000014', 'a0000000-0000-0000-0000-000000000005', 'd0000000-0000-0000-0000-000000000005', '오늘의 출근룩. #OOTD', NOW() - interval '5 day', NOW() - interval '5 day');
 
 -- comments (21 for feed f1000000-0000-0000-0000-000000000001)
 INSERT INTO comments (id, feed_id, author_id, content, created_at) VALUES
@@ -138,15 +149,15 @@ INSERT INTO comments (id, feed_id, author_id, content, created_at) VALUES
 -- clothes (5)
 INSERT INTO clothes (id, owner_id, name, image_url, type, created_at, updated_at) VALUES
 ('e0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', '데일리 티셔츠', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/531db86b-c03a-4cff-9b7d-1048f6181827.jpg', 'TOP', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', '슬림핏 청바지', 'http://example.com/jeans1.jpg', 'BOTTOM', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', '슬림핏 청바지', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/5e83d9a1-67df-4803-9ac6-60debd7cd408.webp', 'BOTTOM', NOW(), NOW()),
 ('e0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', '여름 원피스', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/a872df1f-89db-4678-a368-17f066e61616.webp', 'DRESS', NOW(), NOW()),
 ('e0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', '가을 자켓', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/a4a29e54-3363-4c92-b792-46b60ccddda7.webp', 'OUTER', NOW(), NOW()),
 ('e0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000001', '운동화', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/84f842ee-6fb6-480e-9591-0f7088aee2a6.webp', 'SHOES', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', '화이트 셔츠', 'http://example.com/shirt1.jpg', 'TOP', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000001', '데님 반바지', 'http://example.com/shorts1.jpg', 'BOTTOM', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', '겨울 코트', 'http://example.com/coat1.jpg', 'OUTER', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000001', '여름 샌들', 'http://example.com/sandals1.jpg', 'SHOES', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001', '후드티', 'http://example.com/hoodie1.jpg', 'TOP', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', '화이트 셔츠', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/39c9a882-1721-4cd8-b36a-ef3be0423769.webp', 'TOP', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000001', '데님 반바지', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/77615039-1260-4597-becb-0800c6ae2564.webp', 'BOTTOM', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', '겨울 코트', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/a6b4d2ef-5bda-4157-8f6a-9cab4e55f3ad.webp', 'OUTER', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000001', '여름 샌들', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/25857b8f-dfd2-41d1-b31d-32600587ae17.webp', 'SHOES', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001', '후드티', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/e894af2a-3b65-4cdf-a36d-1c3623c64651.webp', 'TOP', NOW(), NOW()),
 -- 추가 의상 데이터 (20개)
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '블랙 슬랙스', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/cd9f0a23-7d3d-4c6c-abd3-dbfafbf4c596.webp', 'BOTTOM', NOW(), NOW()),
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '베이지 면바지', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/34651e37-b04f-4509-8824-0775ed798ecc.webp', 'BOTTOM', NOW(), NOW()),
@@ -554,7 +565,18 @@ INSERT INTO feed_likes (id, feed_id, user_id, created_at) VALUES
 (gen_random_uuid(), 'f1000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000003', NOW()),
 (gen_random_uuid(), 'f1000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', NOW()),
 (gen_random_uuid(), 'f1000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', NOW()),
-(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000004', NOW());
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000004', NOW()),
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000004', NOW()),
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000005', NOW()),
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000003', NOW()),
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000004', NOW()),
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000002', NOW()),
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000005', NOW()),
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', NOW()),
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000002', NOW()),
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000003', NOW()),
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000005', NOW());
+
 
 -- notifications (5)
 INSERT INTO notifications (id, receiver_id, created_at, title, content, level) VALUES
@@ -586,7 +608,28 @@ INSERT INTO feed_clothes (id, feed_id, clothes_id, created_at) VALUES
 (gen_random_uuid(), 'f1000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000002', NOW()),
 (gen_random_uuid(), 'f1000000-0000-0000-0000-000000000002', 'e0000000-0000-0000-0000-000000000003', NOW()),
 (gen_random_uuid(), 'f1000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000004', NOW()),
-(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000004', 'e0000000-0000-0000-0000-000000000005', NOW());
+(gen_random_uuid(), 'f1000000-0000-0000-0000-000000000004', 'e0000000-0000-0000-0000-000000000005', NOW()),
+-- feed_clothes for new feeds
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '인천은 맑네요! 오늘 옷차림입니다.'), 'e0000000-0000-0000-0000-000000000006', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '인천은 맑네요! 오늘 옷차림입니다.'), 'e0000000-0000-0000-0000-000000000007', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '비오는 부산, 그래도 멋지게!'), 'e0000000-0000-0000-0000-000000000008', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '비오는 부산, 그래도 멋지게!'), 'e0000000-0000-0000-0000-000000000009', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '제주도 여행 중! 날씨 최고!'), 'e0000000-0000-0000-0000-000000000010', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '제주도 여행 중! 날씨 최고!'), 'e0000000-0000-0000-0000-000000000001', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '대전 눈와요! 다들 따뜻하게 입으세요.'), 'e0000000-0000-0000-0000-000000000002', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '대전 눈와요! 다들 따뜻하게 입으세요.'), 'e0000000-0000-0000-0000-000000000003', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '서울에서 데일리룩 한 컷.'), 'e0000000-0000-0000-0000-000000000004', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '서울에서 데일리룩 한 컷.'), 'e0000000-0000-0000-0000-000000000005', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '오늘의 OOTD. #데일리룩'), 'e0000000-0000-0000-0000-000000000006', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '오늘의 OOTD. #데일리룩'), 'e0000000-0000-0000-0000-000000000007', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '부산 바다와 함께. #부산여행'), 'e0000000-0000-0000-0000-000000000008', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '부산 바다와 함께. #부산여행'), 'e0000000-0000-0000-0000-000000000009', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '제주도에서 힐링. #제주'), 'e0000000-0000-0000-0000-000000000010', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '제주도에서 힐링. #제주'), 'e0000000-0000-0000-0000-000000000001', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '추운 날씨엔 역시 패딩!'), 'e0000000-0000-0000-0000-000000000002', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '추운 날씨엔 역시 패딩!'), 'e0000000-0000-0000-0000-000000000003', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '오늘의 출근룩. #OOTD'), 'e0000000-0000-0000-0000-000000000004', NOW()),
+(gen_random_uuid(), (SELECT id FROM feeds WHERE content = '오늘의 출근룩. #OOTD'), 'e0000000-0000-0000-0000-000000000005', NOW());
 
 -- recommendations (5)
 INSERT INTO recommendations (id, user_id, weather_id, created_at) VALUES
