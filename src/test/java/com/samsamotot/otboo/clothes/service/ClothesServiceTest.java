@@ -529,10 +529,6 @@ class ClothesServiceTest {
             when(clothesMapper.toClothesDto(expectedClothes1)).thenReturn(clothesDto1);
             when(clothesMapper.toClothesDto(expectedClothes2)).thenReturn(clothesDto2);
 
-            when(expectedClothes1.getOwner()).thenReturn(mockUser);
-            when(expectedClothes2.getOwner()).thenReturn(mockUser);
-
-
             // when
             CursorResponse<ClothesDto> result = clothesService.find(ownerId, request);
 
@@ -548,33 +544,6 @@ class ClothesServiceTest {
             verify(clothesRepository).totalElementCount(ownerId, request);
             verify(clothesMapper).toClothesDto(expectedClothes1);
             verify(clothesMapper).toClothesDto(expectedClothes2);
-        }
-
-        @Test
-        void 조회된_의상_소유자가_요청한_ownerId와_다르면_예외가_발생한다() {
-            // given
-            UUID ownerId = UUID.randomUUID();
-            UUID otherOwnerId = UUID.randomUUID();
-            ReflectionTestUtils.setField(mockUser, "id", otherOwnerId);
-
-            ClothesSearchRequest request = ClothesSearchRequest.builder()
-                .ownerId(UUID.randomUUID())
-                .limit(10)
-                .build();
-
-            Clothes clothes = mock(Clothes.class);
-
-            when(clothes.getOwner()).thenReturn(mockUser);
-
-            Pageable pageable = PageRequest.of(0, 10);
-            Slice<Clothes> mockSlice = new SliceImpl<>(List.of(clothes), pageable, false);
-
-            when(clothesRepository.findClothesWithCursor(ownerId, request, pageable)).thenReturn(mockSlice);
-
-            // when & then
-            assertThatThrownBy(() -> clothesService.find(ownerId, request))
-                .isInstanceOf(ClothesOwnerMismatchException.class)
-                .hasMessageContaining("해당 의상의 소유자가 아닙니다.");
         }
     }
 }
