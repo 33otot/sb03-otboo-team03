@@ -51,7 +51,7 @@ public class WebClientConfig {
                 // Connection Timeout
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 // Response Timeout
-                .responseTimeout(Duration.ofMillis(5000))
+                .responseTimeout(Duration.ofMillis(10000))
                 .doOnConnected(conn -> conn
                         .addHandlerLast(new ReadTimeoutHandler(5, TimeUnit.SECONDS)) // Read Timeout
                         .addHandlerLast(new WriteTimeoutHandler(5, TimeUnit.SECONDS)));
