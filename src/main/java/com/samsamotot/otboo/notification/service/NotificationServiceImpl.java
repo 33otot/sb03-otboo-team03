@@ -3,7 +3,10 @@ package com.samsamotot.otboo.notification.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.notification.dto.NotificationDto;
+import com.samsamotot.otboo.notification.dto.NotificationListResponse;
+import com.samsamotot.otboo.notification.dto.NotificationRequest;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.repository.NotificationRepository;
@@ -12,9 +15,13 @@ import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -42,7 +49,7 @@ public class NotificationServiceImpl implements NotificationService {
     private static final String LIKE_CONTENT = "from: ";
     private static final String FOLLOW_CONTENT = "사용자가 팔로우했습니다";
 
-    private final NotificationRepository repository;
+    private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final SseService sseService;
     private final ObjectMapper objectMapper;
@@ -73,7 +80,7 @@ public class NotificationServiceImpl implements NotificationService {
             .level(level)
             .build();
 
-        Notification saved = repository.save(notification);
+        Notification saved = notificationRepository.save(notification);
 
         // SSE로 실시간 발행
         try {
@@ -134,6 +141,79 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview) {
         save(receiverId, DIRECT_MESSAGE_TITLE, "from: " + senderId + ", content: " + messagePreview, NotificationLevel.INFO);
+    }
+
+    /**
+     * 현재 로그인한 사용자의 알림 목록을 커서 기반으로 조회한다.
+     *
+     * - 최신 알림부터 limit 개수만큼 반환한다.
+     * - 커서(timestamp, idAfter)가 주어지면 해당 위치 이후(더 과거) 알림을 조회한다.
+     * - limit+1 개를 조회하여 hasNext 여부를 판단한다.
+     * - 응답에는 다음 페이지를 위한 nextCursor, nextIdAfter 정보를 포함한다.
+     *
+     * @param request 알림 조회 요청(cursor, idAfter, limit)
+     * @return 알림 목록 응답 DTO (데이터, 커서, hasNext, totalCount 등)
+     */
+    @Override
+    public NotificationListResponse getNotifications(NotificationRequest request) {
+        UUID receiverId = currentUserId();
+
+        int limit = Math.max(1, request.limit());
+
+        PageRequest pageRequest = PageRequest.of(0, limit+1);
+        List<Notification> rows = notificationRepository.findAllBefore(
+            receiverId,
+            request.cursor(),
+            request.idAfter(),
+            pageRequest
+        );
+
+        boolean hasNext = rows.size() > limit;
+        List<Notification> pageRows = hasNext ? rows.subList(0, limit) : rows;
+
+        String nextCursor = null;
+        UUID nextIdAfter = null;
+
+        if (!pageRows.isEmpty()) {
+            Notification last = pageRows.get(pageRows.size() - 1);
+            nextCursor = last.getCreatedAt().toString();
+            nextIdAfter = last.getId();
+        }
+
+        long total = notificationRepository.countByReceiver_Id(receiverId);
+
+        List<NotificationDto> data = pageRows.stream().map(this::toDto).toList();
+
+        log.info(NOTIFICATION_SERVICE + "DM 목록 조회 완료 - total: {}, hasNext: {}", total, hasNext);
+
+        return NotificationListResponse.builder()
+            .data(data)
+            .nextCursor(hasNext ? nextCursor : null)
+            .nextIdAfter(hasNext ? nextIdAfter : null)
+            .hasNext(hasNext)
+            .totalCount(total)
+            .sortBy("createdAt")
+            .sortDirection("DESCENDING")
+            .build();
+    }
+
+    /*
+        로그인 유저 아이디를 가져온다.
+     */
+    private UUID currentUserId() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
+            log.warn(NOTIFICATION_SERVICE + "인증 실패: Authentication 비어있음/미인증 (auth={}, principal={})", auth, (auth != null ? auth.getPrincipal() : null));
+            throw new OtbooException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String email = auth.getName();
+        return userRepository.findByEmail(email)
+            .map(User::getId)
+            .orElseThrow(() -> {
+                log.warn(NOTIFICATION_SERVICE + "인증 사용자 조회 실패: email={} (DB에 없음)", email);
+                return new OtbooException(ErrorCode.UNAUTHORIZED);
+            });
     }
 
     /**

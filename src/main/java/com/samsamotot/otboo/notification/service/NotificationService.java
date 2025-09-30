@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.notification.service;
 
+import com.samsamotot.otboo.notification.dto.NotificationListResponse;
+import com.samsamotot.otboo.notification.dto.NotificationRequest;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import org.springframework.stereotype.Service;
@@ -28,4 +30,5 @@ public interface NotificationService {
 
     void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview);
 
+    NotificationListResponse getNotifications(NotificationRequest request);
 }

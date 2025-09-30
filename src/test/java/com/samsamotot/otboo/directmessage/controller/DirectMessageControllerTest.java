@@ -3,8 +3,6 @@ package com.samsamotot.otboo.directmessage.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
-import com.samsamotot.otboo.follow.controller.FollowController;
-import com.samsamotot.otboo.follow.service.FollowService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +13,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

@@ -3,12 +3,16 @@ package com.samsamotot.otboo.notification.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.notification.dto.NotificationListResponse;
+import com.samsamotot.otboo.notification.dto.NotificationRequest;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.repository.NotificationRepository;
 import com.samsamotot.otboo.sse.service.SseService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,8 +21,14 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -59,6 +69,39 @@ class NotificationServiceImplTest {
         } catch (Exception e) {
             throw new RuntimeException("User 기본 생성자 접근 실패", e);
         }
+    }
+
+    private User newUserWith(String email, UUID id) {
+        User u = UserFixture.createUserWithEmail(email);
+        ReflectionTestUtils.setField(u, "id", id);
+        return u;
+    }
+
+    private Notification newNotification(User receiver, Instant createdAt, UUID id, String title) {
+        try {
+            Constructor<Notification> ctor = Notification.class.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            Notification n = ctor.newInstance();
+            ReflectionTestUtils.setField(n, "id", id);
+            ReflectionTestUtils.setField(n, "receiver", receiver);
+            ReflectionTestUtils.setField(n, "createdAt", createdAt);
+            ReflectionTestUtils.setField(n, "title", title);
+            ReflectionTestUtils.setField(n, "content", "내용");
+            ReflectionTestUtils.setField(n, "level", NotificationLevel.INFO);
+            return n;
+        } catch (Exception e) {
+            throw new RuntimeException("Notification 기본 생성/세팅 실패", e);
+        }
+    }
+
+    private void mockAuthEmail(String email) {
+        var auth = new UsernamePasswordAuthenticationToken(email, "pw", List.of());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -213,5 +256,113 @@ class NotificationServiceImplTest {
         assertTrue(n.getContent().contains(preview));
         assertNotNull(n.getReceiver());
         then(sseService).should().sendNotification(eq(receiverId), anyString());
+    }
+
+    /*
+        알림 목록 조회 로직
+     */
+    @Test
+    void receiver_알람들_가져온다() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthEmail(email);
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(me));
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(2L);
+
+        Instant now = Instant.now();
+        Notification n1 = newNotification(me, now.minusSeconds(10), UUID.randomUUID(), "알림1");
+        Notification n2 = newNotification(me, now.minusSeconds(20), UUID.randomUUID(), "알림2");
+
+        NotificationRequest req = new NotificationRequest(null, null, 10);
+        given(notificationRepository.findAllBefore(eq(myId), isNull(), isNull(), any(Pageable.class)))
+            .willReturn(List.of(n1, n2));
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertFalse(res.hasNext());
+        assertEquals(2, res.data().size());
+        assertEquals(2L, res.totalCount());
+        assertEquals("DESCENDING", res.sortDirection());
+        then(notificationRepository).should()
+            .findAllBefore(eq(myId), isNull(), isNull(), argThat(p -> p.getPageSize() == 11));
+    }
+
+    @Test
+    void limit_만큼_가져온다() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthEmail(email);
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(me));
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(3L);
+
+        int limit = 2;
+        Instant base = Instant.now();
+
+        Notification a = newNotification(me, base.minusSeconds(1), UUID.randomUUID(), "A"); // 최신
+        Notification b = newNotification(me, base.minusSeconds(2), UUID.randomUUID(), "B");
+        Notification c = newNotification(me, base.minusSeconds(3), UUID.randomUUID(), "C");
+
+        NotificationRequest req = new NotificationRequest(null, null, limit);
+        given(notificationRepository.findAllBefore(eq(myId), isNull(), isNull(), any(Pageable.class)))
+            .willReturn(List.of(a, b, c));
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertTrue(res.hasNext());
+        assertEquals(limit, res.data().size());
+
+        var last = res.data().get(limit - 1);
+        assertEquals(b.getId(), last.getId());
+        assertNotNull(res.nextCursor());
+        assertNotNull(res.nextCursor());
+
+        then(notificationRepository).should()
+            .findAllBefore(eq(myId), isNull(), isNull(), argThat(p -> p.getPageSize() == limit + 1));
+    }
+
+    @Test
+    void cursor_기준_동일하면_보조_커서로_가져온다() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId); // ← 픽스처
+
+        mockAuthEmail(email);
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(me));
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(2L);
+
+        Instant ts = Instant.now();
+        UUID idAfter = UUID.randomUUID();
+        int limit = 10;
+
+        Notification n1_sameTs_lowerId = newNotification(me, ts, UUID.randomUUID(), "동일시각-낮은ID");
+        Notification n2_older = newNotification(me, ts.minusSeconds(1), UUID.randomUUID(), "이전시각");
+
+        given(notificationRepository.findAllBefore(eq(myId), eq(ts), eq(idAfter), any(Pageable.class)))
+            .willReturn(List.of(n1_sameTs_lowerId, n2_older));
+
+        NotificationRequest req = new NotificationRequest(ts, idAfter, limit);
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertFalse(res.hasNext());
+        assertEquals(2, res.data().size());
+        then(notificationRepository).should()
+            .findAllBefore(eq(myId), eq(ts), eq(idAfter), argThat(p -> p.getPageSize() == limit + 1));
     }
 }

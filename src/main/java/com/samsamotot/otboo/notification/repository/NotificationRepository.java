@@ -21,15 +21,18 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
         select n from Notification n
         where n.receiver.id = :userId
           and (
-                :ts is null
-             or n.createdAt > :ts
-             or (n.createdAt = :ts and (:afterId is null or n.id > :afterId))
+                :timestamp is null
+             or n.createdAt < :timestamp
+             or (n.createdAt = :timestamp and (:beforeId is null or n.id < :beforeId))
           )
-        order by n.createdAt asc, n.id asc
+        order by n.createdAt desc, n.id desc
     """)
-    List<Notification> findAllAfter(
+    List<Notification> findAllBefore(
         @Param("userId") UUID userId,
-        @Param("ts") Instant ts,
-        @Param("afterId") UUID afterId
+        @Param("timestamp") Instant timestamp,
+        @Param("beforeId") UUID beforeId,
+        org.springframework.data.domain.Pageable pageable
     );
+
+    long countByReceiver_Id(UUID userId);
 }

@@ -90,7 +90,8 @@ public class SecurityConfig {
                     "/actuator/**",
                     "/api/sse",
                     "/api/follows/**",
-                    "/api/direct-messages/**"
+                    "/api/direct-messages/**",
+                    "/api/notifications/**"
                 )
             )
             
@@ -119,7 +120,8 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/api/follows/**",
-                    "/api/direct-messages/**"
+                    "/api/direct-messages/**",
+                    "/api/notifications/**"
                 ).permitAll()
 
                 // 의상 속성 정의 C/U/D 기능은 ADMIN 유저만 가능
