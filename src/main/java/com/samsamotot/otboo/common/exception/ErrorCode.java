@@ -69,6 +69,7 @@ public enum ErrorCode {
     WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "WE001", "날씨 정보를 찾을 수 없습니다."),
     WEATHER_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "WE002", "날씨 API 호출에 실패했습니다."),
     INVALID_LOCATION(HttpStatus.BAD_REQUEST, "WE003", "올바르지 않은 위치 정보입니다."),
+    API_RETRY_FAILURE(HttpStatus.GATEWAY_TIMEOUT, "WE004", "API 서버에서 데이터를 반환하지 않습니다"),
 
     // 위치 정보 관련 에러
     NOT_FOUND_GRID(HttpStatus.NOT_FOUND, "LO001", "격자 좌표를 찾을 수 없습니다."),
