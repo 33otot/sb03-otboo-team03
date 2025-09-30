@@ -39,7 +39,8 @@ INSERT INTO clothes_attribute_defs (id, name, created_at, updated_at) VALUES
 ('f0000000-0000-0000-0000-000000000002', '소재', NOW(), NOW()),
 ('f0000000-0000-0000-0000-000000000003', '스타일', NOW(), NOW()),
 ('f0000000-0000-0000-0000-000000000004', '계절', NOW(), NOW()),
-('f0000000-0000-0000-0000-000000000005', '사이즈', NOW(), NOW());
+('f0000000-0000-0000-0000-000000000005', '사이즈', NOW(), NOW()),
+('f0000000-0000-0000-0000-000000000006', '두께', NOW(), NOW());
 
 -- clothes_attribute_options (5 for each of 5 defs)
 INSERT INTO clothes_attribute_options (id, value, definition_id, created_at, updated_at) VALUES
@@ -71,23 +72,49 @@ INSERT INTO clothes_attribute_options (id, value, definition_id, created_at, upd
 (gen_random_uuid(), 'M', 'f0000000-0000-0000-0000-000000000005', NOW(), NOW()),
 (gen_random_uuid(), 'L', 'f0000000-0000-0000-0000-000000000005', NOW(), NOW()),
 (gen_random_uuid(), 'XL', 'f0000000-0000-0000-0000-000000000005', NOW(), NOW()),
-(gen_random_uuid(), 'FREE', 'f0000000-0000-0000-0000-000000000005', NOW(), NOW());
+(gen_random_uuid(), 'FREE', 'f0000000-0000-0000-0000-000000000005', NOW(), NOW()),
+-- 색상 옵션 추가
+(gen_random_uuid(), '베이지', 'f0000000-0000-0000-0000-000000000001', NOW(), NOW()),
+(gen_random_uuid(), '카키', 'f0000000-0000-0000-0000-000000000001', NOW(), NOW()),
+(gen_random_uuid(), '분홍', 'f0000000-0000-0000-0000-000000000001', NOW(), NOW()),
+(gen_random_uuid(), '회색', 'f0000000-0000-0000-0000-000000000001', NOW(), NOW()),
+(gen_random_uuid(), '네이비', 'f0000000-0000-0000-0000-000000000001', NOW(), NOW()),
+(gen_random_uuid(), '갈색', 'f0000000-0000-0000-0000-000000000001', NOW(), NOW()),
+-- 소재 옵션 추가
+(gen_random_uuid(), '가죽', 'f0000000-0000-0000-0000-000000000002', NOW(), NOW()),
+-- 사이즈 옵션 추가
+(gen_random_uuid(), '270', 'f0000000-0000-0000-0000-000000000005', NOW(), NOW()),
+(gen_random_uuid(), '240', 'f0000000-0000-0000-0000-000000000005', NOW(), NOW()),
+-- 두께 옵션 추가
+(gen_random_uuid(), 'LIGHT', 'f0000000-0000-0000-0000-000000000006', NOW(), NOW()),
+(gen_random_uuid(), 'MEDIUM', 'f0000000-0000-0000-0000-000000000006', NOW(), NOW()),
+(gen_random_uuid(), 'HEAVY', 'f0000000-0000-0000-0000-000000000006', NOW(), NOW());
+
 
 -- weathers (5)
-INSERT INTO weathers (id, grid_id, created_at, forecasted_at, forecast_at, sky_status, temperature_current) VALUES
-('d0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', NOW(), NOW(), NOW(), 'CLEAR', 25.0),
-('d0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002', NOW(), NOW(), NOW(), 'CLOUDY', 22.0),
-('d0000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000003', NOW(), NOW(), NOW(), 'MOSTLY_CLOUDY', 18.0),
-('d0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000004', NOW(), NOW(), NOW(), 'CLOUDY', -2.0),
-('d0000000-0000-0000-0000-000000000005', 'c0000000-0000-0000-0000-000000000005', NOW(), NOW(), NOW(), 'CLEAR', 28.0);
+INSERT INTO weathers (
+    id, grid_id, created_at, forecasted_at, forecast_at,
+    sky_status, precipitation_type, precipitation_amount, precipitation_prob,
+    humidity_current, humidity_compared,
+    temperature_current, temperature_compared, temperature_min, temperature_max,
+    wind_speed, wind_as_word) VALUES
+('d0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', NOW(), NOW(), NOW(),
+'CLEAR', 'NONE', 0.0, 0.0, 40.0, 0.0, 25.0, 0.0, 18.0, 28.0, 2.5, 'WEAK'),
+('d0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002', NOW(), NOW(), NOW(),
+'CLOUDY', 'RAIN', 1.2, 60.0, 55.0, 5.0, 22.0, -1.0, 16.0, 24.0, 3.0, 'MODERATE'),
+('d0000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000003', NOW(), NOW(), NOW(),
+'MOSTLY_CLOUDY', 'NONE', 0.0, 10.0, 65.0, 2.0, 18.0, 0.5, 14.0, 20.0, 1.2, 'WEAK'),
+('d0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000004', NOW(), NOW(), NOW(),
+'CLOUDY', 'SNOW', 0.5, 80.0, 70.0, -3.0, -2.0, -1.0, -5.0, 2.0, 4.5, 'STRONG'),
+('d0000000-0000-0000-0000-000000000005', 'c0000000-0000-0000-0000-000000000005', NOW(), NOW(), NOW(),
+'CLEAR', 'NONE', 0.0, 0.0, 35.0, 0.0, 28.0, 2.0, 22.0, 32.0, 2.0, 'WEAK');
 
-
+-- feeds (5)
 INSERT INTO feeds (id, author_id, weather_id, content, created_at, updated_at) VALUES
 ('f1000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', '오늘 서울 날씨 맑음! OOTD', NOW() - interval '5 day', NOW() - interval '5 day'),
 ('f1000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', '부산은 흐리네요', NOW() - interval '4 day', NOW() - interval '4 day'),
 ('f1000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000003', '제주도 대체로 흐림', NOW() - interval '3 day', NOW() - interval '3 day'),
 ('f1000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004', 'd0000000-0000-0000-0000-000000000004', '대전은 흐려요', NOW() - interval '2 day', NOW() - interval '2 day'),
-('f1000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000005', 'd0000000-0000-0000-0000-000000000005', '인천공항 날씨 최고', NOW() - interval '1 day', NOW() - interval '1 day');
 
 -- comments (21 for feed f1000000-0000-0000-0000-000000000001)
 INSERT INTO comments (id, feed_id, author_id, content, created_at) VALUES
@@ -115,16 +142,37 @@ INSERT INTO comments (id, feed_id, author_id, content, created_at) VALUES
 
 -- clothes (5)
 INSERT INTO clothes (id, owner_id, name, image_url, type, created_at, updated_at) VALUES
-('e0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', '데일리 티셔츠', 'http://example.com/tshirt1.jpg', 'TOP', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', '데일리 티셔츠', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/531db86b-c03a-4cff-9b7d-1048f6181827.jpg', 'TOP', NOW(), NOW()),
 ('e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', '슬림핏 청바지', 'http://example.com/jeans1.jpg', 'BOTTOM', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000002', '여름 원피스', 'http://example.com/dress1.jpg', 'DRESS', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000003', '가을 자켓', 'http://example.com/jacket1.jpg', 'OUTER', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000004', '운동화', 'http://example.com/shoes1.jpg', 'SHOES', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000002', '화이트 셔츠', 'http://example.com/shirt1.jpg', 'TOP', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000003', '데님 반바지', 'http://example.com/shorts1.jpg', 'BOTTOM', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000004', '겨울 코트', 'http://example.com/coat1.jpg', 'OUTER', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000005', '여름 샌들', 'http://example.com/sandals1.jpg', 'SHOES', NOW(), NOW()),
-('e0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001', '후드티', 'http://example.com/hoodie1.jpg', 'TOP', NOW(), NOW());
+('e0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', '여름 원피스', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/a872df1f-89db-4678-a368-17f066e61616.webp', 'DRESS', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', '가을 자켓', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/a4a29e54-3363-4c92-b792-46b60ccddda7.webp', 'OUTER', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000001', '운동화', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/84f842ee-6fb6-480e-9591-0f7088aee2a6.webp', 'SHOES', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', '화이트 셔츠', 'http://example.com/shirt1.jpg', 'TOP', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000001', '데님 반바지', 'http://example.com/shorts1.jpg', 'BOTTOM', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000001', '겨울 코트', 'http://example.com/coat1.jpg', 'OUTER', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000001', '여름 샌들', 'http://example.com/sandals1.jpg', 'SHOES', NOW(), NOW()),
+('e0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001', '후드티', 'http://example.com/hoodie1.jpg', 'TOP', NOW(), NOW()),
+-- 추가 의상 데이터 (20개)
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '블랙 슬랙스', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/cd9f0a23-7d3d-4c6c-abd3-dbfafbf4c596.webp', 'BOTTOM', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '베이지 면바지', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/34651e37-b04f-4509-8824-0775ed798ecc.webp', 'BOTTOM', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '체크 셔츠', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/f5b56fe8-671b-47ff-afdc-ccb4beff3fa1.webp', 'TOP', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '스트라이프 티셔츠', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/29f87970-0ffd-486e-905c-18f7364ad57d.webp', 'TOP', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '가죽 자켓', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/bc1bfc65-9a0f-4841-afb9-8ebd605b00ba.webp', 'OUTER', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '플리스 자켓', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/2487b2d0-3d7c-4213-8be9-1f58a97e11e1.webp', 'OUTER', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '롱패딩', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/2174d709-b8ee-48ae-aa46-ab076ac2ae26.webp', 'OUTER', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '니트 스웨터', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/9a7874dd-46e6-4090-8bb8-24df93371061.webp', 'TOP', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '카고 팬츠', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/56702e63-5041-4539-b67b-a3bdaf978b32.webp', 'BOTTOM', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '청치마', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/925252fc-9bdb-438e-a4e0-289597ab4e99.webp', 'BOTTOM', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '플라워 원피스', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/4d6091b7-cbb2-48e5-9c4b-dac16a0cc158.webp', 'DRESS', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '트레이닝 팬츠', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/426b5bec-1dbe-4ec3-982c-eac788489364.webp', 'BOTTOM', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '맨투맨', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/7c6e086f-8d63-4e2c-b3c8-31ef162d8bc0.webp', 'TOP', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '블라우스', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/48ed190a-f718-47cf-9e4e-46cf706de2ee.webp', 'TOP', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '로퍼', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/d11fd88b-3e99-4804-951c-f516613ae680.webp', 'SHOES', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '부츠', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/d8a27fdc-ff1c-40e4-aa05-9c3be9ba30e3.webp', 'SHOES', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '야구 모자', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/859e450c-60a0-4e93-8258-8c1f258b0d3f.webp', 'HAT', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '비니', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/7d0e1bd9-f1f4-4cdb-9fae-61c2b2f6abe7.webp', 'HAT', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '목도리', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/790e5a97-a140-463b-ad79-47e9091d2b6c.webp', 'SCARF', NOW(), NOW()),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', '장갑', 'https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/clothes/af34fc5e-368b-4a58-b03e-669d82a7a38c.webp', 'ETC', NOW(), NOW());
 
 -- clothes_attributes (5)
 -- 데일리 티셔츠
@@ -215,6 +263,286 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
 (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000010', 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),
 (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000010', 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW()),
 (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000010', 'f0000000-0000-0000-0000-000000000006', '불가능', NOW(), NOW());
+
+-- 블랙 슬랙스
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000001', '검정', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000002', '폴리에스터', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW());
+
+-- 베이지 면바지
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='베이지 면바지'), 'f0000000-0000-0000-0000-000000000001', '베이지', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='베이지 면바지'), 'f0000000-0000-0000-0000-000000000002', '면', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='베이지 면바지'), 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='베이지 면바지'), 'f0000000-0000-0000-0000-000000000004', '봄', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='베이지 면바지'), 'f0000000-0000-0000-0000-000000000005', 'M', NOW(), NOW());
+
+-- 체크 셔츠
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='체크 셔츠'), 'f0000000-0000-0000-0000-000000000001', '파랑', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='체크 셔츠'), 'f0000000-0000-0000-0000-000000000002', '면', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='체크 셔츠'), 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='체크 셔츠'), 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='체크 셔츠'), 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW());
+
+-- 스트라이프 티셔츠
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='스트라이프 티셔츠'), 'f0000000-0000-0000-0000-000000000001', '흰색', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='스트라이프 티셔츠'), 'f0000000-0000-0000-0000-000000000002', '면', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='스트라이프 티셔츠'), 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='스트라이프 티셔츠'), 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='스트라이프 티셔츠'), 'f0000000-0000-0000-0000-000000000005', 'M', NOW(), NOW());
+
+-- 가죽 자켓
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='가죽 자켓'), 'f0000000-0000-0000-0000-000000000001', '검정', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='가죽 자켓'), 'f0000000-0000-0000-0000-000000000002', '가죽', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='가죽 자켓'), 'f0000000-0000-0000-0000-000000000003', '스트릿', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='가죽 자켓'), 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='가죽 자켓'), 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW());
+
+-- 플리스 자켓
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='플리스 자켓'), 'f0000000-0000-0000-0000-000000000001', '회색', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='플리스 자켓'), 'f0000000-0000-0000-0000-000000000002', '폴리에스터', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='플리스 자켓'), 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='플리스 자켓'), 'f0000000-0000-0000-0000-000000000004', '겨울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='플리스 자켓'), 'f0000000-0000-0000-0000-000000000005', 'XL', NOW(), NOW());
+
+-- 롱패딩
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000001', '검정', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000002', '폴리에스터', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000004', '겨울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000005', 'XL', NOW(), NOW());
+
+-- 니트 스웨터
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000001', '분홍', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000002', '울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000003', '빈티지', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000004', '겨울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW());
+
+-- 카고 팬츠
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000001', '카키', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000002', '면', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000003', '스트릿', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000005', 'M', NOW(), NOW());
+
+-- 청치마
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000001', '파랑', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000002', '면', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000005', 'S', NOW(), NOW());
+
+-- 플라워 원피스
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000001', '분홍', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000002', '실크', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000005', 'M', NOW(), NOW());
+
+-- 트레이닝 팬츠
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000001', '회색', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000002', '폴리에스터', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000004', '봄', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW());
+
+-- 맨투맨
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000001', '네이비', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000002', '면', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000003', '미니멀', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000005', 'XL', NOW(), NOW());
+
+-- 블라우스
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000001', '흰색', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000002', '실크', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000004', '봄', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000005', 'M', NOW(), NOW());
+
+-- 로퍼
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='로퍼'), 'f0000000-0000-0000-0000-000000000001', '갈색', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='로퍼'), 'f0000000-0000-0000-0000-000000000002', '가죽', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='로퍼'), 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='로퍼'), 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='로퍼'), 'f0000000-0000-0000-0000-000000000005', '270', NOW(), NOW());
+
+-- 부츠
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='부츠'), 'f0000000-0000-0000-0000-000000000001', '검정', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='부츠'), 'f0000000-0000-0000-0000-000000000002', '가죽', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='부츠'), 'f0000000-0000-0000-0000-000000000003', '스트릿', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='부츠'), 'f0000000-0000-0000-0000-000000000004', '겨울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='부츠'), 'f0000000-0000-0000-0000-000000000005', '240', NOW(), NOW());
+
+-- 야구 모자
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='야구 모자'), 'f0000000-0000-0000-0000-000000000001', '파랑', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='야구 모자'), 'f0000000-0000-0000-0000-000000000002', '폴리에스터', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='야구 모자'), 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='야구 모자'), 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='야구 모자'), 'f0000000-0000-0000-0000-000000000005', 'FREE', NOW(), NOW());
+
+-- 비니
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='비니'), 'f0000000-0000-0000-0000-000000000001', '검정', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='비니'), 'f0000000-0000-0000-0000-000000000002', '울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='비니'), 'f0000000-0000-0000-0000-000000000003', '스트릿', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='비니'), 'f0000000-0000-0000-0000-000000000004', '겨울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='비니'), 'f0000000-0000-0000-0000-000000000005', 'FREE', NOW(), NOW());
+
+-- 목도리
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='목도리'), 'f0000000-0000-0000-0000-000000000001', '빨강', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='목도리'), 'f0000000-0000-0000-0000-000000000002', '울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='목도리'), 'f0000000-0000-0000-0000-000000000003', '빈티지', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='목도리'), 'f0000000-0000-0000-0000-000000000004', '겨울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='목도리'), 'f0000000-0000-0000-0000-000000000005', 'FREE', NOW(), NOW());
+
+-- 장갑
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='장갑'), 'f0000000-0000-0000-0000-000000000001', '흰색', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='장갑'), 'f0000000-0000-0000-0000-000000000002', '울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='장갑'), 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='장갑'), 'f0000000-0000-0000-0000-000000000004', '겨울', NOW(), NOW()),
+(gen_random_uuid(), (SELECT id FROM clothes WHERE name='장갑'), 'f0000000-0000-0000-0000-000000000005', 'FREE', NOW(), NOW());
+
+-- 데일리 티셔츠: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='데일리 티셔츠'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 슬림핏 청바지: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='슬림핏 청바지'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 여름 원피스: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='여름 원피스'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 가을 자켓: HEAVY
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='가을 자켓'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW());
+
+-- 운동화: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='운동화'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 화이트 셔츠: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='화이트 셔츠'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 데님 반바지: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='데님 반바지'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 겨울 코트: HEAVY
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='겨울 코트'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW());
+
+-- 여름 샌들: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='여름 샌들'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 후드티: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='후드티'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 블랙 슬랙스: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 베이지 면바지: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='베이지 면바지'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 체크 셔츠: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='체크 셔츠'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 스트라이프 티셔츠: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='스트라이프 티셔츠'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 가죽 자켓: HEAVY
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='가죽 자켓'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW());
+
+-- 플리스 자켓: HEAVY
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='플리스 자켓'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW());
+
+-- 롱패딩: HEAVY
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW());
+
+-- 니트 스웨터: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 카고 팬츠: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 청치마: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 플라워 원피스: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 트레이닝 팬츠: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 맨투맨: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 블라우스: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 로퍼: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='로퍼'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 부츠: HEAVY
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='부츠'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW());
+
+-- 야구 모자: LIGHT
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='야구 모자'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW());
+
+-- 비니: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='비니'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 목도리: MEDIUM
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='목도리'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW());
+
+-- 장갑: HEAVY
+INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at)
+VALUES (gen_random_uuid(), (SELECT id FROM clothes WHERE name='장갑'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW());
 
 
 -- follows (5)
