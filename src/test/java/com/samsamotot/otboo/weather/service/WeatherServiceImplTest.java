@@ -1,11 +1,20 @@
 package com.samsamotot.otboo.weather.service;
 
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.LocationFixture;
+import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.weather.client.KmaClient;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
+import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
 import com.samsamotot.otboo.weather.entity.*;
+import com.samsamotot.otboo.weather.mapper.WeatherMapper;
 import com.samsamotot.otboo.weather.repository.GridRepository;
+import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import com.samsamotot.otboo.weather.service.impl.WeatherServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,16 +30,18 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("WeatherServiceImpl 단위 테스트")
@@ -47,6 +58,15 @@ public class WeatherServiceImplTest {
 
     @Mock
     private GridRepository gridRepository;
+
+    @Mock
+    private LocationService locationService;
+
+    @Mock
+    private WeatherMapper weatherMapper;
+
+    @Mock
+    private WeatherRepository weatherRepository;
 
     @Nested
     @DisplayName("날씨 수집 로직 테스트")
@@ -382,6 +402,161 @@ public class WeatherServiceImplTest {
 
             // "강수없음" 문자열이 0.0으로 올바르게 변환되었는지 확인
             assertThat(savedWeather.getPrecipitationAmount()).isEqualTo(0.0);
+        }
+    }
+
+    @Nested
+    @DisplayName("날씨 목록 조회 테스트")
+    class GetWeatherTests {
+
+        @Test
+        void DB에_날씨가_있으면_API_호출없이_반환() {
+            // Given
+            Location location = LocationFixture.createLocation(); // 37.5665, 126.9780
+            Grid grid = location.getGrid(); // 60, 127
+            WeatherAPILocation locationDto = WeatherAPILocation.builder()
+                    .longitude(location.getLongitude())
+                    .latitude(location.getLatitude())
+                    .x(location.getGrid().getX())
+                    .y(location.getGrid().getY())
+                    .locationNames(location.getLocationNames())
+                    .build();
+            Weather weather = WeatherFixture.createWeather(grid);
+
+            Instant now = Instant.now();
+            List<Weather> mockWeatherList = List.of(
+                    Weather.builder().forecastAt(now.minus(1, ChronoUnit.HOURS)).forecastedAt(now.minus(2, ChronoUnit.HOURS)).grid(grid).temperatureCurrent(20.0).build(),
+                    Weather.builder().forecastAt(now.plus(1, ChronoUnit.DAYS)).forecastedAt(now).grid(grid).temperatureCurrent(22.0).build()
+                    // ... 더 정교한 테스트를 위해 5일치 이상의 다양한 데이터를 추가할 수 있습니다.
+            );
+            WeatherDto weatherDto = WeatherFixture.createWeatherDto(weather, locationDto);
+
+
+            when(locationService.getCurrentLocation(location.getLongitude(), location.getLatitude()))
+                    .thenReturn(locationDto);
+            when(gridRepository.findByXAndY(grid.getX(), grid.getY()))
+                    .thenReturn(Optional.of(grid));
+            when(weatherRepository.findAllByGrid(grid))
+                    .thenReturn(mockWeatherList);
+            when(weatherMapper.toDto(any(Weather.class), eq(locationDto)))
+                    .thenReturn(weatherDto);
+
+            // When
+            List<WeatherDto> result = weatherService.getWeatherList(location.getLongitude(), location.getLatitude());
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result.size()).isGreaterThan(0);
+
+            verify(kmaClient, never()).fetchWeather(any(Integer.class), any(Integer.class));
+            verify(weatherTransactionService, never()).updateWeather(any(), any());
+        }
+
+        @Test
+        void DB에_데이터가_없으면_API호출하여_데이터_저장_반환() {
+            // Given
+            Location location = LocationFixture.createLocation(); // 37.5665, 126.9780
+            Grid grid = location.getGrid(); // 60, 127
+            WeatherAPILocation locationDto = WeatherAPILocation.builder()
+                    .longitude(location.getLongitude())
+                    .latitude(location.getLatitude())
+                    .x(location.getGrid().getX())
+                    .y(location.getGrid().getY())
+                    .locationNames(location.getLocationNames())
+                    .build();
+
+            // Mock API 응답
+            WeatherForecastResponse.Item mockItem = new WeatherForecastResponse.Item(
+                    "20250930", "1100", "TMP", "20250930", "1500", "22", "60", "127");
+            WeatherForecastResponse.Body mockBody = new WeatherForecastResponse.Body(
+                    "JSON", new WeatherForecastResponse.Items(List.of(mockItem)), 1000, 1, 1);
+            WeatherForecastResponse.Header mockHeader = new WeatherForecastResponse.Header("00", "NORMAL_SERVICE");
+            WeatherForecastResponse mockResponse = new WeatherForecastResponse(new WeatherForecastResponse.Response(mockHeader, mockBody));
+
+            Instant now = Instant.now();
+            List<Weather> convertedWeatherList = List.of(
+                    Weather.builder().forecastAt(now).forecastedAt(now).grid(grid).temperatureCurrent(22.0).build());
+
+            Weather weather = convertedWeatherList.get(0);
+
+            WeatherDto weatherDto = WeatherFixture.createWeatherDto(weather, locationDto);
+            when(locationService.getCurrentLocation(location.getLongitude(), location.getLatitude()))
+                    .thenReturn(locationDto);
+            when(gridRepository.findByXAndY(locationDto.x(), locationDto.y()))
+                    .thenReturn(Optional.of(grid));
+            // 처음엔 빈 리스트, 그 다음엔 저장된 데이터 리스트 반환
+            when(weatherRepository.findAllByGrid(grid))
+                    .thenReturn(Collections.emptyList())
+                    .thenReturn(convertedWeatherList);
+
+            when(kmaClient.fetchWeather(grid.getX(), grid.getY()))
+                    .thenReturn(Mono.just(mockResponse));
+            doNothing().when(weatherTransactionService).updateWeather(any(Grid.class), anyList());
+            when(weatherMapper.toDto(any(Weather.class), eq(locationDto)))
+                    .thenReturn(weatherDto);
+
+            // When
+            List<WeatherDto> result = weatherService.getWeatherList(location.getLongitude(), location.getLatitude());
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result).hasSize(1);
+
+            verify(kmaClient, times(1)).fetchWeather(grid.getX(), grid.getY());
+            verify(weatherTransactionService, times(1)).updateWeather(eq(grid), anyList());
+            verify(weatherRepository, times(2)).findAllByGrid(eq(grid));
+        }
+
+        @Test
+        void 유효하지_않은_좌표로_Grid를_찾지_못하면_OtbooException_GRID_NOT_FOUND() {
+            // Given
+            Location invalidGridLocation = LocationFixture.createLocationWithZeroCoordinates();
+            double longitude = invalidGridLocation.getLongitude();
+            double latitude = invalidGridLocation.getLatitude();
+            Grid grid = invalidGridLocation.getGrid();
+            WeatherAPILocation invalidLocationDto = new WeatherAPILocation(
+                    longitude, latitude,
+                    grid.getX(), grid.getY(),
+                    invalidGridLocation.getLocationNames());
+
+            when(locationService.getCurrentLocation(longitude, latitude))
+                    .thenReturn(invalidLocationDto);
+            when(gridRepository.findByXAndY(grid.getX(), grid.getY()))
+                    .thenReturn(Optional.empty());
+
+            // When
+            // Then
+            assertThatThrownBy(() -> weatherService.getWeatherList(longitude, latitude))
+                    .isInstanceOf(OtbooException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_FOUND_GRID);
+        }
+
+        @Test
+        void 성공적으로_비동기_날씨_업데이트_수행() throws ExecutionException, InterruptedException {
+            // Given
+            Grid grid = GridFixture.createGrid();
+            WeatherForecastResponse mockResponse = new WeatherForecastResponse(
+                    new WeatherForecastResponse.Response(
+                            new WeatherForecastResponse.Header("00", "NORMAL_SERVICE"),
+                            new WeatherForecastResponse.Body("JSON", new WeatherForecastResponse.Items(
+                                    List.of(new WeatherForecastResponse.Item("20250930", "0600", "TMP", "20250930", "0700", "22", "60", "127"))
+                                    ),
+                                    1, 1, 10))
+                            );
+
+            when(gridRepository.findById(grid.getId()))
+                    .thenReturn(Optional.of(grid));
+            when(kmaClient.fetchWeather(grid.getX(), grid.getY()))
+                    .thenReturn(Mono.just(mockResponse));
+            doNothing().when(weatherTransactionService).updateWeather(any(Grid.class), anyList());
+
+            // When
+            CompletableFuture<Void> future = weatherService.updateWeatherDataForGrid(grid.getId());
+
+            // Then
+            future.get();
+
+            verify(weatherTransactionService, times(1)).updateWeather(eq(grid), anyList());
         }
     }
 }

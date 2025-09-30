@@ -64,7 +64,7 @@ public class ProfileFixture {
             .build();
     }
 
-    public static Profile perfectProfileWithImage(
+    public static Profile perfectProfileWithNoImage(
     ) {
         LocalDate now = LocalDate.now();
         return builder()

@@ -12,7 +12,12 @@ import java.util.List;
 
 @Builder
 @Entity
-@Table(name = "locations")
+@Table(name = "locations", uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uq_locations_lon_lat",
+            columnNames = {"longitude", "latitude"}
+        )
+})
 @Check(constraints = "latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180")
 @Getter
 @Setter

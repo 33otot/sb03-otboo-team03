@@ -1,8 +1,8 @@
 package com.samsamotot.otboo.weather.config.batch;
 
+import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.weather.entity.Grid;
-import com.samsamotot.otboo.weather.repository.GridRepository;
 import com.samsamotot.otboo.weather.service.WeatherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -34,8 +34,8 @@ public class WeatherBatchTasklet implements Tasklet {
         log.info(TASKLET_NAME + "보유한 위치 정보가 있는 격자별 날씨 데이터 병렬 업데이트 배치 시작");
 
         // 1. 보유한 위치 정보가 있는 격자만 조회
-        Set<Grid> gridsWithLocations = locationRepository.findAll().stream()
-                .map(location -> location.getGrid())
+        Set<Grid> gridsWithLocations = locationRepository.findAllWithGrid().stream()
+                .map(Location::getGrid)
                 .collect(Collectors.toSet());
 
         List<Grid> targetGrids = List.copyOf(gridsWithLocations);
