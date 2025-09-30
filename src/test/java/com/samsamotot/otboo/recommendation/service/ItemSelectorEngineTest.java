@@ -11,6 +11,7 @@ import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
+import com.samsamotot.otboo.recommendation.type.Style;
 import java.time.Month;
 import java.util.List;
 import java.util.Map;
@@ -211,6 +212,27 @@ public class ItemSelectorEngineTest {
     }
 
     @Test
+    void 계절_완전_불일치시_점수_0_및_추천_제외된다() {
+
+        // given
+        ClothesAttribute summerAttr = ClothesAttribute.builder()
+            .definition(season)
+            .value("여름")
+            .build();
+        Clothes clothes = Clothes.builder()
+            .name("여름 옷")
+            .type(ClothesType.TOP)
+            .attributes(List.of(summerAttr))
+            .build();
+
+        // when
+        double score = itemSelectorEngine.calculateScore(clothes, 0, Month.JANUARY, false);
+
+        // then
+        assertThat(score).isEqualTo(0.0);
+    }
+
+    @Test
     void 비오는_날_방수_가능_옷은_추가_점수를_받는다() {
 
         // given
@@ -280,6 +302,62 @@ public class ItemSelectorEngineTest {
 
         // then
         assertThat(waterproofScore).isEqualTo(nonWaterproofScore);
+    }
+
+    @Test
+    void 스타일_정보_없으면_조화_점수는_5점이다() {
+
+        // given
+        Style style1 = null;
+        Style style2 = null;
+
+        // when
+        double score = ReflectionTestUtils.invokeMethod(itemSelectorEngine, "calculateHarmonyScore", style1, style2);
+
+        // then
+        assertThat(score).isEqualTo(5.0);
+    }
+
+    @Test
+    void 스타일_같으면_조화_점수는_10점이다() {
+
+        // given
+        Style style1 = Style.CASUAL;
+        Style style2 = Style.CASUAL;
+
+        // when
+        double score = ReflectionTestUtils.invokeMethod(itemSelectorEngine, "calculateHarmonyScore", style1, style2);
+
+        // then
+        assertThat(score).isEqualTo(10.0);
+    }
+
+    @Test
+    void 스타일_유사하면_조화_점수는_7점이다() {
+
+        // given
+        Style style1 = Style.CASUAL;
+        Style style2 = Style.MINIMAL;
+
+        // when
+        double score = ReflectionTestUtils.invokeMethod(itemSelectorEngine, "calculateHarmonyScore", style1, style2);
+
+        // then
+        assertThat(score).isEqualTo(7.0);
+    }
+
+    @Test
+    void 스타일_다르면_조화_점수는_0점이다() {
+
+        // given
+        Style style1 = Style.CASUAL;
+        Style style2 = Style.FORMAL;
+
+        // when
+        double score = ReflectionTestUtils.invokeMethod(itemSelectorEngine, "calculateHarmonyScore", style1, style2);
+
+        // then
+        assertThat(score).isEqualTo(0.0);
     }
 
     @Test
@@ -393,6 +471,68 @@ public class ItemSelectorEngineTest {
     }
 
     @Test
+    void 후보군이_1개일때_정상적으로_추천된다() {
+
+        // given
+        Clothes clothes = Clothes.builder()
+            .name("단일 옷")
+            .type(ClothesType.TOP)
+            .attributes(List.of())
+            .build();
+        ReflectionTestUtils.setField(clothes, "id", UUID.randomUUID());
+
+        RecommendationContextDto context = RecommendationContextDto.builder()
+            .adjustedTemperature(20.0)
+            .currentMonth(Month.APRIL)
+            .isRainingOrSnowing(false)
+            .build();
+
+        doReturn(0.8).when(itemSelectorEngine).calculateScore(clothes, 20.0, Month.APRIL, false);
+        doReturn(OotdDto.builder().name("단일 옷").build()).when(clothesMapper).toOotdDto(any(Clothes.class));
+
+        // when
+        List<OotdDto> result = itemSelectorEngine.createRecommendation(List.of(clothes), context, 0L, Map.of());
+
+        // then
+        assertThat(result).extracting("name").contains("단일 옷");
+    }
+
+    @Test
+    void 동일_점수_후보_여러개면_균등_샘플링된다() {
+
+        // given
+        List<Double> scores = List.of(0.5, 0.5, 0.5, 0.5);
+        long seed = 123L;
+
+        // when
+        int sample = itemSelectorEngine.softmaxSample(scores, seed);
+
+        // then
+        assertThat(sample).isBetween(0, 3);
+    }
+
+    @Test
+    void 속성명_오타_입력시_기본값으로_처리된다() {
+
+        // given
+        ClothesAttribute wrongAttr = ClothesAttribute.builder()
+            .definition(ClothesAttributeDef.createClothesAttributeDef("두께오타", List.of("얇음", "보통", "두꺼움")))
+            .value("얇음")
+            .build();
+        Clothes clothes = Clothes.builder()
+            .name("오타 옷")
+            .type(ClothesType.TOP)
+            .attributes(List.of(wrongAttr))
+            .build();
+
+        // when
+        double score = itemSelectorEngine.calculateScore(clothes, 30, Month.JUNE, false);
+
+        // then
+        assertThat(score).isGreaterThan(0.0);
+    }
+
+    @Test
     void 옷장이_비어있으면_빈_옷추천_리스트를_반환한다() {
 
         // given
@@ -412,5 +552,22 @@ public class ItemSelectorEngineTest {
 
         // then
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void 속성값_누락시_기본값으로_점수_계산된다() {
+
+        // given
+        Clothes clothes = Clothes.builder()
+            .name("속성 없는 옷")
+            .type(ClothesType.TOP)
+            .attributes(List.of())
+            .build();
+
+        // when
+        double score = itemSelectorEngine.calculateScore(clothes, 20, Month.APRIL, false);
+
+        // then
+        assertThat(score).isGreaterThan(0.0);
     }
 }
