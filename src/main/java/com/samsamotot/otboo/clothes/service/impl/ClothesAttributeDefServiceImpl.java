@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +36,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
     private final ClothesAttributeDefRepository defRepository;
     private final ClothesAttributeDefMapper defMapper;
 
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     @Override
     public ClothesAttributeDefDto create(ClothesAttributeDefCreateRequest request) {
@@ -60,7 +61,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
         return defMapper.toDto(saved);
     }
 
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     @Override
     public ClothesAttributeDefDto update(UUID defId, ClothesAttributeDefUpdateRequest request) {
@@ -111,7 +112,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
         return result;
     }
 
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     @Override
     public void delete(UUID defId) {
@@ -123,7 +124,6 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
         defRepository.delete(def);
     }
 
-//    @PreAuthorize("hasRole('ADMIN')")
     @Transactional(readOnly = true)
     @Override
     public List<ClothesAttributeDefDto> findAll(String sortBy, String sortDirection,

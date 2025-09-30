@@ -1,4 +1,5 @@
 package com.samsamotot.otboo.clothes.service;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -6,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -23,6 +25,7 @@ import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeOption;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.exception.ClothesNotFoundException;
+import com.samsamotot.otboo.clothes.exception.ClothesOwnerMismatchException;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
@@ -33,9 +36,6 @@ import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.storage.S3ImageStorage;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -53,6 +53,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -97,7 +98,7 @@ class ClothesServiceTest {
             UUID ownerId = mockUser.getId();
 
             ClothesCreateRequest request = new ClothesCreateRequest(
-                ownerId,
+                UUID.randomUUID(),
                 "부들부들 바지",
                 ClothesType.BOTTOM,
                 Collections.emptyList()
@@ -109,7 +110,7 @@ class ClothesServiceTest {
             when(clothesRepository.save(any(Clothes.class))).thenReturn(savedClothes);
 
             // when
-            ClothesDto result = clothesService.create(request);
+            ClothesDto result = clothesService.create(ownerId, request);
 
             // then
             assertThat(result.name()).isEqualTo("부들부들 바지");
@@ -125,7 +126,7 @@ class ClothesServiceTest {
             ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
             ClothesAttributeDto attrDto = new ClothesAttributeDto(defEntity.getId(), "봄");
             ClothesCreateRequest request = new ClothesCreateRequest(
-                ownerId,
+                UUID.randomUUID(),
                 "부들부들 티셔츠",
                 ClothesType.TOP,
                 List.of(attrDto)
@@ -138,7 +139,7 @@ class ClothesServiceTest {
             when(clothesRepository.save(any(Clothes.class))).thenReturn(savedClothes);
 
             // when
-            ClothesDto result = clothesService.create(request);
+            ClothesDto result = clothesService.create(ownerId, request);
 
             // then
             assertThat(result.attributes()).hasSize(1);
@@ -153,7 +154,7 @@ class ClothesServiceTest {
             UUID ownerId = mockUser.getId();
 
             ClothesCreateRequest request = new ClothesCreateRequest(
-                ownerId,
+                UUID.randomUUID(),
                 "부들부들 셔츠",
                 ClothesType.TOP,
                 Collections.emptyList()
@@ -175,7 +176,7 @@ class ClothesServiceTest {
             when(s3ImageStorage.uploadImage(imageFile, "clothes/")).thenReturn(mockImageUrl);
 
             // when
-            ClothesDto result = clothesService.create(request, imageFile);
+            ClothesDto result = clothesService.create(ownerId, request, imageFile);
 
             // then
             assertThat(result.name()).isEqualTo("부들부들 셔츠");
@@ -194,7 +195,7 @@ class ClothesServiceTest {
             ClothesAttributeDto attrDto = new ClothesAttributeDto(defEntity.getId(), "봄");
 
             ClothesCreateRequest request = new ClothesCreateRequest(
-                ownerId,
+                UUID.randomUUID(),
                 "부들부들 티셔츠",
                 ClothesType.TOP,
                 List.of(attrDto)
@@ -218,7 +219,7 @@ class ClothesServiceTest {
             when(s3ImageStorage.uploadImage(imageFile, "clothes/")).thenReturn(mockImageUrl);
 
             // when
-            ClothesDto result = clothesService.create(request, imageFile);
+            ClothesDto result = clothesService.create(ownerId, request, imageFile);
 
             // then
             assertThat(result.name()).isEqualTo("부들부들 티셔츠");
@@ -236,7 +237,7 @@ class ClothesServiceTest {
         @BeforeEach
         void setUpMapper() {
             // 수정 테스트에서만 mapper 스텁 필요
-            when(clothesMapper.toClothesDto(any(Clothes.class)))
+            lenient().when(clothesMapper.toClothesDto(any(Clothes.class)))
                 .thenAnswer(invocation -> {
                     Clothes c = invocation.getArgument(0);
                     return new ClothesDto(
@@ -262,7 +263,11 @@ class ClothesServiceTest {
         @Test
         void 의상_이름과_타입을_수정할_수_있어야_한다() {
             // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
             Clothes clothes = Clothes.createClothes("옛날 셔츠", ClothesType.BOTTOM, mockUser);
+
             ClothesUpdateRequest updateRequest = new ClothesUpdateRequest(
                 "신상 셔츠",
                 ClothesType.TOP,
@@ -273,7 +278,7 @@ class ClothesServiceTest {
             when(clothesRepository.save(any(Clothes.class))).thenReturn(clothes);
 
             // when
-            ClothesDto result = clothesService.update(clothes.getId(), updateRequest);
+            ClothesDto result = clothesService.update(clothes.getId(), ownerId, updateRequest);
 
             // then
             assertThat(result.name()).isEqualTo("신상 셔츠");
@@ -283,6 +288,9 @@ class ClothesServiceTest {
         @Test
         void 기존_속성의_값을_수정할_수_있어야_한다() {
             // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
             ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
             Clothes clothes = Clothes.createClothes("계절 셔츠", ClothesType.TOP, mockUser);
 
@@ -300,7 +308,7 @@ class ClothesServiceTest {
             when(clothesRepository.save(any(Clothes.class))).thenReturn(clothes);
 
             // when
-            ClothesDto result = clothesService.update(clothes.getId(), updateRequest);
+            ClothesDto result = clothesService.update(clothes.getId(), ownerId, updateRequest);
 
             // then
             assertThat(result.attributes()).hasSize(1);
@@ -310,6 +318,9 @@ class ClothesServiceTest {
         @Test
         void 새로운_속성을_추가할_수_있어야_한다() {
             // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
             Clothes clothes = Clothes.createClothes("속성 셔츠", ClothesType.TOP, mockUser);
 
             ClothesAttributeDef newDef = ClothesAttributeDefFixture.createClothesAttributeDef("사이즈", List.of("FREE", "L", "XL"));
@@ -325,7 +336,7 @@ class ClothesServiceTest {
             when(defRepository.findById(newDef.getId())).thenReturn(Optional.of(newDef));
 
             // when
-            ClothesDto result = clothesService.update(clothes.getId(), updateRequest);
+            ClothesDto result = clothesService.update(clothes.getId(), ownerId, updateRequest);
 
             // then
             assertThat(result.attributes()).hasSize(1);
@@ -336,6 +347,9 @@ class ClothesServiceTest {
         @Test
         void 이미지와_속성을_함께_수정할_수_있어야_한다() {
             // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
             Clothes clothes = Clothes.createClothes("이미지 셔츠", ClothesType.TOP, mockUser);
 
             ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef("색상", List.of("빨강","검정"));
@@ -360,13 +374,42 @@ class ClothesServiceTest {
             when(s3ImageStorage.uploadImage(newImage, "clothes/")).thenReturn(mockImageUrl);
 
             // when
-            ClothesDto result = clothesService.update(clothes.getId(), updateRequest, newImage);
+            ClothesDto result = clothesService.update(clothes.getId(), ownerId, updateRequest, newImage);
 
             // then
             assertThat(result.imageUrl()).isEqualTo(mockImageUrl);
             assertThat(result.attributes()).hasSize(1);
             assertThat(result.attributes().get(0).definitionName()).isEqualTo("색상");
             assertThat(result.attributes().get(0).value()).isEqualTo("빨강");
+        }
+
+        @Test
+        void 의상_객체의_등록자와_인증객체의_유저가_다르다면_예외가_발생한다() {
+            // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
+            UUID userId = UUID.randomUUID();
+            User mockUser2 = UserFixture.createUser();
+            ReflectionTestUtils.setField(mockUser2, "id", userId);
+
+            Clothes clothes = Clothes.createClothes("속성 셔츠", ClothesType.TOP, mockUser2);
+
+            ClothesAttributeDef newDef = ClothesAttributeDefFixture.createClothesAttributeDef("사이즈", List.of("FREE", "L", "XL"));
+
+            ClothesUpdateRequest updateRequest = new ClothesUpdateRequest(
+                "속성 셔츠",
+                ClothesType.TOP,
+                List.of(new ClothesAttributeDto(newDef.getId(), "FREE"))
+            );
+
+            when(clothesRepository.findById(clothes.getId())).thenReturn(Optional.of(clothes));
+
+            // when & then
+            assertThatThrownBy(() -> clothesService.update(clothes.getId(), ownerId, updateRequest))
+                .isInstanceOf(ClothesOwnerMismatchException.class)
+                .hasMessageContaining("해당 의상의 소유자가 아닙니다.");
+
         }
 
     }
@@ -378,6 +421,9 @@ class ClothesServiceTest {
         @Test
         void 의상을_삭제하면_DB와_S3에서_삭제된다() {
             // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
             Clothes clothes = Clothes.createClothes("청자켓", ClothesType.OUTER, mockUser);
             String imageUrl = "https://s3.test-bucket/clothes/test.png";
             clothes.updateImageUrl(imageUrl);
@@ -385,7 +431,7 @@ class ClothesServiceTest {
             when(clothesRepository.findById(clothes.getId())).thenReturn(Optional.of(clothes));
 
             // when
-            clothesService.delete(clothes.getId());
+            clothesService.delete(ownerId, clothes.getId());
 
             // then
             verify(clothesRepository).delete(clothes);
@@ -396,13 +442,16 @@ class ClothesServiceTest {
         @Test
         void 이미지가_없는_의상은_S3삭제가_호출되지_않는다() {
             // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
             Clothes clothes = Clothes.createClothes("바지", ClothesType.BOTTOM, mockUser);
 
             when(clothesRepository.findById(clothes.getId()))
                 .thenReturn(Optional.of(clothes));
 
             // when
-            clothesService.delete(clothes.getId());
+            clothesService.delete(ownerId, clothes.getId());
 
             // then
             verify(clothesRepository).findById(clothes.getId());
@@ -414,16 +463,38 @@ class ClothesServiceTest {
         void 의상이_존재하지_않는다면_예외가_발생한다() {
             // given
             UUID notExistId = UUID.randomUUID();
+            UUID ownerId = UUID.randomUUID();
+
             when(clothesRepository.findById(notExistId))
                 .thenReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> clothesService.delete(notExistId))
+            assertThatThrownBy(() -> clothesService.delete(ownerId, notExistId))
                 .isInstanceOf(ClothesNotFoundException.class);
 
             verify(clothesRepository).findById(notExistId);
             verify(clothesRepository, never()).delete(any());
             verify(s3ImageStorage, never()).deleteImage(any());
+        }
+
+        @Test
+        void 의상_객체의_등록자와_인증객체의_유저가_다르다면_예외가_발생한다() {
+            // given
+            UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
+
+            UUID userId = UUID.randomUUID();
+            User mockUser2 = UserFixture.createUser();
+            ReflectionTestUtils.setField(mockUser2, "id", userId);
+
+            Clothes clothes = Clothes.createClothes("속성 셔츠", ClothesType.TOP, mockUser2);
+
+            when(clothesRepository.findById(clothes.getId())).thenReturn(Optional.of(clothes));
+
+            // when & then
+            assertThatThrownBy(() -> clothesService.delete(ownerId, clothes.getId()))
+                .isInstanceOf(ClothesOwnerMismatchException.class)
+                .hasMessageContaining("해당 의상의 소유자가 아닙니다.");
         }
     }
 
@@ -435,9 +506,10 @@ class ClothesServiceTest {
         void 조건_없이_조회하면_전체_의상_목록이_조회되어야_한다() {
             // given
             UUID ownerId = UUID.randomUUID();
+            ReflectionTestUtils.setField(mockUser, "id", ownerId);
 
             ClothesSearchRequest request = ClothesSearchRequest.builder()
-                .ownerId(ownerId)
+                .ownerId(UUID.randomUUID())
                 .limit(10)
                 .build();
 
@@ -448,8 +520,8 @@ class ClothesServiceTest {
             Pageable pageable = PageRequest.of(0, 10);
             Slice<Clothes> mockSlice = new SliceImpl<>(expectedList, pageable, false);
 
-            when(clothesRepository.findClothesWithCursor(request, pageable)).thenReturn(mockSlice);
-            when(clothesRepository.totalElementCount(request)).thenReturn(2L);
+            when(clothesRepository.findClothesWithCursor(ownerId, request, pageable)).thenReturn(mockSlice);
+            when(clothesRepository.totalElementCount(ownerId, request)).thenReturn(2L);
 
             ClothesDto clothesDto1 = mock(ClothesDto.class);
             ClothesDto clothesDto2 = mock(ClothesDto.class);
@@ -458,7 +530,7 @@ class ClothesServiceTest {
             when(clothesMapper.toClothesDto(expectedClothes2)).thenReturn(clothesDto2);
 
             // when
-            CursorResponse<ClothesDto> result = clothesService.find(request);
+            CursorResponse<ClothesDto> result = clothesService.find(ownerId, request);
 
             // then
             assertAll(
@@ -468,8 +540,8 @@ class ClothesServiceTest {
                 () -> assertFalse(result.hasNext())
             );
 
-            verify(clothesRepository).findClothesWithCursor(request, pageable);
-            verify(clothesRepository).totalElementCount(request);
+            verify(clothesRepository).findClothesWithCursor(ownerId, request, pageable);
+            verify(clothesRepository).totalElementCount(ownerId, request);
             verify(clothesMapper).toClothesDto(expectedClothes1);
             verify(clothesMapper).toClothesDto(expectedClothes2);
         }
