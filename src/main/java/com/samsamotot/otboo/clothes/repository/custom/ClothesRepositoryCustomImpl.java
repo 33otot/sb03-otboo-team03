@@ -29,9 +29,9 @@ public class ClothesRepositoryCustomImpl implements ClothesRepositoryCustom {
 
     // 의상 목록 조회하는 QueryDsl 메서드
     @Override
-    public Slice<Clothes> findClothesWithCursor(ClothesSearchRequest request, Pageable pageable) {
+    public Slice<Clothes> findClothesWithCursor(UUID ownerId, ClothesSearchRequest request, Pageable pageable) {
 
-        BooleanBuilder builder = buildCondition(request);
+        BooleanBuilder builder = buildCondition(ownerId, request);
 
         // 커서 조건 추가
         cursorCondition(builder, request);
@@ -87,10 +87,10 @@ public class ClothesRepositoryCustomImpl implements ClothesRepositoryCustom {
     }
 
     // 조회 조건 build에 넣기
-    BooleanBuilder buildCondition(ClothesSearchRequest request) {
+    BooleanBuilder buildCondition(UUID ownerId, ClothesSearchRequest request) {
         BooleanBuilder builder = new BooleanBuilder();
 
-        builder.and(clothes.owner.id.eq(request.ownerId()));
+        builder.and(clothes.owner.id.eq(ownerId));
 
         // 의상 타입 일치 (완전 일치)
         if (request.typeEqual() != null){
@@ -102,9 +102,9 @@ public class ClothesRepositoryCustomImpl implements ClothesRepositoryCustom {
 
     // totalElement 구하기
     @Override
-    public long totalElementCount(ClothesSearchRequest request) {
+    public long totalElementCount(UUID ownerId, ClothesSearchRequest request) {
 
-        BooleanBuilder builder = buildCondition(request);
+        BooleanBuilder builder = buildCondition(ownerId, request);
 
         Long count = queryFactory
             .select(clothes.count())

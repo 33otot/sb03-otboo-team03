@@ -36,12 +36,13 @@ public enum ErrorCode {
     CLOTHES_NOT_FOUND(HttpStatus.NOT_FOUND, "CL001", "의상을 찾을 수 없습니다."),
     INVALID_CLOTHES_TYPE(HttpStatus.BAD_REQUEST, "CL002", "올바르지 않은 의상 타입입니다."),
     CLOTHES_ATTRIBUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "CL003", "의상 속성을 찾을 수 없습니다."),
+    CLOTHES_OWNER_MISMATCH(HttpStatus.FORBIDDEN, "CL004", "해당 의상의 소유자가 아닙니다."),
 
-    CLOTHES_ATTRIBUTE_DEF_NOT_FOUND(HttpStatus.NOT_FOUND, "CL004", "의상 속성 정의를 찾을 수 없습니다."),
-    CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS(HttpStatus.CONFLICT, "CL005", "이미 존재하는 의상 속성 정의입니다."),
+    CLOTHES_ATTRIBUTE_DEF_NOT_FOUND(HttpStatus.NOT_FOUND, "CL005", "의상 속성 정의를 찾을 수 없습니다."),
+    CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS(HttpStatus.CONFLICT, "CL006", "이미 존재하는 의상 속성 정의입니다."),
 
-    INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "CL006", "올바르지 않은 이미지 형식입니다."),
-    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CL007", "이미지 업로드에 실패했습니다."),
+    INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "CL007", "올바르지 않은 이미지 형식입니다."),
+    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CL008", "이미지 업로드에 실패했습니다."),
 
     // 피드 관련 에러
     FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "FD001", "피드를 찾을 수 없습니다."),
