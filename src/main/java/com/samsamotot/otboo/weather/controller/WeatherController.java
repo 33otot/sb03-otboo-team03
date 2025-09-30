@@ -82,8 +82,9 @@ public class WeatherController implements WeatherApi {
                 .body(location);
     }
 
+    @Override
     @GetMapping
-    public ResponseEntity<List<WeatherDto>> getSixDayWeather(
+    public ResponseEntity<List<WeatherDto>> getWeatherList(
             @RequestParam double longitude,
             @RequestParam double latitude
     ) {

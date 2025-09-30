@@ -3,10 +3,12 @@ package com.samsamotot.otboo.user.service.impl;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.profile.entity.Profile;
+import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
-import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.entity.Provider;
+import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.exception.DuplicateEmailException;
 import com.samsamotot.otboo.user.mapper.UserMapper;
 import com.samsamotot.otboo.user.repository.UserRepository;
@@ -34,7 +36,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
-    
+    private final ProfileRepository profileRepository;
+
     @Override
     public UserDto createUser(UserCreateRequest request) {
         log.info(SERVICE + "회원가입 시도 - 이메일: {}", request.getEmail());
@@ -55,10 +58,19 @@ public class UserServiceImpl implements UserService {
             .role(com.samsamotot.otboo.user.entity.Role.USER)
             .isLocked(false)
             .build();
-        
+
         // 사용자 저장
         User savedUser = userRepository.save(user);
-        
+
+        // 사용자 기본 프로필 생성
+        Profile userProfile = Profile.builder()
+                .user(user)
+                .name(user.getUsername())
+                .build();
+
+        // 사용자 프로필 저장
+        profileRepository.save(userProfile);
+
         log.info(SERVICE + "회원가입 성공 - 사용자 ID: {}, 이메일: {}", savedUser.getId(), savedUser.getEmail());
         
         // DTO 변환하여 반환 (매퍼 사용)

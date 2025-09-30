@@ -26,7 +26,6 @@ public class WeatherBatchTasklet implements Tasklet {
     private static final String TASKLET_NAME = "[WeatherBatchTasklet] ";
 
     private final WeatherService weatherService;
-    private final GridRepository gridRepository;
     private final LocationRepository locationRepository;
 
 

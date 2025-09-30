@@ -2,8 +2,10 @@ package com.samsamotot.otboo.weather.service.impl;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.location.client.KakaoApiClient;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.repository.LocationRepository;
+import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.weather.client.KmaClient;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
@@ -17,10 +19,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -44,14 +50,14 @@ public class WeatherServiceImpl implements WeatherService {
 
     private static final String SERVICE_NAME = "[WeatherServiceImpl] ";
 
+    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+
     private final KmaClient kmaClient;
     private final WeatherRepository weatherRepository;
-
-    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
     private final WeatherTransactionService weatherTransactionService;
-    private final LocationRepository locationRepository;
     private final WeatherMapper weatherMapper;
     private final GridRepository gridRepository;
+    private final LocationService locationService;
 
     @Async("weatherApiTaskExecutor")
     @Override
@@ -80,11 +86,11 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     @Override
+    @Transactional
     public List<WeatherDto> getWeatherList(double longitude, double latitude) {
 
         // --- 1. 데이터 준비: Location, Grid 조회 ---
-        Location location = locationRepository.findByLongitudeAndLatitude(longitude, latitude)
-                .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_LOCATION));
+        Location location = locationService.findOrCreateLocation(longitude, latitude);
         Grid grid = location.getGrid();
 
         // --- 2. 데이터 조회 및 API 호출 (기존 코드와 동일) ---
