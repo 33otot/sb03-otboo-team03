@@ -15,9 +15,7 @@ import java.util.UUID;
  * Author       : dounguk
  * Date         : 2025. 9. 12.
  */
-
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
-
 
     @Query("""
         select n from Notification n

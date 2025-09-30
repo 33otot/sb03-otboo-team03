@@ -14,7 +14,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,15 +47,33 @@ class SseControllerTest {
         String token = "dummy.jwt.token";
         UUID userId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
-        BDDMockito.given(jwtTokenProvider.getUserIdFromToken(eq(token)))
+        given(jwtTokenProvider.getUserIdFromToken(eq(token)))
             .willReturn(userId);
-        BDDMockito.given(sseService.createConnection(eq(userId)))
+        given(sseService.createConnection(eq(userId)))
             .willReturn(new SseEmitter(Long.MAX_VALUE));
 
-        // when & then
+        // when n then
         mockMvc.perform(get("/api/sse")
                 .header("Authorization", "Bearer " + token)
                 .accept(MediaType.TEXT_EVENT_STREAM))
             .andExpect(status().isOk());
+    }
+
+    @Test
+    void lastEventId_헤더를_서비스로_전달한다() throws Exception {
+        UUID userId = UUID.randomUUID();
+        given(jwtTokenProvider.getUserIdFromToken("t")).willReturn(userId);
+
+        String lastId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/api/sse")
+                .header("Authorization", "Bearer t")
+                .header("Last-Event-ID", lastId)
+                .accept(MediaType.TEXT_EVENT_STREAM))
+            .andExpect(status().isOk());
+
+        then(sseService).should()
+            .replayMissedEvents(eq(userId), eq(lastId), org.mockito.ArgumentMatchers.isNull());
+
     }
 }

@@ -47,10 +47,13 @@ public class SseController implements SseApi {
 
         String token = authHeader.substring(7);
         UUID userId = jwtTokenProvider.getUserIdFromToken(token);
+        String lastEventId = request.getHeader("Last-Event-ID");
 
         log.info(SSE_CONTROLLER + "커넷션 요청 userId: {}", userId);
         SseEmitter emitter = sseService.createConnection(userId);
         log.info(SSE_CONTROLLER + " 성공 userId: {}", userId);
+
+        sseService.replayMissedEvents(userId, lastEventId, emitter);
 
         return emitter;
     }

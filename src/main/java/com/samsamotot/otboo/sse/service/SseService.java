@@ -16,4 +16,6 @@ public interface SseService {
     SseEmitter createConnection(UUID userId);
 
     void sendNotification(UUID userId, String notificationData);
+
+    void replayMissedEvents(UUID userId, String lastEventId, SseEmitter emitter);
 }

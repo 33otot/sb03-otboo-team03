@@ -1,6 +1,5 @@
 package com.samsamotot.otboo.sse.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.security.jwt.JwtTokenProvider;
 import com.samsamotot.otboo.sse.service.SseServiceImpl;
 import org.junit.jupiter.api.DisplayName;
@@ -9,13 +8,11 @@ import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -25,7 +22,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,9 +39,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("SSE 통합 테스트")
 public class SseIntegrationTest {
 
-    @Autowired private org.springframework.test.web.servlet.MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @Autowired private SseServiceImpl sseService;
+    @Autowired
+    private SseServiceImpl sseService;
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
@@ -81,16 +79,27 @@ public class SseIntegrationTest {
                 .accept(MediaType.TEXT_EVENT_STREAM))
             .andExpect(status().isOk());
 
-        awaitTrue(() -> connections().containsKey(userId), 300);
+        awaitTrue(() -> connections().containsKey(userId), 500);
 
         class FailingEmitter extends SseEmitter {
             FailingEmitter() { super(Long.MAX_VALUE); }
-            @Override public void send(SseEventBuilder builder) throws IOException { throw new IOException("boom"); }
+            @Override public void send(SseEventBuilder builder) throws IOException {
+                throw new IOException("boom");
+            }
         }
         connections().put(userId, new FailingEmitter());
 
+        String json = """
+            {
+              "id": "%s",
+              "title": "t",
+              "content": "c",
+              "level": "INFO"
+            }
+            """.formatted(UUID.randomUUID());
+
         // when
-        assertDoesNotThrow(() -> sseService.sendNotification(userId, "hello"));
+        assertDoesNotThrow(() -> sseService.sendNotification(userId, json));
 
         // then
         assertFalse(connections().containsKey(userId));
