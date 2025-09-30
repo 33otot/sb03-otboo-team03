@@ -11,7 +11,8 @@ INSERT INTO users (id, email, username, password, provider, role, is_locked, cre
 ('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
 ('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
 ('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000006', 'huindol@otboo.com', '흰돌', '$2a$12$EKL0OcxBp/kHsKMJhqpJMe64YQCDzuKRQ4PFnhRJNHFVxKxojbKJ2', 'LOCAL', 'USER', FALSE, NOW(), NOW());
+('a0000000-0000-0000-0000-000000000006', 'huindol@otboo.com', '흰돌', '$2a$12$EKL0OcxBp/kHsKMJhqpJMe64YQCDzuKRQ4PFnhRJNHFVxKxojbKJ2', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000007', 'd@d.com', 'doungukKim', '$2a$12$gvauG4PHUVSIrOLjYFJTieRc8OKO.LBwCbRX2kbdXHC5dnOkCg56C', 'LOCAL', 'USER', FALSE, NOW(), NOW());
 
 
 -- grids (5)

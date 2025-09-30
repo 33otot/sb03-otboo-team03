@@ -6,7 +6,9 @@ import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
+import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.user.mapper.UserMapper;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,7 @@ public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
     private final FollowMapper followMapper;
+    private final NotificationService notificationService;
 
     /**
      * 새로운 팔로우 관계를 생성한다.
@@ -101,10 +104,22 @@ public class FollowServiceImpl implements FollowService {
 
         try {
             Follow savedFollow = followRepository.save(follow);
-            log.info(FOLLOW_SERVICE + "팔로우 생성 완료: followId={}, followerId={}, followeeId={}", savedFollow.getId(), follower.getId(), followee.getId());
+            log.info(FOLLOW_SERVICE + "팔로우 생성 완료: followId={}, followerId={}, followeeId={}",
+                savedFollow.getId(), follower.getId(), followee.getId());
+
+            try {
+                notificationService.notifyFollow(follower.getId(), followee.getId());
+                log.info(FOLLOW_SERVICE + "팔로우 알림 발행 완료: 팔로우당한 사용자={}", followee.getId());
+            } catch (Exception e) {
+                log.error(FOLLOW_SERVICE + "팔로우 알림 발행 실패 - 팔로우 당한 사용자: {}, 에러: {}",
+                    followee.getId(), e.getMessage(), e);
+            }
+
             return followMapper.toDto(savedFollow);
+
         } catch (DataIntegrityViolationException e) {
-            log.warn(FOLLOW_SERVICE + "동시성 중복 팔로우 감지: followerId={}, followeeId={}", follower.getId(), followee.getId());
+            log.warn(FOLLOW_SERVICE + "동시성 중복 팔로우 감지: followerId={}, followeeId={}",
+                follower.getId(), followee.getId());
             throw new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST);
         }
     }
