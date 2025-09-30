@@ -277,15 +277,6 @@ public class ClothesServiceImpl implements ClothesService {
         log.info(SERVICE_NAME + "find - slice 생성을 위해 clothesRepository.findClothesWithCursor 호출");
         Slice<Clothes> slice = clothesRepository.findClothesWithCursor(ownerId, request, pageable);
 
-        // 소유자 검증
-        log.info(SERVICE_NAME + "find - 소유자 검증 시작");
-        boolean mismatchExists = slice.getContent().stream()
-            .anyMatch(clothes -> !clothes.getOwner().getId().equals(ownerId));
-
-        if (mismatchExists) {
-            throw new ClothesOwnerMismatchException();
-        }
-
         // Dto 변환
         List<ClothesDto> returnDto = slice.getContent().stream()
             .map(clothesMapper::toClothesDto)
