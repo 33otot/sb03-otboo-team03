@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 import java.util.UUID;
@@ -125,5 +124,4 @@ public class SseServiceImpl implements SseService {
             }
         }
     }
-
 }

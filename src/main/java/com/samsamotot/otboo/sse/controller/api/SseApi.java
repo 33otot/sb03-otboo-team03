@@ -27,7 +27,6 @@ public interface SseApi {
         parameters = {
             @Parameter(
                 name = "Authorization",
-                description = "Bearer JWT 토큰 (예: `Bearer eyJhbGciOiJIUzI1NiIsInR...`)",
                 required = true
             )
         },
