@@ -7,6 +7,7 @@ import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.mapper.DirectMessageMapper;
 import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
+import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,8 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     private final UserRepository userRepository;
 
     private final DirectMessageMapper directMessageMapper;
+
+    private final NotificationService notificationService;
 
     @Override
     public DirectMessageListResponse getMessages(MessageRequest request) {
@@ -126,5 +129,4 @@ public class DirectMessageServiceImpl implements DirectMessageService {
                 return new OtbooException(ErrorCode.UNAUTHORIZED);
             });
     }
-
 }

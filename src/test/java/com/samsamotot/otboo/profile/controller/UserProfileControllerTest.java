@@ -49,6 +49,7 @@ public class UserProfileControllerTest {
         void 존재하는_사용자_조회하면_200_DTO() throws Exception {
             // Given
             Profile profile = ProfileFixture.perfectProfileWithNoImage();
+
             UUID userId = UUID.randomUUID();
 
             ProfileDto result = ProfileDto.builder()

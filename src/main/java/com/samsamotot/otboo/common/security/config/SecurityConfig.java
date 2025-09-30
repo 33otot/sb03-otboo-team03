@@ -3,8 +3,6 @@ package com.samsamotot.otboo.common.security.config;
 
 import com.samsamotot.otboo.common.security.csrf.SpaCsrfTokenRequestHandler;
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
-import java.util.Arrays;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -23,6 +21,9 @@ import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Spring Security 설정 클래스
@@ -86,7 +87,10 @@ public class SecurityConfig {
                     "/api/users",
                     "/api/auth/csrf-token", // CSRF 토큰 조회 허용
                     "/api/weathers/**",
-                    "/actuator/**"
+                    "/actuator/**",
+                    "/api/sse",
+                    "/api/follows/**",
+                    "/api/direct-messages/**"
                 )
             )
             
@@ -113,13 +117,17 @@ public class SecurityConfig {
                     "/api/weathers/**", // 공개 API (인증 불필요)
                     "/actuator/**",
                     "/swagger-ui/**",
-                    "/v3/api-docs/**"
+                    "/v3/api-docs/**",
+                    "/api/follows/**",
+                    "/api/direct-messages/**"
                 ).permitAll()
 
                 // 의상 속성 정의 C/U/D 기능은 ADMIN 유저만 가능
                 .requestMatchers(HttpMethod.POST,"/api/clothes/attribute-defs").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
+
+                .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
 
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()

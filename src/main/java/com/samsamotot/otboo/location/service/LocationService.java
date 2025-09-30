@@ -26,4 +26,12 @@ public interface LocationService {
      * @return WeatherAPILocation 위치 정보 객체
      */
     WeatherAPILocation getCurrentLocation(double longitude, double latitude);
+
+    /**
+     * 위경도를 기반으로 Location을 조회하고, 없으면 새로 생성하여 반환합니다.
+     * @param longitude 경도
+     * @param latitude 위도
+     * @return 조회되거나 새로 생성된 Location 엔티티
+     */
+    Location findOrCreateLocation(double longitude, double latitude);
 }
