@@ -7,8 +7,10 @@ import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
 import com.samsamotot.otboo.user.dto.UserListRequest;
+import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.entity.Provider;
+import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.exception.DuplicateEmailException;
 import com.samsamotot.otboo.user.mapper.UserMapper;
 import com.samsamotot.otboo.user.repository.UserRepository;
@@ -144,5 +146,29 @@ public class UserServiceImpl implements UserService {
             .sortBy(request.sortBy())
             .sortDirection(request.sortDirection())
             .build();
+    }
+    
+    @Override
+    public UserDto updateUserRole(UUID userId, UserRoleUpdateRequest request) {
+        log.info(SERVICE + "권한 수정 시도 - 사용자 ID: {}, 새로운 권한: {}", userId, request.role());
+        
+        // 사용자 조회
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> {
+                log.warn(SERVICE + "권한 수정 시 사용자 조회 실패 - 사용자 ID: {}", userId);
+                return new OtbooException(ErrorCode.USER_NOT_FOUND);
+            });
+        
+        // 현재 권한 저장
+        Role previousRole = user.getRole();
+        
+        // 권한 변경
+        user.changeRole(request.role());
+        
+        log.info(SERVICE + "권한 수정 완료 - 사용자 ID: {}, 이전 권한: {}, 새로운 권한: {}", 
+            userId, previousRole, request.role());
+        
+        // DTO 변환하여 반환
+        return userMapper.toDto(user);
     }
 }
