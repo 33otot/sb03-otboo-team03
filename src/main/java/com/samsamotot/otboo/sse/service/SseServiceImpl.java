@@ -42,7 +42,7 @@ public class SseServiceImpl implements SseService {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
 
         emitter.onCompletion(() -> {
-            log.debug(SSE_SERVICE + " 연결 성공 userId: {}", userId);
+            log.debug(SSE_SERVICE + " 연결 성공 후 종료 userId: {}", userId);
             connections.remove(userId);
         });
 
