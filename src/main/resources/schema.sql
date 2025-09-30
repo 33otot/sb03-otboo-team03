@@ -62,7 +62,8 @@ CREATE TABLE IF NOT EXISTS locations
 
     CONSTRAINT pk_locations PRIMARY KEY (id),
     CONSTRAINT ck_locations_lat CHECK (latitude BETWEEN -90 AND 90),
-    CONSTRAINT ck_locations_lng CHECK (longitude BETWEEN -180 AND 180)
+    CONSTRAINT ck_locations_lng CHECK (longitude BETWEEN -180 AND 180),
+    CONSTRAINT uq_locations UNIQUE (latitude, longitude)
 );
 
 ALTER TABLE locations
