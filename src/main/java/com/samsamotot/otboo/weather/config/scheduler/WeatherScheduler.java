@@ -21,7 +21,7 @@ public class WeatherScheduler {
 
 //    @Scheduled(cron = "0 */5 * * * *") // 테스트용 5분마다 배치 수집
     // 3시간 주기로 매시 10분에 실행 (2:10, 5:10, 8:10, 11:10, 14:10, 17:10, 20:10, 23:10)
-    @Scheduled(cron = "0 10 2,5,8,11,14,17,20,23 * * *")
+    @Scheduled(cron = "0 10 2,5,8,11,14,17,20,23 * * *", zone = "Asia/Seoul")
     public void runWeatherJob() {
         try {
             // 매번 다른 Job ID를 부여하여 Job이 재실행됨

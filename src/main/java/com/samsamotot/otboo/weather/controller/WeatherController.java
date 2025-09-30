@@ -82,8 +82,9 @@ public class WeatherController implements WeatherApi {
                 .body(location);
     }
 
+    @Override
     @GetMapping
-    public ResponseEntity<List<WeatherDto>> getSixDayWeather(
+    public ResponseEntity<List<WeatherDto>> getWeatherList(
             @RequestParam double longitude,
             @RequestParam double latitude
     ) {
@@ -91,7 +92,7 @@ public class WeatherController implements WeatherApi {
 
         List<WeatherDto> weathers = weatherService.getWeatherList(longitude, latitude);
 
-        log.info(CONTROLLER_NAME + "날씨 데이터 조회 완료: longitude={}, latitude={}", longitude, latitude);
+        log.info(CONTROLLER_NAME + "날씨 데이터 조회 완료: longitude={}, latitude={}, weathers={}", longitude, latitude, weathers);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

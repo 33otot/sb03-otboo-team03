@@ -62,7 +62,8 @@ CREATE TABLE IF NOT EXISTS locations
 
     CONSTRAINT pk_locations PRIMARY KEY (id),
     CONSTRAINT ck_locations_lat CHECK (latitude BETWEEN -90 AND 90),
-    CONSTRAINT ck_locations_lng CHECK (longitude BETWEEN -180 AND 180)
+    CONSTRAINT ck_locations_lng CHECK (longitude BETWEEN -180 AND 180),
+    CONSTRAINT uq_locations UNIQUE (latitude, longitude)
 );
 
 ALTER TABLE locations
@@ -170,6 +171,7 @@ CREATE TABLE IF NOT EXISTS profiles
     gender VARCHAR(32),
     birth_date DATE,
     temperature_sensitivity DOUBLE PRECISION DEFAULT 3.0,
+    profile_image_url VARCHAR(255),
 
     CONSTRAINT pk_profiles PRIMARY KEY (id),
     CONSTRAINT fk_profiles_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,

@@ -40,4 +40,7 @@ public class Profile extends BaseEntity {
 
     @Column(name = "temperature_sensitivity")
     private Double temperatureSensitivity;
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
 }

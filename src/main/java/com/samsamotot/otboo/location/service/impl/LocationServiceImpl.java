@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -85,22 +86,7 @@ public class LocationServiceImpl implements LocationService {
         log.info(SERVICE_NAME + "위치 조회 시작: longitude={}, latitude={}", longitude, latitude);
 
         // 기존 위치 찾기
-        Location location = locationRepository.findByLongitudeAndLatitude(longitude, latitude)
-                .orElse(null);
-
-        if (location != null) {
-            // 기존 위치가 있는 경우
-            if (isLocationStale(location)) {
-                log.info(SERVICE_NAME + "기존 위치 데이터가 오래됨, 카카오 API로 갱신: {}", location.getId());
-                location = updateLocation(location, longitude, latitude);
-            } else {
-                log.info(SERVICE_NAME + "기존 위치 데이터 유효, 재사용: {}", location.getId());
-            }
-        } else {
-            // 기존 위치가 없는 경우 - 새로 생성
-            log.info(SERVICE_NAME + "기존 위치 없음, 카카오 API로 새 위치 생성");
-            location = createLocation(longitude, latitude);
-        }
+        Location location = findOrCreateLocation(longitude, latitude);
 
         Grid grid = location.getGrid();
 
@@ -154,9 +140,7 @@ public class LocationServiceImpl implements LocationService {
         location.setGrid(grid);
         location.setLocationNames(parseLocationNames(response));
 
-
-
-        Location savedLocation = locationRepository.save(location);
+        Location savedLocation = locationRepository.saveAndFlush(location);
         log.info(SERVICE_NAME + "기존 위치 업데이트 완료: {}", savedLocation.getId());
         return savedLocation;
     }
@@ -166,7 +150,6 @@ public class LocationServiceImpl implements LocationService {
 
         // WGS84 좌표를 기상청 격자 좌표로 변환
         KmaGridConverter.GridPoint gridPoint = KmaGridConverter.toGrid(latitude, longitude);
-
         Grid grid = findOrCreateGrid(gridPoint);
 
         // 새 위치 생성
@@ -177,7 +160,7 @@ public class LocationServiceImpl implements LocationService {
                 .locationNames(parseLocationNames(response))
                 .build();
 
-        Location savedLocation = locationRepository.save(newLocation);
+        Location savedLocation = locationRepository.saveAndFlush(newLocation);
         log.info(SERVICE_NAME + "새 위치 생성 완료: {}", savedLocation.getId());
         return savedLocation;
     }
@@ -217,12 +200,12 @@ public class LocationServiceImpl implements LocationService {
         try {
             log.info(SERVICE_NAME + "새로운 Grid 생성 시도: x={}, y={}", gridPoint.nx(), gridPoint.ny());
             Grid newGrid = Grid.builder().x(gridPoint.nx()).y(gridPoint.ny()).build();
-            return gridRepository.save(newGrid);
+            return gridRepository.saveAndFlush(newGrid);
         } catch (DataIntegrityViolationException e) {
             // 다른 트랜잭션에서 거의 동시에 생성하여 UNIQUE 제약조건 위반이 발생한 경우, 다시 조회하여 반환합니다.
-            log.warn(SERVICE_NAME + "Grid 동시 생성 충돌 발생, 기존 Grid를 다시 조회합니다: x={}, y={}", gridPoint.nx(), gridPoint.ny());
+            log.warn(SERVICE_NAME + "Grid 동시 생성 충돌 발생, 기존 Grid를 다시 조회: x={}, y={}", gridPoint.nx(), gridPoint.ny());
             return gridRepository.findByXAndY(gridPoint.nx(), gridPoint.ny())
-                    .orElseThrow(() -> new IllegalStateException("Failed to find grid after integrity violation. This should not happen."));
+                    .orElseThrow(() -> new IllegalStateException("데이터 정합성 위반 이후 위치 정보 탐색 실패. 일어나선 안되는 일이므로 로직에 심각한 오류가 있습니다."));
         }
     }
 
@@ -234,8 +217,37 @@ public class LocationServiceImpl implements LocationService {
                 .orElse(response.getDocuments().get(0));
 
         return List.of(
-                document.getRegion1DepthName(), document.getRegion2DepthName(),
-                document.getRegion3DepthName(), document.getRegion4DepthName()
+                Optional.ofNullable(document.getRegion1DepthName()).orElse(""),
+                Optional.ofNullable(document.getRegion2DepthName()).orElse(""),
+                Optional.ofNullable(document.getRegion3DepthName()).orElse(""),
+                Optional.ofNullable(document.getRegion4DepthName()).orElse("")
         ).stream().filter(Objects::nonNull).toList();
+    }
+
+    private Location findOrCreateLocation(double longitude, double latitude) {
+        // 1. 위치 조회
+        Optional<Location> locationOpt = locationRepository.findByLongitudeAndLatitude(longitude, latitude);
+
+        if (locationOpt.isPresent()) {
+            Location location = locationOpt.get();
+            // 2. 위치 정보 갱신 여부 확인
+            if (isLocationStale(location)) {
+                log.info(SERVICE_NAME + "기존 위치 데이터가 오래됨. 카카오 API로 갱신: {}", location.getLocationNames());
+                return updateLocation(location, longitude, latitude);
+            }
+            log.info(SERVICE_NAME + "기존 위치 데이터 유효, 재사용: {}", location.getLocationNames());
+            return location;
+        }
+
+        // 3. 위치 정보 없으면 생성
+        try {
+            log.info(SERVICE_NAME + "기존 위치 없음. 카카오 API로 새 위치 생성 시도");
+            return createLocation(longitude, latitude);
+        } catch (DataIntegrityViolationException e) {
+            // 4. 데이터 정합성 문제로 UNIQUE 제약 조건 위반 발생 시, 재조회 시도
+            log.warn(SERVICE_NAME + "Location 동시 생성 출동 발생, 기존 Location 다시 조회: longitude={}, latitude={}", longitude, latitude);
+            return  locationRepository.findByLongitudeAndLatitude(longitude, latitude)
+                    .orElseThrow(() -> new IllegalStateException("데이터 정합성 위반 이후 위치 정보 탐색 실패. 일어나선 안되는 일이므로 로직에 심각한 오류가 있습니다."));
+        }
     }
 }

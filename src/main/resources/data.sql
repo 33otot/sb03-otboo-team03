@@ -11,9 +11,7 @@ INSERT INTO users (id, email, username, password, provider, role, is_locked, cre
 ('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
 ('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
 ('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000006', 'huindol@otboo.com', '흰돌', '$2a$12$EKL0OcxBp/kHsKMJhqpJMe64YQCDzuKRQ4PFnhRJNHFVxKxojbKJ2', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
 ('a0000000-0000-0000-0000-000000000007', 'd@d.com', 'doungukKim', '$2a$12$gvauG4PHUVSIrOLjYFJTieRc8OKO.LBwCbRX2kbdXHC5dnOkCg56C', 'LOCAL', 'USER', FALSE, NOW(), NOW());
-
 
 -- grids (5)
 INSERT INTO grids (id, created_at, x, y) VALUES
@@ -21,9 +19,7 @@ INSERT INTO grids (id, created_at, x, y) VALUES
 ('c0000000-0000-0000-0000-000000000002', NOW(), 98, 76),  -- 부산
 ('c0000000-0000-0000-0000-000000000003', NOW(), 52, 38),  -- 제주
 ('c0000000-0000-0000-0000-000000000004', NOW(), 67, 100), -- 대전
-('c0000000-0000-0000-0000-000000000005', NOW(), 55, 124), -- 인천
-('c0000000-0000-0000-0000-000000000006', NOW(), 61, 126); -- 서울특별시 성동구 송정동
-
+('c0000000-0000-0000-0000-000000000005', NOW(), 55, 124); -- 인천
 
 -- locations (5) - referencing grids
 INSERT INTO locations (id, created_at, grid_id, latitude, longitude, location_names) VALUES
@@ -31,8 +27,7 @@ INSERT INTO locations (id, created_at, grid_id, latitude, longitude, location_na
 ('b0000000-0000-0000-0000-000000000002', NOW(), 'c0000000-0000-0000-0000-000000000002', 35.1796, 129.0756, '{"부산역"}'),
 ('b0000000-0000-0000-0000-000000000003', NOW(), 'c0000000-0000-0000-0000-000000000003', 33.4996, 126.5312, '{"제주공항"}'),
 ('b0000000-0000-0000-0000-000000000004', NOW(), 'c0000000-0000-0000-0000-000000000004', 36.3504, 127.3845, '{"대전역"}'),
-('b0000000-0000-0000-0000-000000000005', NOW(), 'c0000000-0000-0000-0000-000000000005', 37.4563, 126.7052, '{"인천국제공항"}'),
-('b0000000-0000-0000-0000-000000000006', NOW(), 'c0000000-0000-0000-0000-000000000006', 37.5527, 127.0668, '{"서울특별시, 성동구, 송정동, "}');
+('b0000000-0000-0000-0000-000000000005', NOW(), 'c0000000-0000-0000-0000-000000000005', 37.4563, 126.7052, '{"인천국제공항"}');
 
 -- clothes_attribute_defs (5)
 INSERT INTO clothes_attribute_defs (id, name, created_at, updated_at) VALUES
@@ -156,12 +151,12 @@ INSERT INTO notifications (id, receiver_id, created_at, title, content, level) V
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', NOW(), '계정 관련', '비밀번호 변경이 필요합니다.', 'CRITICAL');
 
 -- profiles (5)
-INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity) VALUES
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', NOW(), NOW(), '김유저일', 'MALE', '1990-01-01', 3.0),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', NOW(), NOW(), '이유저이', 'FEMALE', '1992-02-02', 4.0),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', NOW(), NOW(), '박유저삼', 'MALE', '1993-03-03', 2.5),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', NOW(), NOW(), '최유저사', 'FEMALE', '1994-04-04', 4.5),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5);
+INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity, profile_image_url) VALUES
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', NOW(), NOW(), '김유저일', 'MALE', '1990-01-01', 3.0, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', NOW(), NOW(), '이유저이', 'FEMALE', '1992-02-02', 4.0, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', NOW(), NOW(), '박유저삼', 'MALE', '1993-03-03', 2.5, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', NOW(), NOW(), '최유저사', 'FEMALE', '1994-04-04', 4.5, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5, null);
 
 -- direct_messages (5)
 INSERT INTO direct_messages (id, sender_id, receiver_id, created_at, message, is_read) VALUES

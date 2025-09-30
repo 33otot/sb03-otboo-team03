@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.weather.client;
 
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -9,11 +11,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -69,7 +69,12 @@ public class KmaClient {
                             .queryParam("ny", ny)
                             .build())
                 .retrieve()
-                .bodyToMono(WeatherForecastResponse.class);
+                .bodyToMono(WeatherForecastResponse.class)
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
+                        .filter(throwable -> throwable instanceof WebClientResponseException)
+                        .onRetryExhaustedThrow(((retryBackoffSpec, retrySignal) -> {
+                                throw new OtbooException(ErrorCode.API_RETRY_FAILURE, retrySignal.failure().getMessage());
+                        })));
     }
 
     /**
