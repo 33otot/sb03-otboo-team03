@@ -48,7 +48,7 @@ public class UserProfileControllerTest {
         @Test
         void 존재하는_사용자_조회하면_200_DTO() throws Exception {
             // Given
-            Profile profile = ProfileFixture.perfectProfileWithImage();
+            Profile profile = ProfileFixture.perfectProfileWithNoImage();
             UUID userId = UUID.randomUUID();
 
             ProfileDto result = ProfileDto.builder()
@@ -70,9 +70,9 @@ public class UserProfileControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.userId").value(userId.toString()))
                     .andExpect(jsonPath("$.name").value(result.name()))
-                    .andExpect(jsonPath("$.gender").value(result.gender().toString()))
+                    .andExpect(jsonPath("$.gender").value(result.gender().name()))
                     .andExpect(jsonPath("$.birthDate").value(result.birthDate().toString()))
-                    .andExpect(jsonPath("$.temperatureSensitivity").value(result.temperatureSensitivity().toString()))
+                    .andExpect(jsonPath("$.temperatureSensitivity").value(result.temperatureSensitivity()))
                     .andExpect(jsonPath("$.profileImageUrl").value(result.profileImageUrl()));
         }
 
@@ -88,7 +88,6 @@ public class UserProfileControllerTest {
             mockMvc.perform(get("/api/users/{userId}/profiles", userId))
                     .andExpect(status().isNotFound())
                     .andDo(print());
-
         }
     }
 }
