@@ -188,30 +188,26 @@ public class RecommendationServiceImpl implements RecommendationService {
         Map<Object, Object> redisMap = redisTemplate.opsForHash().entries("cooldownIdMap:" + userId);
         Map<ClothesType, UUID> cooldownIdMap = new HashMap<>();
         for (Map.Entry<Object, Object> entry : redisMap.entrySet()) {
-            ClothesType type = null;
-            UUID value = null;
-            if (entry.getKey() instanceof String) {
-                try {
-                    type = ClothesType.valueOf((String) entry.getKey());
-                } catch (IllegalArgumentException e) {
-                    log.warn(SERVICE + "Redis에서 조회한 의상 타입이 유효하지 않습니다: {}", entry.getKey());
-                    continue;
-                }
-            }
-            if (entry.getValue() instanceof String) {
-                value = UUID.fromString((String) entry.getValue());
-            } else if (entry.getValue() instanceof String) {
-                try {
-                    value = UUID.fromString((String) entry.getValue());
-                } catch (IllegalArgumentException e) {
-                    log.warn(SERVICE + "Redis에서 조회한 쿨타임 ID가 유효하지 않습니다: {}", entry.getValue());
-                    continue;
-                }
+            ClothesType type;
+            UUID value;
+
+            if (entry.getKey() == null || entry.getValue() == null) continue;
+
+            try {
+                type = ClothesType.valueOf(entry.getKey().toString());
+            } catch (IllegalArgumentException e) {
+                log.warn(SERVICE + "Redis에서 조회한 의상 타입이 유효하지 않습니다: {}", entry.getKey());
+                continue;
             }
 
-            if (type != null && value != null) {
-                cooldownIdMap.put(type, value);
+            try {
+                value = UUID.fromString(entry.getValue().toString());
+            } catch (IllegalArgumentException e) {
+                log.warn(SERVICE + "Redis에서 조회한 쿨타임 ID가 유효하지 않습니다: {}", entry.getValue());
+                continue;
             }
+
+            cooldownIdMap.put(type, value);
         }
         return cooldownIdMap;
     }

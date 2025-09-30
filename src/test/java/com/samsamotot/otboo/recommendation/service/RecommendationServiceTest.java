@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisCallback;
@@ -284,7 +282,7 @@ public class RecommendationServiceTest {
 
         // then
         verify(valueOperations, times(1)).set(eq(rollCountKey), eq(1L));
-        verify(hashOperations, times(1)).put(eq(cooldownKey), eq(topDto.type()), eq(topDto.clothesId().toString()));
+        verify(hashOperations, times(1)).put(eq(cooldownKey), eq(topDto.type().name()), eq(topDto.clothesId().toString()));
     }
 
     @Test
