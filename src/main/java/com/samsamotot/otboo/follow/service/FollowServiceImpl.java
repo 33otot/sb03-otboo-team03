@@ -119,7 +119,7 @@ public class FollowServiceImpl implements FollowService {
 
         } catch (DataIntegrityViolationException e) {
             log.warn(FOLLOW_SERVICE + "동시성 중복 팔로우 감지: followerId={}, followeeId={}",
-                follower.getId(), follower.getId());
+                follower.getId(), followee.getId());
             throw new OtbooException(ErrorCode.INVALID_FOLLOW_REQUEST);
         }
     }
