@@ -22,7 +22,8 @@ import java.util.UUID;
 @Transactional
 public class ProfileServiceImpl implements ProfileService {
 
-    private final String SERVICE = "[ProfileServiceImpl] ";
+    private static final String SERVICE = "[ProfileServiceImpl] ";
+
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
     private final ProfileMapper profileMapper;
