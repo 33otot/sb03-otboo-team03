@@ -5,19 +5,25 @@ import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
 import com.samsamotot.otboo.user.dto.UserListRequest;
+import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.service.UserService;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.UUID;
 
@@ -91,5 +97,33 @@ public class UserController implements UserApi {
             response.data().size(), response.totalCount());
         
         return ResponseEntity.ok(response);
+    }
+    
+    @Override
+    @PatchMapping("/{userId}/role")
+    public ResponseEntity<UserDto> updateRole(
+        @PathVariable UUID userId,
+        @Valid @RequestBody UserRoleUpdateRequest request
+    ) {
+        log.info(CONTROLLER + "권한 수정 요청 - 사용자 ID: {}, 새로운 권한: {}", userId, request.role());
+        
+        // ADMIN 권한 검증
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails)) {
+            log.warn(CONTROLLER + "권한 수정 실패 - 인증 정보 없음");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        if (!"ADMIN".equals(userDetails.getRole())) {
+            log.warn(CONTROLLER + "권한 수정 실패 - ADMIN 권한 필요, 현재 권한: {}", userDetails.getRole());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        UserDto result = userService.updateUserRole(userId, request);
+        
+        log.info(CONTROLLER + "권한 수정 완료 - 사용자 ID: {}, 변경된 권한: {}", userId, result.getRole());
+        
+        return ResponseEntity.ok(result);
     }
 }
