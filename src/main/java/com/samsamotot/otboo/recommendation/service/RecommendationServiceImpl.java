@@ -47,7 +47,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     private static final double SENSITIVITY_BASE = 2.5;     // 기준값 상수
     private static final double CORRECTION_FACTOR = 1.0;    // 보정 강도
 
-    private static final String SEVICE = "[RecommendationServiceImpl] ";
+    private static final String SERVICE = "[RecommendationServiceImpl] ";
 
     private final ProfileRepository profileRepository;
     private final WeatherRepository weatherRepository;
@@ -86,19 +86,18 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public RecommendationDto recommendClothes(UUID userId, UUID weatherId) {
 
+        log.debug(SERVICE + "의상 추천 시작: userId={}, weatherId={}", userId, weatherId);
         // 사용자 프로필 조회
         Profile userProfile = profileRepository.findByUserId(userId)
             .orElseThrow(() -> new OtbooException(ErrorCode.PROFILE_NOT_FOUND));
-
         // 날씨 정보 조회
         Weather weather = weatherRepository.findById(weatherId)
             .orElseThrow(() -> new OtbooException(ErrorCode.WEATHER_NOT_FOUND));
-
         // 사용자의 의상 목록 조회
         List<Clothes> clothesList = clothesRepository.findAllByOwnerId(userId);
 
         if (clothesList.isEmpty()) {
-            log.debug(SEVICE + "사용자 의상 목록이 비어 있습니다. userId: {}", userId);
+            log.debug(SERVICE + "사용자 의상 목록이 비어 있습니다. userId: {}", userId);
             throw new OtbooException(ErrorCode.CLOTHES_NOT_FOUND);
         }
 
@@ -108,11 +107,15 @@ public class RecommendationServiceImpl implements RecommendationService {
             : SENSITIVITY_BASE; // 기본값 적용
         double correction = clamp((sensitivity - SENSITIVITY_BASE) * CORRECTION_FACTOR, -2.5, 2.5);
 
+        double temperature = weather.getTemperatureCurrent() != null ? weather.getTemperatureCurrent() : 20.0;
+        double windSpeed = weather.getWindSpeed() != null ? weather.getWindSpeed() : 0.0;
+        double humidity = weather.getHumidityCurrent() != null ? weather.getHumidityCurrent() : 50.0;
+
         // 계절별 체감온도 계산 및 민감도 보정
         double adjustedTemperature = calculateFeelsLike(
-            weather.getTemperatureCurrent(),
-            weather.getWindSpeed(),
-            weather.getHumidityCurrent()
+            temperature,
+            windSpeed,
+            humidity
         ) + correction;
 
         // 강수(비/눈) 여부 확인
@@ -122,8 +125,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         Month month = LocalDate.now().getMonth();
 
         // Redis에서 rollCounter 조회 (추천 횟수)
-        long rollCounter = Optional.ofNullable((Long) redisTemplate.opsForValue().get("rollCounter:" + userId))
-            .orElse(0L);
+        long rollCounter = getRollcounter(userId);
 
         // Redis에서 cooldownIdMap 조회 및 변환 (의상 타입별 쿨타임 관리)
         Map<ClothesType, UUID> cooldownIdMap = getCooldownIdMap(userId);
@@ -152,15 +154,31 @@ public class RecommendationServiceImpl implements RecommendationService {
             // 쿨타임 맵 저장 및 TTL 설정
             String cooldownKey = "cooldownIdMap:" + userId;
             for (OotdDto dto : recommendResult) {
-                ClothesType type = dto.type();
+                String typeString = dto.type().name();
                 UUID clothesId = dto.clothesId();
-                redisTemplate.opsForHash().put(cooldownKey, type, clothesId.toString());
+                redisTemplate.opsForHash().put(cooldownKey, typeString, clothesId.toString());
             }
             redisTemplate.expire(cooldownKey, Duration.ofMinutes(cooldownTtlMinutes));
             return null;
         });
 
         return result;
+    }
+
+    /**
+     * Redis에서 사용자별 추천 횟수(rollCounter)를 조회합니다.
+     */
+    private long getRollcounter(UUID userId) {
+        Object rollCounterObj = redisTemplate.opsForValue().get("rollCounter:" + userId);
+        long rollCounter;
+        if (rollCounterObj instanceof Long) {
+            rollCounter = (Long) rollCounterObj;
+        } else if (rollCounterObj instanceof Integer) {
+            rollCounter = ((Integer) rollCounterObj).longValue();
+        } else {
+            rollCounter = 0L;
+        }
+        return rollCounter;
     }
 
     /**
@@ -172,24 +190,21 @@ public class RecommendationServiceImpl implements RecommendationService {
         for (Map.Entry<Object, Object> entry : redisMap.entrySet()) {
             ClothesType type = null;
             UUID value = null;
-            if (entry.getKey() instanceof ClothesType) {
-                type = (ClothesType) entry.getKey();
-            } else if (entry.getKey() instanceof String) {
+            if (entry.getKey() instanceof String) {
                 try {
                     type = ClothesType.valueOf((String) entry.getKey());
                 } catch (IllegalArgumentException e) {
-                    log.warn(SEVICE + "Redis에서 조회한 의상 타입이 유효하지 않습니다: {}", entry.getKey());
+                    log.warn(SERVICE + "Redis에서 조회한 의상 타입이 유효하지 않습니다: {}", entry.getKey());
                     continue;
                 }
             }
-
-            if (entry.getValue() instanceof UUID) {
-                value = (UUID) entry.getValue();
+            if (entry.getValue() instanceof String) {
+                value = UUID.fromString((String) entry.getValue());
             } else if (entry.getValue() instanceof String) {
                 try {
                     value = UUID.fromString((String) entry.getValue());
                 } catch (IllegalArgumentException e) {
-                    log.warn(SEVICE + "Redis에서 조회한 쿨타임 ID가 유효하지 않습니다: {}", entry.getValue());
+                    log.warn(SERVICE + "Redis에서 조회한 쿨타임 ID가 유효하지 않습니다: {}", entry.getValue());
                     continue;
                 }
             }

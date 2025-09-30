@@ -193,6 +193,7 @@ public class ItemSelectorEngine {
         long rollCounter,
         Map<UUID, Double> scoreCache
     ) {
+        log.debug(ENGINE + "TOP/BOTTOM 또는 DRESS 추천 시작");
         List<OotdDto> result = new ArrayList<>();
 
         // 각 타입별 후보 필터링 및 점수 계산
@@ -284,6 +285,7 @@ public class ItemSelectorEngine {
         Style anchorStyle,
         Map<UUID, Double> scoreCache
     ) {
+        log.debug(ENGINE + "나머지 타입 추천 시작");
         List<OotdDto> result = new ArrayList<>();
         for (Map.Entry<ClothesType, List<Clothes>> entry : typeGroups.entrySet()) {
             ClothesType type = entry.getKey();
@@ -436,7 +438,7 @@ public class ItemSelectorEngine {
         OotdDto dto = clothesMapper.toOotdDto(clothes);
         if (dto != null) {
             result.add(dto);
-            log.info(ENGINE + "추천 성공: id={}, type={}", clothes.getId(), clothes.getType());
+            log.info(ENGINE + "추천 성공: id={}, type={}, attributes={}", clothes.getId(), clothes.getType(), clothes.getAttributes());
         } else {
             log.error(ENGINE + "추천된 의상 DTO 변환 실패: id={}, type={}", clothes.getId(), clothes.getType());
         }
