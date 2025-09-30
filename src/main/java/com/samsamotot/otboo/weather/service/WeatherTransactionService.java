@@ -70,11 +70,14 @@ public class WeatherTransactionService {
             Weather yesterdayWeather = comparisonWeather.get(yesterday);
 
             if (yesterdayWeather != null) {
-                double tempComparedToDayBefore = currentDayWeather.getTemperatureCurrent() - yesterdayWeather.getTemperatureCurrent();
-                currentDayWeather.setTemperatureComparedToDayBefore(tempComparedToDayBefore);
-
-                double humidComparedToDayBefore = currentDayWeather.getHumidityCurrent() - yesterdayWeather.getHumidityCurrent();
-                currentDayWeather.setHumidityComparedToDayBefore(humidComparedToDayBefore);
+                if (currentDayWeather.getTemperatureCurrent() != null && yesterdayWeather.getTemperatureCurrent() != null) {
+                    double tempComparedToDayBefore = currentDayWeather.getTemperatureCurrent() - yesterdayWeather.getTemperatureCurrent();
+                    currentDayWeather.setTemperatureComparedToDayBefore(tempComparedToDayBefore);
+                }
+                if (currentDayWeather.getHumidityCurrent() != null && yesterdayWeather.getHumidityCurrent() != null) {
+                    double humidComparedToDayBefore = currentDayWeather.getHumidityCurrent() - yesterdayWeather.getHumidityCurrent();
+                    currentDayWeather.setHumidityComparedToDayBefore(humidComparedToDayBefore);
+                }
             }
 
             comparisonWeather.put(currentDayWeather.getForecastAt(), currentDayWeather);

@@ -238,4 +238,12 @@ public class LocationServiceImpl implements LocationService {
                 document.getRegion3DepthName(), document.getRegion4DepthName()
         ).stream().filter(Objects::nonNull).toList();
     }
+
+    @Override
+    public Location findOrCreateLocation(double longitude, double latitude) {
+        // 먼저 DB에서 찾아보고,
+        return locationRepository.findByLongitudeAndLatitude(longitude, latitude)
+                // 없으면 기존의 createLocation 메서드를 호출하여 생성합니다.
+                .orElseGet(() -> createLocation(longitude, latitude));
+    }
 }

@@ -170,6 +170,7 @@ CREATE TABLE IF NOT EXISTS profiles
     gender VARCHAR(32),
     birth_date DATE,
     temperature_sensitivity DOUBLE PRECISION DEFAULT 3.0,
+    profile_image_url VARCHAR(255),
 
     CONSTRAINT pk_profiles PRIMARY KEY (id),
     CONSTRAINT fk_profiles_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,

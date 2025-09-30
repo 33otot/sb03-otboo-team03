@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.user.service;
 
+import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,4 +32,5 @@ public interface UserService {
      * @return 사용자 정보
      */
     UserDto getUserById(UUID userId);
+
 }
