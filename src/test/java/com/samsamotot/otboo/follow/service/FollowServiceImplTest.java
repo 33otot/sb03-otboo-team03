@@ -1,6 +1,5 @@
 package com.samsamotot.otboo.follow.service;
 
-import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.entity.Follow;
