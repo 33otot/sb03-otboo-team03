@@ -4,38 +4,14 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Foreign key 제약 조건을 고려하여 테이블 생성 순서에 맞게 데이터를 삽입합니다.
 -- UUID는 테스트의 일관성을 위해 미리 정의된 값을 사용합니다.
 
--- users (30)
-INSERT INTO users (id, email, username, password, provider, provider_id, role, is_locked, created_at) VALUES
-('a0000000-0000-0000-0000-000000000001', 'user1@example.com', 'user_1', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW()),
-('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_2', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '1 second'),
-('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_3', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '2 second'),
-('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_4', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '3 second'),
-('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_5', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '4 second'),
-('a0000000-0000-0000-0000-000000000006', 'user6@example.com', 'user_6', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '5 second'),
-('a0000000-0000-0000-0000-000000000007', 'user7@example.com', 'user_7', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '6 second'),
-('a0000000-0000-0000-0000-000000000008', 'user8@example.com', 'user_8', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '7 second'),
-('a0000000-0000-0000-0000-000000000009', 'user9@example.com', 'user_9', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '8 second'),
-('a0000000-0000-0000-0000-000000000010', 'user10@example.com', 'user_10', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '9 second'),
-('a0000000-0000-0000-0000-000000000011', 'user11@example.com', 'user_11', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '10 second'),
-('a0000000-0000-0000-0000-000000000012', 'user12@example.com', 'user_12', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '11 second'),
-('a0000000-0000-0000-0000-000000000013', 'user13@example.com', 'user_13', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '12 second'),
-('a0000000-0000-0000-0000-000000000014', 'user14@example.com', 'user_14', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '13 second'),
-('a0000000-0000-0000-0000-000000000015', 'user15@example.com', 'user_15', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'USER', false, NOW() + interval '14 second'),
-('a0000000-0000-0000-0000-000000000016', 'user16@example.com', 'user_16', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '15 second'),
-('a0000000-0000-0000-0000-000000000017', 'user17@example.com', 'user_17', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '16 second'),
-('a0000000-0000-0000-0000-000000000018', 'user18@example.com', 'user_18', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '17 second'),
-('a0000000-0000-0000-0000-000000000019', 'user19@example.com', 'user_19', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '18 second'),
-('a0000000-0000-0000-0000-000000000020', 'user20@example.com', 'user_20', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '19 second'),
-('a0000000-0000-0000-0000-000000000021', 'user21@example.com', 'user_21', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '20 second'),
-('a0000000-0000-0000-0000-000000000022', 'user22@example.com', 'user_22', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '21 second'),
-('a0000000-0000-0000-0000-000000000023', 'user23@example.com', 'user_23', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '22 second'),
-('a0000000-0000-0000-0000-000000000024', 'user24@example.com', 'user_24', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '23 second'),
-('a0000000-0000-0000-0000-000000000025', 'user25@example.com', 'user_25', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '24 second'),
-('a0000000-0000-0000-0000-000000000026', 'user26@example.com', 'user_26', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '25 second'),
-('a0000000-0000-0000-0000-000000000027', 'user27@example.com', 'user_27', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '26 second'),
-('a0000000-0000-0000-0000-000000000028', 'user28@example.com', 'user_28', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '27 second'),
-('a0000000-0000-0000-0000-000000000029', 'user29@example.com', 'user_29', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '28 second'),
-('a0000000-0000-0000-0000-000000000030', 'user30@example.com', 'user_30', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi', 'LOCAL', NULL, 'ADMIN', false, NOW() + interval '29 second');
+-- users (5)
+INSERT INTO users (id, email, username, password, provider, role, is_locked, created_at, updated_at) VALUES
+('a0000000-0000-0000-0000-000000000001', 'user1@example.com', 'user_one', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'ADMIN', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000007', 'd@d.com', 'doungukKim', '$2a$12$gvauG4PHUVSIrOLjYFJTieRc8OKO.LBwCbRX2kbdXHC5dnOkCg56C', 'LOCAL', 'USER', FALSE, NOW(), NOW());
 
 -- grids (5)
 INSERT INTO grids (id, created_at, x, y) VALUES
@@ -175,12 +151,12 @@ INSERT INTO notifications (id, receiver_id, created_at, title, content, level) V
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', NOW(), '계정 관련', '비밀번호 변경이 필요합니다.', 'CRITICAL');
 
 -- profiles (5)
-INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity) VALUES
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', NOW(), NOW(), '김유저일', 'MALE', '1990-01-01', 3.0),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', NOW(), NOW(), '이유저이', 'FEMALE', '1992-02-02', 4.0),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', NOW(), NOW(), '박유저삼', 'MALE', '1993-03-03', 2.5),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', NOW(), NOW(), '최유저사', 'FEMALE', '1994-04-04', 4.5),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5);
+INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity, profile_image_url) VALUES
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', NOW(), NOW(), '김유저일', 'MALE', '1990-01-01', 3.0, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', NOW(), NOW(), '이유저이', 'FEMALE', '1992-02-02', 4.0, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', NOW(), NOW(), '박유저삼', 'MALE', '1993-03-03', 2.5, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', NOW(), NOW(), '최유저사', 'FEMALE', '1994-04-04', 4.5, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5, null);
 
 -- direct_messages (5)
 INSERT INTO direct_messages (id, sender_id, receiver_id, created_at, message, is_read) VALUES
@@ -213,3 +189,30 @@ INSERT INTO recommendation_clothes (id, recommendation_id, clothes_id, created_a
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000003', NOW()),
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000004', 'e0000000-0000-0000-0000-000000000004', NOW()),
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000005', 'e0000000-0000-0000-0000-000000000005', NOW());
+
+
+-- 좋아요 카운트 백필
+UPDATE feeds f
+SET like_count = COALESCE(sub.cnt, 0),
+    updated_at = NOW()
+FROM (
+         SELECT feed_id, COUNT(*) AS cnt
+         FROM feed_likes
+         GROUP BY feed_id
+     ) sub
+WHERE f.id = sub.feed_id;
+
+-- 댓글 카운트 백필
+UPDATE feeds f
+SET comment_count = COALESCE(sub.cnt, 0),
+    updated_at = NOW()
+FROM (
+         SELECT feed_id, COUNT(*) AS cnt
+         FROM comments
+         GROUP BY feed_id
+     ) sub
+WHERE f.id = sub.feed_id;
+
+-- 혹시 남아있을 NULL 정리
+UPDATE feeds SET like_count = 0 WHERE like_count IS NULL;
+UPDATE feeds SET comment_count = 0 WHERE comment_count IS NULL;

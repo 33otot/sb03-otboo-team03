@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.user.service;
 
+import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
@@ -33,7 +34,7 @@ public interface UserService {
      * @return 사용자 정보
      */
     UserDto getUserById(UUID userId);
-    
+
     /**
      * 사용자 목록 조회 (관리자용)
      * @param request 사용자 목록 조회 요청 파라미터
