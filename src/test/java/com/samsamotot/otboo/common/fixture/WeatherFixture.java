@@ -1,22 +1,23 @@
 package com.samsamotot.otboo.common.fixture;
 
-import com.samsamotot.otboo.location.entity.Location;
-import com.samsamotot.otboo.weather.dto.WeatherDto;
-import com.samsamotot.otboo.weather.entity.Weather;
+import com.samsamotot.otboo.weather.dto.*;
+import com.samsamotot.otboo.weather.entity.*;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.UUID;
 
 public class WeatherFixture {
 
     public static final Instant DEFAULT_FORECAST_AT = Instant.now().minusSeconds(1800);
     public static final Instant DEFAULT_FORECASTED_AT = Instant.now().plusSeconds(1800);
 
-    public static Weather createWeather(Location location) {
+    public static Weather createWeather(Grid grid) {
         return Weather.builder()
             .forecastAt(DEFAULT_FORECAST_AT)
             .forecastedAt(DEFAULT_FORECASTED_AT)
-            .location(location)
+            .grid(grid)
             .build();
     }
 
@@ -26,5 +27,40 @@ public class WeatherFixture {
             .forecastedAt(LocalDateTime.ofInstant(weather.getForecastedAt(), ZoneOffset.UTC))
             .skyStatus(weather.getSkyStatus())
             .build();
+    }
+
+    public static WeatherDto createWeatherDto(Weather weather, WeatherAPILocation location) {
+        return WeatherDto.builder()
+                .id(UUID.randomUUID())
+                .forecastedAt(LocalDateTime.parse("2025-09-26T08:00:00"))
+                .forecastAt(LocalDateTime.parse("2025-09-26T11:00:00"))
+                .location(WeatherAPILocation.builder()
+                        .latitude(location.latitude())
+                        .longitude(location.longitude())
+                        .x(location.x())
+                        .y(location.y())
+                        .locationNames(location.locationNames())
+                        .build())
+                .skyStatus(SkyStatus.CLEAR)
+                .precipitation(PrecipitationDto.builder()
+                        .type(Precipitation.NONE)
+                        .amount(0.0)
+                        .probability(0.0)
+                        .build())
+                .humidity(HumidityDto.builder()
+                        .current(20.0)
+                        .comparedToDayBefore(null)
+                        .build())
+                .temperature(TemperatureDto.builder()
+                        .current(25.0)
+                        .comparedToDayBefore(null)
+                        .min(15.0)
+                        .max(25.0)
+                        .build())
+                .windSpeed(WindSpeedDto.builder()
+                        .speed(3.0)
+                        .asWord(WindAsWord.WEAK)
+                        .build())
+                .build();
     }
 }

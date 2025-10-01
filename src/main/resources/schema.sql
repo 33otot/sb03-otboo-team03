@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS
     clothes_attribute_options,
     clothes_attribute_defs,
     locations,
+    grids,
     follows,
     users
     CASCADE;
@@ -38,21 +39,35 @@ CREATE TABLE IF NOT EXISTS users
     CONSTRAINT ck_users_role CHECK (role IN ('USER','ADMIN'))
 );
 
+CREATE TABLE IF NOT EXISTS grids
+(
+    id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    x INT NOT NULL,
+    y INT NOT NULL,
+
+    CONSTRAINT pk_grids PRIMARY KEY (id),
+    CONSTRAINT uq_grids UNIQUE (x, y)
+);
+
 -- locations 테이블
 CREATE TABLE IF NOT EXISTS locations
 (
     id UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
+    grid_id UUID NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
-    x INT,
-    y INT,
     location_names TEXT[] NOT NULL,
 
     CONSTRAINT pk_locations PRIMARY KEY (id),
     CONSTRAINT ck_locations_lat CHECK (latitude BETWEEN -90 AND 90),
-    CONSTRAINT ck_locations_lng CHECK (longitude BETWEEN -180 AND 180)
+    CONSTRAINT ck_locations_lng CHECK (longitude BETWEEN -180 AND 180),
+    CONSTRAINT uq_locations UNIQUE (latitude, longitude)
 );
+
+ALTER TABLE locations
+    ADD CONSTRAINT fk_locations_grid FOREIGN KEY (grid_id) REFERENCES grids (id) ON DELETE CASCADE;
 
 -- clothes_attribute_defs
 CREATE TABLE IF NOT EXISTS clothes_attribute_defs
@@ -108,7 +123,7 @@ CREATE TABLE IF NOT EXISTS clothes
 CREATE TABLE IF NOT EXISTS weathers
 (
     id UUID NOT NULL,
-    location_id UUID NOT NULL,
+    grid_id UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     forecasted_at TIMESTAMPTZ NOT NULL,
     forecast_at TIMESTAMPTZ NOT NULL,
@@ -126,9 +141,9 @@ CREATE TABLE IF NOT EXISTS weathers
     wind_as_word VARCHAR(32),
 
     CONSTRAINT pk_weathers PRIMARY KEY (id),
-    CONSTRAINT fk_weathers_location FOREIGN KEY (location_id) REFERENCES locations (id) ON DELETE CASCADE,
+    CONSTRAINT fk_weathers_grid FOREIGN KEY (grid_id) REFERENCES grids (id) ON DELETE CASCADE,
     CONSTRAINT ck_weathers_time_order CHECK (forecasted_at <= forecast_at),
-    CONSTRAINT uq_weathers_loc_forecast UNIQUE (location_id, forecast_at, forecasted_at)
+    CONSTRAINT uq_weathers_grid_forecast UNIQUE (grid_id, forecast_at, forecasted_at)
 );
 
 
@@ -156,6 +171,7 @@ CREATE TABLE IF NOT EXISTS profiles
     gender VARCHAR(32),
     birth_date DATE,
     temperature_sensitivity DOUBLE PRECISION DEFAULT 3.0,
+    profile_image_url VARCHAR(255),
 
     CONSTRAINT pk_profiles PRIMARY KEY (id),
     CONSTRAINT fk_profiles_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
@@ -184,7 +200,7 @@ CREATE TABLE IF NOT EXISTS feeds
 (
     id UUID PRIMARY KEY,
     author_id UUID NOT NULL,
-    weather_id UUID,
+    weather_id UUID NOT NULL,
     content TEXT NOT NULL,
     like_count BIGINT DEFAULT 0 NOT NULL,
     comment_count BIGINT DEFAULT 0 NOT NULL,
@@ -310,7 +326,7 @@ CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_ca_clothes ON clothes_attributes (clothes_id);
 CREATE INDEX IF NOT EXISTS idx_cao_definition ON clothes_attribute_options (definition_id);
 
--- follows index
+-- follow index
 CREATE INDEX IF NOT EXISTS idx_follows_follower_created_id_desc ON follows (follower_id, created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_follows_followee ON follows (followee_id);
 CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows (follower_id);

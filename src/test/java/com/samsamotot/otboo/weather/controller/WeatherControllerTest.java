@@ -4,8 +4,9 @@ import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.fixture.LocationFixture;
 import com.samsamotot.otboo.location.entity.Location;
-import com.samsamotot.otboo.location.entity.WeatherAPILocation;
 import com.samsamotot.otboo.location.service.LocationService;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
+import com.samsamotot.otboo.weather.entity.Grid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,6 @@ import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,11 +44,12 @@ class WeatherControllerTest {
     void 유효한_좌표로_요청하면_위치_정보를_반환() {
         // Given
         Location location = LocationFixture.createValidLocation();
+        Grid grid = location.getGrid();
         WeatherAPILocation expectedLocation = WeatherAPILocation.builder()
                 .latitude(location.getLatitude())
                 .longitude(location.getLongitude())
-                .x(location.getX())
-                .y(location.getY())
+                .x(grid.getX())
+                .y(grid.getY())
                 .locationNames(location.getLocationNames())
                 .build();
 
@@ -76,7 +77,7 @@ class WeatherControllerTest {
                 .thenThrow(new OtbooException(ErrorCode.API_CALL_ERROR));
 
         // When & Then
-        assertThatThrownBy(() -> 
+        assertThatThrownBy(() ->
             weatherController.getCurrentLocation(VALID_LONGITUDE, VALID_LATITUDE)
         )
         .isInstanceOf(OtbooException.class)
@@ -89,13 +90,14 @@ class WeatherControllerTest {
         // Given
         double boundaryLongitude = 125.0; // 서쪽 경계
         double boundaryLatitude = 33.2;   // 남쪽 경계
-        
+
         Location location = LocationFixture.createValidLocation();
+        Grid grid = location.getGrid();
         WeatherAPILocation expectedLocation = WeatherAPILocation.builder()
                 .latitude(location.getLatitude())
                 .longitude(location.getLongitude())
-                .x(location.getX())
-                .y(location.getY())
+                .x(grid.getX())
+                .y(grid.getY())
                 .locationNames(location.getLocationNames())
                 .build();
 
@@ -116,13 +118,14 @@ class WeatherControllerTest {
         // Given
         double northLongitude = 131.5; // 동쪽 경계
         double northLatitude = 38.3;   // 북쪽 경계
-        
+
         Location location = LocationFixture.createValidLocation();
+        Grid grid = location.getGrid();
         WeatherAPILocation expectedLocation = WeatherAPILocation.builder()
                 .latitude(location.getLatitude())
                 .longitude(location.getLongitude())
-                .x(location.getX())
-                .y(location.getY())
+                .x(grid.getX())
+                .y(grid.getY())
                 .locationNames(location.getLocationNames())
                 .build();
 
@@ -136,4 +139,29 @@ class WeatherControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
     }
+
+//    @Test
+//    void 날씨를_요청하면_예보_리스트_응답() {
+//        // Given
+//        Grid grid = GridFixture.createGrid();
+//        Location location = LocationFixture.createLocation();
+//        location.setGrid(grid);
+//
+//        WeatherAPILocation expectedLocation = WeatherAPILocation.builder()
+//                .longitude(location.getLongitude())
+//                .latitude(location.getLatitude())
+//                .x(grid.getX())
+//                .y(grid.getY())
+//                .locationNames(location.getLocationNames())
+//                .build();
+//
+//        Weather weather = WeatherFixture.createWeather(grid);
+//
+//        WeatherDto weatherDto = WeatherFixture.createWeatherDto(weather, expectedLocation);
+//        List<WeatherDto> weatherDtoList = List.of(weatherDto);
+//
+//        when(locationService.getWeatherList(location.getLongitude(), location.getLatitude()))
+//                .thenReturn(weatherDtoList);
+//    }
 }
+

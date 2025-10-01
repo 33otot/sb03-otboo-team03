@@ -2,6 +2,7 @@ package com.samsamotot.otboo.directmessage.service;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
@@ -57,7 +58,6 @@ class DirectMessageServiceImplTest {
     @Mock
     private DirectMessageMapper directMessageMapper;
 
-
     private final String myEmail = "me@example.com";
     private final UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001");
     private final UUID otherId = UUID.fromString("a0000000-0000-0000-0000-000000000002");
@@ -68,10 +68,14 @@ class DirectMessageServiceImplTest {
         SecurityContextHolder.clearContext();
     }
 
-    private static void loginAsEmail(String email) {
-        var auth = new UsernamePasswordAuthenticationToken(email, "N/A", java.util.List.of());
+    private static void loginAsUserId(UUID userId, String email) {
+        CustomUserDetails cud = mock(CustomUserDetails.class);
+        when(cud.getId()).thenReturn(userId);
+        when(cud.getUsername()).thenReturn(email);
+        var auth = new UsernamePasswordAuthenticationToken(cud, "N/A", java.util.List.of());
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
+
 
     private static MessageRequest newRequest(UUID partnerId, int limit) {
         return new MessageRequest(partnerId, null, null, limit);
@@ -92,117 +96,94 @@ class DirectMessageServiceImplTest {
         return m;
     }
 
-    private static Instant invokeParse(String cursor) {
-        try {
-            Method m = DirectMessageServiceImpl.class.getDeclaredMethod("parseCursor", String.class);
-            m.setAccessible(true);
-            return (Instant) m.invoke(null, cursor);
-        } catch (java.lang.reflect.InvocationTargetException e) {
-            Throwable target = e.getTargetException();
-            if (target instanceof RuntimeException re) throw re;
-            throw new RuntimeException(target);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    private static MessageRequest firstPageRequest(UUID partnerId, int limit) {
+        return new MessageRequest(partnerId, null, null, limit);
+    }
+
+    private static MessageRequest nextPageRequest(UUID partnerId, Instant cursor, UUID idAfter, int limit) {
+        return new MessageRequest(partnerId, cursor, idAfter, limit);
     }
 
     @Test
     void dm_sender_확인한다_실패() throws Exception {
         // given
-        loginAsEmail(myEmail);
-
-        User principalUser = stubUser(myId, false);
-        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principalUser));
-
+        loginAsUserId(myId, myEmail);
         given(userRepository.findById(myId)).willReturn(Optional.empty());
 
-        var request = newRequest(otherId, 10);
+        var request = firstPageRequest(otherId, 10);
 
         // when n then
         assertThatThrownBy(() -> directMessageService.getMessages(request))
             .isInstanceOf(OtbooException.class)
-            .extracting("errorCode").isEqualTo(ErrorCode.INVALID_FOLLOW_REQUEST);
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.INVALID_FOLLOW_REQUEST);
 
-        verify(directMessageRepository, never()).findBetweenWithCursor(any(), any(), any(), any(), any());
+        then(directMessageRepository).shouldHaveNoInteractions();
     }
 
     @Test
     void sender_locked_확인한다_실패() throws Exception {
         // given
-        loginAsEmail(myEmail);
+        loginAsUserId(myId, myEmail);
+        User meLocked = stubUser(myId, true);
+        given(userRepository.findById(myId)).willReturn(Optional.of(meLocked));
 
-        User principalUser = stubUser(myId, false);
-        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principalUser));
-
-        User me = stubUser(myId, true); // 잠금
-        given(userRepository.findById(myId)).willReturn(Optional.of(me));
-
-        var request = newRequest(otherId, 10);
+        var request = firstPageRequest(otherId, 10);
 
         // when n then
         assertThatThrownBy(() -> directMessageService.getMessages(request))
             .isInstanceOf(OtbooException.class)
-            .extracting("errorCode").isEqualTo(ErrorCode.USER_LOCKED);
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.USER_LOCKED);
 
-        verify(directMessageRepository, never()).findBetweenWithCursor(any(), any(), any(), any(), any());
+        then(directMessageRepository).shouldHaveNoInteractions();
     }
 
     @Test
     void dm_receiver_확인한다_실패() throws Exception {
         // given
-        loginAsEmail(myEmail);
-
-        User principalUser = stubUser(myId, false);
-        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principalUser));
-
+        loginAsUserId(myId, myEmail);
         User me = stubUser(myId, false);
         given(userRepository.findById(myId)).willReturn(Optional.of(me));
-
         given(userRepository.findById(otherId)).willReturn(Optional.empty());
 
-        var request = newRequest(otherId, 10);
+        var request = firstPageRequest(otherId, 10);
 
         // when n then
         assertThatThrownBy(() -> directMessageService.getMessages(request))
             .isInstanceOf(OtbooException.class)
-            .extracting("errorCode").isEqualTo(ErrorCode.INVALID_FOLLOW_REQUEST);
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.INVALID_FOLLOW_REQUEST);
 
-        verify(directMessageRepository, never()).findBetweenWithCursor(any(), any(), any(), any(), any());
+        then(directMessageRepository).shouldHaveNoInteractions();
     }
 
 
     @Test
-    void receiver_locked_확인한다_실패() throws Exception {
+    void receiver_locked_확인한다_실패() {
         // given
-        loginAsEmail(myEmail);
-
-        User principalUser = stubUser(myId, false);
-        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principalUser));
-
-        User me = stubUser(myId, false);
-        User other = stubUser(otherId, true); // 잠금
+        loginAsUserId(myId, myEmail);
+        User me    = stubUser(myId, false);
+        User other = stubUser(otherId, true);
         given(userRepository.findById(myId)).willReturn(Optional.of(me));
         given(userRepository.findById(otherId)).willReturn(Optional.of(other));
 
-        var request = newRequest(otherId, 10);
+        var request = firstPageRequest(otherId, 10);
 
         // when n then
         assertThatThrownBy(() -> directMessageService.getMessages(request))
             .isInstanceOf(OtbooException.class)
-            .extracting("errorCode").isEqualTo(ErrorCode.USER_LOCKED);
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.USER_LOCKED);
 
-        verify(directMessageRepository, never()).findBetweenWithCursor(any(), any(), any(), any(), any());
+        then(directMessageRepository).shouldHaveNoInteractions();
     }
 
     @Test
-    void 정상적으로_전체_dm수를_가져온다() throws Exception {
+    void 정상적으로_첫페이지_dm수를_가져온다() {
         // given
-        loginAsEmail(myEmail);
-
-        User principalUser = stubUser(myId, false);
-        given(userRepository.findByEmail(myEmail)).willReturn(Optional.of(principalUser));
-
-        User me    = stubUser(myId, false);
+        loginAsUserId(myId, myEmail);
+        User me = stubUser(myId, false);
         User other = stubUser(otherId, false);
         given(userRepository.findById(myId)).willReturn(Optional.of(me));
         given(userRepository.findById(otherId)).willReturn(Optional.of(other));
@@ -211,13 +192,12 @@ class DirectMessageServiceImplTest {
         DirectMessage m2 = dm(UUID.randomUUID(), Instant.parse("2025-09-22T11:00:00Z"));
         DirectMessage m3 = dm(UUID.randomUUID(), Instant.parse("2025-09-22T10:00:00Z"));
 
-        given(directMessageRepository.findBetweenWithCursor(any(), any(), any(), any(), any()))
+        given(directMessageRepository.findFirstPage(any(), any(), any()))
             .willReturn(List.of(m1, m2, m3));
         given(directMessageRepository.countBetween(myId, otherId)).willReturn(42L);
-
         given(directMessageMapper.toDto(any())).willReturn(mock(DirectMessageDto.class));
 
-        var request = newRequest(otherId, 2);
+        var request = firstPageRequest(otherId, 2);
 
         // when
         DirectMessageListResponse resp = directMessageService.getMessages(request);
@@ -228,28 +208,42 @@ class DirectMessageServiceImplTest {
         assertThat(resp.hasNext()).isTrue();
         assertThat(resp.totalCount()).isEqualTo(42L);
 
-        then(directMessageRepository).should().findBetweenWithCursor(any(), any(), any(), any(), any());
+        then(directMessageRepository).should().findFirstPage(any(), any(), any());
         then(directMessageRepository).should().countBetween(myId, otherId);
         then(directMessageMapper).should(atLeast(2)).toDto(any());
     }
 
     @Test
-    void parseCursor_형식오류면_INVALID_REQUEST_PARAMETER() {
-        assertThatThrownBy(() -> invokeParse("NOT-INSTANT"))
-            .isInstanceOf(OtbooException.class)
-            .extracting("errorCode")
-            .isEqualTo(ErrorCode.INVALID_REQUEST_PARAMETER);
+    void 정상적으로_전체_dm수를_가져온다() throws Exception {
+        // given
+        loginAsUserId(myId, myEmail);
+        User me    = stubUser(myId, false);
+        User other = stubUser(otherId, false);
+        given(userRepository.findById(myId)).willReturn(Optional.of(me));
+        given(userRepository.findById(otherId)).willReturn(Optional.of(other));
+
+        DirectMessage m1 = dm(UUID.randomUUID(), Instant.parse("2025-09-22T09:00:00Z"));
+        DirectMessage m2 = dm(UUID.randomUUID(), Instant.parse("2025-09-22T08:00:00Z"));
+
+        given(directMessageRepository.findNextPage(any(), any(), any(), any(), any()))
+            .willReturn(List.of(m1, m2));
+
+        given(directMessageRepository.countBetween(myId, otherId)).willReturn(40L);
+        given(directMessageMapper.toDto(any())).willReturn(mock(DirectMessageDto.class));
+
+        var request = nextPageRequest(otherId, Instant.parse("2025-09-22T10:00:00Z"), null, 2);
+
+        // when
+        DirectMessageListResponse resp = directMessageService.getMessages(request);
+
+        // then
+        assertThat(resp).isNotNull();
+        assertThat(resp.data()).hasSize(2);
+        assertThat(resp.hasNext()).isFalse();
+        assertThat(resp.totalCount()).isEqualTo(40L);
+
+        then(directMessageRepository).should().findNextPage(any(), any(), any(), any(), any());
+        then(directMessageRepository).should().countBetween(myId, otherId);
+        then(directMessageMapper).should(atLeast(2)).toDto(any());
     }
-
-    @Test
-    void parseCursor_느슨하게_null_blank_그리고_정상문자열_반환한다() {
-        Instant r1 = ReflectionTestUtils.invokeMethod(DirectMessageServiceImpl.class, "parseCursor", new Object[]{null});
-        Instant r2 = ReflectionTestUtils.invokeMethod(DirectMessageServiceImpl.class, "parseCursor", "  ");
-        assertThat(r1).isNull();
-        assertThat(r2).isNull();
-
-        Instant r3 = ReflectionTestUtils.invokeMethod(DirectMessageServiceImpl.class, "parseCursor", "2025-09-22T09:10:11Z");
-        assertThat(r3).isNotNull();
-    }
-
 }

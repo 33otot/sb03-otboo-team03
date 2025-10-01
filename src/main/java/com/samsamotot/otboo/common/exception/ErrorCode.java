@@ -28,7 +28,7 @@ public enum ErrorCode {
     CSRF_TOKEN_MISSING(HttpStatus.FORBIDDEN, "AU004", "CSRF 토큰이 누락되었습니다."),
 
     // 프로필 관련 에러
-    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "PR001", "프로필을 찾을 수 없습니다."),
+    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "PR001", "유저 프로필을 찾을 수 없습니다."),
     INVALID_BIRTH_DATE(HttpStatus.BAD_REQUEST, "PR002", "올바르지 않은 생년월일입니다."),
     INVALID_TEMPERATURE_SENSITIVITY(HttpStatus.BAD_REQUEST, "PR003", "온도 민감도는 1-5 사이의 값이어야 합니다."),
 
@@ -36,12 +36,13 @@ public enum ErrorCode {
     CLOTHES_NOT_FOUND(HttpStatus.NOT_FOUND, "CL001", "의상을 찾을 수 없습니다."),
     INVALID_CLOTHES_TYPE(HttpStatus.BAD_REQUEST, "CL002", "올바르지 않은 의상 타입입니다."),
     CLOTHES_ATTRIBUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "CL003", "의상 속성을 찾을 수 없습니다."),
+    CLOTHES_OWNER_MISMATCH(HttpStatus.FORBIDDEN, "CL004", "해당 의상의 소유자가 아닙니다."),
 
-    CLOTHES_ATTRIBUTE_DEF_NOT_FOUND(HttpStatus.NOT_FOUND, "CL004", "의상 속성 정의를 찾을 수 없습니다."),
-    CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS(HttpStatus.CONFLICT, "CL005", "이미 존재하는 의상 속성 정의입니다."),
+    CLOTHES_ATTRIBUTE_DEF_NOT_FOUND(HttpStatus.NOT_FOUND, "CL005", "의상 속성 정의를 찾을 수 없습니다."),
+    CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS(HttpStatus.CONFLICT, "CL006", "이미 존재하는 의상 속성 정의입니다."),
 
-    INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "CL006", "올바르지 않은 이미지 형식입니다."),
-    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CL007", "이미지 업로드에 실패했습니다."),
+    INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "CL007", "올바르지 않은 이미지 형식입니다."),
+    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CL008", "이미지 업로드에 실패했습니다."),
 
     // 피드 관련 에러
     FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "FD001", "피드를 찾을 수 없습니다."),
@@ -69,6 +70,11 @@ public enum ErrorCode {
     WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "WE001", "날씨 정보를 찾을 수 없습니다."),
     WEATHER_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "WE002", "날씨 API 호출에 실패했습니다."),
     INVALID_LOCATION(HttpStatus.BAD_REQUEST, "WE003", "올바르지 않은 위치 정보입니다."),
+    API_RETRY_FAILURE(HttpStatus.GATEWAY_TIMEOUT, "WE004", "API 서버에서 데이터를 반환하지 않습니다"),
+
+    // 위치 정보 관련 에러
+    NOT_FOUND_GRID(HttpStatus.NOT_FOUND, "LO001", "격자 좌표를 찾을 수 없습니다."),
+    NOT_FOUND_LOCATION(HttpStatus.NOT_FOUND, "LO002", "위치 정보를 찾을 수 없습니다."),
 
     // KAKAO API 관련 에러
     NO_KAKAO_KEY(HttpStatus.INTERNAL_SERVER_ERROR, "KA001", "KAKAO API 키가 설정되지 않았습니다."),

@@ -10,16 +10,38 @@ spring:
     multipart:
       maxFileSize: 10MB # 파일 하나의 최대 크기
       maxRequestSize: 30MB # 한 번에 최대 업로드 가능 용량
-
+  cache:
+    type: redis
+    redis:
+      enable-statistics: true
   data:
     redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
       repositories:
         enabled: false  # 개발 단계 Redis Repository 비활성화
 
 kma:
   base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
-  service-key: ${KMA_ENCODING_KEY}
+  alt-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0
+  service-key: ${AUTH_KEY}
 
 kakao.api:
   base-url: https://dapi.kakao.com
   key: ${KAKAO_API_KEY}
+
+# 비동기 실행 설정
+async:
+  executors:
+    main:
+      core-size: 4
+      max-size: 8
+      queue-capacity: 200
+      keep-alive-seconds: 60
+    weather:
+      core-size: 5
+      max-size: 10
+      queue-capacity: 1000
+      keep-alive-seconds: 60
+

@@ -1,9 +1,8 @@
 package com.samsamotot.otboo.location.entity;
 
 import com.samsamotot.otboo.common.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.samsamotot.otboo.weather.entity.Grid;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Check;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -13,7 +12,12 @@ import java.util.List;
 
 @Builder
 @Entity
-@Table(name = "locations")
+@Table(name = "locations", uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uq_locations_lon_lat",
+            columnNames = {"longitude", "latitude"}
+        )
+})
 @Check(constraints = "latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180")
 @Getter
 @Setter
@@ -27,13 +31,11 @@ public class Location extends BaseEntity {
     @Column(name = "longitude", nullable = false)
     private double longitude;
 
-    @Column(name = "x")
-    private Integer x;
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "grid_id", nullable = false)
+    private Grid grid;
 
-    @Column(name = "y")
-    private Integer y;
-
-    @Column(name = "location_names", columnDefinition = "TEXT[]", nullable = false)
+    @Column(name = "location_names", nullable = false)
     @JdbcTypeCode(SqlTypes.ARRAY)
     private List<String> locationNames;
 }

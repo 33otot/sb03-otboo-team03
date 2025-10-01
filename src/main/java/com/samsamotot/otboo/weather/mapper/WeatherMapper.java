@@ -1,16 +1,14 @@
 package com.samsamotot.otboo.weather.mapper;
 
-import com.samsamotot.otboo.weather.dto.HumidityDto;
-import com.samsamotot.otboo.weather.dto.PrecipitationDto;
-import com.samsamotot.otboo.weather.dto.TemperatureDto;
-import com.samsamotot.otboo.weather.dto.WeatherDto;
-import com.samsamotot.otboo.weather.dto.WindSpeedDto;
+import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.weather.dto.*;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface WeatherMapper {
@@ -19,7 +17,15 @@ public interface WeatherMapper {
     @Mapping(target = "humidity", expression = "java(toHumidityDto(weather))")
     @Mapping(target = "temperature", expression = "java(toTemperatureDto(weather))")
     @Mapping(target = "windSpeed", expression = "java(toWindSpeedDto(weather))")
+    @Mapping(target = "location", ignore = true)
     WeatherDto toDto(Weather weather);
+
+    @Mapping(source = "weather.id", target = "id")
+    @Mapping(target = "precipitation", expression = "java(toPrecipitationDto(weather))")
+    @Mapping(target = "humidity", expression = "java(toHumidityDto(weather))")
+    @Mapping(target = "temperature", expression = "java(toTemperatureDto(weather))")
+    @Mapping(target = "windSpeed", expression =  "java(toWindSpeedDto(weather))")
+    WeatherDto toDto(Weather weather, WeatherAPILocation location);
 
     default LocalDateTime toLocalDateTime(Instant instant) {
         if (instant == null) {

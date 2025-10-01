@@ -3,14 +3,14 @@ package com.samsamotot.otboo.common.security.config;
 
 import com.samsamotot.otboo.common.security.csrf.SpaCsrfTokenRequestHandler;
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
-import java.util.Arrays;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -21,6 +21,9 @@ import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Spring Security 설정 클래스
@@ -52,6 +55,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Slf4j
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
     
@@ -81,8 +85,13 @@ public class SecurityConfig {
                     "/api/auth/sign-out",  // 로그아웃 CSRF 무시
                     "/api/auth/refresh",
                     "/api/users",
+                    "/api/auth/csrf-token", // CSRF 토큰 조회 허용
                     "/api/weathers/**",
-                    "/actuator/**"
+                    "/actuator/**",
+                    "/api/sse",
+                    "/api/follows/**",
+                    "/api/direct-messages/**",
+                    "/api/notifications/**"
                 )
             )
             
@@ -109,9 +118,20 @@ public class SecurityConfig {
                     "/api/weathers/**", // 공개 API (인증 불필요)
                     "/actuator/**",
                     "/swagger-ui/**",
-                    "/v3/api-docs/**"
+                    "/v3/api-docs/**",
+                    "/api/follows/**",
+                    "/api/direct-messages/**"
                 ).permitAll()
-                
+
+                // 의상 속성 정의 C/U/D 기능은 ADMIN 유저만 가능
+                .requestMatchers(HttpMethod.POST,"/api/clothes/attribute-defs").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
+
+                .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
+
+                .requestMatchers("/api/notifications/**").authenticated()
+
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()
             )
@@ -159,6 +179,9 @@ public class SecurityConfig {
         // 허용할 헤더 설정
         configuration.setAllowedHeaders(Arrays.asList("*"));
         
+        // CSRF 토큰 헤더 노출
+        configuration.setExposedHeaders(Arrays.asList("X-XSRF-TOKEN"));
+        
         // 인증 정보 포함 허용
         configuration.setAllowCredentials(true);
         
@@ -187,7 +210,8 @@ public class SecurityConfig {
      * 
      * @return 보안 속성이 적용된 CSRF 토큰 저장소
      */
-    private CsrfTokenRepository createSecureCsrfTokenRepository() {
+    @Bean
+    public CsrfTokenRepository createSecureCsrfTokenRepository() {
         // Spring Security의 기본 CSRF 토큰 저장소 사용
         // HttpOnly=false로 설정하여 SPA에서 JavaScript로 접근 가능
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();

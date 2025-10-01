@@ -16,6 +16,7 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -49,7 +50,7 @@ public interface DirectMessageApi {
     @GetMapping
     ResponseEntity<DirectMessageListResponse> directMessages(
         @RequestParam UUID userId,
-        @RequestParam(required = false) String cursor,
+        @RequestParam(required = false) Instant cursor,
         @RequestParam(required = false) UUID idAfter,
         @RequestParam Integer limit
     );

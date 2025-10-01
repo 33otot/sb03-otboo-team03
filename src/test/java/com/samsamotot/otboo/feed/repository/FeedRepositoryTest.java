@@ -1,30 +1,22 @@
 package com.samsamotot.otboo.feed.repository;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import com.samsamotot.otboo.common.config.QueryDslConfig;
 import com.samsamotot.otboo.common.config.TestJpaAuditingConfig;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.fixture.FeedFixture;
-import com.samsamotot.otboo.common.fixture.LocationFixture;
+import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.entity.Feed;
-import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
-import com.samsamotot.otboo.user.entity.Provider;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,6 +34,15 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ActiveProfiles("test")
 @DataJpaTest
@@ -75,16 +76,18 @@ public class FeedRepositoryTest {
 
     Instant baseTime = Instant.now().minusSeconds(3000);
     User author;
-    Location location;
+    Grid grid;
     Weather weather;
 
     @BeforeEach
     void setUp() {
         author = UserFixture.createUser();
         em.persist(author);
-        location = LocationFixture.createLocation();
-        em.persist(location);
-        weather = WeatherFixture.createWeather(location);
+
+        grid = GridFixture.createGrid();
+        em.persist(grid);
+
+        weather = WeatherFixture.createWeather(grid);
         em.persist(weather);
 
         em.flush();
@@ -342,7 +345,7 @@ public class FeedRepositoryTest {
         Weather targetWeather = Weather.builder()
             .forecastAt(Instant.now())
             .forecastedAt(Instant.now())
-            .location(location)
+            .grid(grid)
             .skyStatus(skyStatus)
             .build();
         em.persist(targetWeather);
@@ -382,7 +385,7 @@ public class FeedRepositoryTest {
         Weather targetWeather = Weather.builder()
             .forecastAt(Instant.now())
             .forecastedAt(Instant.now())
-            .location(location)
+            .grid(grid)
             .precipitationType(precipitation)
             .build();
         em.persist(targetWeather);
@@ -466,7 +469,7 @@ public class FeedRepositoryTest {
         Weather targetWeather = Weather.builder()
             .forecastAt(Instant.now())
             .forecastedAt(Instant.now())
-            .location(location)
+            .grid(grid)
             .skyStatus(skyStatus)
             .precipitationType(precipitation)
             .build();
@@ -515,7 +518,7 @@ public class FeedRepositoryTest {
         Weather targetWeather = Weather.builder()
             .forecastAt(Instant.now())
             .forecastedAt(Instant.now())
-            .location(location)
+            .grid(grid)
             .skyStatus(skyStatus)
             .precipitationType(precipitation)
             .build();

@@ -22,24 +22,32 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
 
     // 양방향, 우선순위: cursor, 타이브레이커 idAfter, DESC 고정
     @Query("""
-            SELECT m FROM DirectMessage m
-            JOIN FETCH m.sender s
-            JOIN FETCH m.receiver r
-            WHERE ((s.id = :me AND r.id = :other) OR (s.id = :other AND r.id = :me))
-              AND (
-                    :cursor IS NULL
-                 OR m.createdAt < :cursor
-                 OR (m.createdAt = :cursor AND (:idAfter IS NULL OR m.id < :idAfter))
-              )
-            ORDER BY m.createdAt DESC, m.id DESC
+        SELECT m FROM DirectMessage m
+        JOIN FETCH m.sender s
+        JOIN FETCH m.receiver r
+        WHERE ((s.id = :me AND r.id = :other) OR (s.id = :other AND r.id = :me))
+        ORDER BY m.createdAt DESC, m.id DESC
         """)
-    List<DirectMessage> findBetweenWithCursor(
-        @Param("me") UUID me,
-        @Param("other") UUID other,
-        @Param("cursor") Instant cursor,   // nullable
-        @Param("idAfter") UUID idAfter,    // nullable
-        Pageable pageable
-    );
+    List<DirectMessage> findFirstPage(@Param("me") UUID me,
+                                      @Param("other") UUID other,
+                                      Pageable pageable);
+
+    @Query("""
+          SELECT m FROM DirectMessage m
+          JOIN FETCH m.sender s
+          JOIN FETCH m.receiver r
+          WHERE ((s.id = :me AND r.id = :other) OR (s.id = :other AND r.id = :me))
+            AND ( m.createdAt < :cursor
+               OR (m.createdAt = :cursor AND (:idAfter IS NULL OR m.id < :idAfter))
+            )
+          ORDER BY m.createdAt DESC, m.id DESC
+        """)
+    List<DirectMessage> findNextPage(@Param("me") UUID me,
+                                     @Param("other") UUID other,
+                                     @Param("cursor") Instant cursor,
+                                     @Param("idAfter") UUID idAfter,
+                                     Pageable pageable);
+
 
     @Query("""
             SELECT COUNT(m) FROM DirectMessage m

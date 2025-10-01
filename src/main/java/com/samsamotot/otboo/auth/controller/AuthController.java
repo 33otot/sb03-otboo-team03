@@ -136,18 +136,5 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
     
-    /**
-     * CSRF 토큰 조회
-     */
-    @GetMapping("/csrf-token")
-    @Operation(summary = "CSRF 토큰 조회", description = "CSRF 보호를 위한 토큰을 조회합니다.")
-    public ResponseEntity<Map<String, String>> getCsrfToken() {
-        log.debug("[AuthController] CSRF 토큰 조회 요청");
-        
-        String csrfToken = authService.getCsrfToken();
-        
-        log.debug("[AuthController] CSRF 토큰 조회 성공");
-        
-        return ResponseEntity.ok(Map.of("csrfToken", csrfToken));
-    }
+    
 }

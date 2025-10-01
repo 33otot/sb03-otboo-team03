@@ -6,19 +6,28 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- users (5)
 INSERT INTO users (id, email, username, password, provider, role, is_locked, created_at, updated_at) VALUES
-('a0000000-0000-0000-0000-000000000001', 'user1@example.com', 'user_one', '$2a$10$somehashedpassword1', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$10$somehashedpassword2', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$10$somehashedpassword3', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$10$somehashedpassword4', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
-('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$10$somehashedpassword5', 'LOCAL', 'USER', FALSE, NOW(), NOW());
+('a0000000-0000-0000-0000-000000000001', 'user1@example.com', 'user_one', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'ADMIN', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000002', 'user2@example.com', 'user_two', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000003', 'user3@example.com', 'user_three', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000004', 'user4@example.com', 'user_four', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000005', 'user5@example.com', 'user_five', '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa', 'LOCAL', 'USER', FALSE, NOW(), NOW()),
+('a0000000-0000-0000-0000-000000000007', 'd@d.com', 'doungukKim', '$2a$12$gvauG4PHUVSIrOLjYFJTieRc8OKO.LBwCbRX2kbdXHC5dnOkCg56C', 'LOCAL', 'USER', FALSE, NOW(), NOW());
 
--- locations (5)
-INSERT INTO locations (id, created_at, latitude, longitude, x, y, location_names) VALUES
-('b0000000-0000-0000-0000-000000000001', NOW(), 37.5665, 126.9780, 60, 127, '{"서울시청"}'),
-('b0000000-0000-0000-0000-000000000002', NOW(), 35.1796, 129.0756, 98, 76, '{"부산역"}'),
-('b0000000-0000-0000-0000-000000000003', NOW(), 33.4996, 126.5312, 52, 38, '{"제주공항"}'),
-('b0000000-0000-0000-0000-000000000004', NOW(), 36.3504, 127.3845, 67, 100, '{"대전역"}'),
-('b0000000-0000-0000-0000-000000000005', NOW(), 37.4563, 126.7052, 55, 124, '{"인천국제공항"}');
+-- grids (5)
+INSERT INTO grids (id, created_at, x, y) VALUES
+('c0000000-0000-0000-0000-000000000001', NOW(), 60, 127), -- 서울
+('c0000000-0000-0000-0000-000000000002', NOW(), 98, 76),  -- 부산
+('c0000000-0000-0000-0000-000000000003', NOW(), 52, 38),  -- 제주
+('c0000000-0000-0000-0000-000000000004', NOW(), 67, 100), -- 대전
+('c0000000-0000-0000-0000-000000000005', NOW(), 55, 124); -- 인천
+
+-- locations (5) - referencing grids
+INSERT INTO locations (id, created_at, grid_id, latitude, longitude, location_names) VALUES
+('b0000000-0000-0000-0000-000000000001', NOW(), 'c0000000-0000-0000-0000-000000000001', 37.5665, 126.9780, '{"서울시청"}'),
+('b0000000-0000-0000-0000-000000000002', NOW(), 'c0000000-0000-0000-0000-000000000002', 35.1796, 129.0756, '{"부산역"}'),
+('b0000000-0000-0000-0000-000000000003', NOW(), 'c0000000-0000-0000-0000-000000000003', 33.4996, 126.5312, '{"제주공항"}'),
+('b0000000-0000-0000-0000-000000000004', NOW(), 'c0000000-0000-0000-0000-000000000004', 36.3504, 127.3845, '{"대전역"}'),
+('b0000000-0000-0000-0000-000000000005', NOW(), 'c0000000-0000-0000-0000-000000000005', 37.4563, 126.7052, '{"인천국제공항"}');
 
 -- clothes_attribute_defs (5)
 INSERT INTO clothes_attribute_defs (id, name, created_at, updated_at) VALUES
@@ -62,20 +71,20 @@ INSERT INTO clothes_attribute_options (id, value, definition_id, created_at, upd
 (gen_random_uuid(), 'FREE', 'f0000000-0000-0000-0000-000000000005', NOW(), NOW());
 
 -- weathers (5)
-INSERT INTO weathers (id, location_id, created_at, forecasted_at, forecast_at, sky_status, temperature_current) VALUES
-('c0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', NOW(), NOW(), NOW(), 'CLEAR', 25.0),
-('c0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', NOW(), NOW(), NOW(), 'CLOUDY', 22.0),
-('c0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', NOW(), NOW(), NOW(), 'MOSTLY_CLOUDY', 18.0),
-('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', NOW(), NOW(), NOW(), 'CLOUDY', -2.0),
-('c0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), NOW(), 'CLEAR', 28.0);
+INSERT INTO weathers (id, grid_id, created_at, forecasted_at, forecast_at, sky_status, temperature_current) VALUES
+('d0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', NOW(), NOW(), NOW(), 'CLEAR', 25.0),
+('d0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002', NOW(), NOW(), NOW(), 'CLOUDY', 22.0),
+('d0000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000003', NOW(), NOW(), NOW(), 'MOSTLY_CLOUDY', 18.0),
+('d0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000004', NOW(), NOW(), NOW(), 'CLOUDY', -2.0),
+('d0000000-0000-0000-0000-000000000005', 'c0000000-0000-0000-0000-000000000005', NOW(), NOW(), NOW(), 'CLEAR', 28.0);
 
 
 INSERT INTO feeds (id, author_id, weather_id, content, created_at, updated_at) VALUES
-('f1000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', '오늘 서울 날씨 맑음! OOTD', NOW() - interval '5 day', NOW() - interval '5 day'),
-('f1000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002', '부산은 흐리네요', NOW() - interval '4 day', NOW() - interval '4 day'),
-('f1000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000003', '제주도 대체로 흐림', NOW() - interval '3 day', NOW() - interval '3 day'),
-('f1000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000004', '대전은 흐려요', NOW() - interval '2 day', NOW() - interval '2 day'),
-('f1000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000005', 'c0000000-0000-0000-0000-000000000005', '인천공항 날씨 최고', NOW() - interval '1 day', NOW() - interval '1 day');
+('f1000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', '오늘 서울 날씨 맑음! OOTD', NOW() - interval '5 day', NOW() - interval '5 day'),
+('f1000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', '부산은 흐리네요', NOW() - interval '4 day', NOW() - interval '4 day'),
+('f1000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000003', '제주도 대체로 흐림', NOW() - interval '3 day', NOW() - interval '3 day'),
+('f1000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004', 'd0000000-0000-0000-0000-000000000004', '대전은 흐려요', NOW() - interval '2 day', NOW() - interval '2 day'),
+('f1000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000005', 'd0000000-0000-0000-0000-000000000005', '인천공항 날씨 최고', NOW() - interval '1 day', NOW() - interval '1 day');
 
 -- comments (21 for feed f1000000-0000-0000-0000-000000000001)
 INSERT INTO comments (id, feed_id, author_id, content, created_at) VALUES
@@ -142,12 +151,12 @@ INSERT INTO notifications (id, receiver_id, created_at, title, content, level) V
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', NOW(), '계정 관련', '비밀번호 변경이 필요합니다.', 'CRITICAL');
 
 -- profiles (5)
-INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity) VALUES
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', NOW(), NOW(), '김유저일', 'MALE', '1990-01-01', 3.0),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', NOW(), NOW(), '이유저이', 'FEMALE', '1992-02-02', 4.0),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', NOW(), NOW(), '박유저삼', 'MALE', '1993-03-03', 2.5),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', NOW(), NOW(), '최유저사', 'FEMALE', '1994-04-04', 4.5),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5);
+INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity, profile_image_url) VALUES
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', NOW(), NOW(), '김유저일', 'MALE', '1990-01-01', 3.0, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', NOW(), NOW(), '이유저이', 'FEMALE', '1992-02-02', 4.0, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', NOW(), NOW(), '박유저삼', 'MALE', '1993-03-03', 2.5, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000004', NOW(), NOW(), '최유저사', 'FEMALE', '1994-04-04', 4.5, null),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5, null);
 
 -- direct_messages (5)
 INSERT INTO direct_messages (id, sender_id, receiver_id, created_at, message, is_read) VALUES
@@ -167,11 +176,11 @@ INSERT INTO feed_clothes (id, feed_id, clothes_id, created_at) VALUES
 
 -- recommendations (5)
 INSERT INTO recommendations (id, user_id, weather_id, created_at) VALUES
-('80000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', NOW()),
-('80000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002', NOW()),
-('80000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000003', NOW()),
-('80000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000004', NOW()),
-('80000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000005', 'c0000000-0000-0000-0000-000000000005', NOW());
+('80000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', NOW()),
+('80000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', NOW()),
+('80000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000003', NOW()),
+('80000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004', 'd0000000-0000-0000-0000-000000000004', NOW()),
+('80000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000005', 'd0000000-0000-0000-0000-000000000005', NOW());
 
 -- recommendation_clothes (5)
 INSERT INTO recommendation_clothes (id, recommendation_id, clothes_id, created_at) VALUES
@@ -180,3 +189,30 @@ INSERT INTO recommendation_clothes (id, recommendation_id, clothes_id, created_a
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000003', NOW()),
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000004', 'e0000000-0000-0000-0000-000000000004', NOW()),
 (gen_random_uuid(), '80000000-0000-0000-0000-000000000005', 'e0000000-0000-0000-0000-000000000005', NOW());
+
+
+-- 좋아요 카운트 백필
+UPDATE feeds f
+SET like_count = COALESCE(sub.cnt, 0),
+    updated_at = NOW()
+FROM (
+         SELECT feed_id, COUNT(*) AS cnt
+         FROM feed_likes
+         GROUP BY feed_id
+     ) sub
+WHERE f.id = sub.feed_id;
+
+-- 댓글 카운트 백필
+UPDATE feeds f
+SET comment_count = COALESCE(sub.cnt, 0),
+    updated_at = NOW()
+FROM (
+         SELECT feed_id, COUNT(*) AS cnt
+         FROM comments
+         GROUP BY feed_id
+     ) sub
+WHERE f.id = sub.feed_id;
+
+-- 혹시 남아있을 NULL 정리
+UPDATE feeds SET like_count = 0 WHERE like_count IS NULL;
+UPDATE feeds SET comment_count = 0 WHERE comment_count IS NULL;
