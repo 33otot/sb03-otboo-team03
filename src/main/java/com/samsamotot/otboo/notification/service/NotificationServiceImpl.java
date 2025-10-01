@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
-import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.notification.dto.NotificationDto;
 import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import com.samsamotot.otboo.notification.dto.NotificationRequest;
@@ -22,7 +21,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,14 +38,14 @@ public class NotificationServiceImpl implements NotificationService {
     private static final String NOTIFICATION_SERVICE = "[NotificationService] ";
 
     private static final String ROLE_TITLE = "권한 변경";
-    private static final String CLOTHES_ATTRBUTE_TITLE = "의상 속성 추가";
+    private static final String CLOTHES_ATTRIBUTE_TITLE = "의상 속성 추가";
     private static final String LIKE_TITLE = "새 좋아요";
     private static final String COMMENT_TITLE = "새 댓글";
     private static final String FOLLOW_TITLE = "새 팔로워";
     private static final String DIRECT_MESSAGE_TITLE = "새 쪽지";
 
     private static final String ROLE_CONTENT = "변경된 권한을 확인하세요";
-    private static final String CLOTHES_ATTRBUTE_CONTENT = "의상 속성이 추가되었습니다.";
+    private static final String CLOTHES_ATTRIBUTE_CONTENT = "의상 속성이 추가되었습니다.";
     private static final String LIKE_CONTENT = "from: ";
     private static final String FOLLOW_CONTENT = "사용자가 팔로우했습니다";
 
@@ -110,7 +108,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Transactional
     public void notifyClothesAttrbute(UUID userId) {
-        save(userId, CLOTHES_ATTRBUTE_TITLE, CLOTHES_ATTRBUTE_CONTENT, NotificationLevel.INFO);
+        save(userId, CLOTHES_ATTRIBUTE_TITLE, CLOTHES_ATTRIBUTE_CONTENT, NotificationLevel.INFO);
     }
 
     /**
