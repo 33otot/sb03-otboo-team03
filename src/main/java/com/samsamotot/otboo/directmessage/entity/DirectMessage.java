@@ -33,7 +33,4 @@ public class DirectMessage extends BaseEntity {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     String message;
-
-    @Column(nullable = false, name = "is_read")
-    boolean isRead;
 }
