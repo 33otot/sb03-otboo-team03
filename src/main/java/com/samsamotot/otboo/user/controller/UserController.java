@@ -75,7 +75,7 @@ public class UserController implements UserApi {
      *
      * @param userId       수정할 사용자의 고유 ID (UUID)
      * @param request      수정할 프로필 정보가 담긴 DTO (@Valid를 통해 유효성 검사)
-     * @param profileImage 새로 등록할 프로필 이미지 파일 (선택 사항)
+     * @param image 새로 등록할 프로필 이미지 파일 (선택 사항)
      * @return 수정이 완료된 최신 프로필 정보가 담긴 ResponseEntity<ProfileDto>
      * @throws OtbooException 사용자를 찾을 수 없거나 파일 처리 중 오류 발생 시 예외
      */
@@ -84,11 +84,11 @@ public class UserController implements UserApi {
     public ResponseEntity<ProfileDto> updateProfile(
             @PathVariable UUID userId,
             @RequestPart("request") @Valid ProfileUpdateRequest request,
-            @RequestPart(value = "profileImage", required = false)MultipartFile profileImage
+            @RequestPart(value = "image", required = false) MultipartFile image
     ) {
         log.info(CONTROLLER + "사용자 프로필 수정 요청 - 사용자 ID: {}", userId);
 
-        ProfileDto profileDto = profileService.updateProfile(userId, request, profileImage);
+        ProfileDto profileDto = profileService.updateProfile(userId, request, image);
 
         log.info(CONTROLLER + "사용지 프로필 수정 성공 - 사용자 ID: {}, 프로필: {}", userId, profileDto);
         return ResponseEntity

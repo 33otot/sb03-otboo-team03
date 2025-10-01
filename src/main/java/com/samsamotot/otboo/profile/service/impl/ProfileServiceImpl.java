@@ -3,6 +3,8 @@ package com.samsamotot.otboo.profile.service.impl;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.storage.S3ImageStorage;
+import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.profile.dto.ProfileUpdateRequest;
 import com.samsamotot.otboo.profile.entity.Profile;
@@ -11,8 +13,12 @@ import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.profile.service.ProfileService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
+import com.samsamotot.otboo.weather.entity.Grid;
+import com.samsamotot.otboo.weather.repository.GridRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,8 +35,10 @@ public class ProfileServiceImpl implements ProfileService {
 
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
+    private final LocationRepository locationRepository;
     private final ProfileMapper profileMapper;
     private final S3ImageStorage s3ImageStorage;
+    private final GridRepository gridRepository;
 
     /**
      * 사용자 ID를 사용하여 특정 사용자의 프로필 정보를 조회합니다.
@@ -46,19 +54,17 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional(readOnly = true)
     public ProfileDto getProfileByUserId(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
-
-        String username = user.getUsername();
-
-        log.info(SERVICE + "사용자 프로필 조회 시도 - 사용자 ID: {}, 사용자 이름: {}",
-                userId, username);
-
         Profile userProfile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new OtbooException(ErrorCode.PROFILE_NOT_FOUND));
 
-        log.info(SERVICE + "사용자 프로필 조회 성공 - 사용자 ID: {}, 사용자 이름: {}",
-                userProfile.getUser().getId(), userProfile.getUser().getUsername());
+        User user = userProfile.getUser();
+        if (user == null) { // Profile과 User의 연결이 끊어진 예외적인 경우 방어
+            throw new OtbooException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        log.info(SERVICE + "사용자 프로필 조회 시도 - 사용자 ID: {}, 사용자 이름: {}",
+                userId, user.getUsername());
+        log.info(SERVICE + "사용자 프로필 조회 성공 - 프로필 ID: {}", userProfile.getId());
 
         return profileMapper.toDto(userProfile);
     }
@@ -84,23 +90,74 @@ public class ProfileServiceImpl implements ProfileService {
         Profile existingProfile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new OtbooException(ErrorCode.PROFILE_NOT_FOUND));
 
+        // 1. 이미지 처리
         String oldImageUrl = existingProfile.getProfileImageUrl();
-        String newImageUrl = oldImageUrl;
+        String newImageUrl = processProfileImage(profileImage, oldImageUrl);
 
-        if (profileImage != null && !profileImage.isEmpty()) {
-            log.info(SERVICE + "사용자 프로필 이미지 최신화 - 사용자 ID: {}", userId);
-            newImageUrl = s3ImageStorage.uploadImage(profileImage, "profile/");
-            log.info(SERVICE + "사용자 프로필 업로드 완료. 업로드된 이미지: {}", newImageUrl);
+        // 2. 위치 정보 처리
+        Location location = findOrCreateLocation(request.location(), existingProfile.getLocation());
 
-            if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
-                s3ImageStorage.deleteImage(oldImageUrl);
-                log.info(SERVICE + "기존 프로필 이미지 삭제 완료. URL: {}", oldImageUrl);
-            }
-        }
-
-        existingProfile.update(request, newImageUrl);
+        // 3. [저장] 프로필 업데이트
+        existingProfile.update(request, location, newImageUrl);
         log.info(SERVICE + "사용자 프로필 수정 완료 - 프로필 ID: {}", existingProfile.getId());
 
         return profileMapper.toDto(existingProfile);
+    }
+
+    /**
+     * 요청 DTO에 포함된 위치 정보를 바탕으로 Location 엔티티를 조회하거나 새로 생성합니다.
+     * @param weatherLocation 클라이언트로부터 받은 위치 정보 DTO
+     * @param existingLocation weatherLocation이 null일 경우 반환될 기본 위치 엔티티
+     * @return 영속 상태의 Location 엔티티
+     */
+    private Location findOrCreateLocation(WeatherAPILocation weatherLocation, Location existingLocation) {
+        if (weatherLocation == null) {
+            return existingLocation;
+        }
+            Grid grid = gridRepository.findByXAndY(weatherLocation.x(), weatherLocation.y())
+                    .orElseGet(() -> {
+                        Grid newGrid = Grid.builder()
+                                .x(weatherLocation.x())
+                                .y(weatherLocation.y())
+                                .build();
+                        try {
+                            return gridRepository.save(newGrid);
+                        } catch (DataIntegrityViolationException e) {
+                            return gridRepository.findByXAndY(weatherLocation.x(), weatherLocation.y())
+                                    .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_GRID));
+                        }
+                    });
+            return locationRepository.findByLongitudeAndLatitude(weatherLocation.longitude(), weatherLocation.latitude())
+                    .orElseGet(() -> {
+                        Location newLocation = Location.builder()
+                                .longitude(weatherLocation.longitude())
+                                .latitude(weatherLocation.latitude())
+                                .grid(grid)
+                                .locationNames(weatherLocation.locationNames())
+                                .build();
+                        try {
+                            return locationRepository.save(newLocation);
+                        } catch (DataIntegrityViolationException e) {
+                            return locationRepository.findByLongitudeAndLatitude(weatherLocation.longitude(), weatherLocation.latitude())
+                                    .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_LOCATION));
+                        }
+                    });
+    }
+
+    private String processProfileImage(MultipartFile profileImage, String oldImageUrl) {
+        if (profileImage == null || profileImage.isEmpty()) {
+            return oldImageUrl;
+        }
+
+        log.info(SERVICE + "사용자 프로필 이미지 최신화...");
+        String newImageUrl = s3ImageStorage.uploadImage(profileImage, "profile/");
+        log.info(SERVICE + "사용자 프로필 업로드 완료. URL: {}", newImageUrl);
+
+        if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
+            s3ImageStorage.deleteImage(oldImageUrl);
+            log.info(SERVICE + "기존 프로필 이미지 삭제 완료. URL: {}", oldImageUrl);
+        }
+
+        return newImageUrl;
     }
 }

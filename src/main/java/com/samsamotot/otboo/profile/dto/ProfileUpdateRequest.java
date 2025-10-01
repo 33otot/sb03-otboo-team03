@@ -1,7 +1,7 @@
 package com.samsamotot.otboo.profile.dto;
 
-import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.profile.entity.Gender;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import jakarta.validation.constraints.*;
 import lombok.Builder;
 
@@ -17,7 +17,7 @@ public record ProfileUpdateRequest(
 
         LocalDate birthDate,
 
-        Location location,
+        WeatherAPILocation location,
 
         @DecimalMin(value = "1.0")
         @DecimalMax(value = "5.0")

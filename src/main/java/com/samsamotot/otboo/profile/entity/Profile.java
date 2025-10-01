@@ -45,7 +45,7 @@ public class Profile extends BaseEntity {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
-    public void update(ProfileUpdateRequest request, String newImageUrl) {
+    public void update(ProfileUpdateRequest request, Location location, String newImageUrl) {
         this.name = request.name();
 
         if (request.gender() != null) {
@@ -55,7 +55,7 @@ public class Profile extends BaseEntity {
             this.birthDate = request.birthDate();
         }
         if (request.location() != null) {
-            this.location = request.location();
+            this.location = location;
         }
         if (request.temperatureSensitivity() != null) {
             this.temperatureSensitivity = request.temperatureSensitivity();
