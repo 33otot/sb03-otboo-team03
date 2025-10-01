@@ -3,6 +3,7 @@ package com.samsamotot.otboo.notification.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.notification.dto.NotificationDto;
 import com.samsamotot.otboo.notification.dto.NotificationListResponse;
@@ -161,12 +162,20 @@ public class NotificationServiceImpl implements NotificationService {
         int limit = Math.max(1, request.limit());
 
         PageRequest pageRequest = PageRequest.of(0, limit+1);
-        List<Notification> rows = notificationRepository.findAllBefore(
-            receiverId,
-            request.cursor(),
-            request.idAfter(),
-            pageRequest
-        );
+
+        List<Notification> rows;
+        if (request.cursor() == null) {
+            log.info("첫번째 조회(커서 값 null)");
+            rows = notificationRepository.findLatest(receiverId, pageRequest);
+        } else {
+            log.info("두번째 조회(커서 값 있음)");
+            rows = notificationRepository.findAllBefore(
+                receiverId,
+                request.cursor(),
+                request.idAfter(),
+                pageRequest
+            );
+        }
 
         boolean hasNext = rows.size() > limit;
         List<Notification> pageRows = hasNext ? rows.subList(0, limit) : rows;
@@ -202,18 +211,23 @@ public class NotificationServiceImpl implements NotificationService {
      */
     private UUID currentUserId() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
+
+        log.debug(NOTIFICATION_SERVICE + "[DEBUG] authClass={}, name={}, principalClass={}, principal={}",
+            (auth != null ? auth.getClass() : null),
+            (auth != null ? auth.getName() : null),
+            (auth != null && auth.getPrincipal() != null ? auth.getPrincipal().getClass() : null),
+            (auth != null ? auth.getPrincipal() : null));
+
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
             log.warn(NOTIFICATION_SERVICE + "인증 실패: Authentication 비어있음/미인증 (auth={}, principal={})", auth, (auth != null ? auth.getPrincipal() : null));
             throw new OtbooException(ErrorCode.UNAUTHORIZED);
         }
 
-        String email = auth.getName();
-        return userRepository.findByEmail(email)
-            .map(User::getId)
-            .orElseThrow(() -> {
-                log.warn(NOTIFICATION_SERVICE + "인증 사용자 조회 실패: email={} (DB에 없음)", email);
-                return new OtbooException(ErrorCode.UNAUTHORIZED);
-            });
+        if (auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getId();
+        }
+
+        throw new OtbooException(ErrorCode.UNAUTHORIZED);
     }
 
     /**

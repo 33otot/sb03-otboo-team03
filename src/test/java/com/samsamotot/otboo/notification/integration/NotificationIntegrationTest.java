@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.notification.integration;
 
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.repository.NotificationRepository;
@@ -49,18 +50,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Notification 통합 테스트")
 public class NotificationIntegrationTest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private NotificationService notificationService;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @Autowired private UserRepository userRepository;
-    @Autowired private NotificationRepository notificationRepository;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     private static final String EMAIL = "me@test.com";
 
+    private User me;
+
     @BeforeEach
     void setUpAuth() {
+        me = persistUser(EMAIL);
+        var principal = new CustomUserDetails(me);
         SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken(EMAIL, "pw", java.util.List.of()) // ✅ 인증됨
+            new UsernamePasswordAuthenticationToken(principal, "pw", principal.getAuthorities())
         );
     }
 
@@ -100,15 +108,12 @@ public class NotificationIntegrationTest {
     @Test
     void limit_만큼_가져온다() throws Exception {
         // given
-        User me = persistUser(EMAIL);
         Instant base = Instant.now();
+        newNotification(me, base.minusSeconds(3), "N3");
+        newNotification(me, base.minusSeconds(2), "N2");
+        newNotification(me, base.minusSeconds(1), "N1");
 
-        var n3 = newNotification(me, base.minusSeconds(3), "N3");
-        var n2 = newNotification(me, base.minusSeconds(2), "N2");
-        var n1 = newNotification(me, base.minusSeconds(1), "N1");
-
-        mockMvc.perform(get("/api/notifications")
-                .param("limit", "2"))
+        mockMvc.perform(get("/api/notifications").param("limit", "2"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data", hasSize(2)))
             .andExpect(jsonPath("$.hasNext", is(true)))
@@ -118,12 +123,10 @@ public class NotificationIntegrationTest {
 
     @Test
     void 없으면_안_가져온다() throws Exception {
-        // given
-        persistUser(EMAIL); // 유저만 있고 알림 없음
+        // given: setUpAuth에서 me는 생성했지만 알림은 없음
 
         // when & then
-        mockMvc.perform(get("/api/notifications")
-                .param("limit", "10"))
+        mockMvc.perform(get("/api/notifications").param("limit", "10"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data", hasSize(0)))
             .andExpect(jsonPath("$.hasNext", is(false)))

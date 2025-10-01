@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import com.samsamotot.otboo.notification.dto.NotificationRequest;
 import com.samsamotot.otboo.notification.entity.Notification;
@@ -75,6 +76,13 @@ class NotificationServiceImplTest {
         User u = UserFixture.createUserWithEmail(email);
         ReflectionTestUtils.setField(u, "id", id);
         return u;
+    }
+
+    private void mockAuthUser(User user) {
+        var principal = new CustomUserDetails(user);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(principal, "pw", principal.getAuthorities())
+        );
     }
 
     private Notification newNotification(User receiver, Instant createdAt, UUID id, String title) {
@@ -268,8 +276,7 @@ class NotificationServiceImplTest {
         UUID myId = UUID.randomUUID();
         User me = newUserWith(email, myId);
 
-        mockAuthEmail(email);
-        given(userRepository.findByEmail(email)).willReturn(Optional.of(me));
+        mockAuthUser(me);
         given(notificationRepository.countByReceiver_Id(myId)).willReturn(2L);
 
         Instant now = Instant.now();
@@ -277,7 +284,8 @@ class NotificationServiceImplTest {
         Notification n2 = newNotification(me, now.minusSeconds(20), UUID.randomUUID(), "알림2");
 
         NotificationRequest req = new NotificationRequest(null, null, 10);
-        given(notificationRepository.findAllBefore(eq(myId), isNull(), isNull(), any(Pageable.class)))
+
+        given(notificationRepository.findLatest(eq(myId), any(Pageable.class)))
             .willReturn(List.of(n1, n2));
 
         // when
@@ -289,9 +297,11 @@ class NotificationServiceImplTest {
         assertEquals(2, res.data().size());
         assertEquals(2L, res.totalCount());
         assertEquals("DESCENDING", res.sortDirection());
+
         then(notificationRepository).should()
-            .findAllBefore(eq(myId), isNull(), isNull(), argThat(p -> p.getPageSize() == 11));
+            .findLatest(eq(myId), argThat(p -> p.getPageSize() == 11));
     }
+
 
     @Test
     void limit_만큼_가져온다() throws Exception {
@@ -300,8 +310,7 @@ class NotificationServiceImplTest {
         UUID myId = UUID.randomUUID();
         User me = newUserWith(email, myId);
 
-        mockAuthEmail(email);
-        given(userRepository.findByEmail(email)).willReturn(Optional.of(me));
+        mockAuthUser(me);
         given(notificationRepository.countByReceiver_Id(myId)).willReturn(3L);
 
         int limit = 2;
@@ -312,7 +321,8 @@ class NotificationServiceImplTest {
         Notification c = newNotification(me, base.minusSeconds(3), UUID.randomUUID(), "C");
 
         NotificationRequest req = new NotificationRequest(null, null, limit);
-        given(notificationRepository.findAllBefore(eq(myId), isNull(), isNull(), any(Pageable.class)))
+
+        given(notificationRepository.findLatest(eq(myId), any(Pageable.class)))
             .willReturn(List.of(a, b, c));
 
         // when
@@ -329,18 +339,18 @@ class NotificationServiceImplTest {
         assertNotNull(res.nextCursor());
 
         then(notificationRepository).should()
-            .findAllBefore(eq(myId), isNull(), isNull(), argThat(p -> p.getPageSize() == limit + 1));
+            .findLatest(eq(myId), argThat(p -> p.getPageSize() == limit + 1));
     }
+
 
     @Test
     void cursor_기준_동일하면_보조_커서로_가져온다() throws Exception {
         // given
         String email = UserFixture.VALID_EMAIL;
         UUID myId = UUID.randomUUID();
-        User me = newUserWith(email, myId); // ← 픽스처
+        User me = newUserWith(email, myId);
 
-        mockAuthEmail(email);
-        given(userRepository.findByEmail(email)).willReturn(Optional.of(me));
+        mockAuthUser(me);
         given(notificationRepository.countByReceiver_Id(myId)).willReturn(2L);
 
         Instant ts = Instant.now();
@@ -365,4 +375,5 @@ class NotificationServiceImplTest {
         then(notificationRepository).should()
             .findAllBefore(eq(myId), eq(ts), eq(idAfter), argThat(p -> p.getPageSize() == limit + 1));
     }
+
 }

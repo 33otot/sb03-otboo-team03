@@ -120,8 +120,7 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/api/follows/**",
-                    "/api/direct-messages/**",
-                    "/api/notifications/**"
+                    "/api/direct-messages/**"
                 ).permitAll()
 
                 // 의상 속성 정의 C/U/D 기능은 ADMIN 유저만 가능
@@ -130,6 +129,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
 
                 .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
+
+                .requestMatchers("/api/notifications/**").authenticated()
 
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()
