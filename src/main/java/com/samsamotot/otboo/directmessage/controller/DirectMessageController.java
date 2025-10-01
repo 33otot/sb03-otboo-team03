@@ -32,7 +32,6 @@ public class DirectMessageController implements DirectMessageApi {
 
     private final DirectMessageService directMessageService;
 
-
     /**
      * DM 목록을 조회하는 API
      *

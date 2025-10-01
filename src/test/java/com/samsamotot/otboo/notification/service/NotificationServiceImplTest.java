@@ -331,7 +331,7 @@ class NotificationServiceImplTest {
         var last = res.data().get(limit - 1);
         assertEquals(b.getId(), last.getId());
         assertNotNull(res.nextCursor());
-        assertNotNull(res.nextCursor());
+        assertNotNull(res.nextIdAfter());
 
         then(notificationRepository).should()
             .findLatest(eq(myId), argThat(p -> p.getPageSize() == limit + 1));
