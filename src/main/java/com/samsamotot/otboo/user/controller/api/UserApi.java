@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.user.controller.api;
 
 import com.samsamotot.otboo.common.exception.ErrorResponse;
+import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.UUID;
 
@@ -42,7 +44,28 @@ public interface UserApi {
         }
     )
     ResponseEntity<UserDto> createUser(UserCreateRequest request);
-    
+
+    @Operation(
+            summary = "프로필 조회",
+            description = "프로필 조회 API",
+            operationId = "getProfile"
+    )
+    @ApiResponses(
+            value = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "프로필 조회 성공",
+                            content = @Content(mediaType = "*/*", schema = @Schema(implementation = ProfileDto.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "프로필 조회 실패",
+                            content = @Content(mediaType = "*/*", schema = @Schema(implementation = ErrorResponse.class))
+                    )
+            }
+    )
+    ResponseEntity<ProfileDto> getProfile(@PathVariable UUID userId);
+
     @Operation(
         summary = "계정 목록 조회",
         description = "계정 목록 조회 API",

@@ -1,5 +1,8 @@
 package com.samsamotot.otboo.user.controller;
 
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.profile.dto.ProfileDto;
+import com.samsamotot.otboo.profile.service.ProfileService;
 import com.samsamotot.otboo.user.controller.api.UserApi;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
@@ -8,22 +11,14 @@ import com.samsamotot.otboo.user.dto.UserListRequest;
 import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.service.UserService;
-import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -35,23 +30,37 @@ import java.util.UUID;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController implements UserApi {
-    
+
     private final String CONTROLLER = "[UserController] ";
 
     private final UserService userService;
-    
+    private final ProfileService profileService;
+
     @Override
     @PostMapping
     public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserCreateRequest request) {
         log.info(CONTROLLER + "회원가입 요청 - 이메일: {}", request.getEmail());
-        
+
         UserDto userDto = userService.createUser(request);
-        
+
         log.info(CONTROLLER + "회원가입 완료 - 사용자 ID: {}", userDto.getId());
-        
+
         return ResponseEntity.status(HttpStatus.CREATED).body(userDto);
     }
-    
+
+    @Override
+    @GetMapping("/{userId}/profiles")
+    public ResponseEntity<ProfileDto> getProfile(@PathVariable UUID userId) {
+        log.info(CONTROLLER + "사용자 프로필 조회 요청 - 사용자 ID: {}", userId);
+
+        ProfileDto profileDto = profileService.getProfileByUserId(userId);
+
+        log.info(CONTROLLER + "사용자 프로필 조회 완료");
+
+        return ResponseEntity.status(HttpStatus.OK).body(profileDto);
+    }
+
+
     @Override
     @GetMapping
     public ResponseEntity<UserDtoCursorResponse> getUserList(
@@ -64,9 +73,9 @@ public class UserController implements UserApi {
         @RequestParam(required = false) String roleEqual,
         @RequestParam(required = false) Boolean locked
     ) {
-        log.info(CONTROLLER + "사용자 목록 조회 요청 - limit: {}, sortBy: {}, sortDirection: {}", 
+        log.info(CONTROLLER + "사용자 목록 조회 요청 - limit: {}, sortBy: {}, sortDirection: {}",
             limit, sortBy, sortDirection);
-        
+
         // Role enum 변환
         Role role = null;
         if (roleEqual != null && !roleEqual.isEmpty()) {
@@ -77,7 +86,7 @@ public class UserController implements UserApi {
                 // 잘못된 권한 값은 무시하고 계속 진행
             }
         }
-        
+
         // UserListRequest 생성
         UserListRequest request = UserListRequest.builder()
             .limit(limit)
@@ -89,13 +98,13 @@ public class UserController implements UserApi {
             .roleEqual(role)
             .locked(locked)
             .build();
-        
+
         // 사용자 목록 조회
         UserDtoCursorResponse response = userService.getUserList(request);
-        
-        log.info(CONTROLLER + "사용자 목록 조회 완료 - 조회된 수: {}, 전체 수: {}", 
+
+        log.info(CONTROLLER + "사용자 목록 조회 완료 - 조회된 수: {}, 전체 수: {}",
             response.data().size(), response.totalCount());
-        
+
         return ResponseEntity.ok(response);
     }
     
