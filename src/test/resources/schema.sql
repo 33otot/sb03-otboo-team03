@@ -187,7 +187,7 @@ CREATE TABLE IF NOT EXISTS direct_messages
     sender_id UUID NOT NULL,
     receiver_id UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    message TEXT NOT NULL
+    message TEXT NOT NULL,
 
     CONSTRAINT fk_dm_sender FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT fk_dm_receiver FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE,
