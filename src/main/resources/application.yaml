@@ -45,3 +45,11 @@ async:
       queue-capacity: 1000
       keep-alive-seconds: 60
 
+recommendation:
+  cooldown:
+    ttl:
+      minutes: 30
+  rollcount:
+    ttl:
+      days: 1
+  score-threshold: 0.4
