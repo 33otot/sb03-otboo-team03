@@ -46,6 +46,11 @@ async:
       keep-alive-seconds: 60
 
 recommendation:
-  cooldown-ttl-minutes: 30
-  rollcount-ttl-days: 1
+  cooldown:
+    ttl:
+      minutes: 30
+  rollcount:
+    ttl:
+      days: 1
+  score-threshold: 0.4
   score-threshold: 0.4
