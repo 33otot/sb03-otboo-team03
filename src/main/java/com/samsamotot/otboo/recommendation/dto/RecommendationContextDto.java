@@ -11,7 +11,6 @@ import lombok.Builder;
 public record RecommendationContextDto(
     double adjustedTemperature,
     boolean isRainingOrSnowing,
-//    boolean isWindy,
     Month currentMonth
 ) {
 
