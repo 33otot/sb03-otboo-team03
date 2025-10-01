@@ -159,12 +159,12 @@ INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, ge
 (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000005', NOW(), NOW(), '정유저오', 'OTHER', '1995-05-05', 3.5, null);
 
 -- direct_messages (5)
-INSERT INTO direct_messages (id, sender_id, receiver_id, created_at, message, is_read) VALUES
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000002', NOW() - interval '4 day', '안녕하세요', false),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', NOW() - interval '3 day', '네 안녕하세요!', true),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000003', NOW() - interval '2 day', '피드 잘보고 갑니다', false),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', NOW() - interval '1 day', '질문 있습니다', false),
-(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000002', NOW(), '오늘 날씨 어때요?', false);
+INSERT INTO direct_messages (id, sender_id, receiver_id, created_at, message) VALUES
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000002', NOW() - interval '4 day', '안녕하세요'),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', NOW() - interval '3 day', '네 안녕하세요!'),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000003', NOW() - interval '2 day', '피드 잘보고 갑니다'),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', NOW() - interval '1 day', '질문 있습니다'),
+(gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000002', NOW(), '오늘 날씨 어때요?');
 
 -- feed_clothes (5)
 INSERT INTO feed_clothes (id, feed_id, clothes_id, created_at) VALUES

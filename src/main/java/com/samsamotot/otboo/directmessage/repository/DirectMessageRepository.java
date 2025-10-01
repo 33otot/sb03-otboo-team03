@@ -20,7 +20,10 @@ import java.util.UUID;
 public interface DirectMessageRepository extends JpaRepository<DirectMessage, UUID> {
 
 
-    // 양방향, 우선순위: cursor, 타이브레이커 idAfter, DESC 고정
+    /*
+        목록조회 커서 X
+        양방향, 우선순위: cursor, 타이브레이커 idAfter, DESC 고정
+     */
     @Query("""
         SELECT m FROM DirectMessage m
         JOIN FETCH m.sender s
@@ -28,10 +31,16 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
         WHERE ((s.id = :me AND r.id = :other) OR (s.id = :other AND r.id = :me))
         ORDER BY m.createdAt DESC, m.id DESC
         """)
-    List<DirectMessage> findFirstPage(@Param("me") UUID me,
-                                      @Param("other") UUID other,
-                                      Pageable pageable);
+    List<DirectMessage> findFirstPage(
+        @Param("me") UUID me,
+        @Param("other") UUID other,
+        Pageable pageable);
 
+
+    /*
+        목록조회 커서 O
+        양방향, 우선순위: cursor, 타이브레이커 idAfter, DESC 고정
+     */
     @Query("""
           SELECT m FROM DirectMessage m
           JOIN FETCH m.sender s
@@ -42,30 +51,21 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
             )
           ORDER BY m.createdAt DESC, m.id DESC
         """)
-    List<DirectMessage> findNextPage(@Param("me") UUID me,
-                                     @Param("other") UUID other,
-                                     @Param("cursor") Instant cursor,
-                                     @Param("idAfter") UUID idAfter,
-                                     Pageable pageable);
+    List<DirectMessage> findNextPage(
+        @Param("me") UUID me,
+        @Param("other") UUID other,
+        @Param("cursor") Instant cursor,
+        @Param("idAfter") UUID idAfter,
+        Pageable pageable);
 
 
+    /*
+        목록조회 카운트
+     */
     @Query("""
             SELECT COUNT(m) FROM DirectMessage m
             WHERE ((m.sender.id = :me AND m.receiver.id = :other)
                 OR (m.sender.id = :other AND m.receiver.id = :me))
         """)
     long countBetween(@Param("me") UUID me, @Param("other") UUID other);
-
-
-    @Modifying
-    @Query("""
-       UPDATE DirectMessage m
-          SET m.isRead = true
-        WHERE (m.sender.id = :peer AND m.receiver.id = :me)
-          AND (m.id <= :lastMessageId)
-          AND m.isRead = false
-    """)
-    int markAsReadBetween(@Param("me") UUID me,
-                          @Param("peer") UUID peer,
-                          @Param("lastMessageId") UUID lastMessageId);
 }

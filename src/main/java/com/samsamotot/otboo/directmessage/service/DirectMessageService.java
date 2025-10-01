@@ -17,7 +17,6 @@ import java.util.UUID;
 public interface DirectMessageService {
     DirectMessageListResponse getMessages(MessageRequest request);
 
+    // TODO 작업중
     DmEvent persistAndBuildEvent(UUID senderId, SendDmRequest request);
-
-    DmReadEvent markRead(UUID me, DmReadRequest request);
 }

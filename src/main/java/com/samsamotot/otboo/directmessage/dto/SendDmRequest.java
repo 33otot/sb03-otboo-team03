@@ -12,7 +12,7 @@ import java.util.UUID;
  * Date         : 2025. 9. 26.
  */
 public record SendDmRequest(
-    UUID toUserId,
-    @JsonAlias({"message"}) String content,
-    UUID tempId
+    UUID senderId,
+    UUID receiverId,
+    String content
 ) {}

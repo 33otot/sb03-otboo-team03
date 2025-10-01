@@ -8,17 +8,18 @@ import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
 import java.security.Principal;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -28,11 +29,13 @@ import java.util.UUID;
  * Date         : 2025. 9. 22.
  */
 
+@Slf4j
 @RequiredArgsConstructor
-@RestController
+@Controller
 @Validated
 @RequestMapping("api/direct-messages")
 public class DirectMessageController implements DirectMessageApi {
+    private static final String DM_CONTROLLER = "[DirectMessageController]";
 
     private final DirectMessageService directMessageService;
     private final SimpMessagingTemplate template;
@@ -58,24 +61,23 @@ public class DirectMessageController implements DirectMessageApi {
         return ResponseEntity.ok().body(directMessageService.getMessages(request));
     }
 
+    // TODO 작업중
     @MessageMapping("/direct-messages_send")
-    public void send(SendDmRequest req, Principal principal) {
+    public void send(SendDmRequest request, Principal principal) {
+        if (principal == null) {
+            log.error("Unauthorized WebSocket request");
+            return;
+        }
+        
         UUID me = UUID.fromString(principal.getName());
-        var event = directMessageService.persistAndBuildEvent(me, req);
+        log.info(DM_CONTROLLER + "incoming: from={} to={} content={}", 
+            me, request.receiverId(), request.content());
 
-        String topic = DmTopicKey.topic(event.senderId(), event.receiverId());
-        template.convertAndSend(topic, event);
+        DmEvent event = directMessageService.persistAndBuildEvent(me, request);
+
+        String destination = DmTopicKey.destination(event.senderId(), event.receiverId());
+        template.convertAndSend(destination, event);
+        
+        log.info(DM_CONTROLLER + "broadcast -> {} id={}", destination, event.id());
     }
-
-//    @MessageMapping("/dm.read")
-//    public void read(DmReadRequest req, Principal principal) {
-//        UUID me = UUID.fromString(principal.getName());
-//        DmReadEvent ev = directMessageService.markRead(me, req);
-//
-//        // 상대에게: 내가 읽었다는 신호
-//        template.convertAndSendToUser(req.peerId().toString(), "/queue/dm.read", ev);
-//
-//        // 나에게도(동기화용)
-//        template.convertAndSendToUser(me.toString(), "/queue/dm.read", ev);
-//    }
 }

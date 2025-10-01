@@ -34,9 +34,4 @@ public class DirectMessage extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     String message;
 
-    @Column(nullable = false, name = "is_read")
-    @Builder.Default
-    boolean isRead = false;
-
-    public void markRead() { this.isRead = true; }
 }

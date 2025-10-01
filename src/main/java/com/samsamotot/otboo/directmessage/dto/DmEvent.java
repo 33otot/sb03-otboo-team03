@@ -17,19 +17,8 @@ public record DmEvent(
     UUID id,
     UUID senderId,
     UUID receiverId,
-    String content,
+    @JsonProperty("message") String content,
     Instant createdAt,
     String status,
-    UUID tempId,
-    @JsonProperty("message") String _messageAlias
-) {
-    public static DmEvent of(UUID id, UUID senderId, UUID receiverId, String content,
-                             Instant createdAt, String status, UUID tempId) {
-        return DmEvent.builder()
-            .id(id).senderId(senderId).receiverId(receiverId)
-            .content(content)
-            .createdAt(createdAt).status(status).tempId(tempId)
-            ._messageAlias(content)
-            .build();
-    }
-}
+    UUID tempId
+) {}

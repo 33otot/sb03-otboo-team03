@@ -4,8 +4,9 @@ import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DmEvent;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
-import com.samsamotot.otboo.directmessage.dto.*;
+import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.mapper.DirectMessageMapper;
 import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
@@ -16,7 +17,6 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -136,33 +136,46 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         throw new OtbooException(ErrorCode.UNAUTHORIZED);
     }
 
+
+    // TODO 작업중
     @Transactional
-    public DmEvent persistAndBuildEvent(UUID senderId, SendDmRequest req) {
+    public DmEvent persistAndBuildEvent(UUID senderId, SendDmRequest request) {
+        log.info(DM_SERVICE + "DM 저장 시작 - senderId: {}, receiverId: {}, content: {}", 
+            senderId, request.receiverId(), request.content());
+
+        String content = request.content() == null ? "" : request.content();
+
         User senderRef   = em.getReference(User.class, senderId);
-        User receiverRef = em.getReference(User.class, req.toUserId());
+        User receiverRef = em.getReference(User.class, request.receiverId());
 
         DirectMessage entity = DirectMessage.builder()
             .sender(senderRef)
             .receiver(receiverRef)
-            .message(req.content())   // ← 엔티티는 message
+            .message(content)
             .build();
-        directMessageRepository.save(entity);
+        
+        DirectMessage savedEntity = directMessageRepository.save(entity);
+        log.info(DM_SERVICE + "DM 저장 완료 - id: {}, createdAt: {}", 
+            savedEntity.getId(), savedEntity.getCreatedAt());
 
-        return DmEvent.of(
-            entity.getId(),
-            senderId,
-            req.toUserId(),
-            entity.getMessage(),
-            entity.getCreatedAt(),
-            "SENT",
-            req.tempId()
-        );
+        // 프론트엔드 상태 관리를 위한 추가 정보
+        String sessionId = "dm-session-" + senderId + "-" + request.receiverId();
+        boolean isNewConversation = isNewConversation(senderId, request.receiverId());
+
+        return DmEvent.builder()
+            .id(savedEntity.getId())
+            .senderId(senderId)
+            .receiverId(request.receiverId())
+            .content(savedEntity.getMessage())
+            .createdAt(savedEntity.getCreatedAt())
+            .status("DELIVERED")
+            .tempId(UUID.randomUUID())
+            .build();
     }
 
-
-    @Transactional
-    public DmReadEvent markRead(UUID me, DmReadRequest request) {
-        int updated = directMessageRepository.markAsReadBetween(me, request.peerId(), request.lastMessageId());
-        return new DmReadEvent(request.peerId(), me, request.lastMessageId(), updated);
+    private boolean isNewConversation(UUID senderId, UUID receiverId) {
+        // 대화가 새로 시작되는지 확인하는 로직
+        long count = directMessageRepository.countBetween(senderId, receiverId);
+        return count <= 1;
     }
 }
