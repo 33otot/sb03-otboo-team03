@@ -17,6 +17,7 @@ import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -145,15 +146,16 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     * 현재 로그인한 사용자의 알림 목록을 커서 기반으로 조회한다.
+     * 현재 로그인 사용자의 알림 목록을 커서 기반으로 조회한다.
      *
-     * - 최신 알림부터 limit 개수만큼 반환한다.
-     * - 커서(timestamp, idAfter)가 주어지면 해당 위치 이후(더 과거) 알림을 조회한다.
-     * - limit+1 개를 조회하여 hasNext 여부를 판단한다.
-     * - 응답에는 다음 페이지를 위한 nextCursor, nextIdAfter 정보를 포함한다.
+     * - 정렬: createdAt DESC, id DESC (최신순)
+     * - 첫 페이지: cursor/idAfter 없이 limit만 전달
+     * - 다음 페이지: 응답의 nextCursor/nextIdAfter를 그대로 사용
+     * - 서버는 limit+1개를 조회해 hasNext를 판단하고, hasNext=true일 때만
+     *   nextCursor/nextIdAfter를 채워준다.
      *
-     * @param request 알림 조회 요청(cursor, idAfter, limit)
-     * @return 알림 목록 응답 DTO (데이터, 커서, hasNext, totalCount 등)
+     * @param request cursor(옵션), idAfter(옵션), limit(필수; 최소 1로 보정)
+     * @return NotificationListResponse (data, hasNext, nextCursor, nextIdAfter, totalCount 등)
      */
     @Override
     public NotificationListResponse getNotifications(NotificationRequest request) {
@@ -210,13 +212,7 @@ public class NotificationServiceImpl implements NotificationService {
         로그인 유저 아이디를 가져온다.
      */
     private UUID currentUserId() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-
-        log.debug(NOTIFICATION_SERVICE + "[DEBUG] authClass={}, name={}, principalClass={}, principal={}",
-            (auth != null ? auth.getClass() : null),
-            (auth != null ? auth.getName() : null),
-            (auth != null && auth.getPrincipal() != null ? auth.getPrincipal().getClass() : null),
-            (auth != null ? auth.getPrincipal() : null));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
             log.warn(NOTIFICATION_SERVICE + "인증 실패: Authentication 비어있음/미인증 (auth={}, principal={})", auth, (auth != null ? auth.getPrincipal() : null));

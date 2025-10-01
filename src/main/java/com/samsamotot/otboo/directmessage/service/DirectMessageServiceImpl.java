@@ -13,6 +13,7 @@ import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -115,12 +116,13 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     }
 
     private UUID currentUserId() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
             log.warn(DM_SERVICE + "인증 실패: Authentication 비어있음/미인증 (auth={}, principal={})", auth, (auth != null ? auth.getPrincipal() : null));
             throw new OtbooException(ErrorCode.UNAUTHORIZED);
         }
 
+        // TODO 실제 테스트 가능 환경이 되었을 때 CustomUserDetails 활용하는 방식으로 수정 예정
         String email = auth.getName();
         return userRepository.findByEmail(email)
             .map(User::getId)
