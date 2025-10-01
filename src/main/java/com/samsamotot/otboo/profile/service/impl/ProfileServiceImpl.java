@@ -33,7 +33,6 @@ public class ProfileServiceImpl implements ProfileService {
 
     private static final String SERVICE = "[ProfileServiceImpl] ";
 
-    private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
     private final LocationRepository locationRepository;
     private final ProfileMapper profileMapper;
