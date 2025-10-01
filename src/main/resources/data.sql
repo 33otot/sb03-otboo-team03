@@ -37,7 +37,8 @@ INSERT INTO clothes_attribute_defs (id, name, created_at, updated_at) VALUES
                                                                           ('f0000000-0000-0000-0000-000000000003', '스타일', NOW(), NOW()),
                                                                           ('f0000000-0000-0000-0000-000000000004', '계절', NOW(), NOW()),
                                                                           ('f0000000-0000-0000-0000-000000000005', '사이즈', NOW(), NOW()),
-                                                                          ('f0000000-0000-0000-0000-000000000006', '두께', NOW(), NOW());
+                                                                          ('f0000000-0000-0000-0000-000000000006', '두께', NOW(), NOW()),
+                                                                          ('f0000000-0000-0000-0000-000000000007', '방수', NOW(), NOW());
 
 -- clothes_attribute_options (5 for each of 5 defs)
 INSERT INTO clothes_attribute_options (id, value, definition_id, created_at, updated_at) VALUES
@@ -85,8 +86,10 @@ INSERT INTO clothes_attribute_options (id, value, definition_id, created_at, upd
 -- 두께 옵션 추가
 (gen_random_uuid(), 'LIGHT', 'f0000000-0000-0000-0000-000000000006', NOW(), NOW()),
 (gen_random_uuid(), 'MEDIUM', 'f0000000-0000-0000-0000-000000000006', NOW(), NOW()),
-(gen_random_uuid(), 'HEAVY', 'f0000000-0000-0000-0000-000000000006', NOW(), NOW());
-
+(gen_random_uuid(), 'HEAVY', 'f0000000-0000-0000-0000-000000000006', NOW(), NOW()),
+-- 방수 옵션 추가
+(gen_random_uuid(), '가능', 'f0000000-0000-0000-0000-000000000007', NOW(), NOW()),
+(gen_random_uuid(), '불가능', 'f0000000-0000-0000-0000-000000000007', NOW(), NOW());
 
 -- weathers (5)
 INSERT INTO weathers (
@@ -196,7 +199,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()), -- 스타일
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()), -- 계절
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000005', 'M', NOW(), NOW()),   -- 사이즈
-                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000006', '가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()), -- 두께
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000007', '가능', NOW(), NOW());
 -- 슬림핏 청바지
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000001', '파랑', NOW(), NOW()),   -- 색상
@@ -204,7 +208,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()), -- 스타일
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000004', '봄', NOW(), NOW()),   -- 계절
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW()),   -- 사이즈
-                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000006', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW()), -- 두께
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 여름 원피스
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -213,7 +218,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()), -- 스타일
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()), -- 계절
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000005', 'S', NOW(), NOW()),   -- 사이즈
-                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000006', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()), -- 두께
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 가을 자켓
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -222,7 +228,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),   -- 스타일
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),   -- 계절
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW()),     -- 사이즈
-                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000006', '불가능', NOW(), NOW()); -- 방수
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW()), -- 두께
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW()); -- 방수
 
 -- 운동화
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -231,7 +238,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000005', 'f0000000-0000-0000-0000-000000000003', '스트릿', NOW(), NOW()), -- 스타일
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000005', 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()), -- 계절
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000005', 'f0000000-0000-0000-0000-000000000005', 'FREE', NOW(), NOW()), -- 사이즈
-                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000005', 'f0000000-0000-0000-0000-000000000006', '가능', NOW(), NOW()); -- 방수
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000005', 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()),  -- 두께
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000005', 'f0000000-0000-0000-0000-000000000007', '가능', NOW(), NOW()); -- 방수
 
 -- 화이트 셔츠
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -240,7 +248,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000004', '봄', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000005', 'M', NOW(), NOW()),
-                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000006', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 데님 반바지
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -249,7 +258,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000007', 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000007', 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000007', 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW()),
-                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000007', 'f0000000-0000-0000-0000-000000000006', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000007', 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000007', 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 겨울 코트
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -258,7 +268,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000008', 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000008', 'f0000000-0000-0000-0000-000000000004', '겨울', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000008', 'f0000000-0000-0000-0000-000000000005', 'XL', NOW(), NOW()),
-                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000008', 'f0000000-0000-0000-0000-000000000006', '가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000008', 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000008', 'f0000000-0000-0000-0000-000000000007', '가능', NOW(), NOW());
 
 -- 여름 샌들
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -267,7 +278,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000009', 'f0000000-0000-0000-0000-000000000003', '스트릿', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000009', 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000009', 'f0000000-0000-0000-0000-000000000005', 'FREE', NOW(), NOW()),
-                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000009', 'f0000000-0000-0000-0000-000000000006', '가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000009', 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000009', 'f0000000-0000-0000-0000-000000000007', '가능', NOW(), NOW());
 
 -- 후드티
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -276,7 +288,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000010', 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000010', 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000010', 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW()),
-                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000010', 'f0000000-0000-0000-0000-000000000006', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000010', 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), 'e0000000-0000-0000-0000-000000000010', 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 블랙 슬랙스
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -284,7 +297,9 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000002', '폴리에스터', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),
-                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블랙 슬랙스'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 베이지 면바지
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES

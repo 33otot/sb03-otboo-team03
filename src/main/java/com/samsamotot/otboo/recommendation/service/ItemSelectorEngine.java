@@ -109,18 +109,30 @@ public class ItemSelectorEngine {
                     }
                 })
                 .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a,b)->a));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldV, newV) -> newV));
         log.debug(ENGINE + "의상 속성 맵: id={}, type={}, attributes={}", clothes.getId(), clothes.getType(), attributeMap);
 
         Season currentSeason = Season.fromMonth(currentMonth);
 
         // 각 속성별 값 추출
-        Thickness thickness = Thickness.fromName(
-            attributeMap.getOrDefault(RecommendationAttribute.THICKNESS, Thickness.MEDIUM.getName()));
+        Thickness thickness;
+        try {
+            thickness = Thickness.fromName(
+                attributeMap.getOrDefault(RecommendationAttribute.THICKNESS, Thickness.MEDIUM.getName()));
+        } catch (Exception ex) {
+            log.warn(ENGINE + "두께 파싱 실패: value='{}', fallback=MEDIUM, id={}", attributeMap.get(RecommendationAttribute.THICKNESS), clothes.getId());
+            thickness = Thickness.MEDIUM;
+        }
         boolean isWaterproof = Waterproof.TRUE.getName().equalsIgnoreCase(
             attributeMap.getOrDefault(RecommendationAttribute.WATERPROOF, Waterproof.FALSE.getName()));
-        Season clothesSeason = Season.fromName(
-            attributeMap.getOrDefault(RecommendationAttribute.SEASON, Season.SPRING.getName()));
+        Season clothesSeason;
+        try {
+            clothesSeason = Season.fromName(
+                attributeMap.getOrDefault(RecommendationAttribute.SEASON, Season.SPRING.getName()));
+        } catch (Exception ex) {
+            log.warn(ENGINE + "계절 파싱 실패: value='{}', fallback=SPRING, id={}", attributeMap.get(RecommendationAttribute.SEASON), clothes.getId());
+            clothesSeason = Season.SPRING;
+        }
 
         // 온도, 강수, 계절 적합도 계산
         double tempScore = calculateTempScore(thickness, temperature);
