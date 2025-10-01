@@ -102,11 +102,6 @@ class NotificationServiceImplTest {
         }
     }
 
-    private void mockAuthEmail(String email) {
-        var auth = new UsernamePasswordAuthenticationToken(email, "pw", List.of());
-        SecurityContextHolder.getContext().setAuthentication(auth);
-    }
-
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();

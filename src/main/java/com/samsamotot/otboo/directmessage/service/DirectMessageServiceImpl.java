@@ -2,6 +2,7 @@ package com.samsamotot.otboo.directmessage.service;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
@@ -13,6 +14,7 @@ import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -71,13 +73,16 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             throw new OtbooException(ErrorCode.USER_LOCKED);
         }
 
-        Instant cursor = parseCursor(request.cursor());
+        Instant cursor = request.cursor();
         UUID idAfter = request.idAfter();
         int limit = Math.max(1, request.limit());
 
-        List<DirectMessage> rows = directMessageRepository.findBetweenWithCursor(
-            myId, otherId, cursor, idAfter, PageRequest.of(0, limit + 1)
-        );
+        List<DirectMessage> rows;
+        if (cursor == null) {
+            rows = directMessageRepository.findFirstPage(myId, otherId, PageRequest.of(0, limit + 1));
+        } else {
+            rows = directMessageRepository.findNextPage(myId, otherId, cursor, idAfter, PageRequest.of(0, limit + 1));
+        }
 
         boolean hasNext = rows.size() > limit;
         List<DirectMessage> data = hasNext ? rows.subList(0, limit) : rows;
@@ -106,29 +111,24 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             .build();
     }
 
-    private static Instant parseCursor(String cursor) {
-        if (cursor == null || cursor.isBlank()) return null;
-        try {
-            return Instant.parse(cursor);
-        } catch (Exception e) {
-            throw new OtbooException(ErrorCode.INVALID_REQUEST_PARAMETER);
-        }
-    }
-
     private UUID currentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        log.debug(DM_SERVICE + "[DEBUG] authClass={}, name={}, principalClass={}, principal={}",
+            (auth != null ? auth.getClass() : null),
+            (auth != null ? auth.getName() : null),
+            (auth != null && auth.getPrincipal() != null ? auth.getPrincipal().getClass() : null),
+            (auth != null ? auth.getPrincipal() : null));
+
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
             log.warn(DM_SERVICE + "인증 실패: Authentication 비어있음/미인증 (auth={}, principal={})", auth, (auth != null ? auth.getPrincipal() : null));
             throw new OtbooException(ErrorCode.UNAUTHORIZED);
         }
 
-        // TODO 실제 테스트 가능 환경이 되었을 때 CustomUserDetails 활용하는 방식으로 수정 예정
-        String email = auth.getName();
-        return userRepository.findByEmail(email)
-            .map(User::getId)
-            .orElseThrow(() -> {
-                log.warn(DM_SERVICE + "인증 사용자 조회 실패: email={} (DB에 없음)", email);
-                return new OtbooException(ErrorCode.UNAUTHORIZED);
-            });
+        if (auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getId();
+        }
+
+        throw new OtbooException(ErrorCode.UNAUTHORIZED);
     }
 }
