@@ -2,6 +2,7 @@ package com.samsamotot.otboo.profile.entity;
 
 import com.samsamotot.otboo.common.entity.BaseEntity;
 import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.profile.dto.ProfileUpdateRequest;
 import com.samsamotot.otboo.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -43,4 +44,23 @@ public class Profile extends BaseEntity {
 
     @Column(name = "profile_image_url")
     private String profileImageUrl;
+
+    public void update(ProfileUpdateRequest request, String newImageUrl) {
+        this.name = request.name();
+
+        if (request.gender() != null) {
+            this.gender = request.gender();
+        }
+        if (request.birthDate() != null) {
+            this.birthDate = request.birthDate();
+        }
+        if (request.location() != null) {
+            this.location = request.location();
+        }
+        if (request.temperatureSensitivity() != null) {
+            this.temperatureSensitivity = request.temperatureSensitivity();
+        }
+
+        this.profileImageUrl = newImageUrl;
+    }
 }

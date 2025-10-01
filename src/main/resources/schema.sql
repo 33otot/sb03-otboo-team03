@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS profiles
     CONSTRAINT fk_profiles_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT fk_profiles_location FOREIGN KEY (location_id) REFERENCES locations (id) ON DELETE SET NULL,
     CONSTRAINT ck_profiles_gender CHECK (gender IN ('MALE','FEMALE', 'OTHER')),
-    CONSTRAINT ck_profiles_temp_sensitivity CHECK (temperature_sensitivity BETWEEN 0 AND 5)
+    CONSTRAINT ck_profiles_temp_sensitivity CHECK (temperature_sensitivity BETWEEN 1 AND 5)
 );
 
 -- direct_messages 테이블
