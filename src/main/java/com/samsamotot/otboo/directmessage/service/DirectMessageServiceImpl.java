@@ -13,14 +13,17 @@ import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
 import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import jakarta.validation.Valid;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.time.Instant;
 import java.util.List;
@@ -34,6 +37,7 @@ import java.util.UUID;
  */
 @Slf4j
 @Service
+@Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DirectMessageServiceImpl implements DirectMessageService {
@@ -140,7 +144,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     // TODO 작업중
     @Transactional
     public DmEvent persistAndBuildEvent(UUID senderId, SendDmRequest request) {
-        log.info(DM_SERVICE + "DM 저장 시작 - senderId: {}, receiverId: {}, content: {}", 
+        log.info(DM_SERVICE + "DM 저장 시작 - senderId: {}, receiverId: {}, content: {}",
             senderId, request.receiverId(), request.content());
 
         String content = request.content() == null ? "" : request.content();
@@ -153,9 +157,9 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             .receiver(receiverRef)
             .message(content)
             .build();
-        
+
         DirectMessage savedEntity = directMessageRepository.save(entity);
-        log.info(DM_SERVICE + "DM 저장 완료 - id: {}, createdAt: {}", 
+        log.info(DM_SERVICE + "DM 저장 완료 - id: {}, createdAt: {}",
             savedEntity.getId(), savedEntity.getCreatedAt());
 
         // 프론트엔드 상태 관리를 위한 추가 정보
