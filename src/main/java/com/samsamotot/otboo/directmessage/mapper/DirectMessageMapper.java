@@ -19,6 +19,7 @@ public interface DirectMessageMapper {
     @Mapping(source = "sender", target = "sender")
     @Mapping(source = "receiver", target = "receiver")
     @Mapping(source = "message", target = "content")
+    @Mapping(source = "createdAt",   target = "createdAt")
     DirectMessageDto toDto(DirectMessage entity);
 }
 
