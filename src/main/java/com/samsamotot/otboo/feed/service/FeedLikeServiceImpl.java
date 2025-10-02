@@ -73,7 +73,7 @@ public class FeedLikeServiceImpl implements FeedLikeService {
 
         notificationService.notifyLike(userId, feedId);
 
-        log.debug(SERVICE + "알림 좋아요 생성 완료 feedLikeId = {}", feedLike.getId());
+        log.debug(SERVICE + "좋아요 알림 전송 완료 feedLikeId = {}", feedLike.getId());
 
         return feedLike;
     }

@@ -7,6 +7,7 @@ import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -74,14 +75,14 @@ public class DirectMessageController implements DirectMessageApi {
      * @return 저장 후 브로드캐스트된 DirectMessage DTO (인증 없으면 null)
      */
     @MessageMapping("/direct-messages_send")
-    public DirectMessageDto send(SendDmRequest request, Principal principal) {
+    public DirectMessageDto send(@Valid SendDmRequest request, Principal principal) {
         if (principal == null) {
             log.error(DM_CONTROLLER + " Unauthorized WebSocket request");
             return null;
         }
         
         UUID me = UUID.fromString(principal.getName());
-        log.info(DM_CONTROLLER + "incoming: from={} to={} content={}", 
+        log.info(DM_CONTROLLER + " incoming: from={} to={} content={}",
             me, request.receiverId(), request.content());
 
         DirectMessageDto response = directMessageService.sendMessage(me, request);

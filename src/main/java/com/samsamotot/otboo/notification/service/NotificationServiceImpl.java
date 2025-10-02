@@ -140,7 +140,7 @@ public class NotificationServiceImpl implements NotificationService {
             commentPreview = content.substring(0, 10) + "...";
         }
 
-        save(feed.getAuthor().getId(), COMMENT_TITLE,"작성자 [" + commenter.getUsername()+"], 메세지: ["+commentPreview+"]", NotificationLevel.INFO);
+        save(feed.getAuthor().getId(), COMMENT_TITLE, "작성자 [" + commenter.getUsername() + "], 메세지: [" + commentPreview + "]", NotificationLevel.INFO);
     }
 
     /**
@@ -157,7 +157,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview) {
         User sender = userRepository.findById(senderId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
-        save(receiverId, DIRECT_MESSAGE_TITLE, "작성자: [" + sender.getUsername() + "], 메세지: [" + messagePreview+"]", NotificationLevel.INFO);
+        save(receiverId, DIRECT_MESSAGE_TITLE, "작성자: [" + sender.getUsername() + "], 메세지: [" + messagePreview + "]", NotificationLevel.INFO);
     }
 
     /**
