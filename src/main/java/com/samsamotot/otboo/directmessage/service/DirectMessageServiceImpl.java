@@ -162,9 +162,12 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         log.info(DM_SERVICE + "DM 저장 완료 - id: {}, createdAt: {}",
             savedEntity.getId(), savedEntity.getCreatedAt());
 
-        // 프론트엔드 상태 관리를 위한 추가 정보
-        String sessionId = "dm-session-" + senderId + "-" + request.receiverId();
-        boolean isNewConversation = isNewConversation(senderId, request.receiverId());
+        String notificationContent = request.content();
+        if (notificationContent.length() > 10) {
+            notificationContent = request.content().substring(0, 10) + "...";
+        }
+
+        notificationService.notifyDirectMessage(senderId,request.receiverId(), notificationContent);
 
         return DmEvent.builder()
             .id(savedEntity.getId())
@@ -177,9 +180,4 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             .build();
     }
 
-    private boolean isNewConversation(UUID senderId, UUID receiverId) {
-        // 대화가 새로 시작되는지 확인하는 로직
-        long count = directMessageRepository.countBetween(senderId, receiverId);
-        return count <= 1;
-    }
 }

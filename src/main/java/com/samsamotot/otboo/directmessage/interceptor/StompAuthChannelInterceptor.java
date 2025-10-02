@@ -39,13 +39,13 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         log.info(STOMP_AUTH + " preSend called - channel: {}", channel.getClass().getSimpleName());
-        var acc = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-        if (acc != null) {
+        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        if (accessor != null) {
             log.info(STOMP_AUTH+"Command: {}, User: {}, SessionId: {}", 
-                acc.getCommand(), acc.getUser(), acc.getSessionId());
+                accessor.getCommand(), accessor.getUser(), accessor.getSessionId());
             
-            if (StompCommand.CONNECT.equals(acc.getCommand())) {
-                String auth = Optional.ofNullable(acc.getFirstNativeHeader("Authorization")).orElse("");
+            if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                String auth = Optional.ofNullable(accessor.getFirstNativeHeader("Authorization")).orElse("");
                 String token = auth.startsWith("Bearer ") ? auth.substring(7) : null;
                 log.info(STOMP_AUTH + " CONNECT - Auth header: {}, Token: {}", auth, token != null ? "present" : "null");
                 
@@ -54,16 +54,18 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
                     throw new AccessDeniedException("Invalid token");
                 }
                 UUID userId = jwt.getUserId(token);
-                acc.setUser(new UsernamePasswordAuthenticationToken(userId.toString(), null, List.of()));
+                accessor.setUser(new UsernamePasswordAuthenticationToken(userId.toString(), null, List.of()));
                 log.info(STOMP_AUTH + " CONNECT - User authenticated: {}", userId);
-            } else if (StompCommand.SEND.equals(acc.getCommand())) {
-                log.info(STOMP_AUTH + " SEND - User: {}", acc.getUser());
-                if (acc.getUser() == null) {
+
+            } else if (StompCommand.SEND.equals(accessor.getCommand())) {
+
+                log.info(STOMP_AUTH + " SEND - User: {}", accessor.getUser());
+                if (accessor.getUser() == null) {
                     log.error(STOMP_AUTH + " SEND - User not authenticated");
                     throw new AccessDeniedException("User not authenticated");
                 }
             } else {
-                log.info(STOMP_AUTH + " Other command: {} - User: {}", acc.getCommand(), acc.getUser());
+                log.info(STOMP_AUTH + " Other command: {} - User: {}", accessor.getCommand(), accessor.getUser());
             }
         } else {
             log.warn(STOMP_AUTH + " StompHeaderAccessor is null");

@@ -169,7 +169,7 @@ class NotificationServiceImplTest {
             .willAnswer(inv -> inv.getArgument(0));
         given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
-        notificationService.notifyClothesAttrbute(userId);
+        notificationService.notifyClothesAttribute(userId);
 
         then(notificationRepository).should().save(notificationCaptor.capture());
         Notification n = notificationCaptor.getValue();

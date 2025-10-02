@@ -30,6 +30,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
             .setAllowedOriginPatterns("http://localhost:3000", "http://localhost:8080")
-            .withSockJS();
+            .withSockJS()
+            .setHeartbeatTime(1000 * 25)
+            .setDisconnectDelay(1000 * 5);
     }
 }

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * PackageName  : com.samsamotot.otboo.directmessage.controller
@@ -74,9 +75,18 @@ public class DirectMessageController implements DirectMessageApi {
 
         DmEvent event = directMessageService.persistAndBuildEvent(me, request);
 
-        String destination = DmTopicKey.destination(event.senderId(), event.receiverId());
-        template.convertAndSend(destination, event);
+        CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(500); // 500ms 지연
+                String destination = DmTopicKey.destination(event.senderId(), event.receiverId());
+                template.convertAndSend(destination, event);
+                log.info(DM_CONTROLLER + "delayed broadcast -> {} id={}", destination, event.id());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error(DM_CONTROLLER + "delayed broadcast interrupted", e);
+            }
+        });
         
-        log.info(DM_CONTROLLER + "broadcast -> {} id={}", destination, event.id());
+        log.info(DM_CONTROLLER + "message saved, delayed broadcast scheduled for id={}", event.id());
     }
 }

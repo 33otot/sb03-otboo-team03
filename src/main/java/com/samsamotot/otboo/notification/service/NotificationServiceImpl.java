@@ -109,7 +109,7 @@ public class NotificationServiceImpl implements NotificationService {
      * 의상 속성 추가 시 알림을 발행한다.
      */
     @Transactional
-    public void notifyClothesAttrbute(UUID userId) {
+    public void notifyClothesAttribute(UUID userId) {
         save(userId, CLOTHES_ATTRIBUTE_TITLE, CLOTHES_ATTRIBUTE_CONTENT, NotificationLevel.INFO);
     }
 
@@ -142,7 +142,9 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Transactional
     public void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview) {
-        save(receiverId, DIRECT_MESSAGE_TITLE, "from: " + senderId + ", content: " + messagePreview, NotificationLevel.INFO);
+        User sender = userRepository.findById(senderId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+
+        save(receiverId, DIRECT_MESSAGE_TITLE, "송신자: [" + sender.getUsername() + "], 메세지: [" + messagePreview+"]", NotificationLevel.INFO);
     }
 
     /**
