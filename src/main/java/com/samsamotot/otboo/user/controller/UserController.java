@@ -97,6 +97,7 @@ public class UserController implements UserApi {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(profileDto);
+    }
 
     @Override
     @GetMapping
