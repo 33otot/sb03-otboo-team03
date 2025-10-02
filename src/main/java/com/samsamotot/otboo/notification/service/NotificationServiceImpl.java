@@ -225,8 +225,8 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /*
-            로그인 유저 아이디를 가져온다.
-         */
+        로그인 유저 아이디를 가져온다.
+     */
     private UUID currentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 

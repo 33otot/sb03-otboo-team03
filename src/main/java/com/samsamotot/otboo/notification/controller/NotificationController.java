@@ -5,6 +5,7 @@ import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import com.samsamotot.otboo.notification.dto.NotificationRequest;
 import com.samsamotot.otboo.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -19,11 +20,14 @@ import java.util.UUID;
  * Date         : 2025. 9. 30.
  * Description  : 알림 관련 API 컨트롤러
  */
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @Validated
 @RequestMapping("api/notifications")
 public class NotificationController implements NotificationApi {
+    private static final String NOTIFICATION_CONTROLLER = "[NotificationController]";
+
     private final NotificationService notificationService;
 
     /**
@@ -44,7 +48,6 @@ public class NotificationController implements NotificationApi {
         return ResponseEntity.ok().body(notificationService.getNotifications(request));
     }
 
-
     /**
      * 특정 알림(notification)을 삭제한다.
      * <p>알림 ID를 경로 변수로 받아 {@link NotificationService}를 통해 삭제를 수행한다.
@@ -56,7 +59,7 @@ public class NotificationController implements NotificationApi {
     @DeleteMapping("/{notificationId}")
     public ResponseEntity<Void> deleteNotifications(@PathVariable UUID notificationId) {
         notificationService.delete(notificationId);
+        log.info(NOTIFICATION_CONTROLLER + "알람이 삭제 되었습니다.: {}", notificationId);
         return ResponseEntity.noContent().build();
     }
-
 }
