@@ -216,6 +216,7 @@ public class NotificationServiceImpl implements NotificationService {
      *
      * @param notificationId 삭제할 알림의 식별자(UUID)
      */
+    @Transactional
     @Override
     public void delete(UUID notificationId) {
         log.info(NOTIFICATION_SERVICE +"삭제 요청: notificationId: {}", notificationId);
