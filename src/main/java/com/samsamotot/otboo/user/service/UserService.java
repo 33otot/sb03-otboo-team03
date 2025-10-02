@@ -1,10 +1,10 @@
 package com.samsamotot.otboo.user.service;
 
-import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
 import com.samsamotot.otboo.user.dto.UserListRequest;
+import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.UUID;
@@ -41,4 +41,12 @@ public interface UserService {
      * @return 사용자 목록과 페이지네이션 정보
      */
     UserDtoCursorResponse getUserList(UserListRequest request);
+    
+    /**
+     * 사용자 권한 수정 (관리자용)
+     * @param userId 수정할 사용자 ID
+     * @param request 권한 수정 요청 DTO
+     * @return 수정된 사용자 정보
+     */
+    UserDto updateUserRole(UUID userId, UserRoleUpdateRequest request);
 }
