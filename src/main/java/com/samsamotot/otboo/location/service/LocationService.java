@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.location.service;
 
+import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 
 /**

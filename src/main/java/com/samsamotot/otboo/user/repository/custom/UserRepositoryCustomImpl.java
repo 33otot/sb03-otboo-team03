@@ -146,20 +146,20 @@ public class UserRepositoryCustomImpl implements UserRepositoryCustom {
         if ("email".equals(sortBy)) {
             if (sortDirection == SortDirection.ASCENDING) {
                 return qUser.email.gt(cursor)
-                    .or(qUser.email.eq(cursor).and(qUser.id.lt(idAfter)));
+                    .or(qUser.email.eq(cursor).and(qUser.id.gt(idAfter)));
             } else {
                 return qUser.email.lt(cursor)
-                    .or(qUser.email.eq(cursor).and(qUser.id.gt(idAfter)));
+                    .or(qUser.email.eq(cursor).and(qUser.id.lt(idAfter)));
             }
         } else { // createdAt
             try {
                 Instant cursorTime = Instant.parse(cursor);
                 if (sortDirection == SortDirection.ASCENDING) {
                     return qUser.createdAt.gt(cursorTime)
-                        .or(qUser.createdAt.eq(cursorTime).and(qUser.id.lt(idAfter)));
+                        .or(qUser.createdAt.eq(cursorTime).and(qUser.id.gt(idAfter)));
                 } else {
                     return qUser.createdAt.lt(cursorTime)
-                        .or(qUser.createdAt.eq(cursorTime).and(qUser.id.gt(idAfter)));
+                        .or(qUser.createdAt.eq(cursorTime).and(qUser.id.lt(idAfter)));
                 }
             } catch (Exception e) {
                 log.warn("[UserRepositoryCustomImpl] 잘못된 커서 형식: {}", cursor);

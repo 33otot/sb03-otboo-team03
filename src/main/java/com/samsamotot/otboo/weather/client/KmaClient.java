@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.weather.client;
 
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -9,11 +11,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -30,7 +30,7 @@ public class KmaClient {
     private static final String CLIENT_NAME = "[KmaClient] ";
 
     private final WebClient webClient;
-    private final String serviceKey;
+    private final String authKey;
 
     private static final String SERVICE_PATH = "/getVilageFcst";
     private static final String PAGE_NO = "1";
@@ -38,13 +38,13 @@ public class KmaClient {
     private static final String DATA_TYPE = "JSON";
 
     public KmaClient(@Qualifier("kmaWebClient") WebClient webClient,
-                     @Value("${kma.service-key}") String serviceKey) {
+                     @Value("${kma.service-key}") String authKey) {
         this.webClient = webClient;
-        this.serviceKey = serviceKey;
+        this.authKey = authKey;
     }
     /**
      * KMA 단기예보(getVilageFcst) 호출 클라이언트.
-     * 필수 쿼리파라미터(base_date, base_time, nx, ny, dataType=JSON, serviceKey)를 구성하여 호출한다.
+     * 필수 쿼리파라미터(base_date, base_time, nx, ny, dataType=JSON, authKey)를 구성하여 호출한다.
      *
      * @param nx 격자 X
      * @param ny 격자 Y
@@ -59,7 +59,8 @@ public class KmaClient {
         return webClient.get()
                 .uri(uri -> uri
                         .path(SERVICE_PATH)
-                            .queryParam("serviceKey", serviceKey)                            .queryParam("numOfRows", NUM_OF_ROWS)
+                            .queryParam("authKey", authKey)
+                            .queryParam("numOfRows", NUM_OF_ROWS)
                             .queryParam("pageNo", PAGE_NO)
                             .queryParam("dataType", DATA_TYPE)
                             .queryParam("base_date", baseDateTime.baseDate)
@@ -68,7 +69,12 @@ public class KmaClient {
                             .queryParam("ny", ny)
                             .build())
                 .retrieve()
-                .bodyToMono(WeatherForecastResponse.class);
+                .bodyToMono(WeatherForecastResponse.class)
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
+                        .filter(throwable -> throwable instanceof WebClientResponseException)
+                        .onRetryExhaustedThrow(((retryBackoffSpec, retrySignal) -> {
+                                throw new OtbooException(ErrorCode.API_RETRY_FAILURE, retrySignal.failure().getMessage());
+                        })));
     }
 
     /**

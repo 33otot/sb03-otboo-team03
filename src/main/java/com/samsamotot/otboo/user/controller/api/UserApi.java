@@ -2,6 +2,7 @@ package com.samsamotot.otboo.user.controller.api;
 
 import com.samsamotot.otboo.common.exception.ErrorResponse;
 import com.samsamotot.otboo.profile.dto.ProfileDto;
+import com.samsamotot.otboo.profile.dto.ProfileUpdateRequest;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
@@ -13,8 +14,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -67,6 +71,31 @@ public interface UserApi {
     ResponseEntity<ProfileDto> getProfile(@PathVariable UUID userId);
 
     @Operation(
+            summary = "프로필 수정",
+            description = "프로필 수정 API",
+            operationId = "updateProfile"
+    )
+    @ApiResponses(
+            value = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "프로필 수정 성공",
+                            content = @Content(mediaType = "*/*", schema = @Schema(implementation = ProfileDto.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "프로필 수정 실패",
+                            content = @Content(mediaType = "*/*", schema = @Schema(implementation = ErrorResponse.class))
+                    )
+            }
+    )
+    ResponseEntity<ProfileDto> updateProfile(
+            @PathVariable UUID userId,
+            @RequestPart("request") @Valid ProfileUpdateRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image
+    );
+
+    @Operation(
         summary = "계정 목록 조회",
         description = "계정 목록 조회 API",
         operationId = "getUserList"
@@ -95,7 +124,7 @@ public interface UserApi {
         @Parameter(description = "권한 필터") String roleEqual,
         @Parameter(description = "잠금 상태 필터") Boolean locked
     );
-    
+
     @Operation(
         summary = "권한 수정",
         description = "권한 수정 API",

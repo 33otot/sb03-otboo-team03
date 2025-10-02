@@ -12,6 +12,7 @@ import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesAttributeOption;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.exception.ClothesNotFoundException;
+import com.samsamotot.otboo.clothes.exception.ClothesOwnerMismatchException;
 import com.samsamotot.otboo.clothes.exception.definition.ClothesAttributeDefNotFoundException;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
@@ -57,13 +58,13 @@ public class ClothesServiceImpl implements ClothesService {
     // 이미지 없는 생성
     @Override
     @Transactional
-    public ClothesDto create(ClothesCreateRequest request) {
+    public ClothesDto create(UUID ownerId, ClothesCreateRequest request) {
         log.info(SERVICE_NAME + "create - 이미지 없는 의상 생성 호출됨");
 
         List<ClothesAttributeWithDefDto> attributes = new ArrayList<>();
 
         // 유저 조회
-        User owner = userRepository.findById(request.ownerId())
+        User owner = userRepository.findById(ownerId)
             .orElseThrow(() -> new UserNotFoundException());
 
         // Clothes 객체 생성
@@ -78,11 +79,11 @@ public class ClothesServiceImpl implements ClothesService {
 
         Clothes saved = clothesRepository.save(clothes);
 
-        log.info(SERVICE_NAME + "ClothesDto 생성중");
+        log.debug(SERVICE_NAME + "ClothesDto 생성중");
         // DTO 반환
         return new ClothesDto(
             saved.getId(),
-            request.ownerId(),
+            ownerId,
             request.name(),
             null,
             request.type(),
@@ -93,14 +94,13 @@ public class ClothesServiceImpl implements ClothesService {
     // 이미지 있는 생성
     @Override
     @Transactional
-    public ClothesDto create(ClothesCreateRequest request,
-        MultipartFile clothesImage) {
+    public ClothesDto create(UUID ownerId, ClothesCreateRequest request, MultipartFile clothesImage) {
         log.info(SERVICE_NAME + "create - 이미지 있는 의상 생성 호출됨");
 
         List<ClothesAttributeWithDefDto> attributes = new ArrayList<>();
 
         // 유저 조회
-        User owner = userRepository.findById(request.ownerId())
+        User owner = userRepository.findById(ownerId)
             .orElseThrow(() -> new UserNotFoundException());
 
         // Clothes 객체 생성
@@ -121,11 +121,11 @@ public class ClothesServiceImpl implements ClothesService {
         clothes.updateImageUrl(imageUrl);
         Clothes saved = clothesRepository.save(clothes);
 
-        log.info(SERVICE_NAME + "ClothesDto 생성중");
+        log.debug(SERVICE_NAME + "ClothesDto 생성중");
         // DTO 반환
         return new ClothesDto(
             saved.getId(),
-            request.ownerId(),
+            ownerId,
             request.name(),
             imageUrl,
             request.type(),
@@ -136,7 +136,7 @@ public class ClothesServiceImpl implements ClothesService {
     // 이미지 없는 수정
     @Override
     @Transactional
-    public ClothesDto update(UUID clothesId, ClothesUpdateRequest updateRequest) {
+    public ClothesDto update(UUID clothesId, UUID ownerId, ClothesUpdateRequest updateRequest) {
         log.info(SERVICE_NAME + "update - 이미지 없는 의상 수정 호출됨");
 
         String newName = updateRequest.name();
@@ -145,6 +145,11 @@ public class ClothesServiceImpl implements ClothesService {
         // Clothes 조회
         Clothes clothes = clothesRepository.findById(clothesId)
             .orElseThrow(() -> new ClothesNotFoundException());
+
+        // 해당 clothes 객체가 유저의 의상이 맞는지 더블체크
+        if (!clothes.getOwner().getId().equals(ownerId)) {
+            throw new ClothesOwnerMismatchException();
+        }
 
         // 의상 이름 업데이트
         if (!newName.equals(clothes.getName())) {
@@ -170,7 +175,7 @@ public class ClothesServiceImpl implements ClothesService {
     // 이미지 있는 수정
     @Override
     @Transactional
-    public ClothesDto update(UUID clothesId, ClothesUpdateRequest updateRequest, MultipartFile clothesImage) {
+    public ClothesDto update(UUID clothesId, UUID ownerId, ClothesUpdateRequest updateRequest, MultipartFile clothesImage) {
         log.info(SERVICE_NAME + "update - 이미지 있는 의상 수정 호출됨");
 
         String newName = updateRequest.name();
@@ -179,6 +184,11 @@ public class ClothesServiceImpl implements ClothesService {
         // Clothes 조회
         Clothes clothes = clothesRepository.findById(clothesId)
             .orElseThrow(() -> new ClothesNotFoundException());
+
+        // 해당 clothes 객체가 유저의 의상이 맞는지 더블체크
+        if (!clothes.getOwner().getId().equals(ownerId)) {
+            throw new ClothesOwnerMismatchException();
+        }
 
         // 의상 이름 업데이트
         if (!newName.equals(clothes.getName())) {
@@ -194,6 +204,7 @@ public class ClothesServiceImpl implements ClothesService {
         Map<UUID, ClothesAttribute> currentAttrs = currentAttrsMapping(clothes);
 
         // 속성 업데이트 - 기존에 있는 def면 옵션을 수정, 없으면 새로 추가 (이미 선택된 정의를 제거할 수는 없음)
+        log.debug(SERVICE_NAME + "속성 업데이트 중");
         attributesUpdate(updateRequest.attributes(), currentAttrs, clothes);
         clothesRepository.save(clothes);
 
@@ -223,17 +234,22 @@ public class ClothesServiceImpl implements ClothesService {
     // 삭제 기능
     @Override
     @Transactional
-    public void delete(UUID clothesId) {
+    public void delete(UUID ownerId, UUID clothesId) {
         log.info(SERVICE_NAME + "delete - 의상 삭제 메서드 호출됨");
 
         // Clothes 조회
         Clothes clothes = clothesRepository.findById(clothesId)
             .orElseThrow(() -> new ClothesNotFoundException());
 
+        // 해당 clothes 객체가 유저의 의상이 맞는지 더블체크
+        if (!clothes.getOwner().getId().equals(ownerId)) {
+            throw new ClothesOwnerMismatchException();
+        }
+
         // 기존 이미지 경로 보관
         String previousImageUrl = clothes.getImageUrl();
 
-        log.info(SERVICE_NAME + "delete - 삭제될 의상 이름: {}", clothes.getName());
+        log.debug(SERVICE_NAME + "delete - 삭제될 의상 이름: {}", clothes.getName());
 
         // 의상 삭제
         clothesRepository.delete(clothes);
@@ -251,16 +267,16 @@ public class ClothesServiceImpl implements ClothesService {
     // 의상 목록 조회
     @Override
     @Transactional(readOnly = true)
-    public CursorResponse<ClothesDto> find(ClothesSearchRequest request) {
+    public CursorResponse<ClothesDto> find(UUID ownerId, ClothesSearchRequest request) {
         log.info(SERVICE_NAME + "find - 의상 목록 조회 메서드 호출됨");
 
         // Pageable 생성
-        log.info(SERVICE_NAME + "find - Pageable 생성 중");
+        log.debug(SERVICE_NAME + "find - Pageable 생성 중");
         Pageable pageable = PageRequest.of(0, request.limit());
 
         // Slice 메서드 호출
-        log.info(SERVICE_NAME + "find - slice 생성을 위해 clothesRepository.findClothesWithCursor 호출");
-        Slice<Clothes> slice = clothesRepository.findClothesWithCursor(request, pageable);
+        log.debug(SERVICE_NAME + "find - slice 생성을 위해 clothesRepository.findClothesWithCursor 호출");
+        Slice<Clothes> slice = clothesRepository.findClothesWithCursor(ownerId, request, pageable);
 
         // Dto 변환
         List<ClothesDto> returnDto = slice.getContent().stream()
@@ -270,7 +286,7 @@ public class ClothesServiceImpl implements ClothesService {
         log.info(SERVICE_NAME + "find - 의상 목록 조회 완료");
 
         // totalElement 값
-        long totalElement = clothesRepository.totalElementCount(request);
+        long totalElement = clothesRepository.totalElementCount(ownerId, request);
 
         // 다음 커서 생성
         String nextCursor = slice.hasNext() ? clothesServiceHelper.generateCursor(slice.getContent()) : null;
@@ -360,14 +376,14 @@ public class ClothesServiceImpl implements ClothesService {
      */
     void attributesUpdate(List<ClothesAttributeDto> attributes, Map<UUID, ClothesAttribute> currentAttrs, Clothes clothes) {
         if (attributes != null) {
-            log.info(SERVICE_NAME + "속성 업데이트 시작");
+            log.debug(SERVICE_NAME + "속성 업데이트 시작");
             for (ClothesAttributeDto dto : attributes) {
                 // 이미 존재하는 속성 뽑기
                 ClothesAttribute existing = currentAttrs.get(dto.definitionId());
 
                 // 이미 존재하는 속성이면 -> 옵션 값 수정
                 if (existing != null) {
-                    log.info(SERVICE_NAME + "기존에 선택된 속성입니다. 옵션값을 수정합니다.");
+                    log.debug(SERVICE_NAME + "기존에 선택된 속성입니다. 옵션값을 수정합니다.");
                     if (!existing.getValue().equals(dto.value())) {
                         attributeValid(existing.getDefinition(), dto.value());
 
@@ -376,7 +392,7 @@ public class ClothesServiceImpl implements ClothesService {
                 }
                 // 새로운 속성이면 -> 추가
                 else {
-                    log.info(SERVICE_NAME + "새로 추가되는 속성을 생성합니다.");
+                    log.debug(SERVICE_NAME + "새로 추가되는 속성을 생성합니다.");
                     ClothesAttributeDef definition = defRepository.findById(dto.definitionId())
                         .orElseThrow(() -> new ClothesAttributeDefNotFoundException());
 
