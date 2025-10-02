@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.UUID;
 
 /**
@@ -49,11 +50,20 @@ public class SseController implements SseApi {
         UUID userId = jwtTokenProvider.getUserIdFromToken(token);
         String lastEventId = request.getHeader("Last-Event-ID");
 
-        log.info(SSE_CONTROLLER + "커넷션 요청 userId: {}", userId);
+        if ((lastEventId == null || lastEventId.isBlank()) && request.getParameter("lastEventId") != null) {
+            lastEventId = request.getParameter("lastEventId");
+        }
+
+        log.info(SSE_CONTROLLER + "커넥션 요청 userId: {}", userId);
+
         SseEmitter emitter = sseService.createConnection(userId);
-        log.info(SSE_CONTROLLER + " 성공 userId: {}", userId);
+
+        try {
+            emitter.send(SseEmitter.event().name("ping").data("ok"));
+        } catch (IOException ignore) {}
 
         sseService.replayMissedEvents(userId, lastEventId, emitter);
+        log.info(SSE_CONTROLLER + "성공 userId: {}", userId);
 
         return emitter;
     }

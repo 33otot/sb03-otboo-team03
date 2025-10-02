@@ -3,6 +3,8 @@ package com.samsamotot.otboo.user.service;
 import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
+import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
+import com.samsamotot.otboo.user.dto.UserListRequest;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.UUID;
@@ -33,4 +35,10 @@ public interface UserService {
      */
     UserDto getUserById(UUID userId);
 
+    /**
+     * 사용자 목록 조회 (관리자용)
+     * @param request 사용자 목록 조회 요청 파라미터
+     * @return 사용자 목록과 페이지네이션 정보
+     */
+    UserDtoCursorResponse getUserList(UserListRequest request);
 }

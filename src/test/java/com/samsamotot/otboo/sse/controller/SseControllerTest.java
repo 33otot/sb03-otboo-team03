@@ -61,19 +61,24 @@ class SseControllerTest {
 
     @Test
     void lastEventId_헤더를_서비스로_전달한다() throws Exception {
+        // given
         UUID userId = UUID.randomUUID();
         given(jwtTokenProvider.getUserIdFromToken("t")).willReturn(userId);
 
         String lastId = UUID.randomUUID().toString();
 
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        given(sseService.createConnection(userId)).willReturn(emitter);
+
+        // when
         mockMvc.perform(get("/api/sse")
                 .header("Authorization", "Bearer t")
                 .header("Last-Event-ID", lastId)
                 .accept(MediaType.TEXT_EVENT_STREAM))
             .andExpect(status().isOk());
 
-        then(sseService).should()
-            .replayMissedEvents(eq(userId), eq(lastId), org.mockito.ArgumentMatchers.isNull());
-
+        // then
+        then(sseService).should().createConnection(userId);
+        then(sseService).should().replayMissedEvents(eq(userId), eq(lastId), eq(emitter));
     }
 }

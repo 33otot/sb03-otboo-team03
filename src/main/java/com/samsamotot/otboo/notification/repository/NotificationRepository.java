@@ -1,7 +1,8 @@
 package com.samsamotot.otboo.notification.repository;
 
 import com.samsamotot.otboo.notification.entity.Notification;
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -18,18 +19,32 @@ import java.util.UUID;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
     @Query("""
-        select n from Notification n
-        where n.receiver.id = :userId
-          and (
-                :ts is null
-             or n.createdAt > :ts
-             or (n.createdAt = :ts and (:afterId is null or n.id > :afterId))
-          )
-        order by n.createdAt asc, n.id asc
-    """)
-    List<Notification> findAllAfter(
-        @Param("userId") UUID userId,
-        @Param("ts") Instant ts,
-        @Param("afterId") UUID afterId
+          SELECT n FROM Notification n
+          JOIN FETCH n.receiver r
+          WHERE r.id = :receiverId
+          ORDER BY n.createdAt DESC, n.id DESC
+        """)
+    List<Notification> findLatest(UUID receiverId, Pageable pageable);
+
+    @Query("""
+           SELECT n FROM Notification n
+           JOIN FETCH n.receiver r
+           WHERE r.id = :receiverId
+             AND (
+                 n.createdAt < :cursor
+                 OR (n.createdAt = :cursor AND n.id < :idAfter)
+             )
+           ORDER BY n.createdAt DESC, n.id DESC
+        """)
+    List<Notification> findAllBefore(
+        @Param("receiverId") UUID receiverId,
+        @Param("cursor") Instant cursor,
+        @Param("idAfter") UUID idAfter,
+        Pageable pageable
     );
+
+    long countByReceiver_Id(UUID userId);
+
+
+
 }

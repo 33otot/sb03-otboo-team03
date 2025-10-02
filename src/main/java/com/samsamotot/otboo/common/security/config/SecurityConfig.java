@@ -90,7 +90,8 @@ public class SecurityConfig {
                     "/actuator/**",
                     "/api/sse",
                     "/api/follows/**",
-                    "/api/direct-messages/**"
+                    "/api/direct-messages/**",
+                    "/api/notifications/**"
                 )
             )
             
@@ -128,6 +129,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
 
                 .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
+
+                .requestMatchers("/api/notifications/**").authenticated()
 
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()

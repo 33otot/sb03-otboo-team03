@@ -2,6 +2,7 @@ package com.samsamotot.otboo.directmessage.dto;
 
 import jakarta.validation.constraints.*;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -14,7 +15,7 @@ public record MessageRequest (
     @NotNull
     UUID userId,
 
-    String cursor,
+    Instant cursor,
 
     UUID idAfter,
 

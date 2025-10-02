@@ -3,7 +3,10 @@ package com.samsamotot.otboo.notification.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.notification.dto.NotificationDto;
+import com.samsamotot.otboo.notification.dto.NotificationListResponse;
+import com.samsamotot.otboo.notification.dto.NotificationRequest;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.repository.NotificationRepository;
@@ -12,9 +15,14 @@ import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -26,23 +34,24 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 @Transactional(readOnly = true)
 public class NotificationServiceImpl implements NotificationService {
     private static final String NOTIFICATION_SERVICE = "[NotificationService] ";
 
     private static final String ROLE_TITLE = "권한 변경";
-    private static final String CLOTHES_ATTRBUTE_TITLE = "의상 속성 추가";
+    private static final String CLOTHES_ATTRIBUTE_TITLE = "의상 속성 추가";
     private static final String LIKE_TITLE = "새 좋아요";
     private static final String COMMENT_TITLE = "새 댓글";
     private static final String FOLLOW_TITLE = "새 팔로워";
     private static final String DIRECT_MESSAGE_TITLE = "새 쪽지";
 
     private static final String ROLE_CONTENT = "변경된 권한을 확인하세요";
-    private static final String CLOTHES_ATTRBUTE_CONTENT = "의상 속성이 추가되었습니다.";
+    private static final String CLOTHES_ATTRIBUTE_CONTENT = "의상 속성이 추가되었습니다.";
     private static final String LIKE_CONTENT = "from: ";
     private static final String FOLLOW_CONTENT = "사용자가 팔로우했습니다";
 
-    private final NotificationRepository repository;
+    private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final SseService sseService;
     private final ObjectMapper objectMapper;
@@ -73,7 +82,7 @@ public class NotificationServiceImpl implements NotificationService {
             .level(level)
             .build();
 
-        Notification saved = repository.save(notification);
+        Notification saved = notificationRepository.save(notification);
 
         // SSE로 실시간 발행
         try {
@@ -101,7 +110,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Transactional
     public void notifyClothesAttrbute(UUID userId) {
-        save(userId, CLOTHES_ATTRBUTE_TITLE, CLOTHES_ATTRBUTE_CONTENT, NotificationLevel.INFO);
+        save(userId, CLOTHES_ATTRIBUTE_TITLE, CLOTHES_ATTRIBUTE_CONTENT, NotificationLevel.INFO);
     }
 
     /**
@@ -134,6 +143,87 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview) {
         save(receiverId, DIRECT_MESSAGE_TITLE, "from: " + senderId + ", content: " + messagePreview, NotificationLevel.INFO);
+    }
+
+    /**
+     * 현재 로그인 사용자의 알림 목록을 커서 기반으로 조회한다.
+     *
+     * - 정렬: createdAt DESC, id DESC (최신순)
+     * - 첫 페이지: cursor/idAfter 없이 limit만 전달
+     * - 다음 페이지: 응답의 nextCursor/nextIdAfter를 그대로 사용
+     * - 서버는 limit+1개를 조회해 hasNext를 판단하고, hasNext=true일 때만
+     *   nextCursor/nextIdAfter를 채워준다.
+     *
+     * @param request cursor(옵션), idAfter(옵션), limit(필수; 최소 1로 보정)
+     * @return NotificationListResponse (data, hasNext, nextCursor, nextIdAfter, totalCount 등)
+     */
+    @Override
+    public NotificationListResponse getNotifications(NotificationRequest request) {
+        UUID receiverId = currentUserId();
+
+        int limit = Math.max(1, request.limit());
+
+        PageRequest pageRequest = PageRequest.of(0, limit+1);
+
+        List<Notification> rows;
+        if (request.cursor() == null) {
+            log.info("첫번째 조회(커서 값 null)");
+            rows = notificationRepository.findLatest(receiverId, pageRequest);
+        } else {
+            log.info("두번째 조회(커서 값 있음)");
+            rows = notificationRepository.findAllBefore(
+                receiverId,
+                request.cursor(),
+                request.idAfter(),
+                pageRequest
+            );
+        }
+
+        boolean hasNext = rows.size() > limit;
+        List<Notification> pageRows = hasNext ? rows.subList(0, limit) : rows;
+
+        String nextCursor = null;
+        UUID nextIdAfter = null;
+
+        if (!pageRows.isEmpty()) {
+            Notification last = pageRows.get(pageRows.size() - 1);
+            nextCursor = last.getCreatedAt().toString();
+            nextIdAfter = last.getId();
+        }
+
+        long total = notificationRepository.countByReceiver_Id(receiverId);
+
+        List<NotificationDto> data = pageRows.stream().map(this::toDto).toList();
+
+        log.info(NOTIFICATION_SERVICE + "DM 목록 조회 완료 - total: {}, hasNext: {}", total, hasNext);
+
+        return NotificationListResponse.builder()
+            .data(data)
+            .nextCursor(hasNext ? nextCursor : null)
+            .nextIdAfter(hasNext ? nextIdAfter : null)
+            .hasNext(hasNext)
+            .totalCount(total)
+            .sortBy("createdAt")
+            .sortDirection("DESCENDING")
+            .build();
+    }
+
+    /*
+        로그인 유저 아이디를 가져온다.
+     */
+    private UUID currentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
+            log.warn(NOTIFICATION_SERVICE + "인증 실패: Authentication 비어있음/미인증 (auth={}, principal={})", auth, (auth != null ? auth.getPrincipal() : null));
+            throw new OtbooException(ErrorCode.UNAUTHORIZED);
+        }
+
+        if (auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getId();
+        }
+
+        throw new OtbooException(ErrorCode.UNAUTHORIZED);
     }
 
     /**

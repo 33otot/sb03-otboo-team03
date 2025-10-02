@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -31,7 +32,6 @@ public class DirectMessageController implements DirectMessageApi {
 
     private final DirectMessageService directMessageService;
 
-
     /**
      * DM 목록을 조회하는 API
      *
@@ -44,7 +44,7 @@ public class DirectMessageController implements DirectMessageApi {
     @GetMapping
     public ResponseEntity<DirectMessageListResponse> directMessages(
         @RequestParam UUID userId,
-        @RequestParam(required = false) String cursor,
+        @RequestParam(required = false) Instant cursor,
         @RequestParam(required = false) UUID idAfter,
         @RequestParam Integer limit
     ) {
