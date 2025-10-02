@@ -210,6 +210,32 @@ public class NotificationServiceImpl implements NotificationService {
             .build();
     }
 
+    /**
+     * 주어진 ID의 알림(notification)을 삭제한다.
+     * <p>로그를 남기고, {@link NotificationRepository}를 통해 실제 DB에서 삭제를 수행한다.</p>
+     *
+     * @param notificationId 삭제할 알림의 식별자(UUID)
+     */
+    @Transactional
+    @Override
+    public void delete(UUID notificationId) {
+        UUID currentUserId = currentUserId();
+
+        Notification notification = notificationRepository.findById(notificationId)
+            .orElseThrow(() -> {
+                log.warn(NOTIFICATION_SERVICE + "알림을 찾을 수 없음: notificationId={}", notificationId);
+                return new OtbooException(ErrorCode.NOTIFICATION_NOT_FOUND);
+            });
+
+        if (!notification.getReceiver().getId().equals(currentUserId)) {
+            log.warn(NOTIFICATION_SERVICE + "권한 없음: userId={}, notificationOwnerId={}",
+                currentUserId, notification.getReceiver().getId());
+            throw new OtbooException(ErrorCode.NOTIFICATION_NOT_FOUND);
+        }
+        notificationRepository.delete(notification);
+        log.info(NOTIFICATION_SERVICE + "삭제 완료: notificationId={}, userId={}", notificationId, currentUserId);
+    }
+
     /*
         로그인 유저 아이디를 가져온다.
      */

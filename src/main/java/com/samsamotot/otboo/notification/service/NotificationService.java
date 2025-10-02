@@ -34,4 +34,6 @@ public interface NotificationService {
     void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview);
 
     NotificationListResponse getNotifications(@Valid NotificationRequest request);
+
+    void delete(UUID notificationId);
 }
