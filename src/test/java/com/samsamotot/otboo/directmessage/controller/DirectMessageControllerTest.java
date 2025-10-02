@@ -1,7 +1,10 @@
 package com.samsamotot.otboo.directmessage.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DmTopicKey;
+import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,11 +15,15 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,6 +38,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("Direct Message 컨트롤러 슬라이스 테스트")
 class DirectMessageControllerTest {
+
+    @Autowired
+    private DirectMessageController controller;
 
     @Autowired
     private MockMvc mockMvc;
@@ -89,20 +99,45 @@ class DirectMessageControllerTest {
     @Test
     void 메세지_정상_전송() throws Exception {
         // given
+        UUID me = UUID.randomUUID();
+        UUID other = UUID.randomUUID();
+        var principal = new Principal() {
+            @Override public String getName() { return me.toString(); }
+        };
+
+        SendDmRequest request = new SendDmRequest(UUID.randomUUID(), other, "hello ws");
+
+        DirectMessageDto dto = org.mockito.Mockito.mock(DirectMessageDto.class);
+        given(directMessageService.sendMessage(any(), any())).willReturn(dto);
 
         // when
+        DirectMessageDto resp = controller.send(request, principal);
 
         // then
+        assertThat(resp).isSameAs(dto);
 
+        then(directMessageService)
+            .should().sendMessage(eq(me), eq(request));
+
+        // 브로드캐스트 목적지 검증
+        String expectedDestination = DmTopicKey.destination(me, other);
+        then(simpMessagingTemplate)
+            .should().convertAndSend(eq(expectedDestination),
+                eq(dto));
     }
 
     @Test
     void 인증_없는_웹소캣_null() throws Exception {
         // given
+        UUID other = UUID.randomUUID();
+        var req = new SendDmRequest(UUID.randomUUID(), other, "no auth");
 
         // when
+        DirectMessageDto resp = controller.send(req, null);
 
         // then
-
+        assertThat(resp).isNull();
+        then(directMessageService).shouldHaveNoInteractions();
+        then(simpMessagingTemplate).shouldHaveNoInteractions();
     }
 }

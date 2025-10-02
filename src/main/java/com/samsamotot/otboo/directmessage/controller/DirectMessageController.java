@@ -60,7 +60,19 @@ public class DirectMessageController implements DirectMessageApi {
         return ResponseEntity.ok().body(directMessageService.getMessages(request));
     }
 
-    // TODO 작업중
+    /**
+     * WebSocket 클라이언트가 "/direct-messages_send" 경로로 보낸 메시지를 처리한다.
+     *
+     * <p>흐름:
+     * 1. 인증 Principal을 확인한다 (없으면 null 반환).
+     * 2. 요청을 서비스 계층에 위임해 메시지를 저장하고 DTO를 얻는다.
+     * 3. 대화 상대 두 명(me, receiverId)에 대한 STOMP destination을 계산한다.
+     * 4. SimpMessagingTemplate을 이용해 해당 destination으로 브로드캐스트한다.
+     *
+     * @param request   전송 요청 (수신자 ID, 내용 등)
+     * @param principal 인증 정보 (현재 WebSocket 세션 사용자)
+     * @return 저장 후 브로드캐스트된 DirectMessage DTO (인증 없으면 null)
+     */
     @MessageMapping("/direct-messages_send")
     public DirectMessageDto send(SendDmRequest request, Principal principal) {
         if (principal == null) {

@@ -117,7 +117,19 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             .build();
     }
 
-    // TODO 작업중
+    /**
+     * DirectMessage 엔티티를 생성·저장하고 알림까지 발송하는 서비스 메서드.
+     *
+     * <p>흐름:
+     * 1. 송신자/수신자 엔티티 레퍼런스를 조회한다.
+     * 2. DirectMessage 엔티티를 생성해 DB에 저장한다.
+     * 3. 알림(Notification)을 발송하기 위해 내용을 10자 이내로 잘라 전달한다.
+     * 4. 저장된 엔티티를 DTO로 변환해 반환한다.
+     *
+     * @param senderId 송신자 사용자 ID
+     * @param request  메시지 전송 요청 (수신자 ID, 내용)
+     * @return 저장된 DirectMessage를 DTO로 변환한 객체
+     */
     @Override
     @Transactional
     public DirectMessageDto sendMessage(UUID senderId, SendDmRequest request) {

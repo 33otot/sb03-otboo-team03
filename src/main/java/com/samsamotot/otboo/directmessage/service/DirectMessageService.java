@@ -18,6 +18,6 @@ import java.util.UUID;
 @Validated
 public interface DirectMessageService {
     DirectMessageListResponse getMessages(@Valid MessageRequest request);
-    // TODO 작업중
+
     DirectMessageDto sendMessage(UUID senderId, SendDmRequest request);
 }
