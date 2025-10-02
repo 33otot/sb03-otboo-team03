@@ -46,7 +46,7 @@ import static org.mockito.BDDMockito.*;
  */
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("SSE 서비스 단위 테스트")
+@DisplayName("Notification 서비스 단위 테스트")
 class NotificationServiceImplTest {
 
     @InjectMocks
@@ -431,4 +431,68 @@ class NotificationServiceImplTest {
             .findAllBefore(eq(myId), eq(ts), eq(idAfter), argThat(p -> p.getPageSize() == limit + 1));
     }
 
+    @Test
+    void 알림_객체_확인한다_실패() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID targetNotificationId = UUID.randomUUID();
+        given(notificationRepository.findById(targetNotificationId))
+            .willReturn(Optional.empty());
+
+        // when
+        OtbooException ex = assertThrows(OtbooException.class, () -> notificationService.delete(targetNotificationId));
+
+        // then
+        assertEquals(ErrorCode.NOTIFICATION_NOT_FOUND, ex.getErrorCode());
+        then(notificationRepository).should(never()).delete(any(Notification.class));
+    }
+
+    @Test
+    void 알림_권한_확인한다_실패() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID ownerId = UUID.randomUUID();
+        User owner = newUserWith("owner@" + email, ownerId);
+
+        UUID notificationId = UUID.randomUUID();
+        Notification otherOwnersNotification = newNotification(owner, Instant.now(), notificationId, "다른 사람 알림");
+
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.of(otherOwnersNotification));
+
+        // when
+        OtbooException ex = assertThrows(OtbooException.class,
+            () -> notificationService.delete(notificationId));
+
+        // then
+        assertEquals(ErrorCode.NOTIFICATION_NOT_FOUND, ex.getErrorCode());
+        then(notificationRepository).should(never()).delete(any(Notification.class));
+    }
+
+    @Test
+    void 알림_삭제한다() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID notificationId = UUID.randomUUID();
+        Notification mine = newNotification(me, Instant.now(), notificationId, "내 알림");
+
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.of(mine));
+
+        // when n then
+        assertDoesNotThrow(() -> notificationService.delete(notificationId));
+        then(notificationRepository).should(times(1)).delete(same(mine));
+    }
 }

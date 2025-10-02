@@ -63,6 +63,6 @@ public interface NotificationApi {
             )
         )
     })
-    @DeleteMapping
+    @DeleteMapping("/{notificationId}")
     ResponseEntity<Void> deleteNotifications(@PathVariable UUID notificationId);
 }
