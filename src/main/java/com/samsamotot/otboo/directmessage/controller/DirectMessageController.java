@@ -81,15 +81,12 @@ public class DirectMessageController implements DirectMessageApi {
         }
         
         UUID me = UUID.fromString(principal.getName());
-        log.info(DM_CONTROLLER + "incoming: from={} to={} content={}", 
-            me, request.receiverId(), request.content());
 
         DirectMessageDto response = directMessageService.sendMessage(me, request);
 
         String destination = DmTopicKey.destination(me, request.receiverId());
         template.convertAndSend(destination, response);
-        
-        log.info(DM_CONTROLLER + "broadcast -> {} id={}", destination, response.id());
+
         return response;
     }
 }
