@@ -219,9 +219,21 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     @Override
     public void delete(UUID notificationId) {
-        log.info(NOTIFICATION_SERVICE +"삭제 요청: notificationId: {}", notificationId);
-        notificationRepository.deleteById(notificationId);
-        log.info(NOTIFICATION_SERVICE +"삭제 완료: notificationId: {}", notificationId);
+        UUID currentUserId = currentUserId();
+
+        Notification notification = notificationRepository.findById(notificationId)
+            .orElseThrow(() -> {
+                log.warn(NOTIFICATION_SERVICE + "알림을 찾을 수 없음: notificationId={}", notificationId);
+                return new OtbooException(ErrorCode.NOTIFICATION_NOT_FOUND);
+            });
+
+        if (!notification.getReceiver().getId().equals(currentUserId)) {
+            log.warn(NOTIFICATION_SERVICE + "권한 없음: userId={}, notificationOwnerId={}",
+                currentUserId, notification.getReceiver().getId());
+            throw new OtbooException(ErrorCode.NOTIFICATION_NOT_FOUND);
+        }
+        notificationRepository.delete(notification);
+        log.info(NOTIFICATION_SERVICE + "삭제 완료: notificationId={}, userId={}", notificationId, currentUserId);
     }
 
     /*
