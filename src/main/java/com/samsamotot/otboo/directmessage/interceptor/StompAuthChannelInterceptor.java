@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * PackageName  : com.samsamotot.otboo.common.interceptor
+ * PackageName  : com.samsamotot.otboo.directmessage.interceptor
  * FileName     : StompAuthChannelInterceptor
  * Author       : dounguk
  * Date         : 2025. 9. 26.
@@ -95,7 +95,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         // Authorization 헤더에서 Bearer 토큰 추출
         String auth = Optional.ofNullable(accessor.getFirstNativeHeader("Authorization")).orElse("");
         String token = auth.startsWith("Bearer ") ? auth.substring(7) : null;
-        log.info(STOMP_AUTH + " CONNECT - Auth header: {}, Token: {}", auth, token != null ? "present" : "null");
+        log.debug(STOMP_AUTH + " CONNECT - token present? {}", token != null);
         
         // JWT 토큰 유효성 검증
         if (token == null || !jwt.validate(token)) {
