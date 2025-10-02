@@ -3,19 +3,20 @@ package com.samsamotot.otboo.directmessage.service;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
+import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.mapper.DirectMessageMapper;
 import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
 import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
-import jakarta.validation.Valid;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,8 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     private final DirectMessageMapper directMessageMapper;
 
     private final NotificationService notificationService;
+
+    private final EntityManager em;
 
     @Override
     public DirectMessageListResponse getMessages(MessageRequest request) {
@@ -112,6 +115,52 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             .sortBy("createdAt")
             .sortDirection("DESCENDING")
             .build();
+    }
+
+    /**
+     * DirectMessage 엔티티를 생성·저장하고 알림까지 발송하는 서비스 메서드.
+     *
+     * <p>흐름:
+     * 1. 송신자/수신자 엔티티 레퍼런스를 조회한다.
+     * 2. DirectMessage 엔티티를 생성해 DB에 저장한다.
+     * 3. 알림(Notification)을 발송하기 위해 내용을 10자 이내로 잘라 전달한다.
+     * 4. 저장된 엔티티를 DTO로 변환해 반환한다.
+     *
+     * @param senderId 송신자 사용자 ID
+     * @param request  메시지 전송 요청 (수신자 ID, 내용)
+     * @return 저장된 DirectMessage를 DTO로 변환한 객체
+     */
+    @Override
+    @Transactional
+    public DirectMessageDto sendMessage(UUID senderId, SendDmRequest request) {
+        log.info(DM_SERVICE + "DM 전송 시작 - senderId: {}, receiverId: {}, content: {}",
+            senderId, request.receiverId(), request.content());
+
+        String content = request.content() == null ? "" : request.content();
+
+        User sender   = em.getReference(User.class, senderId);
+        User receiver = em.getReference(User.class, request.receiverId());
+
+        DirectMessage directMessage = DirectMessage.builder()
+            .sender(sender)
+            .receiver(receiver)
+            .message(content)
+            .build();
+
+        DirectMessage savedEntity = directMessageRepository.save(directMessage);
+        log.info(DM_SERVICE + "DM 저장 완료 - id: {}, createdAt: {}",
+            savedEntity.getId(), savedEntity.getCreatedAt());
+
+        String notificationContent = content;
+        if (notificationContent.length() > 10) {
+            notificationContent = content.substring(0, 10) + "...";
+        }
+
+        notificationService.notifyDirectMessage(senderId, request.receiverId(), notificationContent);
+
+        DirectMessageDto response = directMessageMapper.toDto(savedEntity);
+        log.info(DM_SERVICE + "DM 전송 완료 - id: {}", response.id());
+        return response;
     }
 
     private UUID currentUserId() {

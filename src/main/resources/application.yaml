@@ -53,3 +53,6 @@ recommendation:
     ttl:
       days: 1
   score-threshold: 0.4
+
+websocket:
+  allowed-origins: http://localhost:3000,http://localhost:8080

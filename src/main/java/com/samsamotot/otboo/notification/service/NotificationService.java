@@ -23,7 +23,7 @@ public interface NotificationService {
 
     void notifyRole(UUID userId);
 
-    void notifyClothesAttrbute(UUID userId);
+    void notifyClothesAttribute(UUID userId);
 
     void notifyLike(UUID commenterId, UUID feedOwnerId);
 
