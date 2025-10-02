@@ -240,25 +240,36 @@ class NotificationServiceImplTest {
         then(sseService).should().sendNotification(eq(followeeId), anyString());
     }
 
+    /*
+        notifyDirectMessage
+     */
     @Test
     void 새_쪽지_객체_생성() throws Exception {
+        // given
         UUID senderId = UUID.randomUUID();
         UUID receiverId = UUID.randomUUID();
         String preview = "안녕!";
-        given(userRepository.findById(receiverId)).willReturn(Optional.of(newUserInstance()));
+        User sender = newUserInstance();
+
+        given(userRepository.findById(eq(senderId))).willReturn(Optional.of(sender));
+        given(userRepository.findById(eq(receiverId))).willReturn(Optional.of(newUserInstance()));
+
         given(notificationRepository.save(any(Notification.class)))
             .willAnswer(inv -> inv.getArgument(0));
         given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
+        // when
         notificationService.notifyDirectMessage(senderId, receiverId, preview);
 
-        then(notificationRepository).should().save(notificationCaptor.capture());
-        Notification n = notificationCaptor.getValue();
-        assertEquals("새 쪽지", n.getTitle());
-        assertTrue(n.getContent().contains(senderId.toString()));
-        assertTrue(n.getContent().contains(preview));
-        assertNotNull(n.getReceiver());
-        then(sseService).should().sendNotification(eq(receiverId), anyString());
+        // then
+        then(notificationRepository).should(times(1)).save(argThat(n ->
+            "새 쪽지".equals(n.getTitle()) &&
+                n.getContent() != null &&
+                n.getContent().contains("송신자: [") &&
+                n.getContent().contains("메세지: [") &&
+                n.getContent().contains(preview)
+        ));
+        then(sseService).should(times(1)).sendNotification(eq(receiverId), anyString());
     }
 
     /*
