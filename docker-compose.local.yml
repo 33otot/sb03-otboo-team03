@@ -1,56 +1,4 @@
 services:
-  # 애플리케이션 서비스
-  app:
-    platform: linux/amd64
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file:
-      - .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
-      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      POSTGRES_DB: ${POSTGRES_DB:-otboo}
-      POSTGRES_USER: ${POSTGRES_USER:-otboo_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      KMA_ENCODING_KEY: ${KMA_ENCODING_KEY}
-      KMA_DECODING_KEY: ${KMA_DECODING_KEY}
-      AUTH_KEY: ${AUTH_KEY}
-      KAKAO_API_KEY: ${KAKAO_API_KEY}
-      JVM_OPTS: ${JVM_OPTS:--Xmx512m -Xms256m}
-      SERVER_PORT: ${APP_INTERNAL_PORT:-8080}   # 컨테이너 내부 포트 = 서버 포트
-      # JWT 설정
-      JWT_SECRET: ${JWT_SECRET:-otboo-jwt-secret-key-for-development-only-change-in-production}
-      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-3600000}
-      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION:-604800000}
-      JWT_ISSUER: ${JWT_ISSUER:-otboo}
-      # 스토리지 설정
-      STORAGE_TYPE: ${STORAGE_TYPE}
-      # AWS S3 설정
-      AWS_S3_ACCESS_KEY: ${AWS_S3_ACCESS_KEY}
-      AWS_S3_SECRET_KEY: ${AWS_S3_SECRET_KEY}
-      AWS_S3_REGION: ${AWS_S3_REGION}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
-      # Redis 설정
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass}
-      # Kafka 설정
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-    ports:
-      - "${APP_EXTERNAL_PORT:-8080}:${APP_INTERNAL_PORT:-8080}" # 외부 포트와 내부 포트 매핑
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-    networks:
-      - otboo-network
-    restart: unless-stopped
-
   # PostgreSQL 데이터베이스 서비스
   postgres:
     image: postgres:17-alpine
@@ -59,7 +7,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "${PG_EXTERNAL_PORT}:${POSTGRES_PORT}"
+      - "${PG_EXTERNAL_PORT:-5432}:${POSTGRES_PORT:-5432}"
     volumes:
       - otboo-postgres:/var/lib/postgresql/data
       - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
@@ -77,7 +25,7 @@ services:
   redis:
     image: redis:7.2-alpine
     ports:
-        - "${REDIS_EXTERNAL_PORT:-6379}:6379"
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
     volumes:
       - otboo-redis:/data
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispass}
@@ -97,10 +45,10 @@ services:
     command: chown -R 1000:1000 /var/lib/kafka-logs
     volumes:
       - otboo-kafka:/var/lib/kafka-logs
-    entrypoint: ["sh", "-c", "chown -R 1000:1000 /var/lib/kafka-logs"]
+    entrypoint: [ "sh", "-c", "chown -R 1000:1000 /var/lib/kafka-logs" ]
     restart: "no"
 
-  # kafka 서비스 (Apache Kafka 3.8.0, KRaft 모드 단일 노드)
+  # kafka 서비스 (로컬 단일 노드)
   kafka:
     image: apache/kafka:3.8.0
     user: "1000:1000"  # 비루트로 실행
@@ -135,7 +83,7 @@ services:
       - otboo-kafka:/var/lib/kafka-logs
     healthcheck:
       # 호스트용과 내부용 모두 체크
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 && kafka-broker-api-versions.sh --bootstrap-server kafka:29092 | grep -q 'id=1'"]
+      test: [ "CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 && kafka-broker-api-versions.sh --bootstrap-server kafka:29092 | grep -q 'id=1'" ]
       interval: 10s
       timeout: 5s
       retries: 30
@@ -146,7 +94,6 @@ services:
 
   # nginx 리버스 프록시 서비스
   nginx:
-    profiles: ["local"]  # local 프로필에서만 실행
     build:
       context: .
       dockerfile: ./nginx/Dockerfile
@@ -166,7 +113,16 @@ services:
       retries: 3
       start_period: 10s
 
-# 볼륨 정의
+  # 로컬에서만 app 의존성 연결
+  app:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
 volumes:
   otboo-postgres:
     driver: local
@@ -181,5 +137,5 @@ volumes:
 # 네트워크 정의
 networks:
   otboo-network:
-    driver: bridge
+    external: false
     name: samsamotot-network
