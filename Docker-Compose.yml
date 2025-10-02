@@ -36,6 +36,8 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass}
+      # Kafka 설정
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
     ports:
       - "${APP_EXTERNAL_PORT:-8080}:${APP_INTERNAL_PORT:-8080}" # 외부 포트와 내부 포트 매핑
     depends_on:
@@ -43,6 +45,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_started
     networks:
       - otboo-network
     restart: unless-stopped
@@ -87,6 +91,59 @@ services:
       - otboo-network
     restart: unless-stopped
 
+  # Kafka 로그 디렉토리 권한 초기화용 서비스 (일회성 실행)
+  init-kafka-perms:
+    image: busybox
+    command: chown -R 1000:1000 /var/lib/kafka-logs
+    volumes:
+      - otboo-kafka:/var/lib/kafka-logs
+    entrypoint: ["sh", "-c", "chown -R 1000:1000 /var/lib/kafka-logs"]
+    restart: "no"
+
+  # kafka 서비스 (Apache Kafka 3.8.0, KRaft 모드 단일 노드)
+  kafka:
+    image: apache/kafka:3.8.0
+    user: "1000:10000"  # 비루트로 실행
+    depends_on:
+      init-kafka-perms:
+        condition: service_completed_successfully
+    ports:
+      - "9092:9092"
+    environment:
+      # ---- 리스너/프로토콜 매핑 ----
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      # ---- 광고 리스너 (클라이언트가 보는 주소) ----
+      # 내부 컨테이너는 kafka:29092, 호스트는 localhost:9092 로 접속
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      # ---- KRaft 단일 노드 ----
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # ---- 바인딩 리스너 (컨테이너 내부 바인딩 주소) ----
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # ---- 단일 노드 안전값 ----
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # ---- 스토리지/메모리 ----
+      KAFKA_LOG_DIRS: /var/lib/kafka-logs
+      KAFKA_HEAP_OPTS: ${KAFKA_HEAP_OPTS:--Xmx512m -Xms256m}
+    volumes:
+      - otboo-kafka:/var/lib/kafka-logs
+    healthcheck:
+      # 호스트용과 내부용 모두 체크
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 && kafka-broker-api-versions.sh --bootstrap-server kafka:29092 | grep -q 'id=1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    networks:
+      - otboo-network
+    restart: unless-stopped
+
 # 볼륨 정의
 volumes:
   otboo-postgres:
@@ -95,6 +152,9 @@ volumes:
   otboo-redis:
     driver: local
     name: samsamotot-redis
+  otboo-kafka:
+    driver: local
+    name: samsamotot-kafka
 
 # 네트워크 정의
 networks:

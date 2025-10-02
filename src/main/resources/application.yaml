@@ -21,6 +21,16 @@ spring:
       password: ${REDIS_PASSWORD:}
       repositories:
         enabled: false  # 개발 단계 Redis Repository 비활성화
+  kafka:
+    bootstrap-servers: kafka:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: otboo-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 kma:
   base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
