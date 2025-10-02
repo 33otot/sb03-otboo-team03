@@ -53,3 +53,10 @@ recommendation:
     ttl:
       days: 1
   score-threshold: 0.4
+
+# 관리자 계정 초기화 설정
+app:
+  admin:
+    email: ${ADMIN_EMAIL}
+    username: ${ADMIN_USERNAME}
+    password: ${ADMIN_PASSWORD}
