@@ -104,3 +104,10 @@ otboo:
     issuer: otboo-test
   security:
     enable-filters: false
+
+# 테스트용 관리자 계정 설정
+app:
+  admin:
+    email: test-admin@otboo.com
+    username: testadmin
+    password: test123!
