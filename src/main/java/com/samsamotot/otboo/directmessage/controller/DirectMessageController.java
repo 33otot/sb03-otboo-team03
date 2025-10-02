@@ -76,7 +76,7 @@ public class DirectMessageController implements DirectMessageApi {
     @MessageMapping("/direct-messages_send")
     public DirectMessageDto send(SendDmRequest request, Principal principal) {
         if (principal == null) {
-            log.error("Unauthorized WebSocket request");
+            log.error(DM_CONTROLLER + "Unauthorized WebSocket request");
             return null;
         }
         

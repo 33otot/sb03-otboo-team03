@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * PackageName  : com.samsamotot.otboo.common.interceptor
+ * PackageName  : com.samsamotot.otboo.directmessage.interceptor
  * FileName     : StompAuthChannelInterceptor
  * Author       : dounguk
  * Date         : 2025. 9. 26.

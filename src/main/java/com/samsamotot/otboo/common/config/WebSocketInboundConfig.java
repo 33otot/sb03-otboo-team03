@@ -17,7 +17,9 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @RequiredArgsConstructor
 class WebSocketInboundConfig implements WebSocketMessageBrokerConfigurer {
+
     private final StompAuthChannelInterceptor auth;
+
     @Override public void configureClientInboundChannel(ChannelRegistration reg) {
         reg.interceptors(auth);
     }
