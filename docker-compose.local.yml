@@ -133,9 +133,3 @@ volumes:
   otboo-kafka:
     driver: local
     name: samsamotot-kafka
-
-# 네트워크 정의
-networks:
-  otboo-network:
-    external: false
-    name: samsamotot-network

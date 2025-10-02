@@ -5,6 +5,7 @@
 # make logs     - 도커 컨테이너 로그 확인
 # make restart  - 도커 컨테이너 재시작
 # make clean    - 도커 컨테이너, 이미지, 볼륨 등 정리
+# make prod     - 프로덕션 환경용 도커 컨테이너 실행 (docker-compose.prod.yml 사용)
 
 COMPOSE_FILES ?= -f docker-compose.yml -f docker-compose.local.yml
 PROJECT ?= sb03-otboo-team03
@@ -41,6 +42,9 @@ clean:
 
 env-check:
 	@if ! [ -f ".env" ]; then \
-		echo "⚠️  .env 파일이 없습니다. 필요하면 'make use-env ENV=local' 로 생성하세요."; \
+		echo "⚠️  .env 파일이 없습니다."; \
 		exit 1; \
 	fi
+
+prod:
+	@docker compose -p $(PROJECT) -f docker-compose.yml -f docker-compose.prod.yml up -d --build

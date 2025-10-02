@@ -19,3 +19,21 @@ Otboo는 날씨 기반 의상 추천 서비스입니다.
 - `main` 브랜치: 80% 이상 커버리지 필요
 - `dev` 브랜치: 80% 이상 커버리지 필요
 - PR merge 전 CI 성공 필수
+
+## 실행 방법
+
+### 로컬 개발 환경
+
+```bash
+make up
+```
+
+### 프로덕션 환경
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+또는 Makefile의 prod 타겟을 사용할 수 있습니다.
+```bash
+make prod
+```
