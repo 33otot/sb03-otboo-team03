@@ -1,10 +1,10 @@
 package com.samsamotot.otboo.user.service;
 
-import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
 import com.samsamotot.otboo.user.dto.UserListRequest;
+import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.UUID;
