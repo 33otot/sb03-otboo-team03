@@ -25,6 +25,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
+/**
+ * PackageName  : com.samsamotot.otboo.profile.service.impl
+ * FileName     : ProfileServiceImpl
+ * Author       : HuInDoL
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -53,6 +58,8 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional(readOnly = true)
     public ProfileDto getProfileByUserId(UUID userId) {
+        log.info(SERVICE + "사용자 프로필 조회 시도 - 사용자 ID: {}", userId);
+
         Profile userProfile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new OtbooException(ErrorCode.PROFILE_NOT_FOUND));
 
@@ -60,9 +67,6 @@ public class ProfileServiceImpl implements ProfileService {
         if (user == null) { // Profile과 User의 연결이 끊어진 예외적인 경우 방어
             throw new OtbooException(ErrorCode.USER_NOT_FOUND);
         }
-
-        log.info(SERVICE + "사용자 프로필 조회 시도 - 사용자 ID: {}, 사용자 이름: {}",
-                userId, user.getUsername());
         log.info(SERVICE + "사용자 프로필 조회 성공 - 프로필 ID: {}", userProfile.getId());
 
         return profileMapper.toDto(userProfile);
