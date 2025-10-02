@@ -210,9 +210,22 @@ public class NotificationServiceImpl implements NotificationService {
             .build();
     }
 
-    /*
-        로그인 유저 아이디를 가져온다.
+    /**
+     * 주어진 ID의 알림(notification)을 삭제한다.
+     * <p>로그를 남기고, {@link NotificationRepository}를 통해 실제 DB에서 삭제를 수행한다.</p>
+     *
+     * @param notificationId 삭제할 알림의 식별자(UUID)
      */
+    @Override
+    public void delete(UUID notificationId) {
+        log.info(NOTIFICATION_SERVICE +"삭제 요청: notificationId: {}", notificationId);
+        notificationRepository.deleteById(notificationId);
+        log.info(NOTIFICATION_SERVICE +"삭제 완료: notificationId: {}", notificationId);
+    }
+
+    /*
+            로그인 유저 아이디를 가져온다.
+         */
     private UUID currentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 

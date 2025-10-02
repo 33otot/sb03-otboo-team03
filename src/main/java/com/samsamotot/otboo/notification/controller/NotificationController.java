@@ -7,10 +7,7 @@ import com.samsamotot.otboo.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -46,4 +43,20 @@ public class NotificationController implements NotificationApi {
         NotificationRequest request = new NotificationRequest(cursor, idAfter, limit);
         return ResponseEntity.ok().body(notificationService.getNotifications(request));
     }
+
+
+    /**
+     * 특정 알림(notification)을 삭제한다.
+     * <p>알림 ID를 경로 변수로 받아 {@link NotificationService}를 통해 삭제를 수행한다.
+     * 삭제가 완료되면 HTTP 204 No Content 응답을 반환한다.</p>
+     *
+     * @param notificationId 삭제할 알림의 식별자(UUID)
+     * @return 204 No Content
+     */
+    @DeleteMapping("/{notificationId}")
+    public ResponseEntity<Void> deleteNotifications(@PathVariable UUID notificationId) {
+        notificationService.delete(notificationId);
+        return ResponseEntity.noContent().build();
+    }
+
 }
