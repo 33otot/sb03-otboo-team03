@@ -37,7 +37,7 @@ services:
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass}
       # Kafka 설정
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     ports:
       - "${APP_EXTERNAL_PORT:-8080}:${APP_INTERNAL_PORT:-8080}" # 외부 포트와 내부 포트 매핑
     depends_on:
@@ -103,7 +103,7 @@ services:
   # kafka 서비스 (Apache Kafka 3.8.0, KRaft 모드 단일 노드)
   kafka:
     image: apache/kafka:3.8.0
-    user: "1000:10000"  # 비루트로 실행
+    user: "1000:1000"  # 비루트로 실행
     depends_on:
       init-kafka-perms:
         condition: service_completed_successfully
@@ -152,7 +152,7 @@ services:
       dockerfile: ./nginx/Dockerfile
     volumes:
       # 로컬의 ./nginx/conf.d 디렉토리를 컨테이너의 /etc/nginx/conf.d 디렉토리에 읽기 전용으로 마운트
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/conf:/etc/nginx/conf.d:ro
     ports:
       - "3000:80"
     depends_on:

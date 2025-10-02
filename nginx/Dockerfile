@@ -21,14 +21,14 @@ RUN touch /var/log/nginx/access.log /var/log/nginx/error.log && \
     chown nginx:nginx /var/log/nginx/access.log /var/log/nginx/error.log
 
 # Nginx 설정 문법 검사 (빌드 시점에서는 upstream이 없어서 주석 처리)
-# RUN nginx -t
+RUN nginx -t
 
 # 포트 노출
 EXPOSE 80
 
 # 헬스체크 설정
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/nginx_status || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost/nginx_status || exit 1
 
 # Nginx 실행 (포그라운드)
 CMD ["nginx", "-g", "daemon off;"]

@@ -8,6 +8,8 @@
 
 PROJECT ?= sb03-otboo-team03
 
+.PHONY: up down logs restart clean
+
 up:
 	docker compose --profile local up -d --build
 down:
