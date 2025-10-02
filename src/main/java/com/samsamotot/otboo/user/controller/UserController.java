@@ -93,7 +93,7 @@ public class UserController implements UserApi {
 
         ProfileDto profileDto = profileService.updateProfile(userId, request, image);
 
-        log.info(CONTROLLER + "사용지 프로필 수정 성공 - 사용자 ID: {}, 프로필: {}", userId, profileDto);
+        log.info(CONTROLLER + "사용자 프로필 수정 성공 - 사용자 ID: {}, 프로필: {}", userId, profileDto);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(profileDto);

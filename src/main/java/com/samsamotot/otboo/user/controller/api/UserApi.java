@@ -91,7 +91,7 @@ public interface UserApi {
     ResponseEntity<ProfileDto> updateProfile(
             @PathVariable UUID userId,
             @RequestPart("request") @Valid ProfileUpdateRequest request,
-            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
+            @RequestPart(value = "image", required = false) MultipartFile image
     );
 
     @Operation(
