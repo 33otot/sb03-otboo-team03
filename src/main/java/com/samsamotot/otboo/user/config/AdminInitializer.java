@@ -18,15 +18,25 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AdminInitializer implements CommandLineRunner {
 
+    private final String ADMIN_INITIALIZER = "[AdminInitializer] ";
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * 관리자 계정 초기화 설정(application.yaml:.env파일 참조)
+     */
     @Value("${app.admin.email}")
     private String adminEmail;
 
+    /**
+     * 관리자 계정 초기화 설정(application.yaml:.env파일 참조)
+     */
     @Value("${app.admin.username}")
     private String adminUsername;
 
+    /**
+     * 관리자 계정 초기화 설정(application.yaml:.env파일 참조)
+     */
     @Value("${app.admin.password}")
     private String adminPassword;
 
@@ -46,7 +56,7 @@ public class AdminInitializer implements CommandLineRunner {
             .anyMatch(user -> user.getEmail().equals(adminEmail));
 
         if (adminExists) {
-            log.info("[AdminInitializer] 관리자 계정 생성을 생략합니다.");
+            log.info(ADMIN_INITIALIZER + "관리자 계정 생성을 생략합니다.");
             return;
         }
 
@@ -60,13 +70,10 @@ public class AdminInitializer implements CommandLineRunner {
 
         userRepository.save(adminUser);
 
-        log.info("[AdminInitializer] 관리자 계정이 성공적으로 생성되었습니다.");
-        // log.info("[AdminInitializer] 이메일: {}", adminEmail);
-        // log.info("[AdminInitializer] 사용자명: {}", adminUsername);
-        // log.info("[AdminInitializer] 권한: {}", Role.ADMIN);
+        log.info(ADMIN_INITIALIZER + "관리자 계정({})이 성공적으로 생성되었습니다.", adminUsername);
 
         } catch (Exception e) {
-        log.error("[AdminInitializer] 관리자 계정 생성 중 오류가 발생했습니다.", e);
+        log.error(ADMIN_INITIALIZER + "관리자 계정 생성 중 오류가 발생했습니다.", e);
         }
     }
 }
