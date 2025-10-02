@@ -12,7 +12,6 @@ import com.samsamotot.otboo.profile.mapper.ProfileMapper;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.profile.service.ProfileService;
 import com.samsamotot.otboo.user.entity.User;
-import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.repository.GridRepository;
@@ -36,7 +35,7 @@ import java.util.UUID;
 @Transactional
 public class ProfileServiceImpl implements ProfileService {
 
-    private static final String SERVICE = "[ProfileServiceImpl] ";
+    private static final String SERVICE_NAME = "[ProfileServiceImpl] ";
 
     private final ProfileRepository profileRepository;
     private final LocationRepository locationRepository;
@@ -58,7 +57,7 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional(readOnly = true)
     public ProfileDto getProfileByUserId(UUID userId) {
-        log.info(SERVICE + "사용자 프로필 조회 시도 - 사용자 ID: {}", userId);
+        log.info(SERVICE_NAME + "사용자 프로필 조회 시도 - 사용자 ID: {}", userId);
 
         Profile userProfile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new OtbooException(ErrorCode.PROFILE_NOT_FOUND));
@@ -67,7 +66,7 @@ public class ProfileServiceImpl implements ProfileService {
         if (user == null) { // Profile과 User의 연결이 끊어진 예외적인 경우 방어
             throw new OtbooException(ErrorCode.USER_NOT_FOUND);
         }
-        log.info(SERVICE + "사용자 프로필 조회 성공 - 프로필 ID: {}", userProfile.getId());
+        log.info(SERVICE_NAME + "사용자 프로필 조회 성공 - 프로필 ID: {}", userProfile.getId());
 
         return profileMapper.toDto(userProfile);
     }
@@ -88,7 +87,7 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional
     public ProfileDto updateProfile(UUID userId, ProfileUpdateRequest request, MultipartFile profileImage) {
-        log.info(SERVICE + "사용자 프로필 수정 시도 - 사용자 ID: {}, 사용자 이름: {}",
+        log.info(SERVICE_NAME + "사용자 프로필 수정 시도 - 사용자 ID: {}, 사용자 이름: {}",
                 userId, request.name());
         Profile existingProfile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new OtbooException(ErrorCode.PROFILE_NOT_FOUND));
@@ -102,7 +101,7 @@ public class ProfileServiceImpl implements ProfileService {
 
         // 3. [저장] 프로필 업데이트
         existingProfile.update(request, location, newImageUrl);
-        log.info(SERVICE + "사용자 프로필 수정 완료 - 프로필 ID: {}", existingProfile.getId());
+        log.info(SERVICE_NAME + "사용자 프로필 수정 완료 - 프로필 ID: {}", existingProfile.getId());
 
         return profileMapper.toDto(existingProfile);
     }
@@ -149,16 +148,17 @@ public class ProfileServiceImpl implements ProfileService {
 
     private String processProfileImage(MultipartFile profileImage, String oldImageUrl) {
         if (profileImage == null || profileImage.isEmpty()) {
+            log.info(SERVICE_NAME + "기존 프로필 이미지 변경 없음 - oldImageUrl: {}", oldImageUrl);
             return oldImageUrl;
         }
 
-        log.info(SERVICE + "사용자 프로필 이미지 최신화...");
+        log.info(SERVICE_NAME + "사용자 프로필 이미지 최신화...");
         String newImageUrl = s3ImageStorage.uploadImage(profileImage, "profile/");
-        log.info(SERVICE + "사용자 프로필 업로드 완료. URL: {}", newImageUrl);
+        log.info(SERVICE_NAME + "사용자 프로필 업로드 완료. URL: {}", newImageUrl);
 
         if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
             s3ImageStorage.deleteImage(oldImageUrl);
-            log.info(SERVICE + "기존 프로필 이미지 삭제 완료. URL: {}", oldImageUrl);
+            log.info(SERVICE_NAME + "기존 프로필 이미지 삭제 완료. URL: {}", oldImageUrl);
         }
 
         return newImageUrl;
