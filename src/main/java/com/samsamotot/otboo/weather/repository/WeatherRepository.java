@@ -29,6 +29,9 @@ public interface WeatherRepository extends JpaRepository<Weather, UUID> {
      */
     Optional<Weather> findByGridAndForecastAt(Grid grid, Instant forecastAt);
 
+    /**
+     * 특정 격자와 정확한 예보된 시각을 기준으로 존재하는 날씨 데이터를 삭제합니다.
+     */
     void deleteByGridAndForecastedAt(Grid grid, Instant forecastIssuedAt);
 }
 

@@ -3,24 +3,38 @@ package com.samsamotot.otboo.profile.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.LocationFixture;
 import com.samsamotot.otboo.common.fixture.ProfileFixture;
 import com.samsamotot.otboo.profile.dto.ProfileDto;
+import com.samsamotot.otboo.profile.dto.ProfileUpdateRequest;
+import com.samsamotot.otboo.profile.entity.Gender;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.service.ProfileService;
 import com.samsamotot.otboo.user.controller.UserController;
 import com.samsamotot.otboo.user.service.UserService;
+import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,7 +56,7 @@ public class UserProfileControllerTest {
     private ProfileService profileService;
 
     @Nested
-    @DisplayName("사용자 프로필 조회 (GET /api/users/{userId}/profiles)")
+    @DisplayName("유저 프로필 조회 (GET /api/users/{userId}/profiles)")
     class GetProfileTests {
 
         @Test
@@ -52,9 +66,13 @@ public class UserProfileControllerTest {
 
             UUID userId = UUID.randomUUID();
 
+            WeatherAPILocation weatherLocation = new WeatherAPILocation(
+                    37.1234, 127.1234, 60, 127, List.of("서울특별시", "강남구")
+            );
+
             ProfileDto result = ProfileDto.builder()
                     .userId(userId)
-                    .locationId(profile.getLocation().getId())
+                    .location(weatherLocation)
                     .name(profile.getName())
                     .gender(profile.getGender())
                     .birthDate(profile.getBirthDate())
@@ -89,6 +107,146 @@ public class UserProfileControllerTest {
             mockMvc.perform(get("/api/users/{userId}/profiles", userId))
                     .andExpect(status().isNotFound())
                     .andDo(print());
+        }
+    }
+
+    @Nested
+    @DisplayName("유저 프로필 수정 (PATCH /api/users/{userId}/profiles)")
+    class UpdateProfileTests {
+        @Test
+        void 이미지_있는_프로필_수정_성공하면_200_DTO() throws Exception {
+            // Given
+            UUID userId = UUID.randomUUID();
+            String profileImageUrl = "https://samsam-otot-bucket.s3.ap-northeast-2.amazonaws.com/new-image.png";
+
+            WeatherAPILocation weatherLocation = new WeatherAPILocation(
+                    37.1234, 127.1234, 60, 127, List.of("서울특별시", "강남구")
+            );
+
+            ProfileUpdateRequest requestDto = ProfileUpdateRequest.builder()
+                    .name("수정된 이름")
+                    .gender(Gender.FEMALE)
+                    .birthDate(LocalDate.of(1995, 1, 1))
+                    .location(weatherLocation)
+                    .temperatureSensitivity(4.0)
+                    .build();
+
+            String requestDtoJson = objectMapper.writeValueAsString(requestDto);
+
+            MockMultipartFile requestPart = new MockMultipartFile(
+                    "request",
+                    "",
+                    "application/json",
+                    requestDtoJson.getBytes(StandardCharsets.UTF_8)
+            );
+
+            MockMultipartFile profileImageFile = new MockMultipartFile(
+                    "image",
+                    "profile.png",
+                    MediaType.IMAGE_PNG_VALUE,
+                    profileImageUrl.getBytes()
+            );
+
+            ProfileDto updatedResultDto = ProfileDto.builder()
+                    .userId(userId)
+                    .name(requestDto.name())
+                    .location(weatherLocation)
+                    .gender(requestDto.gender())
+                    .birthDate(requestDto.birthDate())
+                    .temperatureSensitivity(requestDto.temperatureSensitivity())
+                    .profileImageUrl(profileImageUrl)
+                    .build();
+
+            given(profileService.updateProfile(eq(userId), any(ProfileUpdateRequest.class), any(MultipartFile.class)))
+                    .willReturn(updatedResultDto);
+
+            // When
+            // Then
+            mockMvc.perform(
+                    multipart(HttpMethod.PATCH, "/api/users/{userId}/profiles", userId)
+                            .file(profileImageFile)
+                            .file(requestPart)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.userId").value(updatedResultDto.userId().toString()));
+        }
+
+        @Test
+        void 이미지_없는_프로필_수정_성공하면_200_DTO() throws Exception {
+            // Given
+            UUID userId = UUID.randomUUID();
+            WeatherAPILocation weatherLocation = new WeatherAPILocation(
+                    37.1234, 127.1234, 60, 127, List.of("서울특별시", "강남구")
+            );
+            ProfileUpdateRequest requestDto = ProfileUpdateRequest.builder()
+                    .name("수정된 이름")
+                    .gender(Gender.FEMALE)
+                    .birthDate(LocalDate.of(1995, 1, 1))
+                    .location(weatherLocation)
+                    .temperatureSensitivity(2.0)
+                    .build();
+
+            String requestDtoJson = objectMapper.writeValueAsString(requestDto);
+
+            MockMultipartFile requestPart = new MockMultipartFile(
+                    "request",
+                    "",
+                    "application/json",
+                    requestDtoJson.getBytes(StandardCharsets.UTF_8)
+            );
+
+            ProfileDto updatedResultDto = ProfileDto.builder()
+                    .userId(userId)
+                    .location(weatherLocation)
+                    .name(requestDto.name())
+                    .gender(requestDto.gender())
+                    .birthDate(requestDto.birthDate())
+                    .temperatureSensitivity(requestDto.temperatureSensitivity())
+                    .profileImageUrl(null)
+                    .build();
+
+            given(profileService.updateProfile(eq(userId), any(ProfileUpdateRequest.class), eq(null)))
+                    .willReturn(updatedResultDto);
+
+            // When
+            // Then
+            mockMvc.perform(
+                    multipart(HttpMethod.PATCH, "/api/users/{userId}/profiles", userId)
+                            .file(requestPart)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.userId").value(userId.toString()))
+                    .andExpect(jsonPath("$.name").value(updatedResultDto.name()))
+                    .andExpect(jsonPath("$.profileImageUrl").isEmpty());
+        }
+
+        @Test
+        void 잘못된_입력값으로_프로필_수정_실패하면_400_BAD_REQUEST() throws Exception {
+            // Given
+            UUID userId = UUID.randomUUID();
+            ProfileUpdateRequest requestDto = ProfileUpdateRequest.builder()
+                    .name("수정할이름")
+                    .gender(Gender.MALE)
+                    .birthDate(LocalDate.of(1995, 1, 1))
+                    .temperatureSensitivity(6.0) // 유효 범위를 벗어난 잘못된 값 (1.0 ~ 5.0)
+                    .build();
+
+            String requestJson = objectMapper.writeValueAsString(requestDto);
+
+            MockMultipartFile requestPart = new MockMultipartFile(
+                    "request",
+                    "",
+                    "application/json",
+                    requestJson.getBytes(StandardCharsets.UTF_8)
+            );
+
+            // When
+            // Then
+            mockMvc.perform(
+                    multipart(HttpMethod.PATCH, "/api/users/{userId}/profiles", userId)
+                            .file(requestPart)
+            )
+                    .andExpect(status().isBadRequest());
         }
     }
 }
