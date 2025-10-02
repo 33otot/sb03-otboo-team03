@@ -3,11 +3,14 @@ package com.samsamotot.otboo.user.controller;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
+import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
+import com.samsamotot.otboo.user.dto.UserListRequest;
 import com.samsamotot.otboo.user.service.UserService;
 import com.samsamotot.otboo.user.entity.Role;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +20,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+
+import java.util.List;
+import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserController 단위 테스트")
@@ -188,5 +195,246 @@ class UserControllerTest {
         assertThat(responseBody.getRole()).isEqualTo(Role.USER);
         assertThat(responseBody.getLocked()).isFalse();
         assertThat(responseBody.getCreatedAt()).isNotNull();
+    }
+
+    @Nested
+    @DisplayName("사용자 목록 조회 테스트")
+    class GetUserListTests {
+
+        @Test
+        @DisplayName("기본_사용자_목록_조회_성공")
+        void 기본_사용자_목록_조회_성공() {
+            // Given
+            UserDto userDto1 = UserFixture.createValidUserDto();
+            UserDto userDto2 = UserFixture.createValidUserDto();
+            List<UserDto> userDtos = List.of(userDto1, userDto2);
+            
+            UserDtoCursorResponse expectedResponse = UserDtoCursorResponse.builder()
+                    .data(userDtos)
+                    .nextCursor(null)
+                    .nextIdAfter(null)
+                    .hasNext(false)
+                    .totalCount(2L)
+                    .sortBy("createdAt")
+                    .sortDirection("DESCENDING")
+                    .build();
+
+            when(userService.getUserList(any(UserListRequest.class))).thenReturn(expectedResponse);
+
+            // When
+            var response = userController.getUserList(10, "createdAt", "DESCENDING", null, null, null, null, null);
+
+            // Then
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().data()).hasSize(2);
+            assertThat(response.getBody().totalCount()).isEqualTo(2L);
+            assertThat(response.getBody().hasNext()).isFalse();
+            assertThat(response.getBody().sortBy()).isEqualTo("createdAt");
+            assertThat(response.getBody().sortDirection()).isEqualTo("DESCENDING");
+
+            verify(userService).getUserList(any(UserListRequest.class));
+        }
+
+        @Test
+        @DisplayName("이메일_검색으로_사용자_목록_조회")
+        void 이메일_검색으로_사용자_목록_조회() {
+            // Given
+            UserDto userDto = UserFixture.createValidUserDto();
+            List<UserDto> userDtos = List.of(userDto);
+            
+            UserDtoCursorResponse expectedResponse = UserDtoCursorResponse.builder()
+                    .data(userDtos)
+                    .nextCursor(null)
+                    .nextIdAfter(null)
+                    .hasNext(false)
+                    .totalCount(1L)
+                    .sortBy("email")
+                    .sortDirection("ASCENDING")
+                    .build();
+
+            when(userService.getUserList(any(UserListRequest.class))).thenReturn(expectedResponse);
+
+            // When
+            var response = userController.getUserList(10, "email", "ASCENDING", null, null, "test", null, null);
+
+            // Then
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().data()).hasSize(1);
+            assertThat(response.getBody().totalCount()).isEqualTo(1L);
+            assertThat(response.getBody().sortBy()).isEqualTo("email");
+            assertThat(response.getBody().sortDirection()).isEqualTo("ASCENDING");
+
+            verify(userService).getUserList(any(UserListRequest.class));
+        }
+
+        @Test
+        @DisplayName("권한별_필터링으로_사용자_목록_조회")
+        void 권한별_필터링으로_사용자_목록_조회() {
+            // Given
+            UserDto adminDto = UserFixture.createValidUserDto();
+            List<UserDto> userDtos = List.of(adminDto);
+            
+            UserDtoCursorResponse expectedResponse = UserDtoCursorResponse.builder()
+                    .data(userDtos)
+                    .nextCursor(null)
+                    .nextIdAfter(null)
+                    .hasNext(false)
+                    .totalCount(1L)
+                    .sortBy("createdAt")
+                    .sortDirection("DESCENDING")
+                    .build();
+
+            when(userService.getUserList(any(UserListRequest.class))).thenReturn(expectedResponse);
+
+            // When
+            var response = userController.getUserList(10, "createdAt", "DESCENDING", null, null, null, "ADMIN", null);
+
+            // Then
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().data()).hasSize(1);
+            assertThat(response.getBody().totalCount()).isEqualTo(1L);
+
+            verify(userService).getUserList(any(UserListRequest.class));
+        }
+
+        @Test
+        @DisplayName("잠금_상태_필터링으로_사용자_목록_조회")
+        void 잠금_상태_필터링으로_사용자_목록_조회() {
+            // Given
+            UserDto lockedDto = UserFixture.createValidUserDto();
+            List<UserDto> userDtos = List.of(lockedDto);
+            
+            UserDtoCursorResponse expectedResponse = UserDtoCursorResponse.builder()
+                    .data(userDtos)
+                    .nextCursor(null)
+                    .nextIdAfter(null)
+                    .hasNext(false)
+                    .totalCount(1L)
+                    .sortBy("createdAt")
+                    .sortDirection("DESCENDING")
+                    .build();
+
+            when(userService.getUserList(any(UserListRequest.class))).thenReturn(expectedResponse);
+
+            // When
+            var response = userController.getUserList(10, "createdAt", "DESCENDING", null, null, null, null, true);
+
+            // Then
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().data()).hasSize(1);
+            assertThat(response.getBody().totalCount()).isEqualTo(1L);
+
+            verify(userService).getUserList(any(UserListRequest.class));
+        }
+
+        @Test
+        @DisplayName("페이지네이션_커서가_있는_사용자_목록_조회")
+        void 페이지네이션_커서가_있는_사용자_목록_조회() {
+            // Given
+            String cursor = "2025-01-01T00:00:00Z";
+            UUID idAfter = UUID.randomUUID();
+            
+            UserDto userDto = UserFixture.createValidUserDto();
+            List<UserDto> userDtos = List.of(userDto);
+            
+            UserDtoCursorResponse expectedResponse = UserDtoCursorResponse.builder()
+                    .data(userDtos)
+                    .nextCursor("2025-01-02T00:00:00Z")
+                    .nextIdAfter(UUID.randomUUID())
+                    .hasNext(true)
+                    .totalCount(10L)
+                    .sortBy("createdAt")
+                    .sortDirection("DESCENDING")
+                    .build();
+
+            when(userService.getUserList(any(UserListRequest.class))).thenReturn(expectedResponse);
+
+            // When
+            var response = userController.getUserList(5, "createdAt", "DESCENDING", cursor, idAfter, null, null, null);
+
+            // Then
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().data()).hasSize(1);
+            assertThat(response.getBody().totalCount()).isEqualTo(10L);
+            assertThat(response.getBody().hasNext()).isTrue();
+            assertThat(response.getBody().nextCursor()).isNotNull();
+            assertThat(response.getBody().nextIdAfter()).isNotNull();
+
+            verify(userService).getUserList(any(UserListRequest.class));
+        }
+
+        @Test
+        @DisplayName("잘못된_권한_값으로_사용자_목록_조회")
+        void 잘못된_권한_값으로_사용자_목록_조회() {
+            // Given
+            UserDto userDto = UserFixture.createValidUserDto();
+            List<UserDto> userDtos = List.of(userDto);
+            
+            UserDtoCursorResponse expectedResponse = UserDtoCursorResponse.builder()
+                    .data(userDtos)
+                    .nextCursor(null)
+                    .nextIdAfter(null)
+                    .hasNext(false)
+                    .totalCount(1L)
+                    .sortBy("createdAt")
+                    .sortDirection("DESCENDING")
+                    .build();
+
+            when(userService.getUserList(any(UserListRequest.class))).thenReturn(expectedResponse);
+
+            // When
+            var response = userController.getUserList(10, "createdAt", "DESCENDING", null, null, null, "INVALID_ROLE", null);
+
+            // Then
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().data()).hasSize(1);
+            assertThat(response.getBody().totalCount()).isEqualTo(1L);
+
+            verify(userService).getUserList(any(UserListRequest.class));
+        }
+
+        @Test
+        @DisplayName("모든_필터_조건이_있는_사용자_목록_조회")
+        void 모든_필터_조건이_있는_사용자_목록_조회() {
+            // Given
+            String cursor = "2025-01-01T00:00:00Z";
+            UUID idAfter = UUID.randomUUID();
+            
+            UserDto userDto = UserFixture.createValidUserDto();
+            List<UserDto> userDtos = List.of(userDto);
+            
+            UserDtoCursorResponse expectedResponse = UserDtoCursorResponse.builder()
+                    .data(userDtos)
+                    .nextCursor(null)
+                    .nextIdAfter(null)
+                    .hasNext(false)
+                    .totalCount(1L)
+                    .sortBy("email")
+                    .sortDirection("ASCENDING")
+                    .build();
+
+            when(userService.getUserList(any(UserListRequest.class))).thenReturn(expectedResponse);
+
+            // When
+            var response = userController.getUserList(
+                10, "email", "ASCENDING", cursor, idAfter, "test", "ADMIN", false
+            );
+
+            // Then
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().data()).hasSize(1);
+            assertThat(response.getBody().totalCount()).isEqualTo(1L);
+            assertThat(response.getBody().sortBy()).isEqualTo("email");
+            assertThat(response.getBody().sortDirection()).isEqualTo("ASCENDING");
+
+            verify(userService).getUserList(any(UserListRequest.class));
+        }
     }
 }

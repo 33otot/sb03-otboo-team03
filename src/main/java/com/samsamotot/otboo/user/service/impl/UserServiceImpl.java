@@ -7,6 +7,9 @@ import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
+import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
+import com.samsamotot.otboo.user.dto.UserListRequest;
+import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.exception.DuplicateEmailException;
@@ -15,11 +18,13 @@ import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Slice;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -106,5 +111,51 @@ public class UserServiceImpl implements UserService {
         
         log.debug(SERVICE + "사용자 조회 성공 - 사용자 ID: {}, 이메일: {}", user.getId(), user.getEmail());
         return userMapper.toDto(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDtoCursorResponse getUserList(UserListRequest request) {
+        log.info(SERVICE + "사용자 목록 조회 시작 - 요청: {}", request);
+
+        // Repository를 통한 사용자 목록 조회
+        Slice<User> userSlice = userRepository.findUsersWithCursor(request);
+
+        // 전체 사용자 수 조회
+        long totalCount = userRepository.countUsersWithFilters(request);
+
+        // User 엔티티를 UserDto로 변환
+        List<UserDto> userDtos = userSlice.getContent().stream()
+            .map(userMapper::toDto)
+            .toList();
+
+        // 다음 커서 생성
+        String nextCursor = null;
+        UUID nextIdAfter = null;
+
+        if (userSlice.hasNext()) {
+            User lastUser = userSlice.getContent().get(userSlice.getContent().size() - 1);
+            log.info(SERVICE + "lastUser createdAt: {}", lastUser.getCreatedAt());
+            if ("email".equals(request.sortBy())) {
+                nextCursor = lastUser.getEmail();
+            } else { // createdAt
+                nextCursor = lastUser.getCreatedAt().toString();
+            }
+            nextIdAfter = lastUser.getId();
+            log.info(SERVICE + "nextCursor: {}, nextIdAfter: {}", nextCursor, nextIdAfter);
+        }
+
+        log.info(SERVICE + "사용자 목록 조회 완료 - 조회된 수: {}, 전체 수: {}, hasNext: {}",
+            userDtos.size(), totalCount, userSlice.hasNext());
+
+        return UserDtoCursorResponse.builder()
+            .data(userDtos)
+            .nextCursor(nextCursor)
+            .nextIdAfter(nextIdAfter)
+            .hasNext(userSlice.hasNext())
+            .totalCount(totalCount)
+            .sortBy(request.sortBy())
+            .sortDirection(request.sortDirection())
+            .build();
     }
 }
