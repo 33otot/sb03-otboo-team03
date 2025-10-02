@@ -12,7 +12,9 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
+import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.user.mapper.UserMapper;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -41,6 +43,7 @@ public class CommentServiceImpl implements CommentService {
     private final UserRepository userRepository;
     private final FeedRepository feedRepository;
     private final CommentMapper commentMapper;
+    private final NotificationService notificationService;
 
     /**
      * 새로운 댓글을 생성합니다.
@@ -76,6 +79,10 @@ public class CommentServiceImpl implements CommentService {
         CommentDto result = commentMapper.toDto(saved);
 
         log.debug(SERVICE + "댓글 생성 완료: commentId = {}", saved.getId());
+
+        notificationService.notifyComment(request.authorId(), feedId, request.content()); // 알림
+
+        log.debug(SERVICE + "알림 생성 완료: commentId = {}", saved.getId());
 
         return result;
     }
