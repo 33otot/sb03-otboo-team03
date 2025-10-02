@@ -7,6 +7,7 @@ import java.util.UUID;
  * FileName     : DmTopicKey
  * Author       : dounguk
  * Date         : 2025. 9. 26.
+ * Description  : 채널 경로 생성
  */
 public final class DmTopicKey {
     private static final String SUB_PREFIX = "/sub";

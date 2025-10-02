@@ -82,4 +82,27 @@ class DirectMessageControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data").isEmpty());
     }
+
+    /*
+        메세지 전송 기능
+     */
+    @Test
+    void 메세지_정상_전송() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
+
+    @Test
+    void 인증_없는_웹소캣_null() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
 }

@@ -3,8 +3,8 @@ package com.samsamotot.otboo.directmessage.service;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
-import com.samsamotot.otboo.directmessage.dto.DmEvent;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
@@ -13,12 +13,10 @@ import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
 import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
-import jakarta.validation.Valid;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -119,6 +117,40 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             .build();
     }
 
+    // TODO 작업중
+    @Override
+    @Transactional
+    public DirectMessageDto sendMessage(UUID senderId, SendDmRequest request) {
+        log.info(DM_SERVICE + "DM 전송 시작 - senderId: {}, receiverId: {}, content: {}",
+            senderId, request.receiverId(), request.content());
+
+        String content = request.content() == null ? "" : request.content();
+
+        User sender   = em.getReference(User.class, senderId);
+        User receiver = em.getReference(User.class, request.receiverId());
+
+        DirectMessage directMessage = DirectMessage.builder()
+            .sender(sender)
+            .receiver(receiver)
+            .message(content)
+            .build();
+
+        DirectMessage savedEntity = directMessageRepository.save(directMessage);
+        log.info(DM_SERVICE + "DM 저장 완료 - id: {}, createdAt: {}",
+            savedEntity.getId(), savedEntity.getCreatedAt());
+
+        String notificationContent = request.content();
+        if (notificationContent.length() > 10) {
+            notificationContent = request.content().substring(0, 10) + "...";
+        }
+
+        notificationService.notifyDirectMessage(senderId, request.receiverId(), notificationContent);
+
+        DirectMessageDto response = directMessageMapper.toDto(savedEntity);
+        log.info(DM_SERVICE + "DM 전송 완료 - id: {}", response.id());
+        return response;
+    }
+
     private UUID currentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
@@ -139,45 +171,4 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
         throw new OtbooException(ErrorCode.UNAUTHORIZED);
     }
-
-
-    // TODO 작업중
-    @Transactional
-    public DmEvent persistAndBuildEvent(UUID senderId, SendDmRequest request) {
-        log.info(DM_SERVICE + "DM 저장 시작 - senderId: {}, receiverId: {}, content: {}",
-            senderId, request.receiverId(), request.content());
-
-        String content = request.content() == null ? "" : request.content();
-
-        User senderRef   = em.getReference(User.class, senderId);
-        User receiverRef = em.getReference(User.class, request.receiverId());
-
-        DirectMessage entity = DirectMessage.builder()
-            .sender(senderRef)
-            .receiver(receiverRef)
-            .message(content)
-            .build();
-
-        DirectMessage savedEntity = directMessageRepository.save(entity);
-        log.info(DM_SERVICE + "DM 저장 완료 - id: {}, createdAt: {}",
-            savedEntity.getId(), savedEntity.getCreatedAt());
-
-        String notificationContent = request.content();
-        if (notificationContent.length() > 10) {
-            notificationContent = request.content().substring(0, 10) + "...";
-        }
-
-        notificationService.notifyDirectMessage(senderId,request.receiverId(), notificationContent);
-
-        return DmEvent.builder()
-            .id(savedEntity.getId())
-            .senderId(senderId)
-            .receiverId(request.receiverId())
-            .content(savedEntity.getMessage())
-            .createdAt(savedEntity.getCreatedAt())
-            .status("DELIVERED")
-            .tempId(UUID.randomUUID())
-            .build();
-    }
-
 }

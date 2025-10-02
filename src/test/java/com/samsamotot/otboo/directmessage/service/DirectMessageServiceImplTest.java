@@ -246,4 +246,45 @@ class DirectMessageServiceImplTest {
         then(directMessageRepository).should().countBetween(myId, otherId);
         then(directMessageMapper).should(atLeast(2)).toDto(any());
     }
+
+    /*
+            sendMessage()
+     */
+    @Test
+    void 메세지_전송한다() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
+    @Test
+    void 메세지_저장한다() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
+    @Test
+    void 알람_호출_메서드_동작한다() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
+
+    @Test
+    void 메세지_10자_이상은_자른다() throws Exception {
+        // given
+
+        // when
+
+        // then
+
+    }
 }

@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * PackageName  : com.samsamotot.otboo.directmessage.controller
@@ -63,30 +62,22 @@ public class DirectMessageController implements DirectMessageApi {
 
     // TODO 작업중
     @MessageMapping("/direct-messages_send")
-    public void send(SendDmRequest request, Principal principal) {
+    public DirectMessageDto send(SendDmRequest request, Principal principal) {
         if (principal == null) {
             log.error("Unauthorized WebSocket request");
-            return;
+            return null;
         }
         
         UUID me = UUID.fromString(principal.getName());
         log.info(DM_CONTROLLER + "incoming: from={} to={} content={}", 
             me, request.receiverId(), request.content());
 
-        DmEvent event = directMessageService.persistAndBuildEvent(me, request);
+        DirectMessageDto response = directMessageService.sendMessage(me, request);
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                Thread.sleep(500); // 500ms 지연
-                String destination = DmTopicKey.destination(event.senderId(), event.receiverId());
-                template.convertAndSend(destination, event);
-                log.info(DM_CONTROLLER + "delayed broadcast -> {} id={}", destination, event.id());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error(DM_CONTROLLER + "delayed broadcast interrupted", e);
-            }
-        });
+        String destination = DmTopicKey.destination(me, request.receiverId());
+        template.convertAndSend(destination, response);
         
-        log.info(DM_CONTROLLER + "message saved, delayed broadcast scheduled for id={}", event.id());
+        log.info(DM_CONTROLLER + "broadcast -> {} id={}", destination, response.id());
+        return response;
     }
 }
