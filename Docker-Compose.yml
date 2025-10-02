@@ -144,6 +144,28 @@ services:
       - otboo-network
     restart: unless-stopped
 
+  # nginx 리버스 프록시 서비스
+  nginx:
+    profiles: ["local"]  # local 프로필에서만 실행
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    volumes:
+      # 로컬의 ./nginx/conf.d 디렉토리를 컨테이너의 /etc/nginx/conf.d 디렉토리에 읽기 전용으로 마운트
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
+    networks:
+      - otboo-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost/nginx_status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 # 볼륨 정의
 volumes:
   otboo-postgres:
