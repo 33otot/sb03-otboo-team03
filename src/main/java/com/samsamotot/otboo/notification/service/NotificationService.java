@@ -25,9 +25,9 @@ public interface NotificationService {
 
     void notifyClothesAttribute(UUID userId);
 
-    void notifyLike(UUID commenterId, UUID feedOwnerId);
+    void notifyLike(UUID commenterId, UUID feedId);
 
-    void notifyComment(UUID commenterId, UUID feedOwnerId, String commentPreview);
+    void notifyComment(UUID commenterId, UUID feedId, String comment);
 
     void notifyFollow(UUID followerId, UUID followeeId);
 
