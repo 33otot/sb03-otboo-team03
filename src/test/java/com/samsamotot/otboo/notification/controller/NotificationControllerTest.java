@@ -20,6 +20,8 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,9 +38,6 @@ class NotificationControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @MockitoBean
     private NotificationService notificationService;
@@ -74,6 +73,18 @@ class NotificationControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data[0].title").value("테스트 알림"))
             .andExpect(jsonPath("$.totalCount").value(1));
+    }
+    
+    @Test
+    void 읽음_요청_알림_삭제한다() throws Exception {
+        // given
+        UUID id = UUID.randomUUID();
+
+        // when n then
+        mockMvc.perform(delete("/api/notifications/{notificationId}", id))
+            .andExpect(status().isNoContent());
+
+        then(notificationService).should().delete(id);
     }
 
 }

@@ -6,6 +6,7 @@ import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.entity.FeedLike;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
+import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import java.util.Map;
@@ -30,6 +31,7 @@ public class FeedLikeServiceImpl implements FeedLikeService {
     private final FeedLikeRepository feedLikeRepository;
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     /**
      * 피드에 좋아요를 생성합니다.
@@ -68,6 +70,10 @@ public class FeedLikeServiceImpl implements FeedLikeService {
         }
 
         log.debug(SERVICE + "피드 좋아요 생성 완료 feedLikeId = {}", feedLike.getId());
+
+        notificationService.notifyLike(userId, feedId);
+
+        log.debug(SERVICE + "좋아요 알림 전송 완료 feedLikeId = {}", feedLike.getId());
 
         return feedLike;
     }
