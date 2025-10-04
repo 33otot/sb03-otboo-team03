@@ -11,6 +11,8 @@ import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.entity.WindAsWord;
+import org.mapstruct.Builder;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -33,6 +35,17 @@ public class WeatherFixture {
             .humidityCurrent(DEFAULT_HUMIDITY_CURRENT)
             .grid(grid)
             .build();
+    }
+
+    public static Weather previousWeather(Grid grid, Instant forecastedAt, Instant forecastAt) {
+        return Weather.builder()
+                .forecastAt(forecastedAt)
+                .forecastedAt(forecastAt)
+                .temperatureCurrent(DEFAULT_TEMPERATURE_CURRENT)
+                .windSpeed(DEFAULT_WIND_SPEED)
+                .humidityCurrent(DEFAULT_HUMIDITY_CURRENT)
+                .grid(grid)
+                .build();
     }
 
     public static WeatherDto createWeatherDto(Weather weather) {
