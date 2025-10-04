@@ -1,6 +1,5 @@
-package com.samsamotot.otboo.common.config;
+package com.samsamotot.otboo.common.security.service;
 
-import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import org.springframework.context.annotation.Primary;
