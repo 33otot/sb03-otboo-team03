@@ -47,6 +47,7 @@ dependencies {
     // Lombok
     compileOnly 'org.projectlombok:lombok' // 코드 생성
     annotationProcessor 'org.projectlombok:lombok' // Lombok 어노테이션 처리
+    testImplementation 'org.projectlombok:lombok'
 
 	// MapStruct
     implementation 'org.mapstruct:mapstruct:1.6.3' // 객체 매핑
