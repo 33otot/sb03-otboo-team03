@@ -181,6 +181,42 @@ public class FeedIntegrationTest {
     }
 
     @Nested
+    @DisplayName("피드 목록 조회 테스트")
+    class GetFeeds {
+
+        @BeforeEach
+        void setUp() {
+            // 여러 개의 피드 생성
+            for (int i = 0; i < 5; i++) {
+                feedRepository.save(Feed.builder().author(testUser).weather(testWeather).content("피드 " + i).build());
+            }
+            // 삭제된 피드 생성
+            Feed deletedFeed = Feed.builder().author(testUser).weather(testWeather).content("삭제된 피드").build();
+            deletedFeed.delete();
+            feedRepository.save(deletedFeed);
+        }
+
+        @Test
+        @WithUserDetails(
+            value = "testuser@example.com",
+            setupBefore = TestExecutionEvent.TEST_EXECUTION
+        )
+        void 피드_목록을_조회하고_이때_삭제된_피드는_포함하지_않는다() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/feeds")
+                    .param("limit", "10")
+                    .param("sortBy", "createdAt")
+                    .param("sortDirection", SortDirection.DESCENDING.name())
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(5))
+                .andExpect(jsonPath("$.totalCount").value(5))
+                .andExpect(jsonPath("$.data[?(@.content == '삭제된 피드')]").doesNotExist())
+                .andDo(print());
+        }
+    }
+
+    @Nested
     @DisplayName("피드 수정 테스트")
     class UpdateFeed {
 
@@ -278,42 +314,6 @@ public class FeedIntegrationTest {
             mockMvc.perform(delete("/api/feeds/" + userFeed.getId())
                     .with(csrf()))
                 .andExpect(status().isForbidden())
-                .andDo(print());
-        }
-    }
-
-    @Nested
-    @DisplayName("피드 목록 조회 테스트")
-    class GetFeeds {
-
-        @BeforeEach
-        void setUp() {
-            // 여러 개의 피드 생성
-            for (int i = 0; i < 5; i++) {
-                feedRepository.save(Feed.builder().author(testUser).weather(testWeather).content("피드 " + i).build());
-            }
-            // 삭제된 피드 생성
-            Feed deletedFeed = Feed.builder().author(testUser).weather(testWeather).content("삭제된 피드").build();
-            deletedFeed.delete();
-            feedRepository.save(deletedFeed);
-        }
-
-        @Test
-        @WithUserDetails(
-            value = "testuser@example.com",
-            setupBefore = TestExecutionEvent.TEST_EXECUTION
-        )
-        void 피드_목록을_조회하고_이때_삭제된_피드는_포함하지_않는다() throws Exception {
-            // when & then
-            mockMvc.perform(get("/api/feeds")
-                    .param("limit", "10")
-                    .param("sortBy", "createdAt")
-                    .param("sortDirection", SortDirection.DESCENDING.name())
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(5))
-                .andExpect(jsonPath("$.totalCount").value(5))
-                .andExpect(jsonPath("$.data[?(@.content == '삭제된 피드')]").doesNotExist())
                 .andDo(print());
         }
     }

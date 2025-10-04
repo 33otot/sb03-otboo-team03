@@ -12,7 +12,6 @@ import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.feed.entity.Feed;
-import com.samsamotot.otboo.feed.entity.FeedLike;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.user.entity.User;
@@ -112,7 +111,7 @@ public class FeedLikeIntegrationTest {
     }
 
     @Nested
-    @DisplayName("피드 좋아요 생성/취소")
+    @DisplayName("피드 좋아요 생성")
     class LikeFeed {
 
         @Test
@@ -129,7 +128,8 @@ public class FeedLikeIntegrationTest {
                 .andDo(print());
 
             // then
-            boolean exists = feedLikeRepository.existsByFeedIdAndUserId(testFeed.getId(), otherUser.getId());
+            boolean exists = feedLikeRepository.existsByFeedIdAndUserId(testFeed.getId(),
+                otherUser.getId());
             assertThat(exists).isTrue();
 
             Feed refreshed = feedRepository.findById(testFeed.getId()).orElseThrow();
@@ -185,6 +185,12 @@ public class FeedLikeIntegrationTest {
             mockMvc.perform(post("/api/feeds/" + testFeed.getId() + "/like").with(csrf()))
                 .andExpect(status().isNotFound());
         }
+
+    }
+
+    @Nested
+    @DisplayName("피드 좋아요 취소")
+    class UnlikeFeed {
 
         @Test
         @WithUserDetails(
