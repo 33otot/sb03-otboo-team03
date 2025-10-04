@@ -1,14 +1,16 @@
-package com.samsamotot.otboo.config;
+package com.samsamotot.otboo.common.config;
 
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+@Profile("test")
 @Service("testUserDetailsService")
 @Primary
 public class TestUserDetailsService implements UserDetailsService {
