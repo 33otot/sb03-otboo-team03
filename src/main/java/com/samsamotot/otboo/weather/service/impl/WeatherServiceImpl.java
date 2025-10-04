@@ -59,10 +59,19 @@ public class WeatherServiceImpl implements WeatherService {
     private final WeatherMapper weatherMapper;
     private final GridRepository gridRepository;
     private final LocationService locationService;
+    private final WeatherAlterServiceImpl weatherAlterService;
 
-    @Async("weatherApiTaskExecutor")
+    /**
+     * 특정 격자(Grid)의 날씨 정보를 비동기적으로 갱신합니다.
+     * 기상청 API로부터 최신 예보를 가져와 DB에 저장하고, 저장이 성공하면
+     * 날씨 알림 서비스를 호출하여 변화 감지 및 알림 발송 절차를 시작합니다.
+     *
+     * @param gridId 날씨를 갱신할 격자의 UUID
+     * @return 작업의 완료를 나타내는 CompletableFuture<Void>
+     */
     @Override
-    public CompletableFuture<Void> updateWeatherDataForGrid(UUID gridId) {
+    @Async("weatherApiTaskExecutor")
+    public CompletableFuture<Void> updateWeatherForGrid(UUID gridId) {
         Grid grid = gridRepository.findById(gridId)
                 .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_GRID));
 
@@ -77,8 +86,10 @@ public class WeatherServiceImpl implements WeatherService {
                     List<Weather> weatherList = convertToEntities(weatherForecastResponse, grid);
 
                     // DB 날씨 데이터 갱신
-                    return Mono.fromRunnable(() ->
-                            weatherTransactionService.updateWeather(grid, weatherList));
+                    return Mono.fromRunnable(() -> weatherTransactionService.updateWeather(grid, weatherList))
+                            .doOnSuccess(aVoid -> {
+                                weatherList.forEach(weatherAlterService::checkAndSendAlerts);
+                            });
                 })
                 .doOnError(e -> log.error(SERVICE_NAME + "비동기 날씨 업데이트 작업 실패. X={}, Y={}", grid.getX(), grid.getY(), e))
                 .then() // Mono<Void>로 변환

@@ -43,7 +43,7 @@ public interface WeatherService {
      * @param gridId 날씨 정보를 업데이트할 격자 좌표
      * @return CompletableFuture&lt;Void&gt; 비동기 처리 결과
      */
-    CompletableFuture<Void> updateWeatherDataForGrid(UUID gridId);
+    CompletableFuture<Void> updateWeatherForGrid(UUID gridId);
 
     List<WeatherDto> getWeatherList(double longitude, double latitude);
 }
