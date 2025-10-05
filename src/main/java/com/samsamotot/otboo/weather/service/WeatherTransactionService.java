@@ -57,7 +57,7 @@ public class WeatherTransactionService {
     private void fetchAndPoolYesterdayWeather(Grid grid, Weather firstDayWeather, Map<Instant, Weather> comparisonWeather) {
         Instant yesterday = firstDayWeather.getForecastAt().minus(1, ChronoUnit.DAYS);
 
-        Optional<Weather> yesterdayWeather = weatherRepository.findByGridAndForecastAt(grid, yesterday);
+        Optional<Weather> yesterdayWeather = weatherRepository.findLatestByGridAndForecastAt(grid, yesterday);
         yesterdayWeather.ifPresent(weather -> comparisonWeather.put(weather.getForecastAt(), weather));
     }
 
