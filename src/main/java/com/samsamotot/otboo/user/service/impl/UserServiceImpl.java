@@ -1,7 +1,17 @@
 package com.samsamotot.otboo.user.service.impl;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.data.domain.Slice;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.security.jwt.TokenInvalidationService;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
@@ -10,23 +20,16 @@ import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
 import com.samsamotot.otboo.user.dto.UserListRequest;
 import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
-import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.user.entity.Role;
+import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.exception.DuplicateEmailException;
 import com.samsamotot.otboo.user.mapper.UserMapper;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.user.service.UserService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Slice;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.UUID;
 
 /**
  * 사용자 서비스 구현체
@@ -43,6 +46,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final ProfileRepository profileRepository;
+    private final TokenInvalidationService tokenInvalidationService;
 
     @Override
     public UserDto createUser(UserCreateRequest request) {
@@ -149,15 +153,15 @@ public class UserServiceImpl implements UserService {
         log.info(SERVICE + "사용자 목록 조회 완료 - 조회된 수: {}, 전체 수: {}, hasNext: {}",
             userDtos.size(), totalCount, userSlice.hasNext());
 
-        return UserDtoCursorResponse.builder()
-            .data(userDtos)
-            .nextCursor(nextCursor)
-            .nextIdAfter(nextIdAfter)
-            .hasNext(userSlice.hasNext())
-            .totalCount(totalCount)
-            .sortBy(request.sortBy())
-            .sortDirection(request.sortDirection())
-            .build();
+        return new UserDtoCursorResponse(
+            userDtos,
+            nextCursor,
+            nextIdAfter,
+            userSlice.hasNext(),
+            totalCount,
+            request.sortBy(),
+            request.sortDirection()
+        );
     }
     
     @Override
@@ -176,6 +180,9 @@ public class UserServiceImpl implements UserService {
         
         // 권한 변경
         user.changeRole(request.role());
+        
+        // 컷오프: 이 시점 이전 토큰 무효화
+        tokenInvalidationService.setUserInvalidAfter(userId.toString(), java.time.Instant.now());
         
         log.info(SERVICE + "권한 수정 완료 - 사용자 ID: {}, 이전 권한: {}, 새로운 권한: {}", 
             userId, previousRole, request.role());
