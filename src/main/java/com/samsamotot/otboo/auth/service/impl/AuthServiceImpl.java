@@ -1,5 +1,11 @@
 package com.samsamotot.otboo.auth.service.impl;
 
+import java.util.UUID;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.samsamotot.otboo.auth.dto.LoginRequest;
 import com.samsamotot.otboo.auth.service.AuthService;
 import com.samsamotot.otboo.common.exception.ErrorCode;
@@ -7,17 +13,14 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.csrf.CsrfTokenService;
 import com.samsamotot.otboo.common.security.jwt.JwtDto;
 import com.samsamotot.otboo.common.security.jwt.JwtTokenProvider;
+import com.samsamotot.otboo.common.security.jwt.TokenInvalidationService;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.mapper.UserMapper;
 import com.samsamotot.otboo.user.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
 
 /**
  * 인증 서비스 구현체
@@ -34,6 +37,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final CsrfTokenService csrfTokenService;
+    private final TokenInvalidationService tokenInvalidationService;
     private final UserMapper userMapper;
     
     @Override
@@ -88,7 +92,16 @@ public class AuthServiceImpl implements AuthService {
         // 리프레시 토큰 검증 (선택적)
         try {
             if (refreshToken != null) {
+                // 유효성 검증
                 jwtTokenProvider.validateToken(refreshToken);
+                // 블랙리스트 등록 (남은 TTL만큼)
+                String jti = jwtTokenProvider.getJti(refreshToken);
+                Long expEpoch = jwtTokenProvider.getExpirationTime(refreshToken); // seconds
+                long nowSec = java.time.Instant.now().getEpochSecond();
+                long ttl = (expEpoch != null) ? Math.max(0, expEpoch - nowSec) : 0L;
+                if (jti != null && ttl > 0) {
+                    tokenInvalidationService.blacklistJti(jti, ttl);
+                }
             }
             log.info(SERVICE + "로그아웃 성공");
         } catch (Exception e) {
