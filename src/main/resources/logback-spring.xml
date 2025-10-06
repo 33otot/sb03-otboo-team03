@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- Properties -->
-    <property name="LOG_PATH" value="logs"/>
+    <property name="LOG_PATH" value="${LOG_DIR:-/app/logs}" />
     <property name="LOG_FILE_NAME" value="otboo"/>
     
     <!-- Console Appender -->
