@@ -30,6 +30,10 @@ public class TokenInvalidationService {
      */
     public void blacklistJti(String jti, long ttlSeconds) {
         if (jti == null || jti.isBlank()) return;
+        if (ttlSeconds <= 0) {
+            // TTL이 0 이하이면 등록할 필요가 없으므로 조기 종료
+            return;
+        }
         String key = BLACKLIST_PREFIX + jti;
         redisTemplate.opsForValue().set(key, Boolean.TRUE, ttlSeconds, TimeUnit.SECONDS);
         log.debug("블랙리스트 등록 - jti: {}, ttl: {}s", jti, ttlSeconds);
