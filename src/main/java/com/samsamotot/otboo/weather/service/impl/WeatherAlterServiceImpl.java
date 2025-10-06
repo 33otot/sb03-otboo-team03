@@ -49,6 +49,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
      * @param newWeather 새로 저장된 날씨 엔티티
      */
     @Override
+    @Transactional(readOnly = false)
     public void checkAndSendAlerts(Weather newWeather) {
         log.info(SERVICE_NAME + "[알림 프로세스 시작] Grid ID: {}", newWeather.getGrid().getId());
 

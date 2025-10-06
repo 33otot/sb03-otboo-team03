@@ -8,12 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -57,7 +53,7 @@ public class WeatherTransactionService {
     private void fetchAndPoolYesterdayWeather(Grid grid, Weather firstDayWeather, Map<Instant, Weather> comparisonWeather) {
         Instant yesterday = firstDayWeather.getForecastAt().minus(1, ChronoUnit.DAYS);
 
-        Optional<Weather> yesterdayWeather = weatherRepository.findLatestByGridAndForecastAt(grid, yesterday);
+        Optional<Weather> yesterdayWeather = weatherRepository.findTopByGridAndForecastAtOrderByForecastedAtDesc(grid, yesterday);
         yesterdayWeather.ifPresent(weather -> comparisonWeather.put(weather.getForecastAt(), weather));
     }
 

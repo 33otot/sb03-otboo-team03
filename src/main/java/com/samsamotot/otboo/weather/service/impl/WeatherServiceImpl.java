@@ -2,9 +2,6 @@ package com.samsamotot.otboo.weather.service.impl;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.location.client.KakaoApiClient;
-import com.samsamotot.otboo.location.entity.Location;
-import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.weather.client.KmaClient;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
@@ -14,6 +11,7 @@ import com.samsamotot.otboo.weather.entity.*;
 import com.samsamotot.otboo.weather.mapper.WeatherMapper;
 import com.samsamotot.otboo.weather.repository.GridRepository;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
+import com.samsamotot.otboo.weather.service.WeatherAlterService;
 import com.samsamotot.otboo.weather.service.WeatherService;
 import com.samsamotot.otboo.weather.service.WeatherTransactionService;
 import lombok.RequiredArgsConstructor;
@@ -59,7 +57,7 @@ public class WeatherServiceImpl implements WeatherService {
     private final WeatherMapper weatherMapper;
     private final GridRepository gridRepository;
     private final LocationService locationService;
-    private final WeatherAlterServiceImpl weatherAlterService;
+    private final WeatherAlterService weatherAlterService;
 
     /**
      * 특정 격자(Grid)의 날씨 정보를 비동기적으로 갱신합니다.

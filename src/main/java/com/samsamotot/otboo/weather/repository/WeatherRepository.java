@@ -24,9 +24,13 @@ public interface WeatherRepository extends JpaRepository<Weather, UUID> {
      * @param forecastAt 예보 대상 시각
      * @return Optional<Weather>
      */
-    @Query("SELECT w FROM Weather w WHERE w.grid = :grid AND w.forecastAt = :forecastAt " +
-            "ORDER BY w.forecastedAt DESC LIMIT 1")
-    Optional<Weather> findLatestByGridAndForecastAt(@Param("grid") Grid grid, @Param("forecastAt") Instant forecastAt);
+    /**
+     * 특정 격자와 예보 시각에 해당하는 가장 최신의 예보를 하나만 조회합니다.
+     * @param grid 격자 정보
+     * @param forecastAt 예보 대상 시각
+     * @return Optional<Weather>
+     */
+    Optional<Weather> findTopByGridAndForecastAtOrderByForecastedAtDesc(Grid grid, Instant forecastAt);
 
     /**
      * 특정 격자와 정확한 예보된 시각을 기준으로 존재하는 날씨 데이터를 삭제합니다.

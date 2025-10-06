@@ -39,8 +39,8 @@ public class WeatherFixture {
 
     public static Weather previousWeather(Grid grid, Instant forecastedAt, Instant forecastAt) {
         return Weather.builder()
-                .forecastAt(forecastedAt)
-                .forecastedAt(forecastAt)
+                .forecastAt(forecastAt)
+                .forecastedAt(forecastedAt)
                 .temperatureCurrent(DEFAULT_TEMPERATURE_CURRENT)
                 .windSpeed(DEFAULT_WIND_SPEED)
                 .humidityCurrent(DEFAULT_HUMIDITY_CURRENT)
