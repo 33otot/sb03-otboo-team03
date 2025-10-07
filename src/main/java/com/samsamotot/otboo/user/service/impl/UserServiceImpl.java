@@ -3,6 +3,7 @@ package com.samsamotot.otboo.user.service.impl;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.notification.dto.event.RoleChangedEvent;
 import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
@@ -20,6 +21,7 @@ import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,7 +46,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final ProfileRepository profileRepository;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public UserDto createUser(UserCreateRequest request) {
@@ -183,7 +185,7 @@ public class UserServiceImpl implements UserService {
             userId, previousRole, request.role());
 
         // 권한 변경 알림 저장
-        notificationService.notifyRole(userId);
+        eventPublisher.publishEvent(new RoleChangedEvent(userId));
         
         // DTO 변환하여 반환
         return userMapper.toDto(user);

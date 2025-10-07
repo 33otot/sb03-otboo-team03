@@ -12,6 +12,7 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
+import com.samsamotot.otboo.notification.dto.event.CommentCreatedEvent;
 import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.mapper.UserMapper;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +45,7 @@ public class CommentServiceImpl implements CommentService {
     private final UserRepository userRepository;
     private final FeedRepository feedRepository;
     private final CommentMapper commentMapper;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 새로운 댓글을 생성합니다.
@@ -80,7 +82,7 @@ public class CommentServiceImpl implements CommentService {
 
         log.debug(SERVICE + "댓글 생성 완료: commentId = {}", saved.getId());
 
-        notificationService.notifyComment(request.authorId(), feedId, request.content()); // 알림
+        eventPublisher.publishEvent(new CommentCreatedEvent(request.authorId(),feedId,request.content())); // 알림
 
         log.debug(SERVICE + "알림 생성 완료: commentId = {}", saved.getId());
 

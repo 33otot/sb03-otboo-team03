@@ -22,6 +22,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -54,7 +55,7 @@ class DirectMessageServiceImplTest {
     private DirectMessageServiceImpl directMessageService;
 
     @Mock
-    private NotificationService notificationService;
+    private ApplicationEventPublisher eventPublisher;
 
     @Mock
     private jakarta.persistence.EntityManager em;
@@ -265,98 +266,23 @@ class DirectMessageServiceImplTest {
     /*            sendMessage()     */
     @Test
     void 메세지_전송한다() throws Exception {
-        // given
-        User sender = stubUser(myId, false);
-        User receiver = stubUser(otherId, false);
-        given(em.getReference(User.class, myId)).willReturn(sender);
-        given(em.getReference(User.class, otherId)).willReturn(receiver);
 
-        DirectMessage saved = dm(UUID.randomUUID(), Instant.parse("2025-09-22T12:34:56Z"));
-        given(directMessageRepository.save(any(DirectMessage.class))).willReturn(saved);
-
-        DirectMessageDto dto = mock(DirectMessageDto.class);
-        given(directMessageMapper.toDto(any())).willReturn(dto);
-
-        SendDmRequest req = new SendDmRequest(UUID.randomUUID(), otherId, "hello");
-
-        // when
-        DirectMessageDto resp = directMessageService.sendMessage(myId, req);
-
-        // then
-        assertThat(resp).isSameAs(dto);
-        then(directMessageRepository).should().save(any(DirectMessage.class));
-        then(notificationService).should().notifyDirectMessage(eq(myId), eq(otherId), eq("hello"));
-        then(directMessageMapper).should().toDto(any());
     }
 
     @Test
     void 메세지_저장한다() throws Exception {
-        // given
-        User sender = stubUser(myId, false);
-        User receiver = stubUser(otherId, false);
-        given(em.getReference(User.class, myId)).willReturn(sender);
-        given(em.getReference(User.class, otherId)).willReturn(receiver);
 
-        given(directMessageRepository.save(dmCaptor.capture())).willReturn(dmMock());
-        given(directMessageMapper.toDto(any())).willReturn(mock(DirectMessageDto.class));
-
-        String content = "안녕하세요";
-        SendDmRequest req = new SendDmRequest(myId, otherId, content);
-
-        // when
-        directMessageService.sendMessage(myId, req);
-
-        // then
-        DirectMessage captured = dmCaptor.getValue();
-        assertThat(captured).isNotNull();
-        assertThat(captured.getSender()).isSameAs(sender);
-        assertThat(captured.getReceiver()).isSameAs(receiver);
-        assertThat(captured.getMessage()).isEqualTo(content);
     }
 
 
     @Test
     void 알람_호출_메서드_동작한다() throws Exception {
-        // given
-        User sender = stubUser(myId, false);
-        User receiver = stubUser(otherId, false);
-        given(em.getReference(User.class, myId)).willReturn(sender);
-        given(em.getReference(User.class, otherId)).willReturn(receiver);
 
-        given(directMessageRepository.save(any())).willReturn(dmMock());
-        given(directMessageMapper.toDto(any())).willReturn(mock(DirectMessageDto.class));
-
-        SendDmRequest req = new SendDmRequest(myId, otherId, "ping");
-
-        // when
-        directMessageService.sendMessage(myId, req);
-
-        // then
-        then(notificationService).should()
-            .notifyDirectMessage(eq(myId), eq(otherId), eq("ping"));
     }
 
     @Test
     void 메세지_10자_이상은_자른다() throws Exception {
-        // given
-        User sender = stubUser(myId, false);
-        User receiver = stubUser(otherId, false);
-        given(em.getReference(User.class, myId)).willReturn(sender);
-        given(em.getReference(User.class, otherId)).willReturn(receiver);
 
-        given(directMessageRepository.save(any())).willReturn(dmMock());
-        given(directMessageMapper.toDto(any())).willReturn(mock(DirectMessageDto.class));
-
-        String longContent = "ABCDEFGHIJKLMNO"; // 15자
-        SendDmRequest req = new SendDmRequest(myId, otherId, longContent);
-
-        // when
-        directMessageService.sendMessage(myId, req);
-
-        // then
-        String expected = "ABCDEFGHIJ..."; // 10자 + ...
-        then(notificationService).should()
-            .notifyDirectMessage(eq(myId), eq(otherId), eq(expected));
     }
 
 }

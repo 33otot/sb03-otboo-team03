@@ -21,19 +21,19 @@ import java.util.UUID;
 public interface NotificationService {
     Notification save(UUID receiverId, String title, String content, NotificationLevel level);
 
-    void notifyRole(UUID userId);
-
-    void notifyClothesAttribute();
-
-    void notifyLike(UUID commenterId, UUID feedId);
-
-    void notifyComment(UUID commenterId, UUID feedId, String comment);
-
-    void notifyFollow(UUID followerId, UUID followeeId);
-
-    void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview);
-
     NotificationListResponse getNotifications(@Valid NotificationRequest request);
 
     void delete(UUID notificationId);
+
+    void notifyRole(UUID currentUserId);
+
+    void notifyClothesAttribute();
+
+    void notifyLike(UUID likerId, UUID feedId);
+
+    void notifyComment(UUID commenterId, UUID feedId, String comment);
+
+    void notifyFollow(UUID followeeId);
+
+    void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview);
 }

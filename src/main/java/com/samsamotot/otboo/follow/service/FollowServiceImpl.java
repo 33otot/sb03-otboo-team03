@@ -6,11 +6,13 @@ import com.samsamotot.otboo.follow.dto.*;
 import com.samsamotot.otboo.follow.entity.Follow;
 import com.samsamotot.otboo.follow.mapper.FollowMapper;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
+import com.samsamotot.otboo.notification.dto.event.FollowCreatedEvent;
 import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -42,7 +44,7 @@ public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
     private final FollowMapper followMapper;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 새로운 팔로우 관계를 생성한다.
@@ -109,7 +111,7 @@ public class FollowServiceImpl implements FollowService {
                 savedFollow.getId(), follower.getId(), followee.getId());
 
             try {
-                notificationService.notifyFollow(follower.getId(), followee.getId());
+                eventPublisher.publishEvent(new FollowCreatedEvent(followee.getId()));
                 log.info(FOLLOW_SERVICE + "팔로우 알림 발행 완료: 팔로우당한 사용자={}", followee.getId());
             } catch (Exception e) {
                 log.error(FOLLOW_SERVICE + "팔로우 알림 발행 실패 - 팔로우 당한 사용자: {}, 에러: {}",
