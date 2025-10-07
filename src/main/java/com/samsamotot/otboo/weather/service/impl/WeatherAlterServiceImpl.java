@@ -39,6 +39,9 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
 
     private static final String SERVICE_NAME = "[WeatherAlterServiceImpl] ";
 
+    private static final double TEMP_STANDARD = 5.0;
+    private static final double HUMID_STANDARD = 50.0;
+
     private final WeatherRepository weatherRepository;
     private final NotificationService notificationService;
     private final ProfileRepository profileRepository;
@@ -114,13 +117,13 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
 
         // [기준 1]: 어제 대비 기온이 5도 이상 차이날 때
         Double tempCompared = newWeather.getTemperatureComparedToDayBefore();
-        if (tempCompared != null && Math.abs(tempCompared) >= 5.0) {
+        if (tempCompared != null && Math.abs(tempCompared) >= TEMP_STANDARD) {
             tempComparedToDayBefore = tempCompared;
         }
 
         // [기준 2]: 어제 대비 습도가 50%p 이상 차이날 때
         Double humidCompared = newWeather.getHumidityComparedToDayBefore();
-        if (humidCompared != null && Math.abs(humidCompared) >= 5.0) {
+        if (humidCompared != null && Math.abs(humidCompared) >= HUMID_STANDARD) {
             humidComparedToDayBefore = humidCompared;
         }
 
