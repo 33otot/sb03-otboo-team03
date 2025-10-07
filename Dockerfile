@@ -1,7 +1,7 @@
 
 # -------------------------------------------------------------------
 # 1단계: 빌드 스테이지 (빌드 도구 포함)
-FROM eclipse-temurin:17-jdk-alpine AS build
+FROM amazoncorretto:17 AS build
 
 # 작업 디렉토리 설정
 WORKDIR /app
@@ -11,8 +11,8 @@ COPY gradlew gradlew.bat settings.gradle build.gradle ./
 COPY gradle/ gradle/
 
 # 권한 및 의존성 프리페치(소스 없이도 가능한 범위까지)
-RUN chmod +x ./gradlew \
-    && ./gradlew --no-daemon dependencies || true
+COPY gradle/ gradle/
+RUN chmod +x ./gradlew
 
 # 소스 복사 후 빌드 (테스트 제외)
 COPY src/ src/
@@ -21,7 +21,7 @@ RUN ./gradlew --no-daemon clean bootJar -x test
 
 # -------------------------------------------------------------------
 # 2단계: 런타임 스테이지 (경량 이미지)
-FROM eclipse-temurin:17-jre-alpine AS runtime
+FROM amazoncorretto:17-alpine3.21 AS runtime
 
 # curl 설치
 RUN apk add --no-cache curl
