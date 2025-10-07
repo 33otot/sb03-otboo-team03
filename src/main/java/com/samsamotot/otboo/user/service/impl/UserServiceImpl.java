@@ -3,6 +3,7 @@ package com.samsamotot.otboo.user.service.impl;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
@@ -43,6 +44,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final ProfileRepository profileRepository;
+    private final NotificationService notificationService;
 
     @Override
     public UserDto createUser(UserCreateRequest request) {
@@ -179,6 +181,9 @@ public class UserServiceImpl implements UserService {
         
         log.info(SERVICE + "권한 수정 완료 - 사용자 ID: {}, 이전 권한: {}, 새로운 권한: {}", 
             userId, previousRole, request.role());
+
+        // 권한 변경 알림 저장
+        notificationService.notifyRole(userId);
         
         // DTO 변환하여 반환
         return userMapper.toDto(user);
