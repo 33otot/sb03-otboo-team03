@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.feed.entity.Feed;
+import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.notification.dto.NotificationDto;
 import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import com.samsamotot.otboo.notification.dto.NotificationRequest;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -48,11 +51,11 @@ public class NotificationServiceImpl implements NotificationService {
 
     private static final String ROLE_CONTENT = "변경된 권한을 확인하세요";
     private static final String CLOTHES_ATTRIBUTE_CONTENT = "의상 속성이 추가되었습니다.";
-    private static final String LIKE_CONTENT = "from: ";
     private static final String FOLLOW_CONTENT = "사용자가 팔로우했습니다";
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final FeedRepository feedRepository;
     private final SseService sseService;
     private final ObjectMapper objectMapper;
 
@@ -109,7 +112,7 @@ public class NotificationServiceImpl implements NotificationService {
      * 의상 속성 추가 시 알림을 발행한다.
      */
     @Transactional
-    public void notifyClothesAttrbute(UUID userId) {
+    public void notifyClothesAttribute(UUID userId) {
         save(userId, CLOTHES_ATTRIBUTE_TITLE, CLOTHES_ATTRIBUTE_CONTENT, NotificationLevel.INFO);
     }
 
@@ -117,16 +120,27 @@ public class NotificationServiceImpl implements NotificationService {
      * 피드에 좋아요가 추가되었을 때 피드 소유자에게 알림을 발행한다.
      */
     @Transactional
-    public void notifyLike(UUID commenterId, UUID feedOwnerId) {
-        save(feedOwnerId, LIKE_TITLE, LIKE_CONTENT + commenterId, NotificationLevel.INFO);
+    public void notifyLike(UUID commenterId, UUID feedId) {
+        User commenter = userRepository.findById(commenterId).orElseThrow(() -> new OtbooException(ErrorCode.UNAUTHORIZED));
+        Feed feed = feedRepository.findById(feedId).orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
+
+        save(feed.getAuthor().getId(), LIKE_TITLE, "[" + commenter.getUsername() + "] 가 좋아요를 눌렀습니다", NotificationLevel.INFO);
     }
 
     /**
      * 피드에 댓글이 달렸을 때 피드 소유자에게 알림을 발행한다.
      */
     @Transactional
-    public void notifyComment(UUID commenterId, UUID feedOwnerId, String commentPreview) {
-        save(feedOwnerId, COMMENT_TITLE, "from: " + commenterId + ", content: " + commentPreview, NotificationLevel.INFO);
+    public void notifyComment(UUID commenterId, UUID feedId, String content) {
+        User commenter = userRepository.findById(commenterId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+        Feed feed = feedRepository.findById(feedId).orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
+
+        String commentPreview = content;
+        if (commentPreview.length() > 10) {
+            commentPreview = content.substring(0, 10) + "...";
+        }
+
+        save(feed.getAuthor().getId(), COMMENT_TITLE, "작성자 [" + commenter.getUsername() + "], 메세지: [" + commentPreview + "]", NotificationLevel.INFO);
     }
 
     /**
@@ -142,7 +156,8 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Transactional
     public void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview) {
-        save(receiverId, DIRECT_MESSAGE_TITLE, "from: " + senderId + ", content: " + messagePreview, NotificationLevel.INFO);
+        User sender = userRepository.findById(senderId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+        save(receiverId, DIRECT_MESSAGE_TITLE, "작성자: [" + sender.getUsername() + "], 메세지: [" + messagePreview + "]", NotificationLevel.INFO);
     }
 
     /**
@@ -206,6 +221,32 @@ public class NotificationServiceImpl implements NotificationService {
             .sortBy("createdAt")
             .sortDirection("DESCENDING")
             .build();
+    }
+
+    /**
+     * 주어진 ID의 알림(notification)을 삭제한다.
+     * <p>로그를 남기고, {@link NotificationRepository}를 통해 실제 DB에서 삭제를 수행한다.</p>
+     *
+     * @param notificationId 삭제할 알림의 식별자(UUID)
+     */
+    @Transactional
+    @Override
+    public void delete(UUID notificationId) {
+        UUID currentUserId = currentUserId();
+
+        Notification notification = notificationRepository.findById(notificationId)
+            .orElseThrow(() -> {
+                log.warn(NOTIFICATION_SERVICE + "알림을 찾을 수 없음: notificationId={}", notificationId);
+                return new OtbooException(ErrorCode.NOTIFICATION_NOT_FOUND);
+            });
+
+        if (!notification.getReceiver().getId().equals(currentUserId)) {
+            log.warn(NOTIFICATION_SERVICE + "권한 없음: userId={}, notificationOwnerId={}",
+                currentUserId, notification.getReceiver().getId());
+            throw new OtbooException(ErrorCode.NOTIFICATION_NOT_FOUND);
+        }
+        notificationRepository.delete(notification);
+        log.info(NOTIFICATION_SERVICE + "삭제 완료: notificationId={}, userId={}", notificationId, currentUserId);
     }
 
     /*

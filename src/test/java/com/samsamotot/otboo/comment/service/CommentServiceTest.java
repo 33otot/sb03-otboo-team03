@@ -2,13 +2,9 @@ package com.samsamotot.otboo.comment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.samsamotot.otboo.comment.dto.CommentCreateRequest;
 import com.samsamotot.otboo.comment.dto.CommentCursorRequest;
@@ -27,6 +23,9 @@ import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.notification.entity.Notification;
+import com.samsamotot.otboo.notification.repository.NotificationRepository;
+import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.weather.entity.Grid;
@@ -64,6 +63,9 @@ public class CommentServiceTest {
 
     @InjectMocks
     private CommentServiceImpl commentService;
+
+    @Mock
+    private NotificationService notificationService;
 
     User mockUser;
     Feed mockFeed;
@@ -107,6 +109,8 @@ public class CommentServiceTest {
             given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.save(any(Comment.class))).willReturn(savedComment);
             given(commentMapper.toDto(any(Comment.class))).willReturn(expectedDto);
+            lenient().doNothing().when(notificationService)
+                .notifyComment(any(UUID.class), any(UUID.class), anyString());
 
             // when
             CommentDto result = commentService.create(feedId, request);

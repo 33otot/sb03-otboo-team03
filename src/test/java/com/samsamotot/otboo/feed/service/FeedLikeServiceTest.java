@@ -9,6 +9,7 @@ import com.samsamotot.otboo.feed.entity.FeedLike;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.location.entity.Location;
+import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.weather.entity.Grid;
@@ -44,6 +45,9 @@ public class FeedLikeServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private FeedLikeServiceImpl feedLikeService;
@@ -88,6 +92,7 @@ public class FeedLikeServiceTest {
             assertThat(result.getFeed()).isEqualTo(mockFeed);
             assertThat(result.getUser()).isEqualTo(mockUser);
             verify(feedRepository, times(1)).incrementLikeCount(feedId);
+            verify(notificationService, times(1)).notifyLike(userId, feedId);
         }
 
         @Test

@@ -358,8 +358,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000004', '겨울', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000005', 'XL', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='롱패딩'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 니트 스웨터
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -368,8 +368,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000003', '빈티지', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000004', '겨울', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000006', 'HEAVY', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='니트 스웨터'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 카고 팬츠
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -378,8 +378,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000003', '스트릿', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000005', 'M', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='카고 팬츠'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 청치마
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -388,8 +388,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000005', 'S', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='청치마'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 플라워 원피스
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -398,8 +398,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000004', '여름', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000005', 'M', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='플라워 원피스'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 트레이닝 팬츠
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -408,8 +408,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000003', '캐주얼', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000004', '봄', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000005', 'L', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000007', '가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='트레이닝 팬츠'), 'f0000000-0000-0000-0000-000000000007', '가능', NOW(), NOW());
 
 -- 맨투맨
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -418,8 +418,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000003', '미니멀', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000004', '가을', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000005', 'XL', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000006', 'MEDIUM', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='맨투맨'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 블라우스
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES
@@ -428,8 +428,8 @@ INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000003', '포멀', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000004', '봄', NOW(), NOW()),
                                                                                                   (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000005', 'M', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()),
-                                                                                                    (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000006', 'LIGHT', NOW(), NOW()),
+                                                                                                  (gen_random_uuid(), (SELECT id FROM clothes WHERE name='블라우스'), 'f0000000-0000-0000-0000-000000000007', '불가능', NOW(), NOW());
 
 -- 로퍼
 INSERT INTO clothes_attributes (id, clothes_id, definition_id, value, created_at, updated_at) VALUES

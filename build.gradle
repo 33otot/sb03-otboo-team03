@@ -47,6 +47,8 @@ dependencies {
     // Lombok
     compileOnly 'org.projectlombok:lombok' // 코드 생성
     annotationProcessor 'org.projectlombok:lombok' // Lombok 어노테이션 처리
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 
 	// MapStruct
     implementation 'org.mapstruct:mapstruct:1.6.3' // 객체 매핑
@@ -92,6 +94,9 @@ dependencies {
 
 	// WebClient
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // Direct Message
+    implementation "org.springframework.security:spring-security-messaging"
 }
 
 // QueryDSL 설정

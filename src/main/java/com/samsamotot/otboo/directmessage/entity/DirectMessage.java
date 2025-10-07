@@ -30,7 +30,6 @@ public class DirectMessage extends BaseEntity {
     @JoinColumn(name = "receiver_id",nullable = false)
     User receiver;
 
-
     @Column(nullable = false, columnDefinition = "TEXT")
     String message;
 }
