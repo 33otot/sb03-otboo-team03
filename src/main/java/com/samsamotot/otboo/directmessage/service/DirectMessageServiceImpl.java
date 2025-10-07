@@ -153,11 +153,6 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         log.info(DM_SERVICE + "DM 저장 완료 - id: {}, createdAt: {}",
             savedEntity.getId(), savedEntity.getCreatedAt());
 
-        String notificationContent = content;
-        if (notificationContent.length() > 10) {
-            notificationContent = content.substring(0, 10) + "...";
-        }
-
         eventPublisher.publishEvent(new DirectMessageReceivedEvent(senderId,request.receiverId(), content));
 
         DirectMessageDto response = directMessageMapper.toDto(savedEntity);

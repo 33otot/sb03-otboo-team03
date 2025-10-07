@@ -10,6 +10,7 @@ import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.mapper.DirectMessageMapper;
 import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
+import com.samsamotot.otboo.notification.dto.event.DirectMessageReceivedEvent;
 import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
@@ -36,8 +37,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -72,6 +72,9 @@ class DirectMessageServiceImplTest {
     @Captor
     private ArgumentCaptor<DirectMessage> dmCaptor;
 
+    @Captor
+    private ArgumentCaptor<DirectMessageReceivedEvent> eventCaptor;
+
     private final String myEmail = "me@example.com";
     private final UUID myId = UUID.fromString("a0000000-0000-0000-0000-000000000001");
     private final UUID otherId = UUID.fromString("a0000000-0000-0000-0000-000000000002");
@@ -90,9 +93,29 @@ class DirectMessageServiceImplTest {
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
-    private static DirectMessage dmMock() {
-        return mock(DirectMessage.class);
+    private static DirectMessage savedDmMock(UUID id, Instant createdAt, DirectMessage from) {
+        DirectMessage m = mock(DirectMessage.class);
+        lenient().when(m.getId()).thenReturn(id);
+        lenient().when(m.getCreatedAt()).thenReturn(createdAt);
+        lenient().when(m.getSender()).thenReturn(from.getSender());
+        lenient().when(m.getReceiver()).thenReturn(from.getReceiver());
+        lenient().when(m.getMessage()).thenReturn(from.getMessage());
+        return m;
     }
+
+    private void commonGiven(User senderRef, User receiverRef, DirectMessageDto dtoToReturn) {
+        given(em.getReference(User.class, myId)).willReturn(senderRef);
+        given(em.getReference(User.class, otherId)).willReturn(receiverRef);
+
+        willAnswer(inv -> {
+            DirectMessage toSave = inv.getArgument(0);
+            DirectMessage saved = savedDmMock(UUID.randomUUID(), Instant.now(), toSave);
+            return saved;
+        }).given(directMessageRepository).save(dmCaptor.capture());
+
+        given(directMessageMapper.toDto(any(DirectMessage.class))).willReturn(dtoToReturn);
+    }
+
 
     private static User stubUser(UUID id, boolean locked) {
         User user = mock(User.class);
@@ -266,23 +289,94 @@ class DirectMessageServiceImplTest {
     /*            sendMessage()     */
     @Test
     void 메세지_전송한다() throws Exception {
+        // given
+        String content = "hello";
+        SendDmRequest req = new SendDmRequest(myId, otherId, content);
+
+        User senderRef = stubUser(myId, false);
+        User receiverRef = stubUser(otherId, false);
+
+        DirectMessageDto dto = mock(DirectMessageDto.class);
+        commonGiven(senderRef, receiverRef, dto);
+
+        // when
+        DirectMessageDto result = directMessageService.sendMessage(myId, req);
+
+        // then
+        assertThat(result).isSameAs(dto);
+        then(directMessageRepository).should().save(any(DirectMessage.class));
+        then(directMessageMapper).should().toDto(any(DirectMessage.class));
+        then(eventPublisher).should().publishEvent(any(DirectMessageReceivedEvent.class));
 
     }
 
     @Test
     void 메세지_저장한다() throws Exception {
+        // given
+        String content = "content-123";
+        SendDmRequest req = new SendDmRequest(myId, otherId, content);
+
+        User senderRef = stubUser(myId, false);
+        User receiverRef = stubUser(otherId, false);
+
+        DirectMessageDto dto = mock(DirectMessageDto.class);
+        commonGiven(senderRef, receiverRef, dto);
+
+        // when
+        directMessageService.sendMessage(myId, req);
+
+        // then
+        DirectMessage captured = dmCaptor.getValue();
+        assertThat(captured.getSender()).isSameAs(senderRef);
+        assertThat(captured.getReceiver()).isSameAs(receiverRef);
+        assertThat(captured.getMessage()).isEqualTo(content);
 
     }
 
 
     @Test
     void 알람_호출_메서드_동작한다() throws Exception {
+        // given
+        String content = "notify-me";
+        SendDmRequest req = new SendDmRequest(myId, otherId, content);
+
+        User senderRef = stubUser(myId, false);
+        User receiverRef = stubUser(otherId, false);
+
+        DirectMessageDto dto = mock(DirectMessageDto.class);
+        commonGiven(senderRef, receiverRef, dto);
+
+        // when
+        directMessageService.sendMessage(myId, req);
+
+        // then
+        then(eventPublisher).should().publishEvent(eventCaptor.capture());
+        DirectMessageReceivedEvent ev = eventCaptor.getValue();
+        assertThat(ev.senderId()).isEqualTo(myId);
+        assertThat(ev.receiverId()).isEqualTo(otherId);
+        assertThat(ev.content()).isEqualTo(content);
 
     }
 
     @Test
     void 메세지_10자_이상은_자른다() throws Exception {
+        // given
+        String longContent = "ABCDEFGHIJK";
+        SendDmRequest req = new SendDmRequest(myId, otherId, longContent);
 
+        User senderRef = stubUser(myId, false);
+        User receiverRef = stubUser(otherId, false);
+
+        DirectMessageDto dto = mock(DirectMessageDto.class);
+        commonGiven(senderRef, receiverRef, dto);
+
+        // when
+        directMessageService.sendMessage(myId, req);
+
+        // then
+        then(eventPublisher).should().publishEvent(eventCaptor.capture());
+        DirectMessageReceivedEvent ev = eventCaptor.getValue();
+        assertThat(ev.content()).isEqualTo(longContent);
     }
 
 }
