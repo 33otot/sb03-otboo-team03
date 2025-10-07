@@ -112,7 +112,8 @@ public class NotificationServiceImpl implements NotificationService {
      * 의상 속성 추가 시 알림을 발행한다.
      */
     @Transactional
-    public void notifyClothesAttribute(UUID userId) {
+    public void notifyClothesAttribute() {
+        UUID userId = currentUserId();
         save(userId, CLOTHES_ATTRIBUTE_TITLE, CLOTHES_ATTRIBUTE_CONTENT, NotificationLevel.INFO);
     }
 

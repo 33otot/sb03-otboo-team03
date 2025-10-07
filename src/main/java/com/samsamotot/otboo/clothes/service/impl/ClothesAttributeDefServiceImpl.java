@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.samsamotot.otboo.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
@@ -35,6 +37,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
 
     private final ClothesAttributeDefRepository defRepository;
     private final ClothesAttributeDefMapper defMapper;
+    private final NotificationService notificationService;
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
@@ -57,6 +60,9 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
         });
 
         ClothesAttributeDef saved = defRepository.save(def);
+
+        // 의상 속성 추가 알림 생성
+        notificationService.notifyClothesAttribute();
 
         return defMapper.toDto(saved);
     }

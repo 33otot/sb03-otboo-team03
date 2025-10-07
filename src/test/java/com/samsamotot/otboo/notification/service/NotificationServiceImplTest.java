@@ -167,16 +167,23 @@ class NotificationServiceImplTest {
 
     @Test
     void 의상_속성_추가_객체_생성() throws Exception {
+        // given
         UUID userId = UUID.randomUUID();
-        given(userRepository.findById(userId)).willReturn(Optional.of(newUserInstance()));
+        User authUser = newUserWith("admin@test.com", userId);
+        mockAuthUser(authUser);
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(authUser));
         given(notificationRepository.save(any(Notification.class)))
             .willAnswer(inv -> inv.getArgument(0));
         given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
-        notificationService.notifyClothesAttribute(userId);
+        // when
+        notificationService.notifyClothesAttribute();
 
+        // then
         then(notificationRepository).should().save(notificationCaptor.capture());
         Notification n = notificationCaptor.getValue();
+
         assertEquals("의상 속성 추가", n.getTitle());
         assertEquals("의상 속성이 추가되었습니다.", n.getContent());
         assertEquals(NotificationLevel.INFO, n.getLevel());

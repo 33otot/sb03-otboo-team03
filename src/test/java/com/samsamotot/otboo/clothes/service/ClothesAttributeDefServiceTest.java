@@ -4,11 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest;
@@ -27,6 +23,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.samsamotot.otboo.notification.service.NotificationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,6 +45,9 @@ class ClothesAttributeDefServiceTest {
 
     @Mock
     private ClothesAttributeDefMapper defMapper;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private ClothesAttributeDefServiceImpl clothesAttributeDefService;
@@ -80,6 +81,7 @@ class ClothesAttributeDefServiceTest {
                         Instant.now()
                     );
                 });
+            doNothing().when(notificationService).notifyClothesAttribute();
 
             // when
             ClothesAttributeDefDto result = clothesAttributeDefService.create(request);
