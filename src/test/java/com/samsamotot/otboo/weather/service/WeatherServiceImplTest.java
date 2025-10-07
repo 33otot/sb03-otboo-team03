@@ -15,6 +15,7 @@ import com.samsamotot.otboo.weather.entity.*;
 import com.samsamotot.otboo.weather.mapper.WeatherMapper;
 import com.samsamotot.otboo.weather.repository.GridRepository;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
+import com.samsamotot.otboo.weather.service.impl.WeatherAlterServiceImpl;
 import com.samsamotot.otboo.weather.service.impl.WeatherServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -55,6 +56,9 @@ public class WeatherServiceImplTest {
 
     @Mock
     private WeatherTransactionService weatherTransactionService;
+
+    @Mock
+    private WeatherAlterServiceImpl weatherAlterService;
 
     @Mock
     private GridRepository gridRepository;
@@ -99,7 +103,7 @@ public class WeatherServiceImplTest {
 
             // When
             // @Async로 비동기 처리 join()으로 비동기 작업 끝날 때까지 기다림
-            weatherService.updateWeatherDataForGrid(grid.getId()).join();
+            weatherService.updateWeatherForGrid(grid.getId()).join();
 
 
             // Then
@@ -129,7 +133,7 @@ public class WeatherServiceImplTest {
 
 
             // When
-            CompletableFuture<Void> future = weatherService.updateWeatherDataForGrid(grid.getId());
+            CompletableFuture<Void> future = weatherService.updateWeatherForGrid(grid.getId());
 
             // Then
             // WeatherServiceImpl의 exceptionally 블록으로 인해 예외가 발생하지 않고 정상 완료됨
@@ -187,7 +191,7 @@ public class WeatherServiceImplTest {
 
 
             // When (실행)
-            weatherService.updateWeatherDataForGrid(grid.getId()).join();
+            weatherService.updateWeatherForGrid(grid.getId()).join();
 
 
             // Then (검증)
@@ -266,7 +270,7 @@ public class WeatherServiceImplTest {
 
 
             // When (실행)
-            weatherService.updateWeatherDataForGrid(grid.getId()).join();
+            weatherService.updateWeatherForGrid(grid.getId()).join();
 
 
             // Then (검증)
@@ -331,7 +335,7 @@ public class WeatherServiceImplTest {
             ArgumentCaptor<List<Weather>> captor = ArgumentCaptor.forClass(List.class);
 
             // When (실행)
-            weatherService.updateWeatherDataForGrid(grid.getId()).join();
+            weatherService.updateWeatherForGrid(grid.getId()).join();
 
             // Then (검증)
             verify(weatherTransactionService).updateWeather(any(Grid.class), captor.capture());
@@ -391,7 +395,7 @@ public class WeatherServiceImplTest {
             ArgumentCaptor<List<Weather>> captor = ArgumentCaptor.forClass(List.class);
 
             // When (실행)
-            weatherService.updateWeatherDataForGrid(grid.getId()).join();
+            weatherService.updateWeatherForGrid(grid.getId()).join();
 
             // Then (검증)
             verify(weatherTransactionService).updateWeather(any(Grid.class), captor.capture());
@@ -551,7 +555,7 @@ public class WeatherServiceImplTest {
             doNothing().when(weatherTransactionService).updateWeather(any(Grid.class), anyList());
 
             // When
-            CompletableFuture<Void> future = weatherService.updateWeatherDataForGrid(grid.getId());
+            CompletableFuture<Void> future = weatherService.updateWeatherForGrid(grid.getId());
 
             // Then
             future.get();
