@@ -1,10 +1,10 @@
 package com.samsamotot.otboo.directmessage.service;
 
-import com.samsamotot.otboo.common.dto.CursorResponse;
-import com.samsamotot.otboo.directmessage.dto.*;
-import com.samsamotot.otboo.directmessage.entity.DirectMessage;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.MessageRequest;
+import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import jakarta.validation.Valid;
-import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.UUID;

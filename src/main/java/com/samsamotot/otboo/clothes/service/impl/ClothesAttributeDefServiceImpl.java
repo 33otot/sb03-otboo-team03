@@ -11,19 +11,18 @@ import com.samsamotot.otboo.clothes.mapper.ClothesAttributeDefMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.service.ClothesAttributeDefService;
 import com.samsamotot.otboo.common.exception.ErrorCode;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.samsamotot.otboo.notification.dto.event.ClothesAttributeCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 의상 속성 정의의 비즈니스 로직을 담당하는 클래스
@@ -35,6 +34,7 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
 
     private final ClothesAttributeDefRepository defRepository;
     private final ClothesAttributeDefMapper defMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
@@ -57,6 +57,9 @@ public class ClothesAttributeDefServiceImpl implements ClothesAttributeDefServic
         });
 
         ClothesAttributeDef saved = defRepository.save(def);
+
+        // 의상 속성 추가 알림 생성
+        eventPublisher.publishEvent(new ClothesAttributeCreatedEvent());
 
         return defMapper.toDto(saved);
     }
