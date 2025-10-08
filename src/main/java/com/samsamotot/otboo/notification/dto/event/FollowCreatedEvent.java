@@ -8,5 +8,5 @@ import java.util.UUID;
  * Author       : dounguk
  * Date         : 2025. 10. 7.
  */
-public record FollowCreatedEvent(UUID followeeId) {
+public record FollowCreatedEvent(UUID followeeId, String followerName) {
 }

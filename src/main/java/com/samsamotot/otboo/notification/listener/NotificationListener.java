@@ -43,7 +43,6 @@ public class NotificationListener {
 
     private static final String ROLE_CONTENT = "변경된 권한을 확인하세요";
     private static final String CLOTHES_ATTRIBUTE_CONTENT = "의상 속성이 추가되었습니다.";
-    private static final String FOLLOW_CONTENT = "사용자가 팔로우했습니다";
     private final FollowRepository followRepository;
 
     @Async
@@ -64,7 +63,7 @@ public class NotificationListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onFeedLiked(FeedLikedEvent e) {
-        User liker = userRepository.findById(e.likerId()).orElseThrow(() -> new OtbooException(ErrorCode.UNAUTHORIZED));
+        User liker = userRepository.findById(e.likerId()).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
         Feed feed = feedRepository.findById(e.feedId()).orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
         notificationService.save(feed.getAuthor().getId(), LIKE_TITLE, "[" + liker.getUsername() + "] 가 좋아요를 눌렀습니다", NotificationLevel.INFO);
     }
@@ -75,10 +74,7 @@ public class NotificationListener {
         User commenter = userRepository.findById(e.commenterId()).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
         Feed feed = feedRepository.findById(e.feedId()).orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
-        String commentPreview = e.content();
-        if (commentPreview.length() > 10) {
-            commentPreview = e.content().substring(0, 10) + "...";
-        }
+        String commentPreview = shortenContent(e.content());
         notificationService.save(feed.getAuthor().getId(), COMMENT_TITLE, "작성자 [" + commenter.getUsername() + "], 메세지: [" + commentPreview + "]", NotificationLevel.INFO);
     }
 
@@ -96,7 +92,7 @@ public class NotificationListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onFollowCreated(FollowCreatedEvent e) {
-        notificationService.save(e.followeeId(), FOLLOW_TITLE, FOLLOW_CONTENT, NotificationLevel.INFO);
+        notificationService.save(e.followeeId(), FOLLOW_TITLE, "작성자 [" + e.followerName() + "]", NotificationLevel.INFO);
     }
 
     @Async
@@ -104,10 +100,14 @@ public class NotificationListener {
     public void onDirectMessageCreated(DirectMessageReceivedEvent e) {
         User sender = userRepository.findById(e.senderId()).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
 
-        String messagePreview = e.content();
-        if (messagePreview.length() > 10) {
-            messagePreview = e.content().substring(0, 10) + "...";
-        }
+        String messagePreview = shortenContent(e.content());
         notificationService.save(e.receiverId(), DIRECT_MESSAGE_TITLE, "작성자: [" + sender.getUsername() + "], 메세지: [" + messagePreview + "]", NotificationLevel.INFO);
+    }
+
+    private String shortenContent(String content) {
+        if (content.length() > 10) {
+            return content.substring(0, 10) + "...";
+        }
+        return content;
     }
 }

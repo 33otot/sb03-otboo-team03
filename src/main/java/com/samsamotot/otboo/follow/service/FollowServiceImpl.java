@@ -110,7 +110,7 @@ public class FollowServiceImpl implements FollowService {
                 savedFollow.getId(), follower.getId(), followee.getId());
 
             try {
-                eventPublisher.publishEvent(new FollowCreatedEvent(followee.getId()));
+                eventPublisher.publishEvent(new FollowCreatedEvent(followee.getId(), follower.getUsername()));
                 log.info(FOLLOW_SERVICE + "팔로우 알림 발행 완료: 팔로우당한 사용자={}", followee.getId());
             } catch (Exception e) {
                 log.error(FOLLOW_SERVICE + "팔로우 알림 발행 실패 - 팔로우 당한 사용자: {}, 에러: {}",

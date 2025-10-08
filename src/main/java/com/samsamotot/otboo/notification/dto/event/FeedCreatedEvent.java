@@ -1,6 +1,5 @@
 package com.samsamotot.otboo.notification.dto.event;
 
-import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.user.entity.User;
 
 /**
