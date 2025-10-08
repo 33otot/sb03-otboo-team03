@@ -4,12 +4,6 @@ name: Deploy to AWS ECS
 on:
   push:
     branches: [ dev, bugfix/deploy ]
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: '배포할 브랜치 이름을 입력하세요 (예: dev, bugfix/deploy)'
-        required: true
-        default: 'dev'
 
 env:
   IMAGE_TAG: ${{ github.sha }}
@@ -107,18 +101,32 @@ jobs:
             exit 1
           fi
 
-      - name: Rolling Update ECS Service
+      - name: Stop existing tasks
         run: |
-          echo "서비스 업데이트 시작"
+          echo "기존 실행 중인 Task 중단 중..."
+          aws ecs update-service \
+            --cluster ${{ vars.ECS_CLUSTER }} \
+            --service ${{ vars.ECS_SERVICE }} \
+            --desired-count 0
+          
+          echo "기존 Task 중단 완료 대기 (20초)..."
+          sleep 20
+
+      - name: Deploy new task
+        run: |
+          echo "새 Task Definition으로 서비스 배포..."
           echo "Using TaskDef: ${{ steps.register.outputs.new_task_def_arn }}"
           aws ecs update-service \
             --cluster ${{ vars.ECS_CLUSTER }} \
             --service ${{ vars.ECS_SERVICE }} \
             --task-definition ${{ steps.register.outputs.new_task_def_arn }} \
+            --desired-count 1 \
             --force-new-deployment
 
       - name: Wait for ECS service to stabilize
         run: |
+          echo "새 Task 시작 대기 중..."
           aws ecs wait services-stable \
             --cluster ${{ vars.ECS_CLUSTER }} \
             --services ${{ vars.ECS_SERVICE }}
+          timeout-minutes: 15
