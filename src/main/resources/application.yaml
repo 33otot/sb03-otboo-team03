@@ -31,6 +31,22 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  # LLM 설정 (OpenAI)
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.4
+          max-tokens: 64
+    retry:
+      max-attempts: 3
+      backoff:
+        initial-interval: 1s
+        multiplier: 2
+        max-interval: 10s
 
 kma:
   base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
@@ -74,13 +90,7 @@ app:
 websocket:
   allowed-origins: http://localhost:3000,http://localhost:8080
 
-# LLM 설정 (OpenAI)
-openai:
-  base-url: ${OPENAI_BASE_URL:https://api.openai.com}
-  api-key: ${OPENAI_API_KEY}
-  model: ${OPENAI_MODEL:gpt-4o-mini}
-  timeout-ms: 15000
-
+# LLM 설정
 llm:
   reason:
     max-length: 60
