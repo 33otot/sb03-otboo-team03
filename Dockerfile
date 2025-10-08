@@ -10,8 +10,6 @@ WORKDIR /app
 COPY gradlew gradlew.bat settings.gradle build.gradle ./
 COPY gradle/ gradle/
 
-# 권한 및 의존성 프리페치(소스 없이도 가능한 범위까지)
-COPY gradle/ gradle/
 RUN chmod +x ./gradlew
 
 # 소스 복사 후 빌드 (테스트 제외)
