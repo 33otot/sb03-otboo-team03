@@ -43,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,7 +66,7 @@ public class CommentServiceTest {
     private CommentServiceImpl commentService;
 
     @Mock
-    private NotificationService notificationService;
+    private ApplicationEventPublisher eventPublisher;
 
     User mockUser;
     Feed mockFeed;
@@ -109,8 +110,6 @@ public class CommentServiceTest {
             given(feedRepository.findByIdAndIsDeletedFalse(any(UUID.class))).willReturn(Optional.of(mockFeed));
             given(commentRepository.save(any(Comment.class))).willReturn(savedComment);
             given(commentMapper.toDto(any(Comment.class))).willReturn(expectedDto);
-            lenient().doNothing().when(notificationService)
-                .notifyComment(any(UUID.class), any(UUID.class), anyString());
 
             // when
             CommentDto result = commentService.create(feedId, request);

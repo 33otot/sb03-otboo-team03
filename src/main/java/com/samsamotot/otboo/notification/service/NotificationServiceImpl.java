@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
-import com.samsamotot.otboo.feed.entity.Feed;
-import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.notification.dto.NotificationDto;
 import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import com.samsamotot.otboo.notification.dto.NotificationRequest;
@@ -25,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -40,24 +37,13 @@ import java.util.UUID;
 @Validated
 @Transactional(readOnly = true)
 public class NotificationServiceImpl implements NotificationService {
-    private static final String NOTIFICATION_SERVICE = "[NotificationService] ";
-
-    private static final String ROLE_TITLE = "권한 변경";
-    private static final String CLOTHES_ATTRIBUTE_TITLE = "의상 속성 추가";
-    private static final String LIKE_TITLE = "새 좋아요";
-    private static final String COMMENT_TITLE = "새 댓글";
-    private static final String FOLLOW_TITLE = "새 팔로워";
-    private static final String DIRECT_MESSAGE_TITLE = "새 쪽지";
-
-    private static final String ROLE_CONTENT = "변경된 권한을 확인하세요";
-    private static final String CLOTHES_ATTRIBUTE_CONTENT = "의상 속성이 추가되었습니다.";
-    private static final String FOLLOW_CONTENT = "사용자가 팔로우했습니다";
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-    private final FeedRepository feedRepository;
     private final SseService sseService;
     private final ObjectMapper objectMapper;
+
+    private static final String NOTIFICATION_SERVICE = "[NotificationService] ";
 
     /**
      * 알림을 저장하고 해당 사용자에게 SSE로 실시간 발행한다.
@@ -97,67 +83,6 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         return saved;
-    }
-
-    // 다른 비즈니스 로직에서의 알람
-    /**
-     * 사용자 권한 변경 시 알림을 발행한다.
-     */
-    @Transactional
-    public void notifyRole(UUID userId) {
-        save(userId, ROLE_TITLE, ROLE_CONTENT, NotificationLevel.INFO);
-    }
-
-    /**
-     * 의상 속성 추가 시 알림을 발행한다.
-     */
-    @Transactional
-    public void notifyClothesAttribute(UUID userId) {
-        save(userId, CLOTHES_ATTRIBUTE_TITLE, CLOTHES_ATTRIBUTE_CONTENT, NotificationLevel.INFO);
-    }
-
-    /**
-     * 피드에 좋아요가 추가되었을 때 피드 소유자에게 알림을 발행한다.
-     */
-    @Transactional
-    public void notifyLike(UUID commenterId, UUID feedId) {
-        User commenter = userRepository.findById(commenterId).orElseThrow(() -> new OtbooException(ErrorCode.UNAUTHORIZED));
-        Feed feed = feedRepository.findById(feedId).orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
-
-        save(feed.getAuthor().getId(), LIKE_TITLE, "[" + commenter.getUsername() + "] 가 좋아요를 눌렀습니다", NotificationLevel.INFO);
-    }
-
-    /**
-     * 피드에 댓글이 달렸을 때 피드 소유자에게 알림을 발행한다.
-     */
-    @Transactional
-    public void notifyComment(UUID commenterId, UUID feedId, String content) {
-        User commenter = userRepository.findById(commenterId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
-        Feed feed = feedRepository.findById(feedId).orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
-
-        String commentPreview = content;
-        if (commentPreview.length() > 10) {
-            commentPreview = content.substring(0, 10) + "...";
-        }
-
-        save(feed.getAuthor().getId(), COMMENT_TITLE, "작성자 [" + commenter.getUsername() + "], 메세지: [" + commentPreview + "]", NotificationLevel.INFO);
-    }
-
-    /**
-     * 새로운 팔로워가 생겼을 때 팔로우 당한 사용자에게 알림을 발행한다.
-     */
-    @Transactional
-    public void notifyFollow(UUID followerId, UUID followeeId) {
-        save(followeeId, FOLLOW_TITLE, FOLLOW_CONTENT, NotificationLevel.INFO);
-    }
-
-    /**
-     * 새로운 쪽지가 도착했을 때 수신자에게 알림을 발행한다.
-     */
-    @Transactional
-    public void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview) {
-        User sender = userRepository.findById(senderId).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
-        save(receiverId, DIRECT_MESSAGE_TITLE, "작성자: [" + sender.getUsername() + "], 메세지: [" + messagePreview + "]", NotificationLevel.INFO);
     }
 
     /**

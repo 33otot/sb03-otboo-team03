@@ -5,10 +5,9 @@ import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
-import com.samsamotot.otboo.feed.entity.Feed;
-import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import com.samsamotot.otboo.notification.dto.NotificationRequest;
+import com.samsamotot.otboo.notification.dto.event.*;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.repository.NotificationRepository;
@@ -24,6 +23,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -61,10 +61,9 @@ class NotificationServiceImplTest {
     @Mock
     private ObjectMapper objectMapper;
     @Mock
-    private FeedRepository feedRepository;
-
+    private ApplicationEventPublisher eventPublisher;
     @Captor
-    private ArgumentCaptor<Notification> notificationCaptor;
+    private ArgumentCaptor<Object> eventCaptor;
 
     private User newUserInstance() {
         try {
@@ -144,181 +143,6 @@ class NotificationServiceImplTest {
         );
         then(notificationRepository).should().save(any(Notification.class));
         then(sseService).should().sendNotification(eq(receiverId), anyString());
-    }
-
-    @Test
-    void 권한_변경_객체_생성() throws Exception {
-        UUID userId = UUID.randomUUID();
-        given(userRepository.findById(userId)).willReturn(Optional.of(newUserInstance()));
-        given(notificationRepository.save(any(Notification.class)))
-            .willAnswer(inv -> inv.getArgument(0));
-        given(objectMapper.writeValueAsString(any())).willReturn("{}");
-
-        notificationService.notifyRole(userId);
-
-        then(notificationRepository).should().save(notificationCaptor.capture());
-        Notification n = notificationCaptor.getValue();
-        assertEquals("권한 변경", n.getTitle());
-        assertEquals("변경된 권한을 확인하세요", n.getContent());
-        assertEquals(NotificationLevel.INFO, n.getLevel());
-        assertNotNull(n.getReceiver());
-        then(sseService).should().sendNotification(eq(userId), anyString());
-    }
-
-    @Test
-    void 의상_속성_추가_객체_생성() throws Exception {
-        UUID userId = UUID.randomUUID();
-        given(userRepository.findById(userId)).willReturn(Optional.of(newUserInstance()));
-        given(notificationRepository.save(any(Notification.class)))
-            .willAnswer(inv -> inv.getArgument(0));
-        given(objectMapper.writeValueAsString(any())).willReturn("{}");
-
-        notificationService.notifyClothesAttribute(userId);
-
-        then(notificationRepository).should().save(notificationCaptor.capture());
-        Notification n = notificationCaptor.getValue();
-        assertEquals("의상 속성 추가", n.getTitle());
-        assertEquals("의상 속성이 추가되었습니다.", n.getContent());
-        assertEquals(NotificationLevel.INFO, n.getLevel());
-        assertNotNull(n.getReceiver());
-        then(sseService).should().sendNotification(eq(userId), anyString());
-    }
-
-    @Test
-    void 새_좋아요_객체_생성() throws Exception {
-        // given
-        UUID commenterId = UUID.randomUUID();
-        UUID feedId = UUID.randomUUID();
-        UUID feedAuthorId = UUID.randomUUID();
-
-        User commenter = newUserWith("commenter@example.com", commenterId);
-        ReflectionTestUtils.setField(commenter, "username", "댓글러");
-
-        User feedAuthor = newUserWith("author@example.com", feedAuthorId);
-
-        com.samsamotot.otboo.feed.entity.Feed feed = mock(com.samsamotot.otboo.feed.entity.Feed.class);
-        when(feed.getAuthor()).thenReturn(feedAuthor);
-
-        given(userRepository.findById(eq(commenterId))).willReturn(Optional.of(commenter));
-        given(feedRepository.findById(eq(feedId))).willReturn(Optional.of(feed));
-        given(userRepository.findById(eq(feedAuthorId))).willReturn(Optional.of(feedAuthor));
-
-        given(notificationRepository.save(any(Notification.class))).willAnswer(inv -> inv.getArgument(0));
-        given(objectMapper.writeValueAsString(any())).willReturn("{}");
-
-        // when
-        notificationService.notifyLike(commenterId, feedId);
-
-        // then
-        then(notificationRepository).should().save(notificationCaptor.capture());
-        Notification n = notificationCaptor.getValue();
-
-        assertNotNull(n.getTitle());
-        assertFalse(n.getTitle().isBlank());
-
-        assertTrue(n.getContent().contains("[댓글러] 가 좋아요를 눌렀습니다"));
-
-        assertNotNull(n.getReceiver());
-        assertEquals(feedAuthorId, n.getReceiver().getId());
-
-        then(sseService).should().sendNotification(eq(feedAuthorId), anyString());
-    }
-
-    @Test
-    void 새_댓글_객체_생성() throws Exception {
-        // given
-        UUID commenterId = UUID.randomUUID();
-        UUID feedId = UUID.randomUUID();
-        UUID feedAuthorId = UUID.randomUUID();
-
-        User commenter = newUserWith("commenter@example.com", commenterId);
-        ReflectionTestUtils.setField(commenter, "username", "댓글러");
-
-        User feedAuthor = newUserWith("author@example.com", feedAuthorId);
-
-        com.samsamotot.otboo.feed.entity.Feed feed = mock(com.samsamotot.otboo.feed.entity.Feed.class);
-        when(feed.getAuthor()).thenReturn(feedAuthor);
-
-        String content = "아주아주아주멋지네요 진짜 최고";
-        String expectedPreview = content.substring(0, 10) + "...";
-
-        given(userRepository.findById(eq(commenterId))).willReturn(Optional.of(commenter));
-        given(userRepository.findById(eq(feedAuthorId))).willReturn(Optional.of(feedAuthor));
-
-        given(feedRepository.findById(eq(feedId))).willReturn(Optional.of(feed));
-
-        given(notificationRepository.save(any(Notification.class))).willAnswer(inv -> inv.getArgument(0));
-        given(objectMapper.writeValueAsString(any())).willReturn("{}");
-
-        // when
-        notificationService.notifyComment(commenterId, feedId, content);
-
-        // then
-        then(notificationRepository).should().save(notificationCaptor.capture());
-        Notification saved = notificationCaptor.getValue();
-
-        assertNotNull(saved.getTitle());
-        assertFalse(saved.getTitle().isBlank());
-
-        assertTrue(saved.getContent().contains("작성자 [댓글러]"));
-        assertTrue(saved.getContent().contains("메세지: [" + expectedPreview + "]"));
-
-        assertNotNull(saved.getReceiver());
-        assertEquals(feedAuthorId, saved.getReceiver().getId());
-
-        then(sseService).should().sendNotification(eq(feedAuthorId), anyString());
-    }
-
-    @Test
-    void 새_팔로워_객체_생성() throws Exception {
-        UUID followerId = UUID.randomUUID();
-        UUID followeeId = UUID.randomUUID();
-        given(userRepository.findById(followeeId)).willReturn(Optional.of(newUserInstance()));
-        given(notificationRepository.save(any(Notification.class)))
-            .willAnswer(inv -> inv.getArgument(0));
-        given(objectMapper.writeValueAsString(any())).willReturn("{}");
-
-        notificationService.notifyFollow(followerId, followeeId);
-
-        then(notificationRepository).should().save(notificationCaptor.capture());
-        Notification n = notificationCaptor.getValue();
-        assertEquals("새 팔로워", n.getTitle());
-        assertEquals("사용자가 팔로우했습니다", n.getContent());
-        assertEquals(NotificationLevel.INFO, n.getLevel());
-        assertNotNull(n.getReceiver());
-        then(sseService).should().sendNotification(eq(followeeId), anyString());
-    }
-
-    /*
-        notifyDirectMessage
-     */
-    @Test
-    void 새_쪽지_객체_생성() throws Exception {
-        // given
-        UUID senderId = UUID.randomUUID();
-        UUID receiverId = UUID.randomUUID();
-        String preview = "안녕!";
-        User sender = newUserInstance();
-
-        given(userRepository.findById(eq(senderId))).willReturn(Optional.of(sender));
-        given(userRepository.findById(eq(receiverId))).willReturn(Optional.of(newUserInstance()));
-
-        given(notificationRepository.save(any(Notification.class)))
-            .willAnswer(inv -> inv.getArgument(0));
-        given(objectMapper.writeValueAsString(any())).willReturn("{}");
-
-        // when
-        notificationService.notifyDirectMessage(senderId, receiverId, preview);
-
-        // then
-        then(notificationRepository).should(times(1)).save(argThat(n ->
-            "새 쪽지".equals(n.getTitle()) &&
-                n.getContent() != null &&
-                n.getContent().contains("작성자: [") &&
-                n.getContent().contains("메세지: [") &&
-                n.getContent().contains(preview)
-        ));
-        then(sseService).should(times(1)).sendNotification(eq(receiverId), anyString());
     }
 
     /*

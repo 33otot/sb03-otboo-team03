@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -47,7 +48,7 @@ public class FeedLikeServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private NotificationService notificationService;
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private FeedLikeServiceImpl feedLikeService;
@@ -92,7 +93,6 @@ public class FeedLikeServiceTest {
             assertThat(result.getFeed()).isEqualTo(mockFeed);
             assertThat(result.getUser()).isEqualTo(mockUser);
             verify(feedRepository, times(1)).incrementLikeCount(feedId);
-            verify(notificationService, times(1)).notifyLike(userId, feedId);
         }
 
         @Test

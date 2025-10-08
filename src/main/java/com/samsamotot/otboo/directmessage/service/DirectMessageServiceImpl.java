@@ -10,12 +10,13 @@ import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.mapper.DirectMessageMapper;
 import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
-import com.samsamotot.otboo.notification.service.NotificationService;
+import com.samsamotot.otboo.notification.dto.event.DirectMessageReceivedEvent;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -47,7 +48,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
     private final DirectMessageMapper directMessageMapper;
 
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final EntityManager em;
 
@@ -151,12 +152,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         log.info(DM_SERVICE + "DM 저장 완료 - id: {}, createdAt: {}",
             savedEntity.getId(), savedEntity.getCreatedAt());
 
-        String notificationContent = content;
-        if (notificationContent.length() > 10) {
-            notificationContent = content.substring(0, 10) + "...";
-        }
-
-        notificationService.notifyDirectMessage(senderId, request.receiverId(), notificationContent);
+        eventPublisher.publishEvent(new DirectMessageReceivedEvent(senderId,request.receiverId(), content));
 
         DirectMessageDto response = directMessageMapper.toDto(savedEntity);
         log.info(DM_SERVICE + "DM 전송 완료 - id: {}", response.id());
