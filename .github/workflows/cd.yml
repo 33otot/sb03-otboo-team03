@@ -3,7 +3,7 @@ name: Deploy to AWS ECS
 # 트리거 조건: dev 브랜치에 푸쉬 시 자동 실행
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev, bugfix/deploy ]
   workflow_dispatch:
     inputs:
       branch:
@@ -68,11 +68,15 @@ jobs:
       - name: Update ECS Task Definition with new image
         id: register
         run: |
+          set -e  # 에러 발생 시 즉시 중단
+          
           # 현재 태스크 정의
+          echo "현재 태스크 정의 불러오는 중..."
           TASK_DEFINITION=$(aws ecs describe-task-definition \
             --task-definition ${{ vars.ECS_TASK_DEFINITION }})
           
           # 새 이미지 업데이트
+          echo "새 이미지로 태스크 정의 수정 중...: ${{ needs.build-and-push.outputs.image_uri }}"
           NEW_TASK_DEF=$(echo $TASK_DEFINITION | jq \
             --arg IMAGE "${{ needs.build-and-push.outputs.image_uri }}" \
             '.taskDefinition |
@@ -82,14 +86,31 @@ jobs:
                   .registeredAt, .registeredBy)')
 
           # 새 태스크 정의 등록
+          echo "새 태스크 정의 등록 중..."
           NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
             --cli-input-json "$NEW_TASK_DEF" | jq -r '.taskDefinition.taskDefinitionArn')
           
+          echo "New task definition ARN: $NEW_TASK_DEF_ARN"
+    
+          if [ -z "$NEW_TASK_DEF_ARN" ] || [ "$NEW_TASK_DEF_ARN" = "null" ]; then
+            echo "ERROR: Failed to register new task definition"
+            exit 1
+          fi
+          
           echo "new_task_def_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
-          echo "Registered new task definition: $NEW_TASK_DEF_ARN"
+
+      - name: Debug - Check task definition ARN
+        run: |
+          echo "Task Definition ARN: ${{ steps.register.outputs.new_task_def_arn }}"
+          if [ -z "${{ steps.register.outputs.new_task_def_arn }}" ]; then
+            echo "ERROR: Task Definition ARN is empty!"
+            exit 1
+          fi
 
       - name: Rolling Update ECS Service
         run: |
+          echo "서비스 업데이트 시작"
+          echo "Using TaskDef: ${{ steps.register.outputs.new_task_def_arn }}"
           aws ecs update-service \
             --cluster ${{ vars.ECS_CLUSTER }} \
             --service ${{ vars.ECS_SERVICE }} \
