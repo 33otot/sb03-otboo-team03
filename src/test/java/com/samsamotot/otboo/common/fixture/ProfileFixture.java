@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.common.fixture;
 
+import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.profile.entity.Gender;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.user.entity.User;
@@ -31,6 +32,17 @@ public class ProfileFixture {
             .location(null)
             .temperatureSensitivity(temperatureSensitivity)
             .build();
+    }
+
+    public static Profile createLocationProfile(User user, Location location) {
+        return Profile.builder()
+                .user(user)
+                .name(DEFAULT_USER_NAME)
+                .birthDate(LocalDate.of(2000, 1, 1))
+                .gender(Gender.MALE)
+                .location(location)
+                .temperatureSensitivity(3.0)
+                .build();
     }
 
     public static Profile.ProfileBuilder builder() {
