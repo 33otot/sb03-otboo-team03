@@ -129,4 +129,4 @@ jobs:
           aws ecs wait services-stable \
             --cluster ${{ vars.ECS_CLUSTER }} \
             --services ${{ vars.ECS_SERVICE }}
-          timeout-minutes: 15
+        timeout-minutes: 5
