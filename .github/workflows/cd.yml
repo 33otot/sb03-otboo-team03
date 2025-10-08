@@ -1,6 +1,6 @@
 name: Deploy to AWS ECS
 
-# 트리거 조건: devq 브랜치에 푸쉬 시 자동 실행
+# 트리거 조건: dev 브랜치에 푸쉬 시 자동 실행
 on:
   push:
     branches: [ dev ]
