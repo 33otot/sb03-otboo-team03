@@ -13,20 +13,19 @@ import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.notification.dto.event.CommentCreatedEvent;
-import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
-import com.samsamotot.otboo.user.mapper.UserMapper;
 import com.samsamotot.otboo.user.repository.UserRepository;
-import java.time.Instant;
-import java.time.format.DateTimeParseException;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * 댓글(Comment) 관련 비즈니스 로직을 처리하는 서비스 구현체입니다.
@@ -82,7 +81,7 @@ public class CommentServiceImpl implements CommentService {
 
         log.debug(SERVICE + "댓글 생성 완료: commentId = {}", saved.getId());
 
-        eventPublisher.publishEvent(new CommentCreatedEvent(request.authorId(),feedId,request.content())); // 알림
+        eventPublisher.publishEvent(new CommentCreatedEvent(request.authorId(), feedId, request.content())); // 알림
 
         log.debug(SERVICE + "알림 생성 완료: commentId = {}", saved.getId());
 

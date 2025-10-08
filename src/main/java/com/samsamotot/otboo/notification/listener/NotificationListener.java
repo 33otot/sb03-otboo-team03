@@ -4,28 +4,18 @@ import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
-import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.repository.FollowRepository;
 import com.samsamotot.otboo.notification.dto.event.*;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
-import com.samsamotot.otboo.notification.repository.NotificationRepository;
 import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
-import com.samsamotot.otboo.user.service.UserService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Stream;
-
-import static io.lettuce.core.ShutdownArgs.Builder.save;
 
 /**
  * PackageName  : com.samsamotot.otboo.notification.listener

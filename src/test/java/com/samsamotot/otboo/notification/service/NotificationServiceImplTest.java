@@ -5,8 +5,6 @@ import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
-import com.samsamotot.otboo.feed.entity.Feed;
-import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import com.samsamotot.otboo.notification.dto.NotificationRequest;
 import com.samsamotot.otboo.notification.dto.event.*;
@@ -145,95 +143,6 @@ class NotificationServiceImplTest {
         );
         then(notificationRepository).should().save(any(Notification.class));
         then(sseService).should().sendNotification(eq(receiverId), anyString());
-    }
-
-    @Test
-    void 권한_변경_객체_생성() throws Exception {
-        // given
-        UUID myId = UUID.randomUUID();
-        User me = newUserWith(UserFixture.VALID_EMAIL, myId);
-        mockAuthUser(me);
-
-        // when
-        assertDoesNotThrow(() -> notificationService.notifyRole(UUID.randomUUID()));
-
-        // then
-        then(eventPublisher).should().publishEvent(eventCaptor.capture());
-        RoleChangedEvent ev = (RoleChangedEvent) eventCaptor.getValue();
-        assertEquals(myId, ev.currentUserId());
-    }
-
-    @Test
-    void 의상_속성_추가_객체_생성() throws Exception {
-        // when
-        notificationService.notifyClothesAttribute();
-
-        // then
-        then(eventPublisher).should().publishEvent(eventCaptor.capture());
-        assertTrue(eventCaptor.getValue() instanceof ClothesAttributeCreatedEvent);
-    }
-
-    @Test
-    void 새_좋아요_객체_생성() throws Exception {
-        // given
-        UUID likerId = UUID.randomUUID();
-        UUID feedId = UUID.randomUUID();
-
-        // when
-        notificationService.notifyLike(likerId, feedId);
-
-        // then
-        then(eventPublisher).should().publishEvent(eventCaptor.capture());
-        FeedLikedEvent ev = (FeedLikedEvent) eventCaptor.getValue();
-        assertEquals(likerId, ev.likerId());
-        assertEquals(feedId, ev.feedId());
-    }
-
-    @Test
-    void 새_댓글_객체_생성() throws Exception {
-        // given
-        UUID commenterId = UUID.randomUUID();
-        UUID feedId = UUID.randomUUID();
-        String raw = "ABCDEFGHIJK";
-
-        // when
-        notificationService.notifyComment(commenterId, feedId, raw);
-
-        // then
-        then(eventPublisher).should().publishEvent(eventCaptor.capture());
-        CommentCreatedEvent ev = (CommentCreatedEvent) eventCaptor.getValue();
-        assertEquals(commenterId, ev.commenterId());
-        assertEquals(feedId, ev.feedId());
-        assertEquals(raw, ev.content());
-    }
-
-    @Test
-    void 새_팔로워_객체_생성() throws Exception {
-        UUID followeeId = UUID.randomUUID();
-
-        notificationService.notifyFollow(followeeId);
-
-        then(eventPublisher).should().publishEvent(eventCaptor.capture());
-        FollowCreatedEvent ev = (FollowCreatedEvent) eventCaptor.getValue();
-        assertEquals(followeeId, ev.followeeId());
-    }
-
-    @Test
-    void 새_쪽지_객체_생성() throws Exception {
-        // given
-        UUID senderId = UUID.randomUUID();
-        UUID receiverId = UUID.randomUUID();
-        String preview = "hello world";
-
-        // when
-        notificationService.notifyDirectMessage(senderId, receiverId, preview);
-
-        // then
-        then(eventPublisher).should().publishEvent(eventCaptor.capture());
-        DirectMessageReceivedEvent ev = (DirectMessageReceivedEvent) eventCaptor.getValue();
-        assertEquals(senderId, ev.senderId());
-        assertEquals(receiverId, ev.receiverId());
-        assertEquals(preview, ev.content());
     }
 
     /*

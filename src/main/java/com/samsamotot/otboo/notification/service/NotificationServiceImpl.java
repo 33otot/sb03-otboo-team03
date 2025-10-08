@@ -4,22 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
-import com.samsamotot.otboo.feed.entity.Feed;
-import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.notification.dto.NotificationDto;
 import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import com.samsamotot.otboo.notification.dto.NotificationRequest;
-import com.samsamotot.otboo.notification.dto.event.*;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.repository.NotificationRepository;
 import com.samsamotot.otboo.sse.service.SseService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
-import com.samsamotot.otboo.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -48,7 +42,6 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserRepository userRepository;
     private final SseService sseService;
     private final ObjectMapper objectMapper;
-    private final ApplicationEventPublisher eventPublisher;
 
     private static final String NOTIFICATION_SERVICE = "[NotificationService] ";
 
@@ -179,42 +172,6 @@ public class NotificationServiceImpl implements NotificationService {
         }
         notificationRepository.delete(notification);
         log.info(NOTIFICATION_SERVICE + "삭제 완료: notificationId={}, userId={}", notificationId, currentUserId);
-    }
-
-    // TODO 이벤트 리스너 방식으로 수정중
-    @Override
-    public void notifyRole(UUID userId) {
-        eventPublisher.publishEvent(new RoleChangedEvent(currentUserId()));
-    }
-
-    @Override
-    public void notifyClothesAttribute() {
-        eventPublisher.publishEvent(new ClothesAttributeCreatedEvent());
-    }
-
-    @Override
-    public void notifyLike(UUID likerId, UUID feedId) {
-        eventPublisher.publishEvent(new FeedLikedEvent(likerId, feedId));
-    }
-
-    @Override
-    public void notifyComment(UUID commenterId, UUID feedId, String comment) {
-        eventPublisher.publishEvent(new CommentCreatedEvent(commenterId, feedId, comment));
-    }
-
-    @Override
-    public void notifyFeed(User author) {
-        eventPublisher.publishEvent(new FeedCreatedEvent(author));
-    }
-
-    @Override
-    public void notifyFollow(UUID followeeId) {
-        eventPublisher.publishEvent(new FollowCreatedEvent(followeeId));
-    }
-
-    @Override
-    public void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview) {
-        eventPublisher.publishEvent(new DirectMessageReceivedEvent(senderId, receiverId, messagePreview));
     }
 
     /*

@@ -1,7 +1,5 @@
 package com.samsamotot.otboo.notification.dto.event;
 
-import java.util.UUID;
-
 /**
  * PackageName  : com.samsamotot.otboo.notification.dto.event
  * FileName     : ClothesAttributeCreatedEvent

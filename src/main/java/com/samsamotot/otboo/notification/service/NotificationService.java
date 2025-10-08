@@ -25,18 +25,4 @@ public interface NotificationService {
     NotificationListResponse getNotifications(@Valid NotificationRequest request);
 
     void delete(UUID notificationId);
-
-    void notifyRole(UUID currentUserId);
-
-    void notifyClothesAttribute();
-
-    void notifyLike(UUID likerId, UUID feedId);
-
-    void notifyComment(UUID commenterId, UUID feedId, String comment);
-
-    void notifyFeed(User author);
-
-    void notifyFollow(UUID followeeId);
-
-    void notifyDirectMessage(UUID senderId, UUID receiverId, String messagePreview);
 }
