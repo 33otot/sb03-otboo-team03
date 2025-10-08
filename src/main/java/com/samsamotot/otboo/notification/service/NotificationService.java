@@ -4,6 +4,7 @@ import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import com.samsamotot.otboo.notification.dto.NotificationRequest;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
+import com.samsamotot.otboo.user.entity.User;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -32,6 +33,8 @@ public interface NotificationService {
     void notifyLike(UUID likerId, UUID feedId);
 
     void notifyComment(UUID commenterId, UUID feedId, String comment);
+
+    void notifyFeed(User author);
 
     void notifyFollow(UUID followeeId);
 

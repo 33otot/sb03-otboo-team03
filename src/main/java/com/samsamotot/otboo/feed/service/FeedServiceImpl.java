@@ -15,6 +15,7 @@ import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
+import com.samsamotot.otboo.notification.dto.event.FeedCreatedEvent;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.weather.entity.Precipitation;
@@ -33,6 +34,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +56,7 @@ public class FeedServiceImpl implements FeedService {
     private final ClothesRepository clothesRepository;
     private final FeedLikeRepository feedLikeRepository;
     private final FeedMapper feedMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 새로운 피드를 생성하고 저장합니다.
@@ -110,6 +113,10 @@ public class FeedServiceImpl implements FeedService {
         FeedDto result = feedMapper.toDto(saved);
 
         log.debug("[FeedServiceImpl] 피드 등록 완료: feedId = {}", saved.getId());
+
+        eventPublisher.publishEvent(new FeedCreatedEvent(author));
+
+        log.debug("[FeedServiceImpl] 알림 등록 완료: feedId = {}", saved.getId());
 
         return result;
     }

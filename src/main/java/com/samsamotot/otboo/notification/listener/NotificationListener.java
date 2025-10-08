@@ -5,6 +5,7 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
+import com.samsamotot.otboo.follow.repository.FollowRepository;
 import com.samsamotot.otboo.notification.dto.event.*;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.repository.NotificationRepository;
@@ -39,7 +40,6 @@ public class NotificationListener {
     private static final String NOTIFICATION_LISTENER = "[NotificationListener] ";
 
     private final NotificationService notificationService;
-    private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final FeedRepository feedRepository;
 
@@ -47,12 +47,14 @@ public class NotificationListener {
     private static final String CLOTHES_ATTRIBUTE_TITLE = "의상 속성 추가";
     private static final String LIKE_TITLE = "새 좋아요";
     private static final String COMMENT_TITLE = "새 댓글";
+    private static final String FEED_TITLE = "새 피드";
     private static final String FOLLOW_TITLE = "새 팔로워";
     private static final String DIRECT_MESSAGE_TITLE = "새 쪽지";
 
     private static final String ROLE_CONTENT = "변경된 권한을 확인하세요";
     private static final String CLOTHES_ATTRIBUTE_CONTENT = "의상 속성이 추가되었습니다.";
     private static final String FOLLOW_CONTENT = "사용자가 팔로우했습니다";
+    private final FollowRepository followRepository;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -87,8 +89,18 @@ public class NotificationListener {
         if (commentPreview.length() > 10) {
             commentPreview = e.content().substring(0, 10) + "...";
         }
-
         notificationService.save(feed.getAuthor().getId(), COMMENT_TITLE, "작성자 [" + commenter.getUsername() + "], 메세지: [" + commentPreview + "]", NotificationLevel.INFO);
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onFeedCreated(FeedCreatedEvent e) {
+        String authorName = e.author().getUsername();
+
+        followRepository.findFollowerIdsByFolloweeId(e.author().getId()).stream()
+            .forEach(followerId -> {
+                notificationService.save(followerId, FEED_TITLE, "작성자 [" + authorName + "]", NotificationLevel.INFO);
+            });
     }
 
     @Async
