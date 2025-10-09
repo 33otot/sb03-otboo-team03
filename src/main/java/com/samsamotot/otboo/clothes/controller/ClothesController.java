@@ -4,6 +4,7 @@ import com.samsamotot.otboo.clothes.dto.request.ClothesCreateRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesSearchRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesUpdateRequest;
+import com.samsamotot.otboo.clothes.service.ClothesExtractService;
 import com.samsamotot.otboo.clothes.service.ClothesService;
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.util.AuthUtil;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,6 +37,7 @@ public class ClothesController implements ClothesControllerApi{
     private static final String CONTROLLER_NAME = "[ClothesController]";
 
     private final ClothesService clothesService;
+    private final ClothesExtractService clothesExtractService;
 
     // 의상 등록 요청 컨트롤러
     @PostMapping
@@ -118,4 +121,14 @@ public class ClothesController implements ClothesControllerApi{
             .status(HttpStatus.OK)
             .body(result);
     }
+
+    // 의상 정보 url 추출 컨트롤러
+    @GetMapping("/extractions")
+    public ResponseEntity<ClothesDto> extractClothes(
+        @RequestParam("url") String url
+    ) {
+        ClothesDto dto = clothesExtractService.extract(url);
+        return ResponseEntity.ok(dto);
+    }
+
 }
