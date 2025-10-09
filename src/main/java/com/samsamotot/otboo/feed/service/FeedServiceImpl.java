@@ -15,6 +15,7 @@ import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
+import com.samsamotot.otboo.notification.dto.event.FeedCreatedEvent;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.weather.entity.Precipitation;
@@ -22,19 +23,16 @@ import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import jakarta.validation.Valid;
-import java.time.Instant;
-import java.time.format.DateTimeParseException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 피드(Feed) 관련 비즈니스 로직을 처리하는 서비스 구현체입니다.
@@ -54,6 +52,7 @@ public class FeedServiceImpl implements FeedService {
     private final ClothesRepository clothesRepository;
     private final FeedLikeRepository feedLikeRepository;
     private final FeedMapper feedMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 새로운 피드를 생성하고 저장합니다.
@@ -110,6 +109,10 @@ public class FeedServiceImpl implements FeedService {
         FeedDto result = feedMapper.toDto(saved);
 
         log.debug("[FeedServiceImpl] 피드 등록 완료: feedId = {}", saved.getId());
+
+        eventPublisher.publishEvent(new FeedCreatedEvent(author));
+
+        log.debug("[FeedServiceImpl] 알림 등록 완료: feedId = {}", saved.getId());
 
         return result;
     }

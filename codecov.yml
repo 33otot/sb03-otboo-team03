@@ -8,7 +8,7 @@ codecov:
     # CI 완료 후 알림 전송
     wait_for_ci: yes
   # 브랜치 설정
-  branch: [main, dev]
+  branch: dev
 
 # 커버리지 관련 설정
 coverage:

@@ -1,6 +1,7 @@
 # 개발환경용 Makefile
 # 사용법:
 # make up       - 도커 컨테이너 실행
+# make up2      - 도커 컨테이너 실행 실시간 로그 확인
 # make down     - 도커 컨테이너 중지
 # make logs     - 도커 컨테이너 로그 확인
 # make restart  - 도커 컨테이너 재시작
@@ -15,6 +16,9 @@ DC = docker compose -p $(PROJECT) $(COMPOSE_FILES)
 
 up: env-check
 	@$(DC) up -d --build
+
+up2: env-check
+	@$(DC) up --build
 
 down:
 	@$(DC) down --remove-orphans

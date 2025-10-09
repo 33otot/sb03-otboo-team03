@@ -39,7 +39,7 @@ public class WeatherBatchTasklet implements Tasklet {
                 .collect(Collectors.toSet());
 
         List<Grid> targetGrids = List.copyOf(gridsWithLocations);
-        log.info(TASKLET_NAME + "{}개의 위치 정보가 있는 격자에 대한 병렬처리 시작.", targetGrids.size());
+        log.info(TASKLET_NAME + "{}개의 격자에 대한 병렬처리 시작.", targetGrids.size());
 
         if (targetGrids.isEmpty()) {
             log.warn(TASKLET_NAME + "수집할 위치 정보가 없습니다. 배치를 종료합니다.");
@@ -49,7 +49,7 @@ public class WeatherBatchTasklet implements Tasklet {
         // 2. 각 Grid에 대해 비동기 날씨 업데이트 작업 생성
         List<Throwable> errors = new CopyOnWriteArrayList<>();
         List<CompletableFuture<Void>> futures = targetGrids.stream()
-                .map(grid -> weatherService.updateWeatherDataForGrid(grid.getId())
+                .map(grid -> weatherService.updateWeatherForGrid(grid.getId())
                         .whenComplete((result, error) -> { if (error != null) errors.add(error); }))
                 .toList();
 
@@ -75,7 +75,7 @@ public class WeatherBatchTasklet implements Tasklet {
             throw new RuntimeException("비동기 날씨 업데이트 작업 중 오류 발생", e);
         }
 
-        log.info(TASKLET_NAME + "위치 정보가 있는 격자별 날씨 데이터 {}개 병렬 업데이트 배치 완료.", futures.size());
+        log.info(TASKLET_NAME + "격자별 날씨 데이터 {}개 병렬 업데이트 배치 완료.", futures.size());
 
         return RepeatStatus.FINISHED;
     }

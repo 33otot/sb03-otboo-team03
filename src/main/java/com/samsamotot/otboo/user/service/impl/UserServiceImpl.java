@@ -13,13 +13,10 @@ import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.jwt.TokenInvalidationService;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.notification.dto.event.RoleChangedEvent;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
-import com.samsamotot.otboo.user.dto.UserCreateRequest;
-import com.samsamotot.otboo.user.dto.UserDto;
-import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
-import com.samsamotot.otboo.user.dto.UserListRequest;
-import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
+import com.samsamotot.otboo.user.dto.*;
 import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
@@ -30,6 +27,15 @@ import com.samsamotot.otboo.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Slice;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
 
 /**
  * 사용자 서비스 구현체
@@ -47,6 +53,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final ProfileRepository profileRepository;
     private final TokenInvalidationService tokenInvalidationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public UserDto createUser(UserCreateRequest request) {
@@ -186,6 +193,9 @@ public class UserServiceImpl implements UserService {
         
         log.info(SERVICE + "권한 수정 완료 - 사용자 ID: {}, 이전 권한: {}, 새로운 권한: {}", 
             userId, previousRole, request.role());
+
+        // 권한 변경 알림 저장
+        eventPublisher.publishEvent(new RoleChangedEvent(userId));
         
         // DTO 변환하여 반환
         return userMapper.toDto(user);

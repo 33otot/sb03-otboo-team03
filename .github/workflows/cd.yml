@@ -1,0 +1,103 @@
+name: Deploy to AWS ECS
+
+# 트리거 조건: dev 브랜치에 푸쉬 시 자동 실행
+on:
+  push:
+    branches: [ dev ]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: '배포할 브랜치 이름을 입력하세요 (예: dev, bugfix/deploy)'
+        required: true
+        default: 'dev'
+
+env:
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image_uri: ${{ steps.build-image.outputs.image_uri }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Build and Push Docker image to Amazon ECR
+        id: build-image
+        env:
+          ECR_URI: ${{ vars.ECR_REPOSITORY_URI }}
+        run: |
+          docker buildx build \
+            -t $ECR_URI:${{ env.IMAGE_TAG }} \
+            -t $ECR_URI:latest \
+            --push .
+          
+          echo "image_uri=$ECR_URI:${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    outputs:
+      new_task_def_arn: ${{ steps.register.outputs.new_task_def_arn }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Update ECS Task Definition with new image
+        id: register
+        run: |
+          # 현재 태스크 정의
+          TASK_DEFINITION=$(aws ecs describe-task-definition \
+            --task-definition ${{ vars.ECS_TASK_DEFINITION }})
+          
+          # 새 이미지 업데이트
+          NEW_TASK_DEF=$(echo $TASK_DEFINITION | jq \
+            --arg IMAGE "${{ needs.build-and-push.outputs.image_uri }}" \
+            '.taskDefinition |
+              .containerDefinitions[0].image = $IMAGE |
+              del(.taskDefinitionArn, .revision, .status,
+                  .requiresAttributes, .compatibilities,
+                  .registeredAt, .registeredBy)')
+
+          # 새 태스크 정의 등록
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF" | jq -r '.taskDefinition.taskDefinitionArn')
+          
+          echo "new_task_def_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
+          echo "Registered new task definition: $NEW_TASK_DEF_ARN"
+
+      - name: Rolling Update ECS Service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ vars.ECS_CLUSTER }} \
+            --service ${{ vars.ECS_SERVICE }} \
+            --task-definition ${{ steps.register.outputs.new_task_def_arn }} \
+            --force-new-deployment
+
+      - name: Wait for ECS service to stabilize
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ vars.ECS_CLUSTER }} \
+            --services ${{ vars.ECS_SERVICE }}
