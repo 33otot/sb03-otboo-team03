@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.samsamotot.otboo.common.security.jwt.TokenInvalidationService;
@@ -29,9 +30,10 @@ public class UserServiceImplCutoffTest {
     UserMapper userMapper = mock(UserMapper.class);
     ProfileRepository profileRepository = mock(ProfileRepository.class);
     TokenInvalidationService tokenInvalidationService = mock(TokenInvalidationService.class);
+    ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
 
     UserServiceImpl sut = new UserServiceImpl(
-        userRepository, passwordEncoder, userMapper, profileRepository, tokenInvalidationService);
+        userRepository, passwordEncoder, userMapper, profileRepository, tokenInvalidationService, eventPublisher);
 
     UUID userId = UUID.randomUUID();
     User user = User.builder()
