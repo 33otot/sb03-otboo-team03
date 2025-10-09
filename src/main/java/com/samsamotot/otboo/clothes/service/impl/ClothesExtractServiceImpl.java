@@ -35,6 +35,11 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
                 imageUrl = doc.select("meta[property=og:image]").attr("content");
             }
 
+            // 쿼리 파라미터 제거
+            if (imageUrl.contains("?")) {
+                imageUrl = imageUrl.substring(0, imageUrl.indexOf("?"));
+            }
+
             // ️의상 이름 추출
             Element nameEl = doc.selectFirst("span[data-mds=Typography]");
             if (nameEl != null) {
