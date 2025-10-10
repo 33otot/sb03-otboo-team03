@@ -8,6 +8,7 @@ import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.profile.dto.ProfileUpdateRequest;
 import com.samsamotot.otboo.profile.service.ProfileService;
 import com.samsamotot.otboo.user.controller.api.UserApi;
+import com.samsamotot.otboo.user.dto.ChangePasswordRequest;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
@@ -176,5 +177,37 @@ public class UserController implements UserApi {
         log.info(CONTROLLER + "권한 수정 완료 - 사용자 ID: {}, 변경된 권한: {}", userId, result.getRole());
 
         return ResponseEntity.ok(result);
+    }
+
+    @Override
+    @PatchMapping("/{userId}/password")
+    public ResponseEntity<Void> changePassword(
+        @PathVariable UUID userId,
+        @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        log.info(CONTROLLER + "비밀번호 변경 요청 - 사용자 ID: {}", userId);
+
+        // JWT 인증된 사용자 본인 확인
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails)) {
+            log.warn(CONTROLLER + "비밀번호 변경 실패 - 인증 정보 없음");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        UUID currentUserId = userDetails.getId();
+        
+        // 본인만 자신의 비밀번호 변경 가능
+        if (!currentUserId.equals(userId)) {
+            log.warn(CONTROLLER + "비밀번호 변경 실패 - 본인만 변경 가능, 현재 사용자: {}, 요청 사용자: {}", 
+                currentUserId, userId);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        userService.changePassword(userId, request);
+
+        log.info(CONTROLLER + "비밀번호 변경 성공 - 사용자 ID: {}", userId);
+
+        return ResponseEntity.noContent().build();
     }
 }

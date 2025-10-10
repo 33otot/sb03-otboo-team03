@@ -3,6 +3,7 @@ package com.samsamotot.otboo.user.controller.api;
 import com.samsamotot.otboo.common.exception.ErrorResponse;
 import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.profile.dto.ProfileUpdateRequest;
+import com.samsamotot.otboo.user.dto.ChangePasswordRequest;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
@@ -147,5 +148,33 @@ public interface UserApi {
     ResponseEntity<UserDto> updateRole(
         @Parameter(description = "사용자 ID") UUID userId,
         @Parameter(description = "권한 수정 요청") UserRoleUpdateRequest request
+    );
+
+    @Operation(
+        summary = "비밀번호 변경",
+        description = "비밀번호를 변경합니다.",
+        operationId = "changePassword"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(
+                responseCode = "204",
+                description = "비밀번호 변경 성공"
+            ),
+            @ApiResponse(
+                responseCode = "400",
+                description = "비밀번호 변경 실패(잘못된 요청)",
+                content = @Content(mediaType = "*/*", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                responseCode = "404",
+                description = "비밀번호 변경 실패(사용자 없음)",
+                content = @Content(mediaType = "*/*", schema = @Schema(implementation = ErrorResponse.class))
+            )
+        }
+    )
+    ResponseEntity<Void> changePassword(
+        @Parameter(description = "사용자 ID") UUID userId,
+        @Parameter(description = "비밀번호 변경 요청") ChangePasswordRequest request
     );
 }
