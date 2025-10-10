@@ -40,4 +40,4 @@ logs/
 *.env
 *.log
 *.pem
-*.md
+docs/*.md
