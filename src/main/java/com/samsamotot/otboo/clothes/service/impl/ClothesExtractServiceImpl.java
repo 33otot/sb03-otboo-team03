@@ -2,8 +2,14 @@ package com.samsamotot.otboo.clothes.service.impl;
 
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
 import com.samsamotot.otboo.clothes.service.ClothesExtractService;
+import com.samsamotot.otboo.clothes.util.ImageDownloadService;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -11,20 +17,22 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ClothesExtractServiceImpl implements ClothesExtractService {
+    private static final String SERVICE_NAME = "[ClothesExtractService] ";
+
+    private final ImageDownloadService imageDownloadService;
 
     @Override
     public ClothesDto extract(String url) {
-
         try {
-            Document doc = Jsoup.connect(url)
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                .get();
+            // Cloudflare 우회용 HTML 요청
+            String html = fetchHtml(url);
+            Document doc = Jsoup.parse(html);
 
             // 기능 확인: 무신사 기본 구조 기반 파싱
             String imageUrl = null;
             String name = null;
-            String category = null;
 
             // 이미지 추출
             Element imgEl = doc.selectFirst("div.sc-uxvjgl-8 img");
@@ -48,28 +56,42 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
                 name = doc.select("meta[property=og:title]").attr("content");
             }
 
-            // 최상위 카테고리 추출
-            Element categoryEl = doc.selectFirst("a[data-category-id=1depth]");
-            if (categoryEl != null) {
-                category = categoryEl.attr("data-category-name");
-            }
-            log.info("==========================================");
-            log.info("최상위 카테고리 추출 결과: {}", category);
-            log.info("==========================================");
+            log.info(SERVICE_NAME + "의상 이름 추출 결과: {}", name);
+            log.info(SERVICE_NAME + "의상 이미지 추출 결과: {}", imageUrl);
 
             // 기본값 보정
             if (name.isEmpty())
                 name = "(이름 없음)";
             if (imageUrl.isEmpty())
-                imageUrl = "(이미지 없음)";
-            if (category == null || category.isEmpty())
-                category = "(카테고리 없음)";
+                imageUrl = null;
+
+            // 에이블리 링크 여부 판별
+            boolean isAblyLink = url.contains("a-bly.com") || url.contains("applink.a-bly.com");
+
+            String finalImageUrl = imageUrl;
+
+            if (isAblyLink) {
+                log.info(SERVICE_NAME + "<에이블리> 비동기 이미지 업로드 시작 - {}", finalImageUrl);
+
+                // 비동기 다운로드 + 업로드 실행
+                CompletableFuture<String> futureS3Url =
+                    imageDownloadService.downloadAndUploadAsync(finalImageUrl, "clothes/");
+
+                String s3Url = futureS3Url.join();
+
+                if (s3Url != null) {
+                    finalImageUrl = s3Url;
+                    log.info(SERVICE_NAME + "<에이블리> 비동기 이미지 업로드 성공: {}", s3Url);
+                } else {
+                    log.warn(SERVICE_NAME + "<에이블리> 비동기 이미지 업로드 실패 - 원본 URL로 대체됩니다: {}", imageUrl);
+                }
+            }
 
             ClothesDto returnDto = new ClothesDto(
                 null,
                 null,
                 name,
-                imageUrl,
+                finalImageUrl,
                 null,
                 null
             );
@@ -77,7 +99,7 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
             return returnDto;
 
         } catch (IOException e) {
-            log.error("스크래핑 실패: {}", e.getMessage());
+            log.error(SERVICE_NAME + "스크래핑 실패: {}", e.getMessage());
             return new ClothesDto(
                 null,
                 null,
@@ -85,6 +107,25 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
                 "에러",
                 null,
                 null);
+        }
+    }
+
+    // 에이블리처럼 Cloudflare 보호가 있는 사이트는 Jsoup.connect()만으로는 안 됨 (403 뜸)
+    // Jsoup 대신 쿠키/헤더/Referer까지 세팅해서 HTTP 클라이언트(OkHttp / Jsoup+Cookies) 로 접근하기
+    private String fetchHtml(String url) throws IOException {
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder()
+            .url(url)
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+            .header("Referer", "https://m.a-bly.com/")
+            .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+            .header("Accept-Language", "ko,en;q=0.9")
+            .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful())
+                throw new IOException("HTTP error: " + response.code());
+            return response.body().string();
         }
     }
 }
