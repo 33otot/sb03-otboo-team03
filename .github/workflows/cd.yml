@@ -109,8 +109,10 @@ jobs:
             --service ${{ vars.ECS_SERVICE }} \
             --desired-count 0
           
-          echo "기존 Task 중단 완료 대기 (20초)..."
-          sleep 20
+          echo "기존 Task가 완전히 종료될 때까지 대기..."
+          aws ecs wait services-stable \
+            --cluster ${{ vars.ECS_CLUSTER }} \
+            --services ${{ vars.ECS_SERVICE }}
 
       - name: Deploy new task
         run: |
