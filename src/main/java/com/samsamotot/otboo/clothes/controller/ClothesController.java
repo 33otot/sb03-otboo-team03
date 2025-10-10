@@ -127,8 +127,13 @@ public class ClothesController implements ClothesControllerApi{
     public ResponseEntity<ClothesDto> extractClothes(
         @RequestParam("url") String url
     ) {
+        log.debug(CONTROLLER_NAME + " 구매 링크로 의상 정보 추출 요청 - clothesExtractService.extract 호출");
         ClothesDto dto = clothesExtractService.extract(url);
-        return ResponseEntity.ok(dto);
+        log.debug(CONTROLLER_NAME + " 구매 링크로 의상 정보 추출 요청 - clothesExtractService.extract 종료");
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(dto);
     }
 
 }
