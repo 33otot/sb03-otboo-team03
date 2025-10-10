@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.auth.service;
 
 import com.samsamotot.otboo.auth.dto.LoginRequest;
+import com.samsamotot.otboo.auth.dto.ResetPasswordRequest;
 import com.samsamotot.otboo.common.security.jwt.JwtDto;
 
 /**
@@ -37,4 +38,11 @@ public interface AuthService {
      * @return 새로운 JWT 토큰 정보
      */
     JwtDto refreshToken(String refreshToken);
+    
+    /**
+     * 비밀번호 초기화
+     * 
+     * @param request 비밀번호 초기화 요청
+     */
+    void resetPassword(ResetPasswordRequest request);
 }
