@@ -1,16 +1,12 @@
 package com.samsamotot.otboo.common.security.jwt;
 
-import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.user.service.UserService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.lang.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import java.io.IOException;
+import java.util.UUID;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.ResponseCookie;
+import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -18,8 +14,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-import java.util.UUID;
+import com.samsamotot.otboo.common.config.SecurityProperties;
+import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.user.service.UserService;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * JWT 토큰을 통한 HTTP 요청 인증을 처리하는 필터 클래스
@@ -80,7 +84,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
     
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenInvalidationService tokenInvalidationService;
     private final UserService userService;
+    private final SecurityProperties securityProperties;
     
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, 
@@ -97,6 +103,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     log.warn(JWTAUTHFILTER + "JWT 토큰에서 사용자 ID 추출 실패: {}", e.getMessage());
                     filterChain.doFilter(request, response);
                     return;
+                }
+
+                // 컷오프/블랙리스트 검증
+                String jti = jwtTokenProvider.getJti(token);
+                if (jti != null && tokenInvalidationService.isBlacklisted(jti)) {
+                    log.info(JWTAUTHFILTER + "블랙리스트 토큰 거부 - jti: {}", jti);
+                    writeUnauthorized(response, "TOKEN_BLACKLISTED");
+                    return;
+                }
+
+                Long issuedAt = jwtTokenProvider.getIssuedAtEpochSeconds(token);
+                Long invalidAfterMillis = tokenInvalidationService.getUserInvalidAfterMillis(userId.toString());
+                if (issuedAt != null && invalidAfterMillis != null) {
+                    long invalidAfterSeconds = invalidAfterMillis / 1000;
+                    if (issuedAt < invalidAfterSeconds) {
+                        log.info(JWTAUTHFILTER + "컷오프 이전에 발급된 토큰 거부 - userId: {}", userId);
+                        writeUnauthorized(response, "TOKEN_CUTOFF");
+                        return;
+                    }
                 }
                 
                 // SecurityContext에 인증 정보가 없는 경우에만 설정
@@ -126,6 +151,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         
         filterChain.doFilter(request, response);
+    }
+
+    private void writeUnauthorized(HttpServletResponse response, String reason) throws IOException {
+        if (response.isCommitted()) {
+            return;
+        }
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setHeader("X-Auth-Error", reason);
+        response.setContentType("application/json;charset=UTF-8");
+        // REFRESH_TOKEN 삭제 쿠키 설정 (프론트 변경 없이 자동 갱신 경로 차단)
+        ResponseCookie deleteRefresh = ResponseCookie.from("REFRESH_TOKEN", "")
+            .httpOnly(true)
+            .secure(securityProperties.getCookie().isSecure())
+            .path("/")
+            .maxAge(0)
+            .sameSite(securityProperties.getCookie().getSameSite())
+            .build();
+        response.setHeader("Set-Cookie", deleteRefresh.toString());
+        String body = "{\"error\":\"unauthorized\",\"reason\":\"" + reason + "\"}";
+        response.getWriter().write(body);
+        response.getWriter().flush();
     }
     
     /**

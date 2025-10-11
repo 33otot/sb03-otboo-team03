@@ -6,16 +6,18 @@ import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.entity.FeedLike;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
-import com.samsamotot.otboo.notification.service.NotificationService;
+import com.samsamotot.otboo.notification.dto.event.FeedLikedEvent;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
-import java.util.Map;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * 피드 좋아요(FeedLike) 관련 비즈니스 로직을 처리하는 서비스 구현체입니다.
@@ -31,7 +33,7 @@ public class FeedLikeServiceImpl implements FeedLikeService {
     private final FeedLikeRepository feedLikeRepository;
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 피드에 좋아요를 생성합니다.
@@ -71,7 +73,7 @@ public class FeedLikeServiceImpl implements FeedLikeService {
 
         log.debug(SERVICE + "피드 좋아요 생성 완료 feedLikeId = {}", feedLike.getId());
 
-        notificationService.notifyLike(userId, feedId);
+        eventPublisher.publishEvent(new FeedLikedEvent(userId, feedId));
 
         log.debug(SERVICE + "좋아요 알림 전송 완료 feedLikeId = {}", feedLike.getId());
 

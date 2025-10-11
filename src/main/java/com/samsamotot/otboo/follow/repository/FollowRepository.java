@@ -3,7 +3,10 @@ package com.samsamotot.otboo.follow.repository;
 import com.samsamotot.otboo.follow.entity.Follow;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,4 +26,7 @@ public interface FollowRepository extends JpaRepository<Follow, UUID>, FollowRep
     long countByFolloweeId(UUID followeeId);
 
     Optional<Follow> findByFollowerIdAndFolloweeId(UUID followerId, UUID followeeId);
+
+    @Query("SELECT f.follower.id FROM Follow f WHERE f.followee.id = :followeeId")
+    List<UUID> findFollowerIdsByFolloweeId(@Param("followeeId") UUID followeeId);
 }

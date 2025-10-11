@@ -2,7 +2,7 @@ spring:
   application:
     name: Otboo
   profiles:
-    active: dev
+    active: prod
   devtools:
     restart:
       enabled: false

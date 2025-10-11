@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
@@ -64,6 +65,9 @@ public class FeedServiceTest {
 
     @Mock
     private FeedLikeRepository feedLikeRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @Mock
     private FeedMapper feedMapper;

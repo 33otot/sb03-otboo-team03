@@ -1,5 +1,12 @@
 package com.samsamotot.otboo.common.security.jwt;
 
+import java.time.Instant;
+import java.util.Date;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -11,13 +18,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.util.Date;
-import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * JWT(JSON Web Token) 토큰 생성 및 검증을 담당하는 핵심 클래스
@@ -214,6 +216,34 @@ public class JwtTokenProvider {
             return claims.getExpirationTime().getTime() / 1000;
         } catch (Exception e) {
             log.error("토큰 만료 시간 조회 실패 - 토큰: {}", token, e);
+            return null;
+        }
+    }
+
+    /**
+     * 토큰 발급 시간(iat)을 epoch seconds로 반환합니다.
+     */
+    public Long getIssuedAtEpochSeconds(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+            Date issuedAt = claims.getIssueTime();
+            return issuedAt != null ? issuedAt.getTime() / 1000 : null;
+        } catch (Exception e) {
+            log.error("토큰 발급 시간 조회 실패 - 토큰: {}", token, e);
+            return null;
+        }
+    }
+
+    /**
+     * 토큰 고유 ID(jti)를 반환합니다.
+     */
+    public String getJti(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            return signedJWT.getJWTClaimsSet().getJWTID();
+        } catch (Exception e) {
+            log.error("토큰 JTI 조회 실패 - 토큰: {}", token, e);
             return null;
         }
     }
