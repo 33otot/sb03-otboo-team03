@@ -4,6 +4,7 @@ import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
 import com.samsamotot.otboo.clothes.service.ClothesExtractService;
 import com.samsamotot.otboo.clothes.util.ImageDownloadService;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +14,9 @@ import okhttp3.Response;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
@@ -21,16 +24,33 @@ import org.springframework.stereotype.Service;
 public class ClothesExtractServiceImpl implements ClothesExtractService {
     private static final String SERVICE_NAME = "[ClothesExtractService] ";
 
+    // 지원하지 않는 쇼핑몰 주소 설정
+    private static final List<String> UNSUPPORTED_DOMAINS = List.of(
+        "smartstore.naver.com",
+        "kream.co.kr"
+    );
+
     private final ImageDownloadService imageDownloadService;
 
     @Override
     public ClothesDto extract(String url) {
         try {
+            // 지원하지 않는 도메인 검사
+            for (String domain : UNSUPPORTED_DOMAINS) {
+                if (url.contains(domain)) {
+                    log.warn(SERVICE_NAME + "{} - 지원하지 않는 도메인 감지, 스크래핑 차단됨", domain);
+                    throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "지원하지 않는 사이트입니다."
+                    );
+                }
+            }
+
             // Cloudflare 우회용 HTML 요청
             String html = fetchHtml(url);
             Document doc = Jsoup.parse(html);
 
-            // 기능 확인: 무신사 기본 구조 기반 파싱
+            // 무신사 기본 구조 기반 파싱
             String imageUrl = null;
             String name = null;
 
@@ -65,13 +85,15 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
             if (imageUrl.isEmpty())
                 imageUrl = null;
 
-            // 에이블리 링크 여부 판별
+            // 에이블리 / 네이버 쇼핑 링크 여부 판별
             boolean isAblyLink = url.contains("a-bly.com") || url.contains("applink.a-bly.com");
+            boolean isNaverShop = url.contains("shopping.naver") || url.contains("shop-phinf.pstatic.net");
 
             String finalImageUrl = imageUrl;
 
-            if (isAblyLink) {
-                log.info(SERVICE_NAME + "<에이블리> 비동기 이미지 업로드 시작 - {}", finalImageUrl);
+            if (isAblyLink || isNaverShop) {
+                String siteName = isAblyLink ? "에이블리" : "네이버쇼핑";
+                log.info(SERVICE_NAME + "<{}> 비동기 이미지 업로드 시작 - {}", siteName, finalImageUrl);
 
                 // 비동기 다운로드 + 업로드 실행
                 CompletableFuture<String> futureS3Url =
@@ -81,9 +103,9 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
 
                 if (s3Url != null) {
                     finalImageUrl = s3Url;
-                    log.info(SERVICE_NAME + "<에이블리> 비동기 이미지 업로드 성공: {}", s3Url);
+                    log.info(SERVICE_NAME + "<{}> 비동기 이미지 업로드 성공: {}", siteName, s3Url);
                 } else {
-                    log.warn(SERVICE_NAME + "<에이블리> 비동기 이미지 업로드 실패 - 원본 URL로 대체됩니다: {}", imageUrl);
+                    log.warn(SERVICE_NAME + "<{}> 비동기 이미지 업로드 실패 - 원본 URL로 대체됩니다: {}", siteName, imageUrl);
                 }
             }
 

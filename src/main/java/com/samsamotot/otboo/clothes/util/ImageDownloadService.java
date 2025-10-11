@@ -18,7 +18,6 @@ public class ImageDownloadService {
     private static final String SERVICE_NAME = "[ImageDownloadService] ";
 
     private final S3ImageStorage s3ImageStorage;
-//    private final ClothesImageCache imageCache;
 
     @Async("imageTaskExecutor")
     public CompletableFuture<String> downloadAndUploadAsync(String imageUrl, String folderPath) {
