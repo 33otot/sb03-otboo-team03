@@ -134,7 +134,7 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
 
     // 에이블리처럼 Cloudflare 보호가 있는 사이트는 Jsoup.connect()만으로는 안 됨 (403 뜸)
     // Jsoup 대신 쿠키/헤더/Referer까지 세팅해서 HTTP 클라이언트(OkHttp / Jsoup+Cookies) 로 접근하기
-    private String fetchHtml(String url) throws IOException {
+    protected String fetchHtml(String url) throws IOException {
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
             .url(url)
