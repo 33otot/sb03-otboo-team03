@@ -10,7 +10,9 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 
 @Slf4j
 @Service
@@ -34,7 +36,13 @@ public class OpenAIEngine {
         Double sensitivity,
         List<OotdDto> recommendedItems
     ) {
+        if (recommendedItems == null || recommendedItems.isEmpty()) {
+            return promptBuilder.fallbackOneLiner();
+        }
+
         try {
+            StopWatch sw = new StopWatch();
+            sw.start();
             log.debug(ENGINE + "LLM 프롬프트 생성 시작: 온도={}, 비/눈={}, 월={}, 체감온도={}, 민감도={}, 아이템={}",
                 temperature, isRainingOrSnowing, currentMonth, feelsLike, sensitivity, recommendedItems);
 
@@ -52,7 +60,12 @@ public class OpenAIEngine {
             log.debug(ENGINE + "LLM 응답 수신: {}", raw);
 
             String result = promptBuilder.postProcessOneLiner(raw);
-            log.debug(ENGINE + "LLM 응답 후처리 완료: {}", result);
+            if (result == null || result.isBlank()) {
+                result = promptBuilder.fallbackOneLiner();
+            }
+
+            sw.stop();
+            log.info(ENGINE + "LLM 응답 완료: {} ms (items={})", Math.round(sw.getTotalTimeMillis()), recommendedItems.size());
             return result;
         } catch (Exception e) {
             log.warn(ENGINE + "LLM 응답 처리 중 예외 발생: {}", e.getMessage(), e);
