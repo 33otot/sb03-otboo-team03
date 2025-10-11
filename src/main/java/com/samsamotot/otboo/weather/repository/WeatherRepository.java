@@ -41,8 +41,6 @@ public interface WeatherRepository extends JpaRepository<Weather, UUID> {
       * 특정 격자의 어제 동일한 발표/예보 시각의 날씨 정보를 조회합니다.
       * */
     Optional<Weather> findByGridAndForecastedAtAndForecastAt(Grid grid, Instant forecastedAt, Instant forecastAt);
-
-
 }
 
 
