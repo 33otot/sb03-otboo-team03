@@ -83,7 +83,9 @@ public class PromptBuilder {
         );
     }
 
-    /** 후처리: 개행/따옴표 정리, 길이 보정, 마침표 하나로 종결 */
+    /**
+     * 코드포인트 기준으로 문자열을 자릅니다.
+     */
     private String truncateByCodePoints(String s, int max) {
         int cps = s.codePointCount(0, s.length());
         if (cps <= max) return s;
@@ -91,6 +93,9 @@ public class PromptBuilder {
         return s.substring(0, end);
     }
 
+    /**
+     * 여러 문장 제거, 길이 제한, 끝맺음 처리 등의 후처리를 수행합니다.
+     */
     public String postProcessOneLiner(String raw) {
         if (raw == null || raw.isBlank()) return raw;
         String s = raw.replace("\n"," ").replace("\"","").replace("“","").replace("”","")
@@ -108,11 +113,18 @@ public class PromptBuilder {
         return s;
     }
 
+    /**
+     * 문자열이 이모지로 끝나는지 확인합니다.
+     */
     private static boolean endsWithEmoji(String s) {
         if (s == null || s.isEmpty()) return false;
         int cp = s.codePointBefore(s.length());
         return isEmoji(cp);
     }
+
+    /**
+     * 단일 코드포인트가 이모지 범위에 속하는지 확인합니다.
+     */
     private static boolean isEmoji(int cp) {
         // 주요 이모지 범위(대략): Symbols & Pictographs, Dingbats 등
         return (cp >= 0x1F300 && cp <= 0x1FAFF)   // Misc Symbols & Pictographs ~ Supplemental Symbols
@@ -120,6 +132,9 @@ public class PromptBuilder {
             || (cp >= 0x2700 && cp <= 0x27BF);    // Dingbats
     }
 
+    /**
+     * 예외 발생시 기본 문구를 반환합니다.
+     */
     public String fallbackOneLiner() {
         return "오늘 날씨에 맞는 옷을 추천해드릴게요.";
     }
