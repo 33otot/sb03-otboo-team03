@@ -10,7 +10,6 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
@@ -36,10 +35,6 @@ public class OpenAIEngine {
         Double sensitivity,
         List<OotdDto> recommendedItems
     ) {
-        if (recommendedItems == null || recommendedItems.isEmpty()) {
-            return promptBuilder.fallbackOneLiner();
-        }
-
         try {
             StopWatch sw = new StopWatch();
             sw.start();
