@@ -104,7 +104,6 @@ dependencies {
     implementation "org.springframework.security:spring-security-messaging"
 
     // OpenAI Chat
-    implementation platform("org.springframework.ai:spring-ai-bom:$springAiVersion")
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
 }
 
