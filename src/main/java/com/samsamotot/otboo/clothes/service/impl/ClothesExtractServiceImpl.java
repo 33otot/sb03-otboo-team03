@@ -24,6 +24,15 @@ import org.springframework.web.server.ResponseStatusException;
 public class ClothesExtractServiceImpl implements ClothesExtractService {
     private static final String SERVICE_NAME = "[ClothesExtractService] ";
 
+    // Selector를 상수로 관리
+    // 기본
+    private static final String SELECTOR_IMAGE_DEFAULT = "div.sc-uxvjgl-8 img";
+    private static final String SELECTOR_NAME_DEFAULT = "span[data-mds=Typography]";
+
+    // 기타 사이트 fallback
+    private static final String SELECTOR_OG_IMAGE = "meta[property=og:image]";
+    private static final String SELECTOR_OG_TITLE = "meta[property=og:title]";
+
     // 지원하지 않는 쇼핑몰 주소 설정
     private static final List<String> UNSUPPORTED_DOMAINS = List.of(
         "smartstore.naver.com",
@@ -55,12 +64,12 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
             String name = null;
 
             // 이미지 추출
-            Element imgEl = doc.selectFirst("div.sc-uxvjgl-8 img");
+            Element imgEl = doc.selectFirst(SELECTOR_IMAGE_DEFAULT);
             if (imgEl != null) {
                 imageUrl = imgEl.attr("src");
             } else {
                 // fallback: Open Graph
-                imageUrl = doc.select("meta[property=og:image]").attr("content");
+                imageUrl = doc.select(SELECTOR_OG_IMAGE).attr("content");
             }
 
             // 쿼리 파라미터 제거
@@ -69,11 +78,11 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
             }
 
             // ️의상 이름 추출
-            Element nameEl = doc.selectFirst("span[data-mds=Typography]");
+            Element nameEl = doc.selectFirst(SELECTOR_NAME_DEFAULT);
             if (nameEl != null) {
                 name = nameEl.text();
             } else {
-                name = doc.select("meta[property=og:title]").attr("content");
+                name = doc.select(SELECTOR_OG_TITLE).attr("content");
             }
 
             log.info(SERVICE_NAME + "의상 이름 추출 결과: {}", name);
