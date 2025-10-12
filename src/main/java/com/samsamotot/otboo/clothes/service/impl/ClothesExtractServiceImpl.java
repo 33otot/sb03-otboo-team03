@@ -100,7 +100,7 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
 
             String finalImageUrl = imageUrl;
 
-            if (isAblyLink || isNaverShop) {
+            if ((isAblyLink || isNaverShop) && finalImageUrl != null && !finalImageUrl.isBlank()) {
                 String siteName = isAblyLink ? "에이블리" : "네이버쇼핑";
                 log.info(SERVICE_NAME + "<{}> 비동기 이미지 업로드 시작 - {}", siteName, finalImageUrl);
 
