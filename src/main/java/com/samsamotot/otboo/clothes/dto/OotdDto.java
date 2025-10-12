@@ -34,7 +34,7 @@ public record OotdDto(
             if (attr == null) continue;
             String def = attr.definitionName();
             String val = attr.value();
-            if (def != null && val != null) map.put(def, val);
+            if (def != null && val != null && !val.isBlank()) map.put(def, val);
         }
 
         // 3) 표시 순서(우선 키 먼저)

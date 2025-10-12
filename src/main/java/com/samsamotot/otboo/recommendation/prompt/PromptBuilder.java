@@ -51,7 +51,7 @@ public class PromptBuilder {
     ) {
         String t = temperature == null ? "알 수 없음" : String.format("%.1f℃", temperature);
         String w = isRainingOrSnowing ? "비/눈" : "맑음";
-        String m = currentMonth == null ? "알 수 없음" : currentMonth.toString();
+        String m = currentMonth == null ? "알 수 없음" : currentMonth.getValue() + "월";
         String f = feelsLike == null ? "알 수 없음" : String.format("%.1f℃", feelsLike);
         String s = sensitivity == null ? "알 수 없음" : String.format("%.1f (0~5)", sensitivity);
         String items = (recommendedItems == null || recommendedItems.isEmpty())
@@ -102,8 +102,8 @@ public class PromptBuilder {
             .replaceAll("\\s{2,}", " ").trim();
         // 여러 문장 방지: 첫 문장만
         s = s.replaceAll("\\s*([.!?。！？])\\s*", "$1");
-        String first = s.split("[.!?。！？]")[0].trim();
-        s = first;
+        String[] sentences = s.split("[.!?。！？]");
+        s = sentences.length > 0 ? sentences[0].trim() : s.trim();
         // 코드포인트 기준 길이 제한
         s = truncateByCodePoints(s, maxLen).trim();
         // 끝문자 처리: 이모지면 유지, 아니면 마침표 보장
@@ -126,11 +126,14 @@ public class PromptBuilder {
      * 단일 코드포인트가 이모지 범위에 속하는지 확인합니다.
      */
     private static boolean isEmoji(int cp) {
-        // 주요 이모지 범위(대략): Symbols & Pictographs, Dingbats 등
+        // 주요 이모지 범위: Emoticons, Symbols, Pictographs, Dingbats, Flags 등
         return (cp >= 0x1F300 && cp <= 0x1FAFF)   // Misc Symbols & Pictographs ~ Supplemental Symbols
+            || (cp >= 0x1F600 && cp <= 0x1F64F)   // Emoticons
+            || (cp >= 0x1F680 && cp <= 0x1F6FF)   // Transport & Map
+            || (cp >= 0x1F1E0 && cp <= 0x1F1FF)   // Flags
             || (cp >= 0x2600 && cp <= 0x26FF)     // Misc symbols (☀️☔️ 등)
             || (cp >= 0x2700 && cp <= 0x27BF);    // Dingbats
-    }
+}
 
     /**
      * 예외 발생시 기본 문구를 반환합니다.

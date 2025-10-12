@@ -38,8 +38,8 @@ public class OpenAIEngine {
         try {
             StopWatch sw = new StopWatch();
             sw.start();
-            log.debug(ENGINE + "LLM 프롬프트 생성 시작: 온도={}, 비/눈={}, 월={}, 체감온도={}, 민감도={}, 아이템={}",
-                temperature, isRainingOrSnowing, currentMonth, feelsLike, sensitivity, recommendedItems);
+            log.debug(ENGINE + "LLM 프롬프트 생성 시작: 온도={}, 비/눈={}, 월={}, 체감온도={}, 민감도={}, 아이템 수={}",
+                temperature, isRainingOrSnowing, currentMonth, feelsLike, sensitivity, recommendedItems.size());
 
             String userPrompt = promptBuilder.buildOneLiner(temperature, isRainingOrSnowing, currentMonth, feelsLike, sensitivity, recommendedItems);
             Prompt prompt = new Prompt(
@@ -52,7 +52,7 @@ public class OpenAIEngine {
 
             var response = openAiChatModel.call(prompt);
             String raw = response.getResult().getOutput().getText();
-            log.debug(ENGINE + "LLM 응답 수신: {}", raw);
+            log.trace(ENGINE + "LLM 응답 수신: {}", raw);
 
             String result = promptBuilder.postProcessOneLiner(raw);
             if (result == null || result.isBlank()) {

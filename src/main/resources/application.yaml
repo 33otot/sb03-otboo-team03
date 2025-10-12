@@ -34,13 +34,16 @@ spring:
   # LLM 설정 (OpenAI)
   ai:
     openai:
+      connect-timeout: 5000
+      read-timeout: 30000
+      response-timeout: 90000
       api-key: ${OPENAI_API_KEY}
       base-url: ${OPENAI_BASE_URL:https://api.openai.com}
       chat:
         options:
           model: gpt-4o-mini
           temperature: 0.4
-          max-tokens: 64
+          max-tokens: 128
     retry:
       max-attempts: 3
       backoff:
