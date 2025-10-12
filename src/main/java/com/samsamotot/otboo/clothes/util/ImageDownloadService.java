@@ -42,12 +42,28 @@ public class ImageDownloadService {
                 }
                 byte[] bytes = out.toByteArray();
 
-                // 확장자 추출
-                String ext = imageUrl.substring(imageUrl.lastIndexOf('.') + 1);
+                // 확장자/콘텐츠 타입 결정
+                String contentType = conn.getContentType();
+                String ext;
+
+                // Content-Type 기반으로 우선 추출
+                if (contentType != null) {
+                    if (contentType.equalsIgnoreCase("image/jpeg")) ext = "jpg";
+                    else if (contentType.equalsIgnoreCase("image/png")) ext = "png";
+                    else if (contentType.equalsIgnoreCase("image/webp")) ext = "webp";
+                    else ext = "bin";
+                } else {
+                    String path = new URL(imageUrl).getPath();
+                    int dot = path.lastIndexOf('.');
+                    ext = (dot >= 0 && dot < path.length() - 1) ? path.substring(dot + 1) : "bin";
+                }
+
+                String finalContentType = ("bin".equals(ext)) ? "application/octet-stream" : ("image/" + ("jpg".equals(ext) ? "jpeg" : ext));
+
                 MultipartFile file = new SimpleMultipartFile(
                     "file",
                     "downloaded." + ext,
-                    "image/" + ext,
+                    finalContentType,
                     bytes
                 );
 
