@@ -1,6 +1,8 @@
 package com.samsamotot.otboo.clothes.util;
 
 import com.samsamotot.otboo.common.storage.S3ImageStorage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
@@ -26,7 +28,19 @@ public class ImageDownloadService {
             URLConnection conn = new URL(imageUrl).openConnection();
 
             try (InputStream in = conn.getInputStream()) {
-                byte[] bytes = in.readAllBytes();
+                final int MAX_BYTES = 5 * 1024 * 1024; // 5MB
+                byte[] buf = new byte[8192];
+                int n, total = 0;
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+                while ((n = in.read(buf)) != -1) {
+                    total += n;
+                    if (total > MAX_BYTES) {
+                        throw new IOException("이미지 크기 초과: " + total + " bytes");
+                    }
+                    out.write(buf, 0, n);
+                }
+                byte[] bytes = out.toByteArray();
 
                 // 확장자 추출
                 String ext = imageUrl.substring(imageUrl.lastIndexOf('.') + 1);
