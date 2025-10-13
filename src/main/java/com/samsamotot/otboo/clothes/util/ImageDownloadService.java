@@ -20,6 +20,7 @@ public class ImageDownloadService {
     private static final String SERVICE_NAME = "[ImageDownloadService] ";
 
     private final S3ImageStorage s3ImageStorage;
+    private final ClothesExtractHelper clothesExtractHelper;
 
     @Async("imageTaskExecutor")
     public CompletableFuture<String> downloadAndUploadAsync(String imageUrl, String folderPath) {
@@ -27,10 +28,31 @@ public class ImageDownloadService {
         int READ_TIMEOUT_VALUE = 10000;
 
         try {
+            // URL 검증 먼저 진행
+            clothesExtractHelper.validate(imageUrl);
+
             HttpURLConnection conn = (HttpURLConnection) new URL(imageUrl).openConnection();
             conn.setConnectTimeout(CONNECT_TIMEOUT_VALUE);
             conn.setReadTimeout(READ_TIMEOUT_VALUE);
             conn.setInstanceFollowRedirects(false);
+
+            // 응답 코드 검증 (리다이렉트 차단)
+            int responseCode = conn.getResponseCode();
+            if (clothesExtractHelper.isRedirectResponse(responseCode)) {
+                throw new IOException("리다이렉트는 허용되지 않습니다: " + responseCode);
+            }
+            if (responseCode != 200) {
+                throw new IOException("유효하지 않은 응답 코드: " + responseCode);
+            }
+
+            // Content-Type 검증 사전 수행
+            String contentType = conn.getContentType();
+            if (contentType == null ||
+                (!contentType.startsWith("image/jpeg") &&
+                    !contentType.startsWith("image/png") &&
+                    !contentType.startsWith("image/webp"))) {
+                throw new IOException("지원하지 않는 Content-Type: " + contentType);
+            }
 
             try (InputStream in = conn.getInputStream()) {
                 final int MAX_BYTES = 5 * 1024 * 1024; // 5MB
@@ -47,20 +69,18 @@ public class ImageDownloadService {
                 }
                 byte[] bytes = out.toByteArray();
 
-                // 확장자/콘텐츠 타입 결정
-                String contentType = conn.getContentType();
+                // 확장자 결정
                 String ext;
 
                 // Content-Type 기반으로 우선 추출
-                if (contentType != null) {
-                    if (contentType.equalsIgnoreCase("image/jpeg")) ext = "jpg";
-                    else if (contentType.equalsIgnoreCase("image/png")) ext = "png";
-                    else if (contentType.equalsIgnoreCase("image/webp")) ext = "webp";
-                    else ext = "bin";
+                if (contentType.equalsIgnoreCase("image/jpeg")) {
+                    ext = "jpg";
+                } else if (contentType.equalsIgnoreCase("image/png")) {
+                    ext = "png";
+                } else if (contentType.equalsIgnoreCase("image/webp")) {
+                    ext = "webp";
                 } else {
-                    String path = new URL(imageUrl).getPath();
-                    int dot = path.lastIndexOf('.');
-                    ext = (dot >= 0 && dot < path.length() - 1) ? path.substring(dot + 1) : "bin";
+                    ext = "bin";
                 }
 
                 String finalContentType = ("bin".equals(ext)) ? "application/octet-stream" : ("image/" + ("jpg".equals(ext) ? "jpeg" : ext));
