@@ -415,4 +415,70 @@ class SseServiceImplTest {
         // then
         assertEquals(0, emitter.sentCount, "빈 백로그면 전송하지 않아야 함");
     }
+
+    @Test
+    void 잘못된_JSON_전송시_무시() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        sseService.createConnection(userId);
+
+        TestEmitter testEmitter = new TestEmitter();
+        connections().put(userId, testEmitter);
+
+        when(objectMapper.readValue(anyString(), eq(NotificationDto.class)))
+            .thenThrow(new RuntimeException("Invalid JSON"));
+
+        // when
+        assertDoesNotThrow(() -> sseService.sendNotification(userId, "invalid-json"));
+
+        // then
+        assertFalse(testEmitter.sent, "잘못된 JSON은 전송되지 않아야 함");
+        assertTrue(connections().containsKey(userId), "연결은 유지되어야 함");
+        assertFalse(backlog().containsKey(userId), "백로그에 추가되지 않아야 함");
+    }
+
+    @Test
+    void 백로그_없는_사용자_replay() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        CountingEmitter emitter = new CountingEmitter();
+
+        // when
+        sseService.replayMissedEvents(userId, UUID.randomUUID().toString(), emitter);
+
+        // then
+        assertEquals(0, emitter.sentCount, "백로그가 없으면 전송하지 않아야 함");
+    }
+
+    @Test
+    void 백로그_크기_제한_동작_확인() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        sseService.createConnection(userId);
+
+        TestEmitter testEmitter = new TestEmitter();
+        connections().put(userId, testEmitter);
+
+        NotificationDto dto = NotificationDto.builder()
+            .id(UUID.randomUUID())
+            .title("t").content("c")
+            .level(NotificationLevel.INFO)
+            .build();
+
+        when(objectMapper.readValue(anyString(), eq(NotificationDto.class)))
+            .thenReturn(dto);
+
+        // when
+        for (int i = 0; i < 1001; i++) {
+            sseService.sendNotification(userId, "notification-" + i);
+        }
+
+        // then
+        Deque<NotificationDto> userBacklog = backlog().get(userId);
+        assertNotNull(userBacklog);
+        assertEquals(1000, userBacklog.size());
+
+        NotificationDto lastNotification = userBacklog.peekLast();
+        assertNotNull(lastNotification);
+    }
 }
