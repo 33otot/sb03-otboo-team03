@@ -85,11 +85,13 @@ public class FeedSearchRepositoryImpl implements FeedSearchRepositoryCustom {
             log.info(REPOSITORY + "search_after 값: {}", searchAfter);
         }
 
+        int pageSize = Math.max(1, limit) + 1;
+
         // NativeQuery 조립: 필터 + 정렬 + 페이지(size) + search_after
         NativeQueryBuilder nq = NativeQuery.builder()
             .withQuery(q -> q.bool(bool.build()))
             .withSort(sorts)
-            .withPageable(PageRequest.of(0, Math.max(1, limit)));
+            .withPageable(PageRequest.of(0, pageSize));
 
         if (searchAfter != null) {
             nq.withSearchAfter(searchAfter);

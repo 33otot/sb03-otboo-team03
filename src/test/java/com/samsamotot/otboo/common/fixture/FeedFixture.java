@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.common.fixture;
 
 import com.samsamotot.otboo.clothes.dto.OotdDto;
+import com.samsamotot.otboo.feed.document.FeedDocument;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.entity.FeedClothes;
@@ -109,6 +110,70 @@ public class FeedFixture {
             .likedByMe(false)
             .createdAt(feed.getCreatedAt())
             .updatedAt(feed.getUpdatedAt())
+            .build();
+    }
+
+    public static FeedDocument createFeedDocument(Feed feed) {
+        return FeedDocument.builder()
+            .id(feed.getId())
+            .author(UserFixture.createAuthorDto(feed.getAuthor()))
+            .content(feed.getContent())
+            .likeCount(feed.getLikeCount())
+            .commentCount(feed.getCommentCount())
+            .ootds(List.of())
+            .weather(WeatherFixture.createWeatherDto(feed.getWeather()))
+            .likedByMe(false)
+            .createdAt(feed.getCreatedAt())
+            .updatedAt(feed.getUpdatedAt())
+            .isDeleted(feed.isDeleted())
+            .build();
+    }
+
+    public static FeedDocument createFeedDocumentWithSoftDeleted(Feed feed) {
+        return FeedDocument.builder()
+            .id(feed.getId())
+            .author(UserFixture.createAuthorDto(feed.getAuthor()))
+            .content(feed.getContent())
+            .likeCount(feed.getLikeCount())
+            .commentCount(feed.getCommentCount())
+            .ootds(List.of())
+            .weather(WeatherFixture.createWeatherDto(feed.getWeather()))
+            .likedByMe(false)
+            .createdAt(feed.getCreatedAt())
+            .updatedAt(feed.getUpdatedAt())
+            .isDeleted(true)
+            .build();
+    }
+
+    public static FeedDocument createfeedDocumentWithContent(Feed feed, String content) {
+        return FeedDocument.builder()
+            .id(feed.getId())
+            .author(UserFixture.createAuthorDto(feed.getAuthor()))
+            .content(content)
+            .likeCount(feed.getLikeCount())
+            .commentCount(feed.getCommentCount())
+            .ootds(List.of())
+            .weather(WeatherFixture.createWeatherDto(feed.getWeather()))
+            .likedByMe(false)
+            .createdAt(feed.getCreatedAt())
+            .updatedAt(feed.getUpdatedAt())
+            .isDeleted(feed.isDeleted())
+            .build();
+    }
+
+    public static FeedDocument createFeedDocumentWithWeather(Feed feed) {
+        return FeedDocument.builder()
+            .id(feed.getId())
+            .author(UserFixture.createAuthorDto(feed.getAuthor()))
+            .content(feed.getContent())
+            .likeCount(feed.getLikeCount())
+            .commentCount(feed.getCommentCount())
+            .ootds(List.of())
+            .weather(WeatherFixture.createWeatherDtoWithPrecipitation(feed.getWeather()))
+            .likedByMe(false)
+            .createdAt(feed.getCreatedAt())
+            .updatedAt(feed.getUpdatedAt())
+            .isDeleted(feed.isDeleted())
             .build();
     }
 }
