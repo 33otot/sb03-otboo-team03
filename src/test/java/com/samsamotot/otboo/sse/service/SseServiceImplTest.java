@@ -144,7 +144,7 @@ class SseServiceImplTest {
     }
 
     @Test
-    void 알람_전송_실패시_연결_제거() throws JsonProcessingException {
+    void 알람_전송_실패시_연결_제거() throws Exception {
         // given
         UUID userId = UUID.randomUUID();
         sseService.createConnection(userId);
@@ -190,7 +190,7 @@ class SseServiceImplTest {
     }
 
     @Test
-    void replay_nullLastEventId_전송_안한다() {
+    void replay_nullLastEventId_전송_안한다() throws Exception {
         UUID userId = UUID.randomUUID();
         CountingEmitter emitter = new CountingEmitter();
 
@@ -199,7 +199,7 @@ class SseServiceImplTest {
     }
 
     @Test
-    void lastEventId_공백_전송_안한다() {
+    void lastEventId_공백_전송_안한다() throws Exception {
         UUID userId = UUID.randomUUID();
         CountingEmitter emitter = new CountingEmitter();
 
@@ -208,7 +208,7 @@ class SseServiceImplTest {
     }
 
     @Test
-    void backlog_문제시_전송_안한다() {
+    void backlog_문제시_전송_안한다() throws Exception {
         UUID userId = UUID.randomUUID();
         backlog().remove(userId); // 백로그 없음
         CountingEmitter emitter = new CountingEmitter();
@@ -221,7 +221,7 @@ class SseServiceImplTest {
     }
 
     @Test
-    void lastEventId_이후만_전송() {
+    void lastEventId_이후만_전송() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID e1 = UUID.randomUUID();
         UUID e2 = UUID.randomUUID();
@@ -240,7 +240,7 @@ class SseServiceImplTest {
     }
 
     @Test
-    void 마지막이면_전송_안한다() {
+    void 마지막이면_전송_안한다() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID e1 = UUID.randomUUID();
         UUID e2 = UUID.randomUUID();
@@ -257,7 +257,7 @@ class SseServiceImplTest {
     }
 
     @Test
-    void backlog_lastEvent_없으면_전송_안한다() {
+    void backlog_lastEvent_없으면_전송_안한다() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID e1 = UUID.randomUUID();
         UUID e2 = UUID.randomUUID();
@@ -274,8 +274,37 @@ class SseServiceImplTest {
     }
 
     @Test
-    @DisplayName("replay: 전송 중 IOException 발생 시 예외를 던지지 않고 중단한다")
-    void replay_stopOnIOException_dontThrow() {
+    void 연결_생성_후_맵에_등록된다() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+
+        // when
+        SseEmitter emitter = sseService.createConnection(userId);
+
+        // then
+        assertNotNull(emitter);
+        assertTrue(connections().containsKey(userId), "연결 생성 후 맵에 등록되어야 함");
+        assertEquals(emitter, connections().get(userId), "생성된 emitter가 맵에 저장되어야 함");
+    }
+
+    @Test
+    void 연결_맵_상태_확인한다() throws Exception {
+        // given
+        UUID userId1 = UUID.randomUUID();
+        UUID userId2 = UUID.randomUUID();
+
+        // when
+        sseService.createConnection(userId1);
+        sseService.createConnection(userId2);
+
+        // then
+        assertEquals(2, connections().size(), "두 개의 연결이 생성되어야 함");
+        assertTrue(connections().containsKey(userId1), "첫 번째 사용자 연결이 있어야 함");
+        assertTrue(connections().containsKey(userId2), "두 번째 사용자 연결이 있어야 함");
+    }
+
+    @Test
+    void 전송_중_IOException_발생_시_예외를_던지지_않고_중단한다() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID e1 = UUID.randomUUID();
         UUID e2 = UUID.randomUUID();
@@ -291,5 +320,99 @@ class SseServiceImplTest {
 
         assertDoesNotThrow(() -> sseService.replayMissedEvents(userId, e1.toString(), emitter));
         assertEquals(1, emitter.attempted);
+    }
+
+    @Test
+    void 연결_수동_제거() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        sseService.createConnection(userId);
+        assertTrue(connections().containsKey(userId), "연결 생성 후 맵에 있어야 함");
+
+        // when
+        connections().remove(userId);
+
+        // then
+        assertFalse(connections().containsKey(userId), "연결 제거 후 맵에서 사라져야 함");
+    }
+
+    @Test
+    void 동일_사용자_중복_연결() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+
+        // when
+        SseEmitter emitter1 = sseService.createConnection(userId);
+        SseEmitter emitter2 = sseService.createConnection(userId);
+
+        // then
+        assertEquals(1, connections().size(), "중복 연결 시 하나만 유지되어야 함");
+        assertEquals(emitter2, connections().get(userId), "마지막 연결이 유지되어야 함");
+    }
+
+    @Test
+    void 알림_전송_성공시_백로그_추가() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        sseService.createConnection(userId);
+
+        TestEmitter testEmitter = new TestEmitter();
+        connections().put(userId, testEmitter);
+
+        NotificationDto dto = NotificationDto.builder()
+            .id(UUID.randomUUID())
+            .title("t").content("c")
+            .level(NotificationLevel.INFO)
+            .build();
+
+        when(objectMapper.readValue(anyString(), eq(NotificationDto.class)))
+            .thenReturn(dto);
+
+        // when
+        sseService.sendNotification(userId, "notification");
+
+        // then
+        assertTrue(testEmitter.sent, "알림이 전송되어야 함");
+        assertTrue(backlog().containsKey(userId), "백로그에 추가되어야 함");
+        assertEquals(1, backlog().get(userId).size(), "백로그에 1개 추가되어야 함");
+    }
+
+    @Test
+    void replay_전체_백로그_전송() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID e1 = UUID.randomUUID();
+        UUID e2 = UUID.randomUUID();
+        UUID e3 = UUID.randomUUID();
+
+        ArrayDeque<NotificationDto> q = new ArrayDeque<>();
+        q.add(dtoWithId(e1));
+        q.add(dtoWithId(e2));
+        q.add(dtoWithId(e3));
+        backlog().put(userId, q);
+
+        CountingEmitter emitter = new CountingEmitter();
+
+        // when
+        sseService.replayMissedEvents(userId, null, emitter);
+
+        // then
+        assertEquals(0, emitter.sentCount, "null lastEventId면 전송하지 않아야 함");
+    }
+
+    @Test
+    void replay_빈_백로그() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        ArrayDeque<NotificationDto> emptyQ = new ArrayDeque<>();
+        backlog().put(userId, emptyQ);
+
+        CountingEmitter emitter = new CountingEmitter();
+
+        // when
+        sseService.replayMissedEvents(userId, UUID.randomUUID().toString(), emitter);
+
+        // then
+        assertEquals(0, emitter.sentCount, "빈 백로그면 전송하지 않아야 함");
     }
 }
