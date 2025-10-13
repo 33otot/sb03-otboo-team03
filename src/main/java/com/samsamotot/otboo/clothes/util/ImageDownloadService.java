@@ -4,8 +4,8 @@ import com.samsamotot.otboo.common.storage.S3ImageStorage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +23,14 @@ public class ImageDownloadService {
 
     @Async("imageTaskExecutor")
     public CompletableFuture<String> downloadAndUploadAsync(String imageUrl, String folderPath) {
-        try {
+        int CONNECT_TIMEOUT_VALUE = 5000;
+        int READ_TIMEOUT_VALUE = 10000;
 
-            URLConnection conn = new URL(imageUrl).openConnection();
+        try {
+            HttpURLConnection conn = (HttpURLConnection) new URL(imageUrl).openConnection();
+            conn.setConnectTimeout(CONNECT_TIMEOUT_VALUE);
+            conn.setReadTimeout(READ_TIMEOUT_VALUE);
+            conn.setInstanceFollowRedirects(false);
 
             try (InputStream in = conn.getInputStream()) {
                 final int MAX_BYTES = 5 * 1024 * 1024; // 5MB
