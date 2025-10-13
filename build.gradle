@@ -99,6 +99,9 @@ dependencies {
 
     // Direct Message
     implementation "org.springframework.security:spring-security-messaging"
+
+    // Elasticsearch
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 }
 
 // QueryDSL 설정

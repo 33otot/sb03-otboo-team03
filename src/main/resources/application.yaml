@@ -31,6 +31,10 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  elasticsearch:
+    host: elasticsearch
+    port: 9200
+    health-timeout-ms: 10000
 
 kma:
   base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0

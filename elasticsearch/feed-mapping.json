@@ -1,0 +1,163 @@
+{
+  "properties": {
+    "id": {
+      "type": "keyword"
+    },
+    "createdAt": {
+      "type": "date",
+      "format": "epoch_millis"
+    },
+    "updatedAt": {
+      "type": "date",
+      "format": "epoch_millis"
+    },
+    "author": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "keyword"
+        },
+        "email": {
+          "type": "keyword"
+        },
+        "username": {
+          "type": "keyword"
+        },
+        "provider": {
+          "type": "keyword"
+        },
+        "role": {
+          "type": "keyword"
+        },
+        "isLocked": {
+          "type": "boolean"
+        },
+        "temporaryPasswordExpiresAt": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "createdAt": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "updatedAt": {
+          "type": "date",
+          "format": "epoch_millis"
+        }
+      }
+    },
+    "weather": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "keyword"
+        },
+        "forecastAt": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "forecastedAt": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "skyStatus": {
+          "type": "keyword"
+        },
+        "precipitationType": {
+          "type": "keyword"
+        },
+        "precipitationAmount": {
+          "type": "float"
+        },
+        "precipitationProbability": {
+          "type": "float"
+        },
+        "humidityCurrent": {
+          "type": "float"
+        },
+        "humidityComparedToDayBefore": {
+          "type": "float"
+        },
+        "temperatureCurrent": {
+          "type": "float"
+        },
+        "temperatureComparedToDayBefore": {
+          "type": "float"
+        },
+        "temperatureMin": {
+          "type": "float"
+        },
+        "temperatureMax": {
+          "type": "float"
+        },
+        "windSpeed": {
+          "type": "float"
+        },
+        "windAsWord": {
+          "type": "keyword"
+        },
+        "createdAt": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "updatedAt": {
+          "type": "date",
+          "format": "epoch_millis"
+        }
+      }
+    },
+    "feedClothes": {
+      "type": "nested",
+      "properties": {
+        "id": {
+          "type": "keyword"
+        },
+        "clothes": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "text"
+            },
+            "imageUrl": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "createdAt": {
+              "type": "date",
+              "format": "epoch_millis"
+            },
+            "updatedAt": {
+              "type": "date",
+              "format": "epoch_millis"
+            }
+          }
+        },
+        "createdAt": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "updatedAt": {
+          "type": "date",
+          "format": "epoch_millis"
+        }
+      }
+    },
+    "content": {
+      "type": "text"
+    },
+    "likeCount": {
+      "type": "long"
+    },
+    "commentCount": {
+      "type": "long"
+    },
+    "isDeleted": {
+      "type": "boolean"
+    }
+  }
+}
