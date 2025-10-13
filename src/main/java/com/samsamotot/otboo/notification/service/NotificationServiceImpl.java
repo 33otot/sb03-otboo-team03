@@ -85,6 +85,85 @@ public class NotificationServiceImpl implements NotificationService {
         return saved;
     }
 
+
+    /**
+     * 활성 사용자(잠금되지 않은 사용자)에게만 배치로 알림을 저장하고 SSE로 실시간 발행한다.
+     * 성능 최적화: 한 번의 트랜잭션으로 배치 저장 후 비동기 SSE 발행
+     *
+     * @param title 알림 제목
+     * @param content 알림 내용
+     * @param level 알림 수준 (INFO, WARN, ERROR 등)
+     */
+    @Transactional
+    @Override
+    public void saveBatchNotification(String title, String content, NotificationLevel level) {
+        log.info(NOTIFICATION_SERVICE + "배치 알림 저장 시작 - title: '{}', level: {}", title, level);
+ 
+        // 활성 사용자 ID만 조회
+        List<UUID> userIds = userRepository.findActiveUserIds();
+        log.info(NOTIFICATION_SERVICE + "총 {}명의 활성 사용자에게 알림 발송", userIds.size());
+        
+        if (userIds.isEmpty()) {
+            log.info(NOTIFICATION_SERVICE + "활성 사용자가 없어 알림 발송을 건너뜁니다");
+            return;
+        }
+        
+        // 1. 배치로 알림 저장
+        List<Notification> savedNotifications = saveBatchNotifications(userIds, title, content, level);
+        log.info(NOTIFICATION_SERVICE + "배치 알림 저장 완료 - {}건 저장", savedNotifications.size());
+        
+        // 2. SSE 비동기 발행
+        sendBatchSseNotifications(savedNotifications);
+    }
+    
+    /**
+     * 사용자 목록에 대해 배치로 알림을 저장한다.
+     * 
+     * @param userIds 사용자 ID 목록
+     * @param title 알림 제목
+     * @param content 알림 내용
+     * @param level 알림 수준
+     * @return 저장된 알림 목록
+     */
+    @Transactional
+    protected List<Notification> saveBatchNotifications(List<UUID> userIds, String title, String content, NotificationLevel level) {
+
+        List<User> users = userRepository.findAllById(userIds);
+
+        List<Notification> notifications = users.stream()
+            .map(user -> Notification.builder()
+                .receiver(user)
+                .title(title)
+                .content(content)
+                .level(level)
+                .build())
+            .toList();
+
+        // 배치 저장
+        return notificationRepository.saveAll(notifications);
+    }
+    
+    /**
+     * 저장된 알림 목록에 대해 SSE로 실시간 발행한다.
+     * 
+     * @param notifications 발행할 알림 목록
+     */
+    private void sendBatchSseNotifications(List<Notification> notifications) {
+        notifications.forEach(notification -> {
+            try {
+                String notificationJson = objectMapper.writeValueAsString(toDto(notification));
+                sseService.sendNotification(notification.getReceiver().getId(), notificationJson);
+                log.debug(NOTIFICATION_SERVICE + "SSE 발행 완료 - user: {}, title: '{}'", 
+                    notification.getReceiver().getId(), notification.getTitle());
+            } catch (Exception e) {
+                log.error(NOTIFICATION_SERVICE + "SSE 발행 실패 - user: {}, title: '{}'", 
+                    notification.getReceiver().getId(), notification.getTitle(), e);
+            }
+        });
+        
+        log.info(NOTIFICATION_SERVICE + "SSE 발행 완료 - {}건 발행", notifications.size());
+    }
+
     /**
      * 현재 로그인 사용자의 알림 목록을 커서 기반으로 조회한다.
      *

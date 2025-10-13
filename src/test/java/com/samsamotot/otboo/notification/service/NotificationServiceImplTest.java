@@ -319,4 +319,124 @@ class NotificationServiceImplTest {
         assertDoesNotThrow(() -> notificationService.delete(notificationId));
         then(notificationRepository).should(times(1)).delete(same(mine));
     }
+
+    /*
+        배치 알림 저장 로직
+     */
+    @Test
+    void 배치_알림_저장한다() throws Exception {
+        // given
+        String title = "테스트 알림";
+        String content = "배치 알림 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        UUID user1Id = UUID.randomUUID();
+        UUID user2Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+        User user2 = newUserWith("user2@test.com", user2Id);
+
+        List<UUID> activeUserIds = List.of(user1Id, user2Id);
+        List<User> users = List.of(user1, user2);
+
+        given(userRepository.findActiveUserIds()).willReturn(activeUserIds);
+        given(userRepository.findAllById(activeUserIds)).willReturn(users);
+        given(notificationRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
+
+        // when
+        assertDoesNotThrow(() -> 
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should().findAllById(activeUserIds);
+        then(sseService).should(times(2)).sendNotification(any(UUID.class), anyString());
+    }
+
+    @Test
+    void 배치_알림_저장한다_활성사용자없음() throws Exception {
+        // given
+        String title = "테스트 알림";
+        String content = "배치 알림 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        given(userRepository.findActiveUserIds()).willReturn(List.of());
+
+        // when
+        assertDoesNotThrow(() -> 
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should(never()).findAllById(anyList());
+        then(notificationRepository).should(never()).saveAll(anyList());
+        then(sseService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void 배치_알림_저장한다_SSE실패() throws Exception {
+        // given
+        String title = "테스트 알림";
+        String content = "배치 알림 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        UUID user1Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+
+        List<UUID> activeUserIds = List.of(user1Id);
+        List<User> users = List.of(user1);
+
+        given(userRepository.findActiveUserIds()).willReturn(activeUserIds);
+        given(userRepository.findAllById(activeUserIds)).willReturn(users);
+        given(notificationRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
+        willThrow(new RuntimeException("SSE 발행 실패"))
+            .given(sseService).sendNotification(any(UUID.class), anyString());
+
+        // when
+        assertDoesNotThrow(() -> 
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should().findAllById(activeUserIds);
+        then(notificationRepository).should().saveAll(anyList());
+        then(sseService).should().sendNotification(any(UUID.class), anyString());
+    }
+
+    @Test
+    void 배치_알림_저장한다_대량사용자() throws Exception {
+        // given
+        String title = "대량 알림";
+        String content = "대량 사용자 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        // 100명의 사용자 생성
+        List<UUID> userIds = new java.util.ArrayList<>();
+        List<User> users = new java.util.ArrayList<>();
+        
+        for (int i = 0; i < 100; i++) {
+            UUID userId = UUID.randomUUID();
+            userIds.add(userId);
+            users.add(newUserWith("user" + i + "@test.com", userId));
+        }
+
+        given(userRepository.findActiveUserIds()).willReturn(userIds);
+        given(userRepository.findAllById(userIds)).willReturn(users);
+        given(notificationRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
+
+        // when
+        assertDoesNotThrow(() -> 
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should().findAllById(userIds);
+        then(sseService).should(times(100)).sendNotification(any(UUID.class), anyString());
+    }
 }
