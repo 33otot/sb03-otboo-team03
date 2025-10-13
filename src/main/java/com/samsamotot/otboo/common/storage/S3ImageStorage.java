@@ -102,12 +102,25 @@ public class S3ImageStorage {
         return UUID.randomUUID().toString().concat(getFileExtension(fileName));
     }
 
-    //  "."의 존재 유무만 판단
+    //  파일명 추출
     private String getFileExtension(String fileName){
         try{
-            return fileName.substring(fileName.lastIndexOf("."));
+            // 쿼리 파라미터 제거
+            if (fileName.contains("?")) {
+                fileName = fileName.substring(0, fileName.indexOf("?"));
+            }
+            String ext = fileName.substring(fileName.lastIndexOf("."));
+
+            // 확장자 유효성 검사
+            if (!ext.matches("\\.(jpg|jpeg|png|webp)$")) {
+                ext = ".jpg"; // 기본값
+            }
+
+            return ext;
+
         } catch (StringIndexOutOfBoundsException e){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 형식의 파일(" + fileName + ") 입니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "잘못된 형식의 파일명입니다: " + fileName);
         }
     }
 
