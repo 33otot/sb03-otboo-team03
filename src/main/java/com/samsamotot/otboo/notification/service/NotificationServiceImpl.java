@@ -31,10 +31,10 @@ import java.util.UUID;
  * Author       : dounguk
  * Date         : 2025. 9. 26.
  */
-@Service
-@RequiredArgsConstructor
 @Slf4j
 @Validated
+@Service
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class NotificationServiceImpl implements NotificationService {
 
