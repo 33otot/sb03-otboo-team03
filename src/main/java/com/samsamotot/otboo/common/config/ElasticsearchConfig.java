@@ -21,16 +21,13 @@ import org.springframework.data.elasticsearch.repository.config.EnableElasticsea
 @EnableElasticsearchRepositories(basePackages = "com.samsamotot.otboo.feed.repository")
 public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
-    @Value("${spring.elasticsearch.host:elasticsearch}")
-    private String host;
-
-    @Value("${spring.elasticsearch.port:9200}")
-    private int port;
+    @Value("${spring.elasticsearch.uris:localhost:9200}")
+    private String uris;
 
     @Override
     public ClientConfiguration clientConfiguration() {
         return ClientConfiguration.builder()
-            .connectedTo(host + ":" + port)
+            .connectedTo(uris.split(","))
             .build();
     }
 

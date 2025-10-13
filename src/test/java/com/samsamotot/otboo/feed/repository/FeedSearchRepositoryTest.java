@@ -23,6 +23,7 @@ import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
 import java.time.Instant;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -41,6 +43,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+@ActiveProfiles("test")
 @Testcontainers
 @DataElasticsearchTest
 @Import(ElasticsearchTestConfig.class)
@@ -54,9 +57,9 @@ class FeedSearchRepositoryTest {
             .withEnv("xpack.security.enabled", "false");
 
     @DynamicPropertySource
-    static void esProps(DynamicPropertyRegistry reg) {
-        reg.add("spring.elasticsearch.host", () -> es.getHost());
-        reg.add("spring.elasticsearch.port", () -> es.getMappedPort(9200));
+    static void esProps(DynamicPropertyRegistry r) {
+        r.add("spring.elasticsearch.uris", es::getHttpHostAddress);
+        r.add("spring.data.elasticsearch.index-prefix", () -> "test");
     }
 
     @Autowired
@@ -131,6 +134,14 @@ class FeedSearchRepositoryTest {
         ReflectionTestUtils.setField(deletedFeed, "id", UUID.randomUUID());
         FeedDocument deletedDoc = FeedFixture.createFeedDocumentWithSoftDeleted(deletedFeed);
         operations.save(deletedDoc);
+    }
+
+    @AfterEach
+    void tearDown() {
+        IndexOperations indexOps = operations.indexOps(FeedDocument.class);
+        if (indexOps.exists()) {
+            indexOps.delete();   // 인덱스 전체 삭제
+        }
     }
 
     @Test

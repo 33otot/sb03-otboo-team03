@@ -32,9 +32,8 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
   elasticsearch:
-    host: elasticsearch
-    port: 9200
     health-timeout-ms: 10000
+    uris: elasticsearch:9200
 
   # LLM 설정 (OpenAI)
   ai:

@@ -25,7 +25,6 @@ import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import com.samsamotot.otboo.feed.entity.Feed;
-import com.samsamotot.otboo.feed.mapper.FeedDocumentMapper;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.feed.service.FeedDataSyncService;
 import com.samsamotot.otboo.user.entity.User;
@@ -34,11 +33,11 @@ import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.GridRepository;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,6 +47,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.TestExecutionEvent;
@@ -100,8 +100,8 @@ public class FeedIntegrationTest {
         reg.add("spring.datasource.username", postgres::getUsername);
         reg.add("spring.datasource.password", postgres::getPassword);
         // Elasticsearch 설정
-        reg.add("spring.elasticsearch.host", () -> es.getHost());
-        reg.add("spring.elasticsearch.port", () -> es.getMappedPort(9200));
+        reg.add("spring.elasticsearch.uris", es::getHttpHostAddress);
+        reg.add("spring.data.elasticsearch.index-prefix", () -> "test");
     }
 
     @Autowired
@@ -130,7 +130,6 @@ public class FeedIntegrationTest {
 
     @Autowired
     private ElasticsearchOperations operations;
-
 
     private User testUser;
     private User otherUser;
@@ -164,6 +163,14 @@ public class FeedIntegrationTest {
         else indexOps.create();
 
         if (mapping != null && !mapping.isEmpty()) indexOps.putMapping(mapping);
+    }
+
+    @AfterEach
+    void tearDown() {
+        IndexOperations indexOps = operations.indexOps(FeedDocument.class);
+        if (indexOps.exists()) {
+            indexOps.delete();   // 인덱스 전체 삭제
+        }
     }
 
     @Nested
