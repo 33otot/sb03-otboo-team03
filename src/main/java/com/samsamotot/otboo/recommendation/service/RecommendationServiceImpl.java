@@ -19,7 +19,6 @@ import java.time.Month;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +52,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     private final WeatherRepository weatherRepository;
     private final ClothesRepository clothesRepository;
     private final ItemSelectorEngine itemSelectorEngine;
+    private final OpenAIEngine openAiEngine;
     private final RedisTemplate<String, Object> redisTemplate;
 
     /**
@@ -140,10 +140,17 @@ public class RecommendationServiceImpl implements RecommendationService {
         // 추천 엔진 호출 및 결과 반환
         List<OotdDto> recommendResult = itemSelectorEngine.createRecommendation(clothesList, context, rollCounter, cooldownIdMap);
 
+        // 추천 이유 생성
+        String reason = openAiEngine.generateRecommendationReason(temperature, isRainingOrSnowing, month, adjustedTemperature, sensitivity, recommendResult);
+
+        log.debug(SERVICE + "의상 추천 완료: userId={}, weatherId={}, 추천 아이템 수={}, 추천 이유={}",
+            userId, weatherId, recommendResult.size(), reason);
+
         RecommendationDto result = RecommendationDto.builder()
             .userId(userId)
             .weatherId(weatherId)
             .clothes(recommendResult)
+            .reason(reason)
             .build();
 
         redisTemplate.executePipelined((RedisCallback<?>) (redisConnection) -> {
