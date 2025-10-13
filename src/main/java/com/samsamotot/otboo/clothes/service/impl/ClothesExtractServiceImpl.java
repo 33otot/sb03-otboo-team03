@@ -5,7 +5,6 @@ import com.samsamotot.otboo.clothes.service.ClothesExtractService;
 import com.samsamotot.otboo.clothes.util.ClothesExtractHelper;
 import com.samsamotot.otboo.clothes.util.ImageDownloadService;
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +12,7 @@ import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
@@ -32,28 +29,14 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
     private static final String SELECTOR_OG_IMAGE = "meta[property=og:image]";
     private static final String SELECTOR_OG_TITLE = "meta[property=og:title]";
 
-    // 지원하지 않는 쇼핑몰 주소 설정
-    private static final List<String> UNSUPPORTED_DOMAINS = List.of(
-        "smartstore.naver.com",
-        "kream.co.kr"
-    );
-
     private final ImageDownloadService imageDownloadService;
     private final ClothesExtractHelper clothesExtractHelper;
 
     @Override
     public ClothesDto extract(String url) {
         try {
-            // 지원하지 않는 도메인 검사
-            for (String domain : UNSUPPORTED_DOMAINS) {
-                if (url.contains(domain)) {
-                    log.warn(SERVICE_NAME + "{} - 지원하지 않는 도메인 감지, 스크래핑 차단됨", domain);
-                    throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "지원하지 않는 사이트입니다."
-                    );
-                }
-            }
+            // SSRF 방어를 위한 URL 검증
+            clothesExtractHelper.validate(url);
 
             // Cloudflare 우회용 HTML 요청
             String html = clothesExtractHelper.fetchHtml(url);
