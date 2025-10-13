@@ -3,6 +3,7 @@ package com.samsamotot.otboo.clothes.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -15,10 +16,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
+import com.samsamotot.otboo.clothes.exception.ClothesExtractionFailedException;
 import com.samsamotot.otboo.clothes.util.ClothesExtractHelper;
 import com.samsamotot.otboo.clothes.util.ImageDownloadService;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import org.jsoup.HttpStatusException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -150,5 +153,67 @@ public class ClothesExtractServiceTest {
         assertEquals("에러", dto.name());
         assertEquals("에러", dto.imageUrl());
         verify(imageDownloadService, never()).downloadAndUploadAsync(anyString(), anyString());
+    }
+
+    @Test
+    void URL_검증_실패시_예외가_발생한다() throws Exception {
+        // given
+        String maliciousUrl = "http://localhost:8080/admin";
+
+        doThrow(new ClothesExtractionFailedException("내부 네트워크에 접근할 수 없습니다."))
+            .when(clothesExtractHelper).validate(anyString());
+
+        // when & then
+        assertThrows(ClothesExtractionFailedException.class, () -> {
+            clothesExtractService.extract(maliciousUrl);
+        });
+
+        // verify - validate는 호출되었지만 fetchHtml은 호출되지 않음
+        verify(clothesExtractHelper, times(1)).validate(maliciousUrl);
+        verify(clothesExtractHelper, never()).fetchHtml(anyString());
+    }
+
+    @Test
+    void HttpStatusException_발생시_에러_DTO를_반환한다() throws Exception {
+        // given
+        String url = "https://store.musinsa.com/product/forbidden";
+
+        doThrow(new HttpStatusException("Forbidden", 403, url))
+            .when(clothesExtractHelper).fetchHtml(anyString());
+
+        // when
+        ClothesDto dto = clothesExtractService.extract(url);
+
+        // then
+        assertNotNull(dto);
+        assertEquals("에러", dto.name());
+        assertEquals("에러", dto.imageUrl());
+    }
+
+    @Test
+    void 이미지_URL이_빈_문자열이면_null로_변환된다() throws Exception {
+        // given
+        String url = "https://store.example.com/product/999";
+        String html = """
+        <html>
+          <head>
+            <meta property="og:title" content="이미지 없는 상품">
+            <meta property="og:image" content="">
+          </head>
+          <body>
+            <span data-mds="Typography">이미지 없는 상품</span>
+          </body>
+        </html>
+        """;
+
+        doReturn(html).when(clothesExtractHelper).fetchHtml(anyString());
+
+        // when
+        ClothesDto dto = clothesExtractService.extract(url);
+
+        // then
+        assertNotNull(dto);
+        assertEquals("이미지 없는 상품", dto.name());
+        assertNull(dto.imageUrl());  // 빈 문자열은 null로 변환
     }
 }
