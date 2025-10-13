@@ -32,6 +32,7 @@ public class ClothesExtractHelper {
         "musinsa.com",          // 무신사
         "a-bly.com",            // 에이블리
         "applink.a-bly.com",
+        "d3ha2047wt6x28.cloudfront.net",
         "shopping.naver.com",   // 네이버 쇼핑
         "shop-phinf.pstatic.net",
         "zigzag.kr",
@@ -47,10 +48,15 @@ public class ClothesExtractHelper {
         "0."    // 0.0.0.0/8 - 예약됨
     );
 
+    private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
+        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .build();
+
     // 에이블리처럼 Cloudflare 보호가 있는 사이트는 Jsoup.connect()만으로는 안 됨 (403 뜸)
     // Jsoup 대신 쿠키/헤더/Referer까지 세팅해서 HTTP 클라이언트(OkHttp / Jsoup+Cookies) 로 접근하기
     public String fetchHtml(String url) throws IOException {
-        OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
             .url(url)
             .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
@@ -59,7 +65,7 @@ public class ClothesExtractHelper {
             .header("Accept-Language", "ko,en;q=0.9")
             .build();
 
-        try (Response response = client.newCall(request).execute()) {
+        try (Response response = HTTP_CLIENT.newCall(request).execute()) {
             if (!response.isSuccessful())
                 throw new IOException("HTTP error: " + response.code());
             return response.body().string();
@@ -216,7 +222,7 @@ public class ClothesExtractHelper {
                 );
             }
 
-            // 2. 링크 로컬 주소 차단 (169.254.x.x)
+            // 2. 링크 로컬 주소 차단
             if (inetAddress.isLinkLocalAddress()) {
                 log.warn(SERVICE_NAME + "링크 로컬 주소 차단: {}", ipAddress);
                 throw new ClothesExtractionFailedException(
@@ -237,14 +243,6 @@ public class ClothesExtractHelper {
                 log.warn(SERVICE_NAME + "사설 IP 대역 차단: {}", ipAddress);
                 throw new ClothesExtractionFailedException(
                     "내부 네트워크에 접근할 수 없습니다."
-                );
-            }
-
-            // 5. AWS 메타데이터 서버 차단
-            if (ipAddress.equals("54.180.118.154")) {
-                log.warn(SERVICE_NAME + "AWS 메타데이터 서버 접근 차단: {}", ipAddress);
-                throw new ClothesExtractionFailedException(
-                    "접근이 제한된 주소입니다."
                 );
             }
 
