@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -128,6 +129,16 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
             );
 
             return returnDto;
+
+        } catch (HttpStatusException e) {
+            log.error(SERVICE_NAME + "HTTP 상태 오류: {}", e.getStatusCode());
+            return new ClothesDto(
+                null,
+                null,
+                "에러",
+                "에러",
+                null,
+                null);
 
         } catch (IOException e) {
             log.error(SERVICE_NAME + "스크래핑 실패: {}", e.getMessage());
