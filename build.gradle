@@ -4,6 +4,9 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'jacoco'
 }
+ext {
+    springAiVersion = "1.0.3"
+}
 
 group = 'com.samsamotot.otboo'
 version = '0.0.1-SNAPSHOT'
@@ -103,6 +106,9 @@ dependencies {
 
     // Elasticsearch
     implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+
+    // OpenAI Chat
+    implementation "org.springframework.ai:spring-ai-starter-model-openai"
 }
 
 // QueryDSL 설정
@@ -171,6 +177,11 @@ jacocoTestCoverageVerification {
 			}
 		}
 	}
+}
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
+    }
 }
 
 // 테스트 소스 컴파일 시 경고를 자세히 보기 위해 추가

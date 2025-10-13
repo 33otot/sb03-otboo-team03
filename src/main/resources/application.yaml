@@ -36,6 +36,26 @@ spring:
     port: 9200
     health-timeout-ms: 10000
 
+  # LLM 설정 (OpenAI)
+  ai:
+    openai:
+      connect-timeout: 5000
+      read-timeout: 30000
+      response-timeout: 90000
+      api-key: ${OPENAI_API_KEY}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.4
+          max-tokens: 128
+    retry:
+      max-attempts: 3
+      backoff:
+        initial-interval: 1s
+        multiplier: 2
+        max-interval: 10s
+
 kma:
   base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
   alt-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0
@@ -77,3 +97,8 @@ app:
 
 websocket:
   allowed-origins: http://localhost:3000,http://localhost:8080
+
+# LLM 설정
+llm:
+  reason:
+    max-length: 60
