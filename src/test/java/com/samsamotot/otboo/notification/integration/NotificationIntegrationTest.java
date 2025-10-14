@@ -5,7 +5,6 @@ import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.repository.NotificationRepository;
 import com.samsamotot.otboo.notification.service.NotificationService;
-import com.samsamotot.otboo.sse.service.SseServiceImpl;
 import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
@@ -22,16 +21,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Constructor;
 import java.time.Instant;
-import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -58,6 +55,9 @@ public class NotificationIntegrationTest {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     private static final String EMAIL = "me@test.com";
 
@@ -123,13 +123,14 @@ public class NotificationIntegrationTest {
 
     @Test
     void 없으면_안_가져온다() throws Exception {
-        // given: setUpAuth에서 me는 생성했지만 알림은 없음
+        // given
 
-        // when & then
+        // when n then
         mockMvc.perform(get("/api/notifications").param("limit", "10"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data", hasSize(0)))
             .andExpect(jsonPath("$.hasNext", is(false)))
             .andExpect(jsonPath("$.totalCount", is(0)));
     }
+
 }

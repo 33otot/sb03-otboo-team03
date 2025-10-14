@@ -156,7 +156,7 @@ public class NotificationServiceImpl implements NotificationService {
      * 
      * @param notifications 발행할 알림 목록
      */
-    private void sendBatchSseNotifications(List<Notification> notifications) {
+    protected void sendBatchSseNotifications(List<Notification> notifications) {
         notifications.forEach(notification -> {
             try {
                 String notificationJson = objectMapper.writeValueAsString(toDto(notification));

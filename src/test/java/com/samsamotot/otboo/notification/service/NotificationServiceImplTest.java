@@ -395,7 +395,7 @@ class NotificationServiceImplTest {
             notificationService.saveBatchNotification(title, content, level)
         );
 
-        // then 
+        // then
         then(userRepository).should().findActiveUserIds();
         then(userRepository).should().findAllById(activeUserIds);
         then(notificationRepository).should().saveAll(anyList());
@@ -430,5 +430,215 @@ class NotificationServiceImplTest {
         then(userRepository).should().findActiveUserIds();
         then(userRepository).should().findAllById(userIds);
         then(notificationRepository).should().saveAll(anyList());
+    }
+
+    @Test
+    void 배치_알림_저장한다_NotificationRepository_예외() throws Exception {
+        // given
+        String title = "테스트 알림";
+        String content = "배치 알림 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        UUID user1Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+
+        List<UUID> activeUserIds = List.of(user1Id);
+        List<User> users = List.of(user1);
+
+        given(userRepository.findActiveUserIds()).willReturn(activeUserIds);
+        given(userRepository.findAllById(activeUserIds)).willReturn(users);
+        willThrow(new RuntimeException("NotificationRepository 오류"))
+            .given(notificationRepository).saveAll(anyList());
+
+        // when
+        assertThrows(RuntimeException.class, () ->
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should().findAllById(activeUserIds);
+        then(notificationRepository).should().saveAll(anyList());
+    }
+
+    @Test
+    void 배치_알림_저장한다_UserRepository_예외() throws Exception {
+        // given
+        String title = "테스트 알림";
+        String content = "배치 알림 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        UUID user1Id = UUID.randomUUID();
+        List<UUID> activeUserIds = List.of(user1Id);
+
+        given(userRepository.findActiveUserIds()).willReturn(activeUserIds);
+        willThrow(new RuntimeException("UserRepository 오류"))
+            .given(userRepository).findAllById(activeUserIds);
+
+        // when
+        assertThrows(RuntimeException.class, () ->
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should().findAllById(activeUserIds);
+        then(notificationRepository).should(never()).saveAll(anyList());
+    }
+
+    @Test
+    void 알림_목록_조회한다_limit_0이면_1로_보정() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthUser(me);
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(0L);
+        given(notificationRepository.findLatest(eq(myId), any(Pageable.class)))
+            .willReturn(List.of());
+
+        NotificationRequest req = new NotificationRequest(null, null, 0); // limit이 0
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertEquals(0, res.data().size());
+        assertEquals(0L, res.totalCount());
+        assertFalse(res.hasNext());
+
+        then(notificationRepository).should()
+            .findLatest(eq(myId), argThat(p -> p.getPageSize() == 2));
+    }
+
+    @Test
+    void 알림_목록_조회한다_limit_음수면_1로_보정() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthUser(me);
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(0L);
+        given(notificationRepository.findLatest(eq(myId), any(Pageable.class)))
+            .willReturn(List.of());
+
+        NotificationRequest req = new NotificationRequest(null, null, -5);
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertEquals(0, res.data().size());
+        assertEquals(0L, res.totalCount());
+        assertFalse(res.hasNext());
+
+        then(notificationRepository).should()
+            .findLatest(eq(myId), argThat(p -> p.getPageSize() == 2));
+    }
+
+    @Test
+    void 알림_목록_조회한다_빈_결과() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthUser(me);
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(0L);
+        given(notificationRepository.findLatest(eq(myId), any(Pageable.class)))
+            .willReturn(List.of());
+
+        NotificationRequest req = new NotificationRequest(null, null, 10);
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertEquals(0, res.data().size());
+        assertEquals(0L, res.totalCount());
+        assertFalse(res.hasNext());
+        assertNull(res.nextCursor());
+        assertNull(res.nextIdAfter());
+    }
+
+    @Test
+    void sendBatchSseNotifications_정상_실행() throws Exception {
+        // given
+        UUID user1Id = UUID.randomUUID();
+        UUID user2Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+        User user2 = newUserWith("user2@test.com", user2Id);
+
+        Notification notification1 = newNotification(user1, Instant.now(), UUID.randomUUID(), "알림1");
+        Notification notification2 = newNotification(user2, Instant.now(), UUID.randomUUID(), "알림2");
+        List<Notification> notifications = List.of(notification1, notification2);
+
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
+
+        // when
+        notificationService.sendBatchSseNotifications(notifications);
+
+        // then
+        then(objectMapper).should(times(2)).writeValueAsString(any());
+        then(sseService).should(times(2)).sendNotification(any(UUID.class), anyString());
+    }
+
+    @Test
+    void sendBatchSseNotifications_ObjectMapper_예외() throws Exception {
+        // given
+        UUID user1Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+
+        Notification notification1 = newNotification(user1, Instant.now(), UUID.randomUUID(), "알림1");
+        List<Notification> notifications = List.of(notification1);
+
+        willThrow(new RuntimeException("ObjectMapper 오류"))
+            .given(objectMapper).writeValueAsString(any());
+
+        // when
+        notificationService.sendBatchSseNotifications(notifications);
+
+        // then
+        then(objectMapper).should().writeValueAsString(any());
+        then(sseService).should(never()).sendNotification(any(UUID.class), anyString());
+    }
+
+    @Test
+    void sendBatchSseNotifications_SseService_예외() throws Exception {
+        // given
+        UUID user1Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+
+        Notification notification1 = newNotification(user1, Instant.now(), UUID.randomUUID(), "알림1");
+        List<Notification> notifications = List.of(notification1);
+
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
+        willThrow(new RuntimeException("SSE 서비스 오류"))
+            .given(sseService).sendNotification(any(UUID.class), anyString());
+
+        // when
+        notificationService.sendBatchSseNotifications(notifications);
+
+        // then
+        then(objectMapper).should().writeValueAsString(any());
+        then(sseService).should().sendNotification(any(UUID.class), anyString());
+    }
+
+    @Test
+    void sendBatchSseNotifications_빈_리스트() throws Exception {
+        // given
+        List<Notification> notifications = List.of();
+
+        // when
+        notificationService.sendBatchSseNotifications(notifications);
+
+        // then
+        then(objectMapper).shouldHaveNoInteractions();
+        then(sseService).shouldHaveNoInteractions();
     }
 }
