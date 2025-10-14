@@ -34,7 +34,7 @@ public class ProfileFixture {
             .build();
     }
 
-    public static Profile createLocationProfile(User user, Location location) {
+    public static Profile createLocationProfile(User user, Location location, boolean weatherNotificationEnabled) {
         return Profile.builder()
                 .user(user)
                 .name(DEFAULT_USER_NAME)
@@ -42,6 +42,7 @@ public class ProfileFixture {
                 .gender(Gender.MALE)
                 .location(location)
                 .temperatureSensitivity(3.0)
+                .weatherNotificationEnabled(weatherNotificationEnabled)
                 .build();
     }
 
