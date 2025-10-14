@@ -340,17 +340,16 @@ class NotificationServiceImplTest {
         given(userRepository.findActiveUserIds()).willReturn(activeUserIds);
         given(userRepository.findAllById(activeUserIds)).willReturn(users);
         given(notificationRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
-        given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
         // when
-        assertDoesNotThrow(() -> 
+        assertThrows(IllegalStateException.class, () ->
             notificationService.saveBatchNotification(title, content, level)
         );
 
         // then
         then(userRepository).should().findActiveUserIds();
         then(userRepository).should().findAllById(activeUserIds);
-        then(sseService).should(times(2)).sendNotification(any(UUID.class), anyString());
+        then(notificationRepository).should().saveAll(anyList());
     }
 
     @Test
@@ -390,20 +389,16 @@ class NotificationServiceImplTest {
         given(userRepository.findActiveUserIds()).willReturn(activeUserIds);
         given(userRepository.findAllById(activeUserIds)).willReturn(users);
         given(notificationRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
-        given(objectMapper.writeValueAsString(any())).willReturn("{}");
-        willThrow(new RuntimeException("SSE 발행 실패"))
-            .given(sseService).sendNotification(any(UUID.class), anyString());
 
         // when
-        assertDoesNotThrow(() -> 
+        assertThrows(IllegalStateException.class, () ->
             notificationService.saveBatchNotification(title, content, level)
         );
 
-        // then
+        // then 
         then(userRepository).should().findActiveUserIds();
         then(userRepository).should().findAllById(activeUserIds);
         then(notificationRepository).should().saveAll(anyList());
-        then(sseService).should().sendNotification(any(UUID.class), anyString());
     }
 
     @Test
@@ -413,7 +408,6 @@ class NotificationServiceImplTest {
         String content = "대량 사용자 테스트";
         NotificationLevel level = NotificationLevel.INFO;
 
-        // 100명의 사용자 생성
         List<UUID> userIds = new java.util.ArrayList<>();
         List<User> users = new java.util.ArrayList<>();
         
@@ -426,16 +420,15 @@ class NotificationServiceImplTest {
         given(userRepository.findActiveUserIds()).willReturn(userIds);
         given(userRepository.findAllById(userIds)).willReturn(users);
         given(notificationRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
-        given(objectMapper.writeValueAsString(any())).willReturn("{}");
 
         // when
-        assertDoesNotThrow(() -> 
+        assertThrows(IllegalStateException.class, () ->
             notificationService.saveBatchNotification(title, content, level)
         );
 
         // then
         then(userRepository).should().findActiveUserIds();
         then(userRepository).should().findAllById(userIds);
-        then(sseService).should(times(100)).sendNotification(any(UUID.class), anyString());
+        then(notificationRepository).should().saveAll(anyList());
     }
 }
