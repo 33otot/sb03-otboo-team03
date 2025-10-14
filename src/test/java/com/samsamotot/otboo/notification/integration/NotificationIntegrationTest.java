@@ -1,6 +1,8 @@
 package com.samsamotot.otboo.notification.integration;
 
+import com.samsamotot.otboo.common.config.SecurityTestConfig;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.config.TestConfig;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.repository.NotificationRepository;
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
@@ -45,6 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
+@Import({TestConfig.class, SecurityTestConfig.class})
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("Notification 통합 테스트")

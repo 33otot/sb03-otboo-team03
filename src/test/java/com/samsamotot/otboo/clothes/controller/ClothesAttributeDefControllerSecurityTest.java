@@ -13,6 +13,7 @@ import com.samsamotot.otboo.clothes.dto.ClothesAttributeDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefUpdateRequest;
 import com.samsamotot.otboo.clothes.service.ClothesAttributeDefService;
+import com.samsamotot.otboo.common.config.SecurityTestConfig;
 import com.samsamotot.otboo.config.TestConfig;
 import java.time.Instant;
 import java.util.List;
@@ -31,7 +32,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestConfig.class)
+@Import({TestConfig.class, SecurityTestConfig.class})
 public class ClothesAttributeDefControllerSecurityTest {
 
     @Autowired
