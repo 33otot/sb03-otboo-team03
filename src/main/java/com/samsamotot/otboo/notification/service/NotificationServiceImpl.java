@@ -20,6 +20,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -98,22 +100,28 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void saveBatchNotification(String title, String content, NotificationLevel level) {
         log.info(NOTIFICATION_SERVICE + "배치 알림 저장 시작 - title: '{}', level: {}", title, level);
- 
+
         // 활성 사용자 ID만 조회
         List<UUID> userIds = userRepository.findActiveUserIds();
         log.info(NOTIFICATION_SERVICE + "총 {}명의 활성 사용자에게 알림 발송", userIds.size());
-        
+
         if (userIds.isEmpty()) {
             log.info(NOTIFICATION_SERVICE + "활성 사용자가 없어 알림 발송을 건너뜁니다");
             return;
         }
-        
+
         // 1. 배치로 알림 저장
         List<Notification> savedNotifications = saveBatchNotifications(userIds, title, content, level);
         log.info(NOTIFICATION_SERVICE + "배치 알림 저장 완료 - {}건 저장", savedNotifications.size());
-        
-        // 2. SSE 비동기 발행
-        sendBatchSseNotifications(savedNotifications);
+
+        // 2. 트랜잭션 커밋 후 SSE 발행
+        TransactionSynchronizationManager
+            .registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sendBatchSseNotifications(savedNotifications);
+                }
+            });
     }
     
     /**

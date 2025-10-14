@@ -378,7 +378,7 @@ class SseServiceImplTest {
     }
 
     @Test
-    void replay_전체_백로그_전송() throws Exception {
+    void replay_전체_백로그_전송_생략() throws Exception {
         // given
         UUID userId = UUID.randomUUID();
         UUID e1 = UUID.randomUUID();
