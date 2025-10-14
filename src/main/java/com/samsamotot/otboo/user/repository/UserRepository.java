@@ -1,8 +1,10 @@
 package com.samsamotot.otboo.user.repository;
 
+import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.custom.UserRepositoryCustom;
+import io.micrometer.core.instrument.config.validate.Validated;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,6 +30,8 @@ public interface UserRepository extends JpaRepository<User, UUID>, UserRepositor
     List<User> findByRole(Role role);
 
     List<User> findByIsLocked(Boolean locked);
+
+    Optional<User> findByProviderAndProviderId(Provider provider, String providerId);
     
     /**
      * 이메일 패턴으로 사용자 검색(관리자-사용자 관리의 이메일 검색)

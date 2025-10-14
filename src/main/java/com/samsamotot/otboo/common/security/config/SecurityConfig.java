@@ -3,6 +3,10 @@ package com.samsamotot.otboo.common.security.config;
 
 import com.samsamotot.otboo.common.security.csrf.SpaCsrfTokenRequestHandler;
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
+import com.samsamotot.otboo.oauth2.handler.OAuth2LoginSuccessHandler;
+import com.samsamotot.otboo.oauth2.service.OAuth2UserService;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -21,9 +25,6 @@ import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Spring Security 설정 클래스
@@ -60,6 +61,9 @@ import java.util.List;
 public class SecurityConfig {
     
     private final ObjectProvider<JwtAuthenticationFilter> jwtAuthenticationFilter;
+
+    private final OAuth2UserService oAuth2UserService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     
     @Value("${otboo.cors.allowed-origins:http://localhost:3000,http://localhost:8080}") 
     private String allowedOrigins;
@@ -139,9 +143,12 @@ public class SecurityConfig {
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()
             )
-            
-            // 필터 추가 (존재하는 경우에만)
-            ;
+
+            // OAuth2 로그인 설정
+            .oauth2Login(o -> o
+                .userInfoEndpoint(endpointConfig -> endpointConfig.userService(oAuth2UserService))
+                .successHandler(oAuth2LoginSuccessHandler)
+            );
 
         // JWT 인증 필터 추가 (CSRF 필터는 Spring Security가 자동으로 처리)
         JwtAuthenticationFilter jwtFilterBean = jwtAuthenticationFilter.getIfAvailable();
