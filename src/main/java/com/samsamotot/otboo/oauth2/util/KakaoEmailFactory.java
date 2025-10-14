@@ -26,10 +26,10 @@ public final class KakaoEmailFactory {
         String nn = normalizeNickname(nickname);
         if (nn.isBlank()) nn = "user";
 
-        // 1) 기본 로컬파트: {닉네임}_{id}
+        // 기본 로컬파트: {닉네임}_{id}
         String local = nn + "_" + kakaoId;
 
-        // 2) 길이 제한(local <= 64): 닉네임만 절단, id 는 보존
+        // 길이 제한(local <= 64): 닉네임만 절단, id 는 보존
         if (local.length() > MAX_LOCAL) {
             int keepForId = ("_" + kakaoId).length();
             int maxNickCodePoints = Math.max(1, MAX_LOCAL - keepForId);
@@ -37,10 +37,10 @@ public final class KakaoEmailFactory {
             local = nn + "_" + kakaoId;
         }
 
-        // 3) 최종 후보
+        // 최종 후보
         String candidate = local + DOMAIN;
 
-        // 4) 충돌 회피: 절단으로 동일해질 가능성 대비
+        // 충돌 회피: 절단으로 동일해질 가능성 대비
         int seq = 1;
         while (existsByEmail.test(candidate)) {
             String withSeq = local;

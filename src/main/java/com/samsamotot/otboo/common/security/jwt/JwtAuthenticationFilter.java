@@ -202,9 +202,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return path.startsWith("/api/auth/sign-in") ||
                 path.startsWith("/api/users") && request.getMethod().equals("POST") || // 회원가입
                 path.startsWith("/api/auth/csrf-token") ||
+                path.startsWith("/api/auth/refresh") ||
+                path.startsWith("/api/login") ||
                 path.startsWith("/api/weathers") || // 공개 API
                 path.startsWith("/actuator") || // 모니터링
                 path.startsWith("/swagger-ui") ||
-                path.startsWith("/v3/api-docs");
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/error") || // 기본 오류 페이지
+                path.startsWith(("/oauth2/authorization")) ||
+                path.startsWith("/login/oauth2") || // OAuth2 로그인 시작
+                path.startsWith("/oauth2/"); // OAuth2 콜백 및 기타
     }
 }
