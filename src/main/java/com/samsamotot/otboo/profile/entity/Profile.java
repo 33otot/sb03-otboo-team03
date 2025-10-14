@@ -40,10 +40,14 @@ public class Profile extends BaseEntity {
     private LocalDate birthDate;
 
     @Column(name = "temperature_sensitivity")
-    private Double temperatureSensitivity;
+    private Double temperatureSensitivity = 3.0;
 
     @Column(name = "profile_image_url")
     private String profileImageUrl;
+
+    @Setter
+    @Column(name = "weather_notification_enabled")
+    private boolean weatherNotificationEnabled = true;
 
     public void update(ProfileUpdateRequest request, Location location, String newImageUrl) {
         this.name = request.name();

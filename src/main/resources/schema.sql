@@ -172,6 +172,7 @@ CREATE TABLE IF NOT EXISTS profiles
     birth_date DATE,
     temperature_sensitivity DOUBLE PRECISION DEFAULT 3.0,
     profile_image_url VARCHAR(255),
+    weather_notification_enabled BOOLEAN DEFAULT TRUE NOT NULL,
 
     CONSTRAINT pk_profiles PRIMARY KEY (id),
     CONSTRAINT fk_profiles_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
