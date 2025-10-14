@@ -44,6 +44,8 @@ public enum ErrorCode {
     INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "CL007", "올바르지 않은 이미지 형식입니다."),
     IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CL008", "이미지 업로드에 실패했습니다."),
 
+    CLOTHES_EXTRACTION_FAILED(HttpStatus.BAD_REQUEST, "CL009", "지원하지 않는 사이트입니다."),
+
     // 피드 관련 에러
     FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "FD001", "피드를 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "FD002", "댓글을 찾을 수 없습니다."),

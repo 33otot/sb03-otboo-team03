@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.clothes.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -21,6 +22,7 @@ import com.samsamotot.otboo.clothes.dto.request.ClothesSearchRequest;
 import com.samsamotot.otboo.clothes.dto.request.ClothesUpdateRequest;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.exception.ClothesNotFoundException;
+import com.samsamotot.otboo.clothes.service.ClothesExtractService;
 import com.samsamotot.otboo.clothes.service.ClothesService;
 import com.samsamotot.otboo.common.config.SecurityTestConfig;
 import com.samsamotot.otboo.common.dto.CursorResponse;
@@ -39,12 +41,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 @WebMvcTest(ClothesController.class)
 @Import(SecurityTestConfig.class)
@@ -55,6 +59,9 @@ public class ClothesControllerTest {
 
     @MockitoBean
     private ClothesService clothesService;
+
+    @MockitoBean
+    private ClothesExtractService clothesExtractService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -495,6 +502,48 @@ public class ClothesControllerTest {
                 .andExpect(jsonPath("$.exceptionName").exists())
                 .andExpect(jsonPath("$.message").exists())
                 .andExpect(jsonPath("$.status").value(400));
+        }
+    }
+
+    @Nested
+    @DisplayName("구매 링크로 의상 정보 추출 컨트롤러 테스트")
+    class ClothesExtractTest {
+
+        @Test
+        void 의상_정보_추출_요청이_성공하면_200_OK와_ClothesDto를_반환한다() throws Exception {
+            // given
+            ClothesDto extractesDto = new ClothesDto(
+                null,
+                null,
+                "[무신사] 베이직 티셔츠",
+                "https://test-bucket.s3.ap-northeast-2.amazonaws.com/clothes/test.jpg",
+                null,
+                null
+            );
+
+            when(clothesExtractService.extract(anyString())).thenReturn(extractesDto);
+
+            // when & then
+            mockMvc.perform(get("/api/clothes/extractions")
+                    .param("url", "https://store.musinsa.com/product/12345")
+                    .with(user(mockPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("[무신사] 베이직 티셔츠"))
+                .andExpect(jsonPath("$.imageUrl").value("https://test-bucket.s3.ap-northeast-2.amazonaws.com/clothes/test.jpg"));
+        }
+
+        @Test
+        void 의상_정보_추출_요청_중_예외_발생_시_400_Bad_Request를_반환한다() throws Exception {
+            // given
+            when(clothesExtractService.extract(anyString()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "지원하지 않는 사이트입니다."));
+
+            // when & then
+            mockMvc.perform(get("/api/clothes/extractions")
+                    .param("url", "https://smartstore.naver.com/product/12345")
+                    .with(user(mockPrincipal)))
+                .andExpect(status().isBadRequest())
+                .andExpect(status().reason("지원하지 않는 사이트입니다."));
         }
     }
 }
