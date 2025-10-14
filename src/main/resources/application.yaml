@@ -60,6 +60,14 @@ spring:
     oauth2:
       client:
         registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            scope: profile, email
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            client-name: Google
           kakao:
             client-id: ${KAKAO_REST_API_KEY}
             client-secret: ${KAKAO_CLIENT_SECRET}
@@ -126,3 +134,7 @@ websocket:
 llm:
   reason:
     max-length: 60
+
+
+logging.level.org.springframework.security: DEBUG
+logging.level.com.samsamotot.otboo: DEBUG

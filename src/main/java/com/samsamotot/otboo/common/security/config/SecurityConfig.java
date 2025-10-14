@@ -3,6 +3,7 @@ package com.samsamotot.otboo.common.security.config;
 
 import com.samsamotot.otboo.common.security.csrf.SpaCsrfTokenRequestHandler;
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
+import com.samsamotot.otboo.oauth2.handler.OAuth2LoginFailureHandler;
 import com.samsamotot.otboo.oauth2.handler.OAuth2LoginSuccessHandler;
 import com.samsamotot.otboo.oauth2.service.OAuth2UserService;
 import java.util.Arrays;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -53,6 +55,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  *   <li>UsernamePasswordAuthenticationFilter: Spring Security 기본 인증 필터</li>
  * </ol>
  */
+@Profile("!test")
 @Slf4j
 @Configuration
 @EnableWebSecurity
@@ -62,9 +65,6 @@ public class SecurityConfig {
     
     private final ObjectProvider<JwtAuthenticationFilter> jwtAuthenticationFilter;
 
-    private final OAuth2UserService oAuth2UserService;
-    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
-    
     @Value("${otboo.cors.allowed-origins:http://localhost:3000,http://localhost:8080}") 
     private String allowedOrigins;
     
@@ -75,10 +75,15 @@ public class SecurityConfig {
     private String cookieSameSite;
     
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(
+        HttpSecurity http,
+        OAuth2UserService oAuth2UserService,
+        OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
+        OAuth2LoginFailureHandler oAuth2LoginFailureHandler
+    ) throws Exception {
         // CSRF 토큰 저장소 설정 (환경별 보안 속성 적용)
         CsrfTokenRepository csrfTokenRepository = createSecureCsrfTokenRepository();
-        
+
         http
             // CSRF 보호 활성화 (쿠키 기반)
             .csrf(csrf -> csrf
@@ -90,6 +95,7 @@ public class SecurityConfig {
                     "/api/auth/refresh",
                     "/api/users",
                     "/api/auth/csrf-token", // CSRF 토큰 조회 허용
+                    "/oauth2/**", "/login/oauth2/**",
                     "/api/weathers/**",
                     "/actuator/**",
                     "/api/sse",
@@ -103,7 +109,7 @@ public class SecurityConfig {
             
             // CORS 설정
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            
+
             // 세션 관리 (STATELESS로 설정하여 세션 사용 안함)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             
@@ -121,6 +127,7 @@ public class SecurityConfig {
                     "/api/auth/refresh",  // JWT 토큰 갱신
                     "/api/users", // 회원가입
                     "/api/auth/csrf-token",
+                    "/oauth2/**", "/login/oauth2/**",
                     "/api/weathers/**", // 공개 API (인증 불필요)
                     "/actuator/**",
                     "/swagger-ui/**",
@@ -146,7 +153,8 @@ public class SecurityConfig {
 
             // OAuth2 로그인 설정
             .oauth2Login(o -> o
-                .userInfoEndpoint(endpointConfig -> endpointConfig.userService(oAuth2UserService))
+                .userInfoEndpoint(endpointConfig -> endpointConfig
+                    .userService(oAuth2UserService))
                 .successHandler(oAuth2LoginSuccessHandler)
             );
 

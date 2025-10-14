@@ -31,6 +31,8 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class OAuth2UserService extends DefaultOAuth2UserService {
 
+    private final String SERVICE = "[OAuth2UserService] ";
+
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
 
@@ -40,6 +42,8 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     @Override
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest oAuth2UserRequest) throws OAuth2AuthenticationException {
+
+        log.debug(SERVICE + "OAuth2User 로드 시작 - ClientRegistration: {}", oAuth2UserRequest.getClientRegistration().getRegistrationId());
 
         OAuth2User oAuth2User = super.loadUser(oAuth2UserRequest);
 
@@ -89,7 +93,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 });
 
         } else {
-            // (구글 등) 이메일로 식별
+            // 그 외는 이메일로 식별
             final String resolvedEmail = info.getEmail();
             if (!StringUtils.hasText(resolvedEmail)) {
                 throw new OAuth2AuthenticationProcessingException("Email not found from OAuth2 provider");
@@ -132,11 +136,10 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
      * 기존 사용자의 정보를 업데이트합니다.
      */
     private User updateExistingUser(User existing, OAuth2UserInfoDto info) {
-        // null 덮어쓰기 방지: 필요한 필드만 업데이트
+
         if (StringUtils.hasText(info.getName())) {
             existing.updateUserInfo(info.getName());
         }
-        // 아바타 필드가 있다면 동일하게 조건부 갱신 권장
         return userRepository.save(existing);
     }
 }
