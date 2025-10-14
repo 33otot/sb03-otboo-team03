@@ -111,6 +111,28 @@ public class AsyncConfig implements AsyncConfigurer {
     }
 
     /**
+     * 이미지 다운로드 및 S3 업로드를 위한 스레드 풀 실행자를 생성합니다.
+     *
+     * <p>외부 이미지 서버로부터 다운로드를 수행하는 동안 네트워크 I/O 지연이 발생할 수 있으므로,
+     * 메인 스레드 풀과 별도로 구성합니다.</p>
+     *
+     * @param core 코어 스레드 수 (기본값: 3)
+     * @param max 최대 스레드 수 (기본값: 10)
+     * @param queue 큐 용량 (기본값: 100)
+     * @param keepAlive 유휴 스레드 유지 시간 (기본값: 60초)
+     * @return 이미지 다운로드 전용 ThreadPoolTaskExecutor
+     */
+    @Bean(name = "imageTaskExecutor")
+    public ThreadPoolTaskExecutor imageTaskExecutor(
+        @Value("${async.executors.image.core-size:3}") int core,
+        @Value("${async.executors.image.max-size:10}") int max,
+        @Value("${async.executors.image.queue-capacity:100}") int queue,
+        @Value("${async.executors.image.keep-alive-seconds:60}") int keepAlive
+    ) {
+        return buildExecutor(core, max, queue, keepAlive, "image-exec");
+    }
+
+    /**
      * 비동기 작업에서 발생한 예외를 처리하는 핸들러를 반환합니다.
      *
      * @return 로깅 기반 예외 처리 핸들러

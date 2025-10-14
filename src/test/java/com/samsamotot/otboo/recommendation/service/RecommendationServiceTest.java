@@ -31,6 +31,8 @@ import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
+
+import java.time.Month;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,6 +66,9 @@ public class RecommendationServiceTest {
 
     @Mock
     private ItemSelectorEngine itemSelectorEngine;
+
+    @Mock
+    private OpenAIEngine openAiEngine;
 
     @Mock
     private RedisTemplate<String, Object> redisTemplate;
@@ -245,6 +250,41 @@ public class RecommendationServiceTest {
         // rollCount는 0L, cooldownIds는 비어있는 상태로 호출되어야 함
         assertThat(rollCountCaptor.getValue()).isEqualTo(0L);
         assertThat(cooldownCaptor.getValue()).isEmpty();
+    }
+
+    @Test
+    void 추천이유가_정상적으로_반환된다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+
+        List<OotdDto> clothes = List.of(
+            OotdDto.builder()
+                .clothesId(UUID.randomUUID())
+                .type(ClothesType.TOP)
+                .name("테스트 상의")
+                .build()
+        );
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(clothes);
+
+        String expectedReason = "추천 이유 테스트 문구";
+        given(openAiEngine.generateRecommendationReason(
+            any(Double.class), any(Boolean.class), any(Month.class), any(Double.class), any(Double.class), any(List.class)
+        )).willReturn(expectedReason);
+
+        // when
+        RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        assertThat(result.reason()).isEqualTo(expectedReason);
+        verify(openAiEngine, times(1)).generateRecommendationReason(
+            any(Double.class), any(Boolean.class), any(Month.class), any(Double.class), any(Double.class), any(List.class)
+        );
     }
 
     @Test

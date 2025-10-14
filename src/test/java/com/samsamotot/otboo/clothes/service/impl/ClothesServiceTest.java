@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.clothes.service;
+package com.samsamotot.otboo.clothes.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -29,7 +29,6 @@ import com.samsamotot.otboo.clothes.exception.ClothesOwnerMismatchException;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
-import com.samsamotot.otboo.clothes.service.impl.ClothesServiceImpl;
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.fixture.ClothesAttributeDefFixture;
 import com.samsamotot.otboo.common.fixture.UserFixture;
