@@ -80,7 +80,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
         log.info(SERVICE_NAME + "...[통과] 알림 대상 사용자 {}명 찾음.", usersToNotify.size());
 
         // 4. [알림 발송]
-        log.info(SERVICE_NAME + "[알림 발송 시도] 모든 관문 통과!");
+        log.info(SERVICE_NAME + "[알림 발송 시도] 알림을 발송합니다.");
 
         sendNotifications(usersToNotify, changes);
     }

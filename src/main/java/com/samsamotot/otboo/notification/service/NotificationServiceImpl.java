@@ -12,8 +12,6 @@ import com.samsamotot.otboo.notification.dto.NotificationRequest;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.repository.NotificationRepository;
-import com.samsamotot.otboo.profile.entity.Profile;
-import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.sse.service.SseService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
@@ -27,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -60,7 +57,6 @@ public class NotificationServiceImpl implements NotificationService {
     private final FeedRepository feedRepository;
     private final SseService sseService;
     private final ObjectMapper objectMapper;
-    private final ProfileRepository profileRepository;
 
     /**
      * 알림을 저장하고 해당 사용자에게 SSE로 실시간 발행한다.
@@ -76,38 +72,31 @@ public class NotificationServiceImpl implements NotificationService {
     public Notification save(UUID receiverId, String title, String content, NotificationLevel level) {
 
         User receiver = userRepository.findById(receiverId)
-            .orElseThrow(() -> {
-                log.warn(NOTIFICATION_SERVICE + "인증 사용자 조회 실패: receiverId={} (DB에 없음)", receiverId);
-                return new OtbooException(ErrorCode.UNAUTHORIZED);
-            });
+                .orElseThrow(() -> {
+                    log.warn(NOTIFICATION_SERVICE + "인증 사용자 조회 실패: receiverId={} (DB에 없음)", receiverId);
+                    return new OtbooException(ErrorCode.UNAUTHORIZED);
+                });
 
-        Profile receiverProfile = profileRepository.findByUserId(receiverId)
-                .orElseThrow(() -> new OtbooException(ErrorCode.PROFILE_NOT_FOUND));
-
-        if (receiverProfile.isWeatherNotificationEnabled()) {
-            Notification notification = Notification.builder()
+        Notification notification = Notification.builder()
                 .receiver(receiver)
                 .title(title)
                 .content(content)
                 .level(level)
                 .build();
 
-            Notification saved = notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
 
-            // SSE로 실시간 발행
-            try {
-                String notificationJson = objectMapper.writeValueAsString(toDto(saved));
-                sseService.sendNotification(receiverId, notificationJson);
-                log.info(NOTIFICATION_SERVICE+" SSE 보냄 user: {}, title: '{}'", receiverId, title);
-            } catch (Exception e) {
-                log.error(NOTIFICATION_SERVICE + "SSE 발행 실패해도 알림 저장은 성공했으므로 계속 진행 user: {}", receiverId, e);
-            }
-            return saved;
-        } else {
-            log.info(NOTIFICATION_SERVICE + "사용자(id:{})가 알림을 비활성화하여 SSE를 발송하지 않음", receiverId);
-            return null;
+        // SSE로 실시간 발행
+        try {
+            String notificationJson = objectMapper.writeValueAsString(toDto(saved));
+            sseService.sendNotification(receiverId, notificationJson);
+            log.info(NOTIFICATION_SERVICE + " SSE 보냄 user: {}, title: '{}'", receiverId, title);
+        } catch (Exception e) {
+            log.error(NOTIFICATION_SERVICE + "SSE 발행 실패해도 알림 저장은 성공했으므로 계속 진행 user: {}", receiverId, e);
         }
+        return saved;
     }
+
 
     // 다른 비즈니스 로직에서의 알람
     /**
