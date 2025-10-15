@@ -4,6 +4,7 @@ import static org.springframework.http.HttpHeaders.SET_COOKIE;
 
 import com.samsamotot.otboo.common.config.SecurityProperties;
 import com.samsamotot.otboo.common.oauth2.principal.OAuth2UserPrincipal;
+import com.samsamotot.otboo.common.oauth2.repository.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.samsamotot.otboo.common.security.jwt.JwtTokenProvider;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +27,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     private final JwtTokenProvider jwtTokenProvider;
     private final SecurityProperties securityProperties;
+    private final HttpCookieOAuth2AuthorizationRequestRepository authRequestRepository;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest req, HttpServletResponse res, Authentication auth)
@@ -53,6 +55,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             .build();
         res.addHeader(SET_COOKIE, refreshTokenCookie.toString());
 
+        authRequestRepository.removeAuthorizationRequestCookies(req, res);
         // 프론트 콜백으로 리다이렉트
         res.sendRedirect("/");
     }

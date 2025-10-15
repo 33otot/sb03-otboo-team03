@@ -79,7 +79,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
-    private final String JWTAUTHFILTER = "[JwtAuthenticationFilter] ";
+    private static final String JWTAUTHFILTER = "[JwtAuthenticationFilter] ";
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
     

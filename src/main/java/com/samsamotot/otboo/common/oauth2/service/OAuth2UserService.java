@@ -77,30 +77,38 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         String providerUserId = info.getId();
         String name = info.getName();
         String imageUrl = info.getImageUrl();
-        User user;
+
+        User user = userRepository.findByProviderAndProviderId(provider, providerUserId)
+            .map(u -> updateExistingUser(u, info))
+            .orElse(null);
+
+        if (user != null) {
+            return OAuth2UserPrincipal.create(user, oAuth2User.getAttributes());
+        }
 
         if (provider == Provider.KAKAO) {
-            // 카카오는 먼저 provider+providerUserId로만 기존 유저를 확인
-            user = userRepository.findByProviderAndProviderId(provider, providerUserId)
-                .map(u -> updateExistingUser(u, info))
-                .orElseGet(() -> {
-                    // 없으면 가짜 이메일 생성
-                    final String resolvedEmail =
-                        KakaoEmailFactory.generate(name, providerUserId, userRepository::existsByEmail);
-
-                    return registerNewUser(provider, providerUserId, name, imageUrl, resolvedEmail);
-                });
-
+            // 가상 이메일 생성 (카카오는 이메일이 없을 수 있음)
+            final String generatedEmail =
+                KakaoEmailFactory.generate(name, providerUserId, userRepository::existsByEmail);
+            user = registerNewUser(provider, providerUserId, name, imageUrl, generatedEmail);
         } else {
             // 그 외는 이메일로 식별
-            final String resolvedEmail = info.getEmail();
-            if (!StringUtils.hasText(resolvedEmail)) {
+            final String email = info.getEmail();
+            if (!StringUtils.hasText(email)) {
                 throw new OtbooException(ErrorCode.OAUTH2_EMAIL_NOT_FOUND);
             }
 
-            user = userRepository.findByEmail(resolvedEmail)
+            // 구글은 이메일 검증 여부도 체크 (email_verified)
+            if (provider == Provider.GOOGLE) {
+                Object ev = info.getAttributes().get("email_verified");
+                if (!isEmailVerified(ev)) {
+                    throw new OtbooException(ErrorCode.OAUTH2_EMAIL_NOT_VERIFIED);
+                }
+            }
+
+            user = userRepository.findByEmail(email)
                 .map(u -> updateExistingUser(u, info))
-                .orElseGet(() -> registerNewUser(provider, providerUserId, name, imageUrl, resolvedEmail));
+                .orElseGet(() -> registerNewUser(provider, providerUserId, name, imageUrl, email));
         }
 
         return OAuth2UserPrincipal.create(user, oAuth2User.getAttributes());
@@ -140,5 +148,12 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
             existing.updateUserInfo(info.getName());
         }
         return userRepository.save(existing);
+    }
+
+    private boolean isEmailVerified(Object v) {
+        if (v == null) return false;
+        if (v instanceof Boolean b) return b;
+        if (v instanceof String s) return Boolean.parseBoolean(s);
+        return false;
     }
 }

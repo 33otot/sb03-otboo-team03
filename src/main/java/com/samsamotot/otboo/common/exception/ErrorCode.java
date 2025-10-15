@@ -98,7 +98,8 @@ public enum ErrorCode {
     OAUTH2_AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "OA002", "OAuth2 인증에 실패했습니다."),
     OAUTH2_USER_INFO_NOT_FOUND(HttpStatus.UNAUTHORIZED, "OA003", "OAuth2 사용자 정보를 찾을 수 없습니다."),
     OAUTH2_EMAIL_NOT_FOUND(HttpStatus.BAD_REQUEST, "OA004", "OAuth2 제공자에서 이메일을 찾을 수 없습니다."),
-    INVALID_OAUTH2_USER_INFO(HttpStatus.BAD_REQUEST, "OA005", "OAuth2 사용자 정보가 올바르지 않습니다.");
+    INVALID_OAUTH2_USER_INFO(HttpStatus.BAD_REQUEST, "OA005", "OAuth2 사용자 정보가 올바르지 않습니다."),
+    OAUTH2_EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "OA006", "OAuth2 제공자에서 이메일이 인증되지 않았습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

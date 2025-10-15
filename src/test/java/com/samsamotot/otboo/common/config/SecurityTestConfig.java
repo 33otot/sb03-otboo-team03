@@ -19,6 +19,7 @@ public class SecurityTestConfig {
                 .requestMatchers(HttpMethod.PATCH,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
+                .requestMatchers(HttpMethod.PATCH, "/api/users/profiles/notification-weathers").authenticated()
                 .requestMatchers("/api/notifications/**").authenticated()
                 .anyRequest().permitAll()
             )
