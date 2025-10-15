@@ -8,6 +8,7 @@ import com.samsamotot.otboo.common.util.CacheNames;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
@@ -32,6 +33,7 @@ public class RedisCacheConfig {
      * @param redisConnectionFactory 스프링이 자동으로 주입해주는 Redis 연결 정보
      * @return 설정이 적용된 RedisCacheManager
      */
+    @Bean
     public CacheManager redisCacheManager(RedisConnectionFactory redisConnectionFactory) {
         log.info(CONFIG_NAME + "RedisCacheManager 초기화 시작");
 
