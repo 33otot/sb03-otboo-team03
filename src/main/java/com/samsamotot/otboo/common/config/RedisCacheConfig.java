@@ -59,7 +59,6 @@ public class RedisCacheConfig {
 
         // 특정 캐시 그룹별로 다른 TTL 적용하는 Map
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
-        cacheConfigurations.put(CacheNames.WEATHER, defaultConfig.entryTtl(Duration.ofHours(1)));
         cacheConfigurations.put(CacheNames.PROFILE, defaultConfig.entryTtl(Duration.ofMinutes(30)));
         cacheConfigurations.put(CacheNames.WEATHER_DAILY, defaultConfig.entryTtl(Duration.ofHours(24)));
 

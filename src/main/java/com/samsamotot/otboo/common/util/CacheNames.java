@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CacheNames {
 
-    public static final String WEATHER = "weather";
     public static final String PROFILE = "profile";
     public static final String WEATHER_DAILY = "weather_daily";
 }
