@@ -31,6 +31,10 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  elasticsearch:
+    health-timeout-ms: 10000
+    uris: elasticsearch:9200
+
   # LLM 설정 (OpenAI)
   ai:
     openai:

@@ -88,6 +88,30 @@ public class WeatherFixture {
                 .build();
     }
 
+    public static Weather createWeatherWithSkyStatus(Grid grid, SkyStatus skyStatus) {
+        return Weather.builder()
+            .forecastAt(DEFAULT_FORECAST_AT)
+            .forecastedAt(DEFAULT_FORECASTED_AT)
+            .temperatureCurrent(DEFAULT_TEMPERATURE_CURRENT)
+            .windSpeed(DEFAULT_WIND_SPEED)
+            .humidityCurrent(DEFAULT_HUMIDITY_CURRENT)
+            .skyStatus(skyStatus)
+            .grid(grid)
+            .build();
+    }
+
+    public static Weather createWeatherWithPrecipitation(Grid grid, Precipitation precipitationType) {
+        return Weather.builder()
+            .forecastAt(DEFAULT_FORECAST_AT)
+            .forecastedAt(DEFAULT_FORECASTED_AT)
+            .temperatureCurrent(DEFAULT_TEMPERATURE_CURRENT)
+            .windSpeed(DEFAULT_WIND_SPEED)
+            .humidityCurrent(DEFAULT_HUMIDITY_CURRENT)
+            .precipitationType(precipitationType)
+            .grid(grid)
+            .build();
+    }
+
     public static WeatherDto createWeatherDto(Weather weather) {
         return WeatherDto.builder()
             .forecastAt(LocalDateTime.ofInstant(weather.getForecastAt(), ZoneOffset.UTC))
@@ -129,5 +153,18 @@ public class WeatherFixture {
                         .asWord(WindAsWord.WEAK)
                         .build())
                 .build();
+    }
+
+    public static WeatherDto createWeatherDtoWithPrecipitation(Weather weather) {
+        return WeatherDto.builder()
+            .forecastAt(LocalDateTime.ofInstant(weather.getForecastAt(), ZoneOffset.UTC))
+            .forecastedAt(LocalDateTime.ofInstant(weather.getForecastedAt(), ZoneOffset.UTC))
+            .skyStatus(weather.getSkyStatus())
+            .precipitation(
+                PrecipitationDto.builder()
+                    .type(weather.getPrecipitationType())
+                    .build()
+            )
+            .build();
     }
 }

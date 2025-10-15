@@ -1,0 +1,70 @@
+{
+  "properties": {
+    "id": {
+      "type": "keyword"
+    },
+    "createdAt": {
+      "type": "date",
+      "format": "strict_date_optional_time||epoch_millis"
+    },
+    "updatedAt": {
+      "type": "date",
+      "format": "strict_date_optional_time||epoch_millis"
+    },
+    "author": {
+      "type": "object",
+      "properties": {
+        "userId": { "type": "keyword" },
+        "name": { "type": "text", "analyzer": "nori", "search_analyzer": "nori" },
+        "profileImageUrl": { "type": "keyword" }
+      }
+    },
+    "weather": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "keyword" },
+        "forecastedAt": { "type": "date", "format": "strict_date_optional_time||epoch_millis"},
+        "forecastAt": { "type": "date", "format": "strict_date_optional_time||epoch_millis"},
+        "skyStatus": { "type": "keyword" },
+        "precipitation": {
+          "type": "object",
+          "properties": {
+            "type":        { "type": "keyword" },
+            "amount":      { "type": "float" },
+            "probability": { "type": "integer" }
+          }
+        } ,
+        "humidity": { "type": "object" },
+        "temperature": { "type": "object" },
+        "windSpeed": { "type": "object" }
+      }
+    },
+    "ootds": {
+      "type": "nested",
+      "properties": {
+        "clothesId": { "type": "keyword" },
+        "name": { "type": "text", "analyzer": "nori", "search_analyzer": "nori" },
+        "imageUrl": { "type": "keyword" },
+        "type": { "type": "keyword" },
+        "attributes": { "type": "nested" }
+      }
+    },
+    "content": {
+      "type": "text",
+      "analyzer": "nori",
+      "search_analyzer": "nori"
+    },
+    "likeCount": {
+      "type": "long"
+    },
+    "commentCount": {
+      "type": "long"
+    },
+    "likedByMe": {
+      "type": "boolean"
+    },
+    "isDeleted": {
+      "type": "boolean"
+    }
+  }
+}

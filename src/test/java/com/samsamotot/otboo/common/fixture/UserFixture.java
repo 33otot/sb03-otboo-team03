@@ -1,12 +1,11 @@
 package com.samsamotot.otboo.common.fixture;
 
+import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
-import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.Provider;
-import com.samsamotot.otboo.user.dto.AuthorDto;
+import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
-
 import java.time.Instant;
 import java.util.UUID;
 
