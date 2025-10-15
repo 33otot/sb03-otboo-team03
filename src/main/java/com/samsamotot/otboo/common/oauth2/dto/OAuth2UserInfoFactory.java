@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.common.oauth2.dto;
 
-import com.samsamotot.otboo.common.exception.OAuth2AuthenticationProcessingException;
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.user.entity.Provider;
 import java.util.Map;
 
@@ -14,7 +15,7 @@ public class OAuth2UserInfoFactory {
             case KAKAO:
                 return new KakaoOAuth2UserInfoDto(attributes);
             default:
-                throw new OAuth2AuthenticationProcessingException("INVALID PROVIDER TYPE");
+                throw new OtbooException(ErrorCode.INVALID_OAUTH2_PROVIDER);
         }
     }
 }

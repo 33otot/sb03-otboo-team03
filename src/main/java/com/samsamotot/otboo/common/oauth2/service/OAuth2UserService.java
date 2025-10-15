@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.common.oauth2.service;
 
-import com.samsamotot.otboo.common.exception.OAuth2AuthenticationProcessingException;
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.oauth2.dto.OAuth2UserInfoDto;
 import com.samsamotot.otboo.common.oauth2.dto.OAuth2UserInfoFactory;
 import com.samsamotot.otboo.common.oauth2.principal.OAuth2UserPrincipal;
@@ -96,7 +97,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
             // 그 외는 이메일로 식별
             final String resolvedEmail = info.getEmail();
             if (!StringUtils.hasText(resolvedEmail)) {
-                throw new OAuth2AuthenticationProcessingException("Email not found from OAuth2 provider");
+                throw new OtbooException(ErrorCode.OAUTH2_EMAIL_NOT_FOUND);
             }
 
             user = userRepository.findByEmail(resolvedEmail)

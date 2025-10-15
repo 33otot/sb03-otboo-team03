@@ -8,7 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.samsamotot.otboo.common.exception.OAuth2AuthenticationProcessingException;
+import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.oauth2.principal.OAuth2UserPrincipal;
 import com.samsamotot.otboo.common.oauth2.service.OAuth2UserService;
 import com.samsamotot.otboo.profile.entity.Profile;
@@ -281,8 +281,7 @@ public class OAuth2UserServiceTest {
 
             // when & then
             assertThatThrownBy(() -> oAuth2UserService.processOAuth2User(request, oAuth2User))
-                .isInstanceOf(OAuth2AuthenticationProcessingException.class)
-                .hasMessageContaining("Email not found");
+                .isInstanceOf(OtbooException.class);
         }
     }
 }

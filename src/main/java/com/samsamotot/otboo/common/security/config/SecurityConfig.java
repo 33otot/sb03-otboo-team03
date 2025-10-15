@@ -1,11 +1,11 @@
 package com.samsamotot.otboo.common.security.config;
 
 
-import com.samsamotot.otboo.common.security.csrf.SpaCsrfTokenRequestHandler;
-import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
 import com.samsamotot.otboo.common.oauth2.handler.OAuth2LoginFailureHandler;
 import com.samsamotot.otboo.common.oauth2.handler.OAuth2LoginSuccessHandler;
 import com.samsamotot.otboo.common.oauth2.service.OAuth2UserService;
+import com.samsamotot.otboo.common.security.csrf.SpaCsrfTokenRequestHandler;
+import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -16,14 +16,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -112,7 +115,12 @@ public class SecurityConfig {
 
             // 세션 관리 (STATELESS로 설정하여 세션 사용 안함)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            
+
+            // 인증 실패 시 → 401 고정 (리다이렉트 방지)
+            .exceptionHandling(e -> e.authenticationEntryPoint(
+                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+            ))
+
             // 요청별 권한 설정
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
