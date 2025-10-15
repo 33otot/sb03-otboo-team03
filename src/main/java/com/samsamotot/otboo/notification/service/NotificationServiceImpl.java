@@ -61,17 +61,17 @@ public class NotificationServiceImpl implements NotificationService {
     public Notification save(UUID receiverId, String title, String content, NotificationLevel level) {
 
         User receiver = userRepository.findById(receiverId)
-            .orElseThrow(() -> {
-                log.warn(NOTIFICATION_SERVICE + "인증 사용자 조회 실패: receiverId={} (DB에 없음)", receiverId);
-                return new OtbooException(ErrorCode.UNAUTHORIZED);
-            });
+                .orElseThrow(() -> {
+                    log.warn(NOTIFICATION_SERVICE + "인증 사용자 조회 실패: receiverId={} (DB에 없음)", receiverId);
+                    return new OtbooException(ErrorCode.UNAUTHORIZED);
+                });
 
         Notification notification = Notification.builder()
-            .receiver(receiver)
-            .title(title)
-            .content(content)
-            .level(level)
-            .build();
+                .receiver(receiver)
+                .title(title)
+                .content(content)
+                .level(level)
+                .build();
 
         Notification saved = notificationRepository.save(notification);
 
@@ -79,14 +79,12 @@ public class NotificationServiceImpl implements NotificationService {
         try {
             String notificationJson = objectMapper.writeValueAsString(toDto(saved));
             sseService.sendNotification(receiverId, notificationJson);
-            log.info(NOTIFICATION_SERVICE+" SSE 보냄 user: {}, title: '{}'", receiverId, title);
+            log.info(NOTIFICATION_SERVICE + " SSE 보냄 user: {}, title: '{}'", receiverId, title);
         } catch (Exception e) {
             log.error(NOTIFICATION_SERVICE + "SSE 발행 실패해도 알림 저장은 성공했으므로 계속 진행 user: {}", receiverId, e);
         }
-
         return saved;
     }
-
 
     /**
      * 활성 사용자(잠금되지 않은 사용자)에게만 배치로 알림을 저장하고 SSE로 실시간 발행한다.

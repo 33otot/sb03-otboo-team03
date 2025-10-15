@@ -95,6 +95,7 @@ dependencies {
 	// TestContainer
 	testImplementation 'org.testcontainers:junit-jupiter:1.19.3' // 컨테이너 기반 테스트
 	testImplementation 'org.testcontainers:postgresql:1.19.3' // PostgreSQL 컨테이너 테스트
+    testImplementation "org.testcontainers:elasticsearch:1.21.3" // Elasticsearch 컨테이너 테스트
 	
 	// Mockito
     testImplementation 'org.mockito:mockito-core' // 모킹 프레임워크
@@ -107,6 +108,9 @@ dependencies {
 
     // Direct Message
     implementation "org.springframework.security:spring-security-messaging"
+
+    // Elasticsearch
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 
     // OpenAI Chat
     implementation "org.springframework.ai:spring-ai-starter-model-openai"

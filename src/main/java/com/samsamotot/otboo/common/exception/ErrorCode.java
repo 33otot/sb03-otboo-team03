@@ -13,6 +13,7 @@ public enum ErrorCode {
     INVALID_TYPE_VALUE(HttpStatus.BAD_REQUEST, "E003", "잘못된 타입의 값입니다."),
     HANDLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "E004", "접근이 거부되었습니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "E005", "인증이 필요합니다."),
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "E006", "요청이 올바르지 않습니다"),
 
     // 사용자 관련 에러
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "US001", "사용자를 찾을 수 없습니다."),
@@ -90,7 +91,15 @@ public enum ErrorCode {
     // 커서 기반 페이지네이션 관련 에러
     INVALID_CURSOR_FORMAT(HttpStatus.BAD_REQUEST, "P001", "잘못된 커서 형식입니다."),
     INVALID_SORT_FIELD(HttpStatus.BAD_REQUEST,"P002", "지원하지 않는 정렬 필드입니다."),
-    INVALID_SORT_DIRECTION(HttpStatus.BAD_REQUEST,"P003", "지원하지 않는 정렬 방향입니다.");
+    INVALID_SORT_DIRECTION(HttpStatus.BAD_REQUEST,"P003", "지원하지 않는 정렬 방향입니다."),
+
+    // OAuth2 관련 에러
+    INVALID_OAUTH2_PROVIDER(HttpStatus.BAD_REQUEST, "OA001", "지원하지 않는 OAuth2 제공자입니다."),
+    OAUTH2_AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "OA002", "OAuth2 인증에 실패했습니다."),
+    OAUTH2_USER_INFO_NOT_FOUND(HttpStatus.UNAUTHORIZED, "OA003", "OAuth2 사용자 정보를 찾을 수 없습니다."),
+    OAUTH2_EMAIL_NOT_FOUND(HttpStatus.BAD_REQUEST, "OA004", "OAuth2 제공자에서 이메일을 찾을 수 없습니다."),
+    INVALID_OAUTH2_USER_INFO(HttpStatus.BAD_REQUEST, "OA005", "OAuth2 사용자 정보가 올바르지 않습니다."),
+    OAUTH2_EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "OA006", "OAuth2 제공자에서 이메일이 인증되지 않았습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

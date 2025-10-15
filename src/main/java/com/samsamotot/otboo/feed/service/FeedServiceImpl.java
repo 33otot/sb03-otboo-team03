@@ -11,10 +11,13 @@ import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
+import com.samsamotot.otboo.feed.dto.event.FeedDeleteEvent;
+import com.samsamotot.otboo.feed.dto.event.FeedSyncEvent;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
+import com.samsamotot.otboo.feed.repository.FeedSearchRepository;
 import com.samsamotot.otboo.notification.dto.event.FeedCreatedEvent;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
@@ -23,16 +26,19 @@ import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import jakarta.validation.Valid;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.time.format.DateTimeParseException;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 피드(Feed) 관련 비즈니스 로직을 처리하는 서비스 구현체입니다.
@@ -45,12 +51,14 @@ public class FeedServiceImpl implements FeedService {
 
     private static final String SORT_BY_CREATED_AT = "createdAt";
     private static final String SORT_BY_LIKE_COUNT = "likeCount";
+    private static final String SERVICE = "[FeedServiceImpl] ";
 
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
     private final WeatherRepository weatherRepository;
     private final ClothesRepository clothesRepository;
     private final FeedLikeRepository feedLikeRepository;
+    private final FeedSearchRepository feedSearchRepository;
     private final FeedMapper feedMapper;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -71,7 +79,7 @@ public class FeedServiceImpl implements FeedService {
         List<UUID> clothesIds = feedCreateRequest.clothesIds();
         String content = feedCreateRequest.content();
 
-        log.debug("[FeedServiceImpl] 피드 등록 시작: authorId = {}, weatherId = {}, clothesIds = {}", authorId, weatherId, clothesIds);
+        log.debug(SERVICE + "피드 등록 시작: authorId = {}, weatherId = {}, clothesIds = {}", authorId, weatherId, clothesIds);
 
         User author = userRepository.findById(authorId)
             .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND, Map.of("authorId", authorId.toString())));
@@ -108,11 +116,13 @@ public class FeedServiceImpl implements FeedService {
         Feed saved = feedRepository.save(feed);
         FeedDto result = feedMapper.toDto(saved);
 
-        log.debug("[FeedServiceImpl] 피드 등록 완료: feedId = {}", saved.getId());
+        // Elasticsearch 동기화
+        eventPublisher.publishEvent(new FeedSyncEvent(saved.getId()));
+        log.debug(SERVICE + "피드 등록 완료: feedId = {}", saved.getId());
 
         eventPublisher.publishEvent(new FeedCreatedEvent(author));
 
-        log.debug("[FeedServiceImpl] 알림 등록 완료: feedId = {}", saved.getId());
+        log.debug(SERVICE + "알림 등록 완료: feedId = {}", saved.getId());
 
         return result;
     }
@@ -130,13 +140,13 @@ public class FeedServiceImpl implements FeedService {
     @Transactional(readOnly = true)
     public CursorResponse<FeedDto> getFeeds(@Valid FeedCursorRequest request, UUID userId) {
 
-        log.debug("[FeedServiceImpl] 피드 목록 조회 시작: request = {}, userId = {}", request, userId);
+        log.debug(SERVICE + "피드 목록 조회 시작: request = {}, userId = {}", request, userId);
 
         String cursor = request.cursor();
         UUID idAfter = request.idAfter();
         Integer limit = request.limit();
-        String sortBy = request.sortBy();
-        SortDirection sortDirection = request.sortDirection();
+        String sortBy = request.sortBy() == null ? SORT_BY_CREATED_AT : request.sortBy();
+        SortDirection sortDirection = request.sortDirection() == null ? SortDirection.DESCENDING : request.sortDirection();
         String keywordLike = request.keywordLike();
         SkyStatus skyStatusEqual = request.skyStatusEqual();
         Precipitation precipitationTypeEqual = request.precipitationTypeEqual();
@@ -144,10 +154,11 @@ public class FeedServiceImpl implements FeedService {
 
         validateCursorRequest(cursor, sortBy);
 
-        List<Feed> feeds = feedRepository.findByCursor(
+        int safeLimit = (limit == null || limit <= 0) ? 20 : Math.min(limit, 50);
+        CursorResponse<FeedDto> result = feedSearchRepository.findByCursor(
             cursor,
             idAfter,
-            limit + 1,
+            safeLimit,
             sortBy,
             sortDirection,
             keywordLike,
@@ -156,30 +167,32 @@ public class FeedServiceImpl implements FeedService {
             authorIdEqual
         );
 
-        boolean hasNext = feeds.size() > limit;
-        String nextCursor = null;
-        UUID nextIdAfter = null;
+        List<FeedDto> feedDtos = result.data();
+        List<FeedDto> newFeedDtos =feedDtos;
 
-        if (hasNext) {
-            Feed lastFeed =  feeds.get(limit - 1);
-            nextCursor = resolveNextCursor(lastFeed, sortBy);
-            nextIdAfter = lastFeed.getId();
-            feeds = feeds.subList(0, limit);
-        }
+        // 현재 사용자의 좋아요 여부 반영
+        if (userId != null && !feedDtos.isEmpty()) {
+            List<UUID> feedIds = feedDtos.stream().map(FeedDto::id).toList();
+            Set<UUID> likedFeedIds = feedLikeRepository.findFeedLikeIdsByUserIdAndFeedIdIn(userId, feedIds);
+            newFeedDtos = feedDtos.stream()
+                .map(feedDto -> {
+                    if (likedFeedIds.contains(feedDto.id())) {
+                        return feedDto.toBuilder().likedByMe(true).build();
+                    }
+                    return feedDto;
+                }).toList();
+            }
 
-        long totalCount = feedRepository.countByFilter(keywordLike, skyStatusEqual, precipitationTypeEqual, authorIdEqual);
 
-        List<FeedDto> feedDtos = convertToDtos(feeds, userId);
-
-        log.info("[FeedServiceImpl] 피드 목록 조회 완료 - 조회된 피드 수:{}, hasNext: {}", feedDtos.size(), hasNext);
+        log.debug(SERVICE + "피드 목록 조회 완료 - 조회된 피드 수:{}, hasNext: {}", newFeedDtos.size(), result.hasNext());
         return new CursorResponse<>(
-            feedDtos,
-            nextCursor,
-            nextIdAfter,
-            hasNext,
-            totalCount,
-            sortBy,
-            sortDirection
+            newFeedDtos,
+            result.nextCursor(),
+            result.nextIdAfter(),
+            result.hasNext(),
+            result.totalCount(),
+            result.sortBy(),
+            result.sortDirection()
         );
     }
 
@@ -195,7 +208,7 @@ public class FeedServiceImpl implements FeedService {
     @Override
     public FeedDto update(UUID feedId, UUID userId, FeedUpdateRequest request) {
 
-        log.debug("[FeedServiceImpl] 피드 수정 시작: feedId = {}, userId = {}, request = {}", feedId, userId, request);
+        log.debug(SERVICE + "피드 수정 시작: feedId = {}, userId = {}, request = {}", feedId, userId, request);
 
         Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
@@ -207,9 +220,11 @@ public class FeedServiceImpl implements FeedService {
 
         String newContent = request.content();
         feed.updateContent(newContent);
-        log.debug("[FeedServiceImpl] 피드 수정 완료: feedId = {}, userId = {}", feedId, userId);
-
+        log.debug(SERVICE + "피드 수정 완료: feedId = {}, userId = {}", feedId, userId);
         FeedDto result = convertToDto(feed, userId);
+
+        // Elasticsearch 동기화
+        eventPublisher.publishEvent(new FeedSyncEvent(feedId));
 
         return result;
     }
@@ -227,7 +242,7 @@ public class FeedServiceImpl implements FeedService {
     @Override
     public Feed delete(UUID feedId, UUID userId) {
 
-        log.debug("[FeedServiceImpl] 피드 삭제 시작: feedId = {}, userId = {}", feedId, userId);
+        log.debug(SERVICE + "피드 삭제 시작: feedId = {}, userId = {}", feedId, userId);
 
         Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
@@ -237,15 +252,16 @@ public class FeedServiceImpl implements FeedService {
         }
 
         feed.delete();
-
-        log.debug("[FeedServiceImpl] 피드 삭제 완료: feedId = {}, userId = {}", feedId, userId);
+        // Elasticsearch에서 소프트 삭제 처리
+        eventPublisher.publishEvent(new FeedDeleteEvent(feedId));
+        log.debug(SERVICE + "피드 삭제 완료: feedId = {}, userId = {}", feedId, userId);
 
         return feed;
     }
 
     private void validateCursorRequest(String cursor, String sortBy) {
 
-        if (!sortBy.equals(SORT_BY_CREATED_AT) && !sortBy.equals(SORT_BY_LIKE_COUNT)) {
+        if (sortBy == null || (!sortBy.equals(SORT_BY_CREATED_AT) && !sortBy.equals(SORT_BY_LIKE_COUNT))) {
             throw new OtbooException(ErrorCode.INVALID_SORT_FIELD, Map.of("sortBy", sortBy));
         }
 
@@ -257,19 +273,11 @@ public class FeedServiceImpl implements FeedService {
         }
     }
 
-    private String resolveNextCursor(Feed feed, String sortBy) {
-        return switch(sortBy) {
-            case SORT_BY_CREATED_AT -> feed.getCreatedAt().toString();
-            case SORT_BY_LIKE_COUNT -> String.valueOf(feed.getLikeCount());
-            default -> throw new OtbooException(ErrorCode.INVALID_SORT_FIELD);
-        };
-    }
-
     private FeedDto convertToDto(Feed feed, UUID currentUserId) {
 
         boolean likedByMe = false;
         if (currentUserId != null) {
-            feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), currentUserId);
+            likedByMe = feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), currentUserId);
         }
         FeedDto feedDto = feedMapper.toDto(feed);
 
@@ -278,29 +286,6 @@ public class FeedServiceImpl implements FeedService {
         }
 
         return feedDto.toBuilder().likedByMe(likedByMe).build();
-    }
-
-    private List<FeedDto> convertToDtos(List<Feed> feeds, UUID currentUserId) {
-
-        if (feeds.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<UUID> feedIds = feeds.stream()
-            .map(Feed::getId)
-            .toList();
-
-        Set<UUID> likedFeedIds = (currentUserId == null)
-            ? Collections.emptySet()
-            : feedLikeRepository.findFeedLikeIdsByUserIdAndFeedIdIn(currentUserId, feedIds);
-
-        return feeds.stream()
-            .map(feed -> {
-                FeedDto dto = feedMapper.toDto(feed);
-                boolean likedByMe = (currentUserId != null) && likedFeedIds.contains(feed.getId());
-                return dto.toBuilder().likedByMe(likedByMe).build();
-            })
-            .toList();
     }
 
     private Instant parseInstant(String cursorValue) {

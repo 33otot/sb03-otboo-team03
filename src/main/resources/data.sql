@@ -634,7 +634,7 @@ INSERT INTO notifications (id, receiver_id, created_at, title, content, level) V
                                                                                    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', NOW(), '새로운 댓글', 'user_three님이 회원님의 피드에 댓글을 남겼습니다.', 'INFO'),
                                                                                    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', NOW(), '피드 좋아요', 'user_one님이 회원님의 피드를 좋아합니다.', 'INFO'),
                                                                                    (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', NOW(), '시스템 공지', '서비스 점검이 1시간 뒤에 시작됩니다.', 'WARNING'),
-                                                                                   (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', NOW(), '계정 관련', '비밀번호 변경이 필요합니다.', 'CRITICAL');
+                                                                                   (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', NOW(), '계정 관련', '비밀번호 변경이 필요합니다.', 'WARNING');
 
 -- profiles (5)
 INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity, profile_image_url) VALUES

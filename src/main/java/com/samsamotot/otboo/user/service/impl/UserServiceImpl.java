@@ -83,6 +83,8 @@ public class UserServiceImpl implements UserService {
         Profile userProfile = Profile.builder()
                 .user(user)
                 .name(user.getUsername())
+                .temperatureSensitivity(3.0)
+                .weatherNotificationEnabled(true)
                 .build();
 
         // 사용자 프로필 저장

@@ -1,6 +1,8 @@
 package com.samsamotot.otboo.sse.integration;
 
+import com.samsamotot.otboo.common.config.SecurityTestConfig;
 import com.samsamotot.otboo.common.security.jwt.JwtTokenProvider;
+import com.samsamotot.otboo.config.TestConfig;
 import com.samsamotot.otboo.sse.service.SseServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,6 +10,7 @@ import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -33,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 
 @SpringBootTest
+@Import({TestConfig.class, SecurityTestConfig.class})
 @AutoConfigureMockMvc(addFilters = false) // 보안 필터 off
 @ActiveProfiles("test")
 @Transactional
