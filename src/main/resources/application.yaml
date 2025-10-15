@@ -134,7 +134,3 @@ websocket:
 llm:
   reason:
     max-length: 60
-
-
-logging.level.org.springframework.security: DEBUG
-logging.level.com.samsamotot.otboo: DEBUG

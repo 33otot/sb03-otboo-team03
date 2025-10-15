@@ -3,6 +3,7 @@ package com.samsamotot.otboo.common.security.config;
 
 import com.samsamotot.otboo.common.oauth2.handler.OAuth2LoginFailureHandler;
 import com.samsamotot.otboo.common.oauth2.handler.OAuth2LoginSuccessHandler;
+import com.samsamotot.otboo.common.oauth2.repository.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.samsamotot.otboo.common.oauth2.service.OAuth2UserService;
 import com.samsamotot.otboo.common.security.csrf.SpaCsrfTokenRequestHandler;
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
@@ -82,7 +83,8 @@ public class SecurityConfig {
         HttpSecurity http,
         OAuth2UserService oAuth2UserService,
         OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
-        OAuth2LoginFailureHandler oAuth2LoginFailureHandler
+        OAuth2LoginFailureHandler oAuth2LoginFailureHandler,
+        HttpCookieOAuth2AuthorizationRequestRepository repository
     ) throws Exception {
         // CSRF 토큰 저장소 설정 (환경별 보안 속성 적용)
         CsrfTokenRepository csrfTokenRepository = createSecureCsrfTokenRepository();
@@ -153,6 +155,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
 
                 .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
+                // 프로필 날씨 알림 설정 변경은 인증된 유저만 가능
+                .requestMatchers(HttpMethod.PATCH, "/api/users/profiles/notification-weathers").authenticated()
 
                 .requestMatchers("/api/notifications/**").authenticated()
 
@@ -162,11 +166,12 @@ public class SecurityConfig {
 
             // OAuth2 로그인 설정
             .oauth2Login(o -> o
-                .authorizationEndpoint(a -> a.baseUri("/oauth2/authorization"))
+                .authorizationEndpoint(a -> a.authorizationRequestRepository(repository))
                 .redirectionEndpoint(r -> r.baseUri("/oauth2/callback/*"))
                 .userInfoEndpoint(endpointConfig -> endpointConfig
                     .userService(oAuth2UserService))
                 .successHandler(oAuth2LoginSuccessHandler)
+                .failureHandler(oAuth2LoginFailureHandler)
             );
 
         // JWT 인증 필터 추가 (CSRF 필터는 Spring Security가 자동으로 처리)

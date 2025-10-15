@@ -41,7 +41,6 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
      * OAuth2UserRequest를 기반으로 OAuth2User를 로드하고 처리합니다.
      */
     @Override
-    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest oAuth2UserRequest) throws OAuth2AuthenticationException {
 
         log.debug(SERVICE + "OAuth2User 로드 시작 - ClientRegistration: {}", oAuth2UserRequest.getClientRegistration().getRegistrationId());
@@ -53,7 +52,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         } catch (AuthenticationException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new InternalAuthenticationServiceException(ex.getMessage(), ex.getCause());
+            throw new InternalAuthenticationServiceException(ex.getMessage(), ex);
         }
     }
 
@@ -64,11 +63,10 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     @Transactional
     public OAuth2User processOAuth2User(OAuth2UserRequest req, OAuth2User oAuth2User) {
 
-        log.debug("[OAuth2UserService] OAuth2 사용자 정보 처리 - {}", oAuth2User.getAttributes());
-
+        log.debug(SERVICE + "OAuth2 사용자 정보 처리 시작");
         // 표준화된 사용자 정보
         Provider provider = Provider.valueOf(
-            req.getClientRegistration().getRegistrationId().trim().toUpperCase()
+            req.getClientRegistration().getRegistrationId().trim().toUpperCase(java.util.Locale.ROOT)
         );
 
         OAuth2UserInfoDto info = OAuth2UserInfoFactory.getOAuth2UserInfo(

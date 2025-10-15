@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.common.oauth2.dto;
 
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
 import java.util.Map;
 
 /**
@@ -13,7 +15,11 @@ public class KakaoOAuth2UserInfoDto extends OAuth2UserInfoDto {
 
     @Override
     public String getId() {
-        return attributes.get("id").toString();
+        Object id = attributes.get("id");
+        if (id == null) {
+            throw new OtbooException(ErrorCode.INVALID_OAUTH2_USER_INFO);
+        }
+        return id.toString();
     }
 
     @Override
@@ -29,7 +35,7 @@ public class KakaoOAuth2UserInfoDto extends OAuth2UserInfoDto {
 
     @Override
     public String getEmail() {
-        return "";
+        return null;
     }
 
     @Override

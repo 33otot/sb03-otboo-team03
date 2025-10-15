@@ -30,7 +30,7 @@ public final class KakaoEmailFactory {
         String local = nn + "_" + kakaoId;
 
         // 길이 제한(local <= 64): 닉네임만 절단, id 는 보존
-        if (local.length() > MAX_LOCAL) {
+        if (codePointLength(local) > MAX_LOCAL) {
             int keepForId = ("_" + kakaoId).length();
             int maxNickCodePoints = Math.max(1, MAX_LOCAL - keepForId);
             nn = safeTruncateByCodePoint(nn, maxNickCodePoints);

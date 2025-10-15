@@ -3,8 +3,8 @@ package com.samsamotot.otboo.common.oauth2.handler;
 import static org.springframework.http.HttpHeaders.SET_COOKIE;
 
 import com.samsamotot.otboo.common.config.SecurityProperties;
-import com.samsamotot.otboo.common.security.jwt.JwtTokenProvider;
 import com.samsamotot.otboo.common.oauth2.principal.OAuth2UserPrincipal;
+import com.samsamotot.otboo.common.security.jwt.JwtTokenProvider;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,15 +14,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OAuth2LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
+public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private final String HANDLER = "[OAuth2LoginSuccessHandler] ";
+    private static final String HANDLER = "[OAuth2LoginSuccessHandler] ";
 
     private final JwtTokenProvider jwtTokenProvider;
     private final SecurityProperties securityProperties;
@@ -39,7 +39,6 @@ public class OAuth2LoginSuccessHandler extends SavedRequestAwareAuthenticationSu
         log.debug(HANDLER + "인증된 사용자 ID: {}", userId);
 
         // 토큰 발급
-        String accessToken = jwtTokenProvider.createAccessToken(userId);
         String refreshToken = jwtTokenProvider.createRefreshToken(userId);
 
         log.debug(HANDLER + "JWT 토큰 생성 완료 - userId: {}", userId);

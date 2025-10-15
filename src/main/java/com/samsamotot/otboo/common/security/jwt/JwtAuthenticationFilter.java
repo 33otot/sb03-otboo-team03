@@ -197,10 +197,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
+
+        // Preflight 우회
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
         
         // JWT 인증을 건너뛸 경로들
         return path.startsWith("/api/auth/sign-in") ||
-                path.startsWith("/api/users") && request.getMethod().equals("POST") || // 회원가입
+                (path.startsWith("/api/users") && "POST".equals(request.getMethod())) || // 회원가입
                 path.startsWith("/api/auth/csrf-token") ||
                 path.startsWith("/api/auth/refresh") ||
                 path.startsWith("/api/login") ||
