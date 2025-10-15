@@ -67,11 +67,11 @@ public class NotificationServiceImpl implements NotificationService {
                 });
 
         Notification notification = Notification.builder()
-                .receiver(receiver)
-                .title(title)
-                .content(content)
-                .level(level)
-                .build();
+            .receiver(receiver)
+            .title(title)
+            .content(content)
+            .level(level)
+            .build();
 
         Notification saved = notificationRepository.save(notification);
 
