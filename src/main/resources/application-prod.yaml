@@ -33,6 +33,35 @@ spring:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6380}
+      ssl:
+        enabled: true
+
+  kafka:
+    bootstrap-servers: ${CONFLUENT_BOOTSTRAP_SERVERS}
+    properties:
+      security:
+        protocol: SASL_SSL
+      sasl:
+        jaas:
+          config: >
+            org.apache.kafka.common.security.plain.PlainLoginModule required
+            username="${CONFLUENT_API_KEY}"
+            password="${CONFLUENT_API_SECRET}";
+        mechanism: PLAIN
+      session.timeout.ms: 45000
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.JsonSerializer
+    consumer:
+      group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:otboo-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.JsonDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.JsonDeserializer
 
 management:
   endpoints:

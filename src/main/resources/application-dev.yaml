@@ -4,7 +4,7 @@ spring:
       on-profile: dev
     # .env 파일을 속성 소스로 추가
     import: optional:file:.env[.properties]
-  
+
   # PostgreSQL 데이터베이스 초기화
   sql:
     init:
@@ -22,6 +22,14 @@ spring:
       initialize-schema: always
     job:
       enabled: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      repositories:
+        enabled: false  # 개발 단계 Redis Repository 비활성화
 
   # PostgreSQL DB 접속 정보
   datasource:
