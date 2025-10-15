@@ -27,11 +27,11 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @RequiredArgsConstructor
 public class NotificationListener {
-    private static final String NOTIFICATION_LISTENER = "[NotificationListener] ";
 
     private final NotificationService notificationService;
     private final UserRepository userRepository;
     private final FeedRepository feedRepository;
+    private final FollowRepository followRepository;
 
     private static final String ROLE_TITLE = "권한 변경";
     private static final String CLOTHES_ATTRIBUTE_TITLE = "의상 속성 추가";
@@ -43,7 +43,6 @@ public class NotificationListener {
 
     private static final String ROLE_CONTENT = "변경된 권한을 확인하세요";
     private static final String CLOTHES_ATTRIBUTE_CONTENT = "의상 속성이 추가되었습니다.";
-    private final FollowRepository followRepository;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -51,13 +50,10 @@ public class NotificationListener {
         notificationService.save(e.currentUserId(), ROLE_TITLE, ROLE_CONTENT, NotificationLevel.INFO);
     }
 
-    // OPTIMIZE findAll() 사용됨
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onClothesAttributeCreated(ClothesAttributeCreatedEvent e) {
-        userRepository.findAll().stream().map(User::getId).forEach(userId -> {
-            notificationService.save(userId, CLOTHES_ATTRIBUTE_TITLE, CLOTHES_ATTRIBUTE_CONTENT, NotificationLevel.INFO);
-        });
+        notificationService.saveBatchNotification(CLOTHES_ATTRIBUTE_TITLE, CLOTHES_ATTRIBUTE_CONTENT, NotificationLevel.INFO);
     }
 
     @Async

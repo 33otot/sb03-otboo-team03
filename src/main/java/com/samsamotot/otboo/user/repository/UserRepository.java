@@ -67,4 +67,10 @@ public interface UserRepository extends JpaRepository<User, UUID>, UserRepositor
      */
     @Query("SELECT u.isLocked, COUNT(u) FROM User u GROUP BY u.isLocked")
     List<Object[]> countByIsLocked();
+    
+    /**
+     * 활성 사용자 ID 조회 (잠금되지 않은 사용자만)
+     */
+    @Query("SELECT u.id FROM User u WHERE u.isLocked = false")
+    List<UUID> findActiveUserIds();
 }
