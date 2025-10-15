@@ -33,6 +33,14 @@ spring:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6380}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: true # EC2 - Elastic Cache 암호화 통신 활성화
+
 
 management:
   endpoints:
