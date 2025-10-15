@@ -49,9 +49,9 @@ class WeatherAlterServiceTest {
 
     @Test
     void 기온_하강과_강수_변화_감지_시_2개의_알림_발송() {
-        Grid grid = GridFixture.createGrid();
-
         // Given: 테스트 데이터 준비
+
+        Grid grid = GridFixture.createGrid();
         Weather newWeather = WeatherFixture.createWeather(grid);
         Weather previousWeather = WeatherFixture.previousWeather(
                 grid,
@@ -68,7 +68,8 @@ class WeatherAlterServiceTest {
         newWeather.setPrecipitationType(Precipitation.RAIN); // 맑음 -> 비
 
         User user = UserFixture.createUser();
-        Profile profile = ProfileFixture.createLocationProfile(user, location);
+        Profile profile = ProfileFixture.createLocationProfile(user, location, true);
+
         List<User> usersToNotify = List.of(user);
 
         // Mock 설정

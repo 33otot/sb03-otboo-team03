@@ -21,6 +21,8 @@ import java.util.UUID;
 public interface NotificationService {
     Notification save(UUID receiverId, String title, String content, NotificationLevel level);
 
+    void saveBatchNotification(String title, String content, NotificationLevel level);
+
     NotificationListResponse getNotifications(@Valid NotificationRequest request);
 
     void delete(UUID notificationId);

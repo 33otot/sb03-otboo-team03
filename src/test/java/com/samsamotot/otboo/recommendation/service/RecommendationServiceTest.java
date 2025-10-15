@@ -31,6 +31,7 @@ import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
+
 import java.time.Month;
 import java.util.List;
 import java.util.Map;

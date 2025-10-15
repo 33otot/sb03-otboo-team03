@@ -26,6 +26,46 @@ public class WeatherFixture {
     public static final double DEFAULT_WIND_SPEED = 2.0;
     public static final double DEFAULT_HUMIDITY_CURRENT = 50.0;
 
+    // 모든 테스트에서 일관되게 사용할 Grid 객체
+    public static final Grid TEST_GRID = new Grid(60, 127);
+
+    /**
+     * 가장 기본적인 Weather 객체를 생성합니다.
+     * @param forecastAt 예보 시점
+     * @param forecastedAt 예보 발표 시점
+     * @param temp 현재 기온
+     * @param humidity 현재 습도
+     * @return Weather 객체
+     */
+    public static Weather createWeather(Instant forecastAt, Instant forecastedAt, Double temp, Double humidity) {
+        return Weather.builder()
+                .grid(TEST_GRID)
+                .forecastAt(forecastAt)
+                .forecastedAt(forecastedAt)
+                .temperatureCurrent(temp)
+                .humidityCurrent(humidity)
+                .build();
+    }
+
+    /**
+     * 최고/최저 기온 값을 포함하는 Weather 객체를 생성합니다.
+     * DB에서 값을 조회해오는 시나리오를 테스트할 때 유용합니다.
+     * @param forecastAt 예보 시점
+     * @param forecastedAt 예보 발표 시점
+     * @param maxTemp 최고 기온
+     * @param minTemp 최저 기온
+     * @return Weather 객체
+     */
+    public static Weather createWeatherWithMaxMinTemp(Instant forecastAt, Instant forecastedAt, Double maxTemp, Double minTemp) {
+        return Weather.builder()
+                .grid(TEST_GRID)
+                .forecastAt(forecastAt)
+                .forecastedAt(forecastedAt)
+                .temperatureMax(maxTemp)
+                .temperatureMin(minTemp)
+                .build();
+    }
+
     public static Weather createWeather(Grid grid) {
         return Weather.builder()
             .forecastAt(DEFAULT_FORECAST_AT)

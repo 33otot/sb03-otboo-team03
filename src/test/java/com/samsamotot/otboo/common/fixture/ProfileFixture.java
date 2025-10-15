@@ -34,7 +34,7 @@ public class ProfileFixture {
             .build();
     }
 
-    public static Profile createLocationProfile(User user, Location location) {
+    public static Profile createLocationProfile(User user, Location location, boolean weatherNotificationEnabled) {
         return Profile.builder()
                 .user(user)
                 .name(DEFAULT_USER_NAME)
@@ -42,6 +42,7 @@ public class ProfileFixture {
                 .gender(Gender.MALE)
                 .location(location)
                 .temperatureSensitivity(3.0)
+                .weatherNotificationEnabled(weatherNotificationEnabled)
                 .build();
     }
 
@@ -107,6 +108,20 @@ public class ProfileFixture {
                 .birthDate(now)
                 .temperatureSensitivity(3.0)
                 .profileImageUrl(profileImageUrl)
+                .build();
+    }
+
+    public static Profile profileWithWeatherEnabled(boolean weatherNotificationEnabled
+    ) {
+        LocalDate now = LocalDate.now();
+        return builder()
+                .user(UserFixture.createUser())
+                .location(LocationFixture.createLocation())
+                .gender(Gender.MALE)
+                .birthDate(now)
+                .temperatureSensitivity(3.0)
+                .profileImageUrl(null)
+                .weatherNotificationEnabled(weatherNotificationEnabled)
                 .build();
     }
 }

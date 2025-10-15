@@ -80,7 +80,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
         log.info(SERVICE_NAME + "...[통과] 알림 대상 사용자 {}명 찾음.", usersToNotify.size());
 
         // 4. [알림 발송]
-        log.info(SERVICE_NAME + "[알림 발송 시도] 모든 관문 통과!");
+        log.info(SERVICE_NAME + "[알림 발송 시도] 알림을 발송합니다.");
 
         sendNotifications(usersToNotify, changes);
     }
@@ -167,6 +167,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
         List<Profile> profiles = profileRepository.findAllByLocationGridId(gridId);
 
         return profiles.stream()
+                .filter(Profile::isWeatherNotificationEnabled)
                 .map(Profile::getUser)
                 .collect(Collectors.toList());
     }
@@ -194,8 +195,8 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
             double humid = changes.humidComparedToDayBefore();
             String title = String.valueOf(WeatherAlterType.HUMIDITY_CHANGE);
             String message = humid > 0 ?
-                    String.format("어제보다 습도가 %.1f도 높아요! 불쾌 지수에 유의하세요! 🥹", humid) :
-                    String.format("어제보다 습도가 %.1f도 낮아요. 즐거운 하루 되세요! ❤️", Math.abs(humid));
+                    String.format("어제보다 습도가 %.1f%%p 높아요! 불쾌 지수에 유의하세요! 🥹", humid) :
+                    String.format("어제보다 습도가 %.1f%%p 낮아요. 즐거운 하루 되세요! ❤️", Math.abs(humid));
 
             usersToNotify.forEach(user -> notificationService.save(user.getId(), title, message, NotificationLevel.INFO));
         }
