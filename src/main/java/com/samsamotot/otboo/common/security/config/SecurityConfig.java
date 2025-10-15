@@ -153,6 +153,8 @@ public class SecurityConfig {
 
             // OAuth2 로그인 설정
             .oauth2Login(o -> o
+                .authorizationEndpoint(a -> a.baseUri("/oauth2/authorization"))
+                .redirectionEndpoint(r -> r.baseUri("/oauth2/callback/*"))
                 .userInfoEndpoint(endpointConfig -> endpointConfig
                     .userService(oAuth2UserService))
                 .successHandler(oAuth2LoginSuccessHandler)

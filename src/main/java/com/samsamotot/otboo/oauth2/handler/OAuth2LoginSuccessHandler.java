@@ -39,6 +39,7 @@ public class OAuth2LoginSuccessHandler extends SavedRequestAwareAuthenticationSu
         log.debug(HANDLER + "인증된 사용자 ID: {}", userId);
 
         // 토큰 발급
+        String accessToken = jwtTokenProvider.createAccessToken(userId);
         String refreshToken = jwtTokenProvider.createRefreshToken(userId);
 
         log.debug(HANDLER + "JWT 토큰 생성 완료 - userId: {}", userId);
