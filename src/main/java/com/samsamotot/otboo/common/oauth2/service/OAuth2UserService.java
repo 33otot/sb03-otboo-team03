@@ -1,10 +1,10 @@
-package com.samsamotot.otboo.oauth2.service;
+package com.samsamotot.otboo.common.oauth2.service;
 
 import com.samsamotot.otboo.common.exception.OAuth2AuthenticationProcessingException;
-import com.samsamotot.otboo.oauth2.dto.OAuth2UserInfoDto;
-import com.samsamotot.otboo.oauth2.dto.OAuth2UserInfoFactory;
-import com.samsamotot.otboo.oauth2.principal.OAuth2UserPrincipal;
-import com.samsamotot.otboo.oauth2.util.KakaoEmailFactory;
+import com.samsamotot.otboo.common.oauth2.dto.OAuth2UserInfoDto;
+import com.samsamotot.otboo.common.oauth2.dto.OAuth2UserInfoFactory;
+import com.samsamotot.otboo.common.oauth2.principal.OAuth2UserPrincipal;
+import com.samsamotot.otboo.common.oauth2.util.KakaoEmailFactory;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.entity.Provider;

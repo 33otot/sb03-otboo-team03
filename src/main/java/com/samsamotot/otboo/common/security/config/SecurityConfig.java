@@ -3,9 +3,9 @@ package com.samsamotot.otboo.common.security.config;
 
 import com.samsamotot.otboo.common.security.csrf.SpaCsrfTokenRequestHandler;
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
-import com.samsamotot.otboo.oauth2.handler.OAuth2LoginFailureHandler;
-import com.samsamotot.otboo.oauth2.handler.OAuth2LoginSuccessHandler;
-import com.samsamotot.otboo.oauth2.service.OAuth2UserService;
+import com.samsamotot.otboo.common.oauth2.handler.OAuth2LoginFailureHandler;
+import com.samsamotot.otboo.common.oauth2.handler.OAuth2LoginSuccessHandler;
+import com.samsamotot.otboo.common.oauth2.service.OAuth2UserService;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.oauth2.principal;
+package com.samsamotot.otboo.common.oauth2.principal;
 
 import com.samsamotot.otboo.user.entity.User;
 import java.util.Collection;

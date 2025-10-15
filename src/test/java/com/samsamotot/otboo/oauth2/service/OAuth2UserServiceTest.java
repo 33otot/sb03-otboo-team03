@@ -9,7 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.samsamotot.otboo.common.exception.OAuth2AuthenticationProcessingException;
-import com.samsamotot.otboo.oauth2.principal.OAuth2UserPrincipal;
+import com.samsamotot.otboo.common.oauth2.principal.OAuth2UserPrincipal;
+import com.samsamotot.otboo.common.oauth2.service.OAuth2UserService;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.entity.Provider;

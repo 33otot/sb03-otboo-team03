@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.oauth2.handler;
+package com.samsamotot.otboo.common.oauth2.handler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.oauth2.dto;
+package com.samsamotot.otboo.common.oauth2.dto;
 
 import com.samsamotot.otboo.common.exception.OAuth2AuthenticationProcessingException;
 import com.samsamotot.otboo.user.entity.Provider;

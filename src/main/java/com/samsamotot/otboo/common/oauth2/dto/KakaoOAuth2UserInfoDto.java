@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.oauth2.dto;
+package com.samsamotot.otboo.common.oauth2.dto;
 
 import java.util.Map;
 

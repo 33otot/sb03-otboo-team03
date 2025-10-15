@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.oauth2.util;
+package com.samsamotot.otboo.common.oauth2.util;
 
 import java.text.Normalizer;
 import java.util.Objects;

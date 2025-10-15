@@ -1,10 +1,10 @@
-package com.samsamotot.otboo.oauth2.handler;
+package com.samsamotot.otboo.common.oauth2.handler;
 
 import static org.springframework.http.HttpHeaders.SET_COOKIE;
 
 import com.samsamotot.otboo.common.config.SecurityProperties;
 import com.samsamotot.otboo.common.security.jwt.JwtTokenProvider;
-import com.samsamotot.otboo.oauth2.principal.OAuth2UserPrincipal;
+import com.samsamotot.otboo.common.oauth2.principal.OAuth2UserPrincipal;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
