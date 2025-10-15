@@ -47,7 +47,7 @@ public class UserProfileControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean // @WebMvcTest의 컨트롤러가 의존하는 가짜 빈
+    @MockitoBean
     private UserService userService;
 
     @MockitoBean

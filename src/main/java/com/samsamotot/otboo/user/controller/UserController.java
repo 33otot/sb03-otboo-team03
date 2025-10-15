@@ -208,7 +208,7 @@ public class UserController implements UserApi {
      *
      * @param userDetails 현재 인증된 사용자의 상세 정보
      * @param request     날씨 알림 설정 값을 담은 요청 DTO
-     * @return 작업 성공 시 200 OK 상태코드를 담은 ResponseEntity
+     * @return 작업 성공 시 204 No Content 상태코드를 담은 ResponseEntity
      */
     @PatchMapping("/profiles/notification-weathers")
     public ResponseEntity<Void> updateWeatherNotificationEnabled(
