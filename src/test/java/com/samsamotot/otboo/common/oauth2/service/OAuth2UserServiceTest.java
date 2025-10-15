@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.oauth2.service;
+package com.samsamotot.otboo.common.oauth2.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
