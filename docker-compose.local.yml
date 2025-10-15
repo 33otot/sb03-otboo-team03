@@ -129,6 +129,8 @@ services:
       memlock:
         soft: -1
         hard: -1
+    cap_add:
+        - IPC_LOCK
     volumes:
       - esdata:/usr/share/elasticsearch/data
     ports:

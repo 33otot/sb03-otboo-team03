@@ -64,8 +64,8 @@ public class FeedSearchRepositoryImpl implements FeedSearchRepositoryCustom {
 
         // 정렬 필드/방향 설정
         String sortField = switch (sortBy) {
-            case "createdAt" -> FIELD_CREATED_AT;
-            case "likeCount" -> FIELD_LIKE_COUNT;
+            case FIELD_CREATED_AT -> FIELD_CREATED_AT;
+            case FIELD_LIKE_COUNT -> FIELD_LIKE_COUNT;
             default -> throw new OtbooException(ErrorCode.INVALID_SORT_FIELD);
         };
         boolean asc = (sortDirection == SortDirection.ASCENDING);

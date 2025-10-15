@@ -146,7 +146,7 @@ public class FeedServiceImpl implements FeedService {
         UUID idAfter = request.idAfter();
         Integer limit = request.limit();
         String sortBy = request.sortBy() == null ? SORT_BY_CREATED_AT : request.sortBy();
-        SortDirection sortDirection = request.sortDirection();
+        SortDirection sortDirection = request.sortDirection() == null ? SortDirection.DESCENDING : request.sortDirection();
         String keywordLike = request.keywordLike();
         SkyStatus skyStatusEqual = request.skyStatusEqual();
         Precipitation precipitationTypeEqual = request.precipitationTypeEqual();
