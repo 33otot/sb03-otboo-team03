@@ -10,7 +10,10 @@ import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.type.SortDirection;
+import com.samsamotot.otboo.feed.dto.FeedDto;
+import com.samsamotot.otboo.feed.dto.event.FeedSyncEvent;
 import com.samsamotot.otboo.feed.entity.Feed;
+import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
 import com.samsamotot.otboo.notification.dto.event.CommentCreatedEvent;
 import com.samsamotot.otboo.user.entity.User;
@@ -45,6 +48,7 @@ public class CommentServiceImpl implements CommentService {
     private final FeedRepository feedRepository;
     private final CommentMapper commentMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final FeedMapper feedMapper;
 
     /**
      * 새로운 댓글을 생성합니다.
@@ -78,6 +82,9 @@ public class CommentServiceImpl implements CommentService {
         feedRepository.incrementCommentCount(feedId); // 댓글 수 증가
 
         CommentDto result = commentMapper.toDto(saved);
+
+        // ElasticSearch 피드 동기화 이벤트 발행
+        eventPublisher.publishEvent(new FeedSyncEvent(feedId));
 
         log.debug(SERVICE + "댓글 생성 완료: commentId = {}", saved.getId());
 

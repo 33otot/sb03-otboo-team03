@@ -14,6 +14,7 @@ import com.samsamotot.otboo.feed.mapper.FeedDocumentMapper;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;

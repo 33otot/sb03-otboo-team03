@@ -42,7 +42,6 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
   elasticsearch:
-    uris: elasticsearch:9200
     username:
     password:
 

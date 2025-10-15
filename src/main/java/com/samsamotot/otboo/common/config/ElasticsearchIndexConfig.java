@@ -21,7 +21,7 @@ import org.springframework.data.elasticsearch.core.document.Document;
 @RequiredArgsConstructor
 public class ElasticsearchIndexConfig implements CommandLineRunner {
 
-    private final String CONFIG = "[ElasticsearchIndexConfig] ";
+    private static final String CONFIG = "[ElasticsearchIndexConfig] ";
 
     private final ElasticsearchOperations operations;
     private final ElasticsearchClient esClient;
@@ -84,6 +84,7 @@ public class ElasticsearchIndexConfig implements CommandLineRunner {
             String msg = String.valueOf(e.getMessage());
             if (msg.contains("resource_already_exists_exception")) {
                 log.warn(CONFIG + "인덱스가 이미 생성되어 있음(경쟁 상황). 계속 진행: {}", indexName);
+                return new IndexCreationStatus(indexName, false);
             } else {
                 log.error(CONFIG + "인덱스/매핑 생성 실패 → 정리 시도: {}", indexName, e);
                 try { if (indexOps.exists()) indexOps.delete(); } catch (Exception ignore) {}

@@ -24,7 +24,7 @@ public class FeedDataSyncService {
     private final FeedSearchRepository feedSearchRepository;
     private final FeedMapper feedMapper;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public void syncAllFeedsToElasticsearch() {
 
         log.debug(SERVICE + "Elasticsearch 동기화 시작");
@@ -43,20 +43,17 @@ public class FeedDataSyncService {
         }
     }
 
-    @Transactional
     public void syncFeedToElasticsearch(FeedDto feedDto) {
         FeedDocument feedDocument = convertToFeedDocument(feedDto);
         feedSearchRepository.save(feedDocument);
         log.debug(SERVICE + "Elasticsearch 동기화: {}", feedDto.id());
     }
 
-    @Transactional
     public void deleteFeedFromElasticsearch(UUID feedId) {
         feedSearchRepository.deleteById(feedId);
         log.debug(SERVICE + "Elasticsearch에서 피드 삭제: {}", feedId);
     }
 
-    @Transactional
     public void softDeleteFeedFromElasticsearch(UUID feedId) {
 
         feedSearchRepository.findById(feedId).ifPresent(feedDocument -> {
@@ -70,6 +67,7 @@ public class FeedDataSyncService {
                 .ootds(feedDocument.ootds())
                 .likeCount(feedDocument.likeCount())
                 .commentCount(feedDocument.commentCount())
+                .likedByMe(feedDocument.likedByMe())
                 .isDeleted(true) // 소프트 삭제
                 .build();
             feedSearchRepository.save(updatedDocument);
@@ -88,6 +86,7 @@ public class FeedDataSyncService {
             .ootds(feedDto.ootds())
             .likeCount(feedDto.likeCount())
             .commentCount(feedDto.commentCount())
+            .likedByMe(feedDto.likedByMe())
             .isDeleted(false)
             .build();
     }

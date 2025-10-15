@@ -61,7 +61,6 @@ public class FeedServiceImpl implements FeedService {
     private final FeedSearchRepository feedSearchRepository;
     private final FeedMapper feedMapper;
     private final ApplicationEventPublisher eventPublisher;
-    private final FeedDataSyncService feedDataSyncService;
 
     /**
      * 새로운 피드를 생성하고 저장합니다.
@@ -118,7 +117,7 @@ public class FeedServiceImpl implements FeedService {
         FeedDto result = feedMapper.toDto(saved);
 
         // Elasticsearch 동기화
-        eventPublisher.publishEvent(new FeedSyncEvent(result));
+        eventPublisher.publishEvent(new FeedSyncEvent(feed.getId()));
         log.debug(SERVICE + "피드 등록 완료: feedId = {}", saved.getId());
 
         eventPublisher.publishEvent(new FeedCreatedEvent(author));
@@ -167,8 +166,33 @@ public class FeedServiceImpl implements FeedService {
             authorIdEqual
         );
 
-        log.info(SERVICE + "피드 목록 조회 완료 - 조회된 피드 수:{}, hasNext: {}", result.data().size(), result.hasNext());
-        return result;
+        List<FeedDto> feedDtos = result.data();
+        List<FeedDto> newFeedDtos =feedDtos;
+
+        // 현재 사용자의 좋아요 여부 반영
+        if (userId != null && !feedDtos.isEmpty()) {
+            List<UUID> feedIds = feedDtos.stream().map(FeedDto::id).toList();
+            Set<UUID> likedFeedIds = feedLikeRepository.findFeedLikeIdsByUserIdAndFeedIdIn(userId, feedIds);
+            newFeedDtos = feedDtos.stream()
+                .map(feedDto -> {
+                    if (likedFeedIds.contains(feedDto.id())) {
+                        return feedDto.toBuilder().likedByMe(true).build();
+                    }
+                    return feedDto;
+                }).toList();
+            }
+
+
+        log.debug(SERVICE + "피드 목록 조회 완료 - 조회된 피드 수:{}, hasNext: {}", result.data().size(), result.hasNext());
+        return new CursorResponse<>(
+            newFeedDtos,
+            result.nextCursor(),
+            result.nextIdAfter(),
+            result.hasNext(),
+            result.totalCount(),
+            result.sortBy(),
+            result.sortDirection()
+        );
     }
 
     /**
@@ -199,7 +223,7 @@ public class FeedServiceImpl implements FeedService {
         FeedDto result = convertToDto(feed, userId);
 
         // Elasticsearch 동기화
-        eventPublisher.publishEvent(new FeedSyncEvent(result));
+        eventPublisher.publishEvent(new FeedSyncEvent(feedId));
 
         return result;
     }

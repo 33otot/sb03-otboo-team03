@@ -1,7 +1,7 @@
 package com.samsamotot.otboo.feed.dto.event;
 
-import com.samsamotot.otboo.feed.dto.FeedDto;
+import java.util.UUID;
 
-public record FeedSyncEvent(FeedDto feedDto) {
+public record FeedSyncEvent(UUID feedId) {
 
 }
