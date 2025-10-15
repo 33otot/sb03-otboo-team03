@@ -222,7 +222,7 @@ public class UserController implements UserApi {
         log.info(CONTROLLER + "프로필 알림 수신 여부 수정 완료");
 
         return ResponseEntity
-                .status(HttpStatus.OK)
+                .status(HttpStatus.NO_CONTENT)
                 .build();
     }
 }

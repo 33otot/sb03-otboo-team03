@@ -178,10 +178,13 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional
     public void updateNotificationEnabled(UUID userId, NotificationSettingUpdateRequest request) {
+        if (request == null) {
+            throw new OtbooException(ErrorCode.INVALID_REQUEST);
+        }
         log.info(SERVICE_NAME + "유저 프로필 날씨 알림 수신 여부 수정 시작 - WeatherNotificationEnabled: {}", request.weatherNotificationEnabled());
 
         Profile profile = profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new OtbooException(ErrorCode.PROFILE_NOT_FOUND));
 
         profile.setWeatherNotificationEnabled(request.weatherNotificationEnabled());
 

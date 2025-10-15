@@ -105,7 +105,7 @@ class WeatherTransactionServiceTest {
                     .forecastedAt(now)
                     .temperatureCurrent(25.0)
                     .temperatureMax(null)
-                    .temperatureMax(null)
+                    .temperatureMin(null)
                     .build();
             newWeatherList.add(weatherWithNullTemps);
 
