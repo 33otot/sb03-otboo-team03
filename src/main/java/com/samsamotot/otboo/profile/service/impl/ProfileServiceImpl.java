@@ -3,6 +3,7 @@ package com.samsamotot.otboo.profile.service.impl;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.storage.S3ImageStorage;
+import com.samsamotot.otboo.common.util.CacheNames;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.profile.dto.ProfileDto;
@@ -18,6 +19,8 @@ import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.repository.GridRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +60,7 @@ public class ProfileServiceImpl implements ProfileService {
      */
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.PROFILE, key = "#userId")
     public ProfileDto getProfileByUserId(UUID userId) {
         log.info(SERVICE_NAME + "사용자 프로필 조회 시도 - 사용자 ID: {}", userId);
 
@@ -87,6 +91,7 @@ public class ProfileServiceImpl implements ProfileService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = CacheNames.PROFILE, key = "#userId")
     public ProfileDto updateProfile(UUID userId, ProfileUpdateRequest request, MultipartFile profileImage) {
         log.info(SERVICE_NAME + "사용자 프로필 수정 시도 - 사용자 ID: {}, 사용자 이름: {}",
                 userId, request.name());
@@ -177,6 +182,7 @@ public class ProfileServiceImpl implements ProfileService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = CacheNames.PROFILE, key = "#userId")
     public void updateNotificationEnabled(UUID userId, NotificationSettingUpdateRequest request) {
         if (request == null) {
             throw new OtbooException(ErrorCode.INVALID_REQUEST);

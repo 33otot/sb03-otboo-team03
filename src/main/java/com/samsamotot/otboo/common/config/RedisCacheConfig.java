@@ -1,11 +1,13 @@
 package com.samsamotot.otboo.common.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.samsamotot.otboo.common.util.CacheNames;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -34,19 +36,13 @@ public class RedisCacheConfig {
      * @return 설정이 적용된 RedisCacheManager
      */
     @Bean
-    public CacheManager redisCacheManager(RedisConnectionFactory redisConnectionFactory) {
+    public CacheManager redisCacheManager(
+            RedisConnectionFactory redisConnectionFactory,
+            @Qualifier("redisSerializer") GenericJackson2JsonRedisSerializer redisSerializer
+    ) {
         log.info(CONFIG_NAME + "RedisCacheManager 초기화 시작");
 
-        // Java 객체를 JSON으로, JSON을 Java 객체로 변환하기 위한 직렬화(Serializer) 설정
-        PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
-                .allowIfBaseType(Object.class).build();
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule()); // LocalDate, LocalDateTime 지원
-        objectMapper.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.NON_FINAL);
-        GenericJackson2JsonRedisSerializer redisSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
-
-        // 모든 캐시에 적용될 기본 정잭(Default Configuration) 정의
+        // 모든 캐시에 적용될 기본 정잭 정의
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 // Key는 String 형태로 저장
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
@@ -59,11 +55,10 @@ public class RedisCacheConfig {
 
         // 특정 캐시 그룹별로 다른 TTL 적용하는 Map
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
-        cacheConfigurations.put(CacheNames.PROFILE, defaultConfig.entryTtl(Duration.ofMinutes(30)));
         cacheConfigurations.put(CacheNames.WEATHER_DAILY, defaultConfig.entryTtl(Duration.ofHours(24)));
+        cacheConfigurations.put(CacheNames.PROFILE, defaultConfig.entryTtl(Duration.ofMinutes(30)));
 
-
-        log.info(CONFIG_NAME + "캐시 그룹별 TTL 설정: weather(1시간), profile(30분)");
+        log.info(CONFIG_NAME + "캐시 그룹별 TTL 설정: weather_daily(24시간), profile(30분)");
 
         // 최종 CacheManager
         RedisCacheManager cacheManager = RedisCacheManager.RedisCacheManagerBuilder
