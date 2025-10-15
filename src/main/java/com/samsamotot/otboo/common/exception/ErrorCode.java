@@ -13,6 +13,7 @@ public enum ErrorCode {
     INVALID_TYPE_VALUE(HttpStatus.BAD_REQUEST, "E003", "잘못된 타입의 값입니다."),
     HANDLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "E004", "접근이 거부되었습니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "E005", "인증이 필요합니다."),
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "E006", "요청이 올바르지 않습니다"),
 
     // 사용자 관련 에러
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "US001", "사용자를 찾을 수 없습니다."),

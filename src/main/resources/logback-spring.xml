@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- Properties -->
-    <property name="LOG_PATH" value="${LOG_DIR:/logs}" />
+    <property name="LOG_PATH" value="logs" />
     <property name="LOG_FILE_NAME" value="otboo"/>
-    
+
     <!-- Console Appender -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -52,13 +52,13 @@
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
         </root>
-        
+
         <!-- Application specific loggers -->
         <logger name="com._otot.otboo" level="DEBUG" additivity="false">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
         </logger>
-        
+
         <!-- Spring Framework loggers -->
         <logger name="org.springframework.security" level="DEBUG" additivity="false">
             <appender-ref ref="CONSOLE"/>
@@ -72,7 +72,7 @@
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
         </logger>
-        
+
         <!-- Hibernate loggers -->
         <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
             <appender-ref ref="CONSOLE"/>
@@ -82,7 +82,7 @@
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
         </logger>
-        
+
         <!-- QueryDSL loggers -->
         <logger name="com.querydsl" level="DEBUG" additivity="false">
             <appender-ref ref="CONSOLE"/>
@@ -94,7 +94,7 @@
         <root level="WARN">
             <appender-ref ref="JSON_FILE"/>
         </root>
-        
+
         <!-- Application specific loggers -->
         <logger name="com._otot.otboo" level="INFO" additivity="false">
             <appender-ref ref="JSON_FILE"/>

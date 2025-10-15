@@ -6,6 +6,7 @@ import com.samsamotot.otboo.common.storage.S3ImageStorage;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.repository.LocationRepository;
 import com.samsamotot.otboo.profile.dto.ProfileDto;
+import com.samsamotot.otboo.profile.dto.NotificationSettingUpdateRequest;
 import com.samsamotot.otboo.profile.dto.ProfileUpdateRequest;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.mapper.ProfileMapper;
@@ -162,5 +163,31 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         return newImageUrl;
+    }
+
+    /**
+     * 사용자의 날씨 알림 수신 여부 설정을 업데이트합니다.
+     * <p>
+     * 요청 DTO에 포함된 weatherNotificationEnabled 값을 기반으로
+     * 대상 사용자의 프로필 설정을 변경합니다.
+     *
+     * @param userId  설정을 변경할 사용자의 ID
+     * @param request 변경할 설정값이 담긴 DTO. weatherNotificationEnabled 필드를 사용합니다.
+     * @throws OtbooException 사용자의 프로필을 찾을 수 없을 경우 PROFILE_NOT_FOUND 에러를 발생시킵니다.
+     */
+    @Override
+    @Transactional
+    public void updateNotificationEnabled(UUID userId, NotificationSettingUpdateRequest request) {
+        if (request == null) {
+            throw new OtbooException(ErrorCode.INVALID_REQUEST);
+        }
+        log.info(SERVICE_NAME + "유저 프로필 날씨 알림 수신 여부 수정 시작 - WeatherNotificationEnabled: {}", request.weatherNotificationEnabled());
+
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new OtbooException(ErrorCode.PROFILE_NOT_FOUND));
+
+        profile.setWeatherNotificationEnabled(request.weatherNotificationEnabled());
+
+        log.info(SERVICE_NAME + "유저 프로필 날씨 알림 수신 여부 수정 완료");
     }
 }

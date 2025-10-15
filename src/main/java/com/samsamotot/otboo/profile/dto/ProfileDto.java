@@ -15,7 +15,8 @@ public record ProfileDto (
         Gender gender,
         LocalDate birthDate,
         Double temperatureSensitivity,
-        String profileImageUrl
+        String profileImageUrl,
+        boolean weatherNotificationEnabled
 ) {
 
 }
