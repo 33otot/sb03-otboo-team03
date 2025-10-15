@@ -56,6 +56,7 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
     @ReadingConverter
     public static class LongToLocalDateTimeConverter implements Converter<Long, LocalDateTime> {
         @Override public LocalDateTime convert(Long source) {
+            if (source == null) return null;
             return LocalDateTime.ofInstant(Instant.ofEpochMilli(source), ZoneOffset.UTC);
         }
     }
@@ -63,37 +64,53 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
     @WritingConverter
     public static class LocalDateTimeToLongConverter implements Converter<LocalDateTime, Long> {
         @Override public Long convert(LocalDateTime source) {
+            if (source == null) return null;
             return source.toInstant(ZoneOffset.UTC).toEpochMilli();
         }
     }
 
     @ReadingConverter
     public static class LongToInstantConverter implements Converter<Long, Instant> {
-        @Override public Instant convert(Long source) { return Instant.ofEpochMilli(source); }
+        @Override public Instant convert(Long source) {
+            return source == null ? null : Instant.ofEpochMilli(source);
+        }
     }
 
     @WritingConverter
     public static class InstantToLongConverter implements Converter<Instant, Long> {
-        @Override public Long convert(Instant source) { return source.toEpochMilli(); }
+        @Override public Long convert(Instant source) {
+            return source == null ? null : source.toEpochMilli();
+        }
     }
 
     @ReadingConverter
     public static class StringToLocalDateTimeConverter implements Converter<String, LocalDateTime> {
         @Override public LocalDateTime convert(String s) {
+            if (s == null || s.isBlank()) return null;
             try { return LocalDateTime.ofInstant(Instant.parse(s), ZoneOffset.UTC); }
-            catch (Exception ignore) { }
-            LocalDateTime ldt = LocalDateTime.parse(s, DateTimeFormatter.ISO_DATE_TIME);
-            return ldt.withNano((ldt.getNano() / 1_000_000) * 1_000_000);
+            catch (Exception e) {
+                try {
+                    LocalDateTime ldt = LocalDateTime.parse(s, DateTimeFormatter.ISO_DATE_TIME);
+                    return ldt.withNano((ldt.getNano() / 1_000_000) * 1_000_000);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("Cannot parse date string: " + s, ex);
+                }
+            }
         }
     }
 
     @ReadingConverter
     public static class StringToInstantConverter implements Converter<String, Instant> {
         @Override public Instant convert(String s) {
+            if (s == null || s.isBlank()) return null;
             try { return Instant.parse(s); }
             catch (Exception e) {
-                LocalDateTime ldt = LocalDateTime.parse(s, DateTimeFormatter.ISO_DATE_TIME);
-                return ldt.toInstant(ZoneOffset.UTC);
+                try {
+                    LocalDateTime ldt = LocalDateTime.parse(s, DateTimeFormatter.ISO_DATE_TIME);
+                    return ldt.toInstant(ZoneOffset.UTC);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("Cannot parse instant string: " + s, ex);
+                }
             }
         }
     }

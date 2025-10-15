@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FeedDataSyncService {
 
-    private final String SERVICE = "[FeedDataSyncService] ";
+    private static final String SERVICE = "[FeedDataSyncService] ";
 
     private final FeedRepository feedRepository;
     private final FeedSearchRepository feedSearchRepository;
@@ -43,21 +43,19 @@ public class FeedDataSyncService {
         }
     }
 
-    @Transactional
     public void syncFeedToElasticsearch(FeedDto feedDto) {
         FeedDocument feedDocument = convertToFeedDocument(feedDto);
         feedSearchRepository.save(feedDocument);
         log.debug(SERVICE + "Elasticsearch 동기화: {}", feedDto.id());
     }
 
-    @Transactional
     public void deleteFeedFromElasticsearch(UUID feedId) {
         feedSearchRepository.deleteById(feedId);
         log.debug(SERVICE + "Elasticsearch에서 피드 삭제: {}", feedId);
     }
 
-    @Transactional
     public void softDeleteFeedFromElasticsearch(UUID feedId) {
+
         feedSearchRepository.findById(feedId).ifPresent(feedDocument -> {
             FeedDocument updatedDocument = FeedDocument.builder()
                 .id(feedDocument.id())
@@ -88,7 +86,7 @@ public class FeedDataSyncService {
             .ootds(feedDto.ootds())
             .likeCount(feedDto.likeCount())
             .commentCount(feedDto.commentCount())
-            .likedByMe(feedDto.likedByMe())
+            .likedByMe(false)
             .isDeleted(false)
             .build();
     }

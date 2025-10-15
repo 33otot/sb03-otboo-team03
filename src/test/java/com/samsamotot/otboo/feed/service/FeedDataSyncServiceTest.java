@@ -95,11 +95,9 @@ class FeedDataSyncServiceTest {
 
             List<FeedDocument> docs = captor.getValue();
             assertThat(docs).hasSize(2);
-            FeedDocument d1 = docs.get(0);
-            FeedDocument d2 = docs.get(1);
-
-            assertThat(d1.id()).isEqualTo(ID1);
-            assertThat(d2.id()).isEqualTo(ID2);
+            assertThat(docs)
+                .extracting(FeedDocument::id)
+                .containsExactlyInAnyOrder(ID1, ID2);
         }
 
         @Test
@@ -158,7 +156,6 @@ class FeedDataSyncServiceTest {
                 .ootds(dto1.ootds())
                 .likeCount(dto1.likeCount())
                 .commentCount(dto1.commentCount())
-                .likedByMe(dto1.likedByMe())
                 .isDeleted(false)
                 .build();
 

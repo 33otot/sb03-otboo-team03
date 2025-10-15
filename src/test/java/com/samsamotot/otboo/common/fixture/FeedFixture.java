@@ -9,7 +9,6 @@ import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.entity.Weather;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -122,7 +121,6 @@ public class FeedFixture {
             .commentCount(feed.getCommentCount())
             .ootds(List.of())
             .weather(WeatherFixture.createWeatherDto(feed.getWeather()))
-            .likedByMe(false)
             .createdAt(feed.getCreatedAt())
             .updatedAt(feed.getUpdatedAt())
             .isDeleted(feed.isDeleted())
@@ -138,14 +136,13 @@ public class FeedFixture {
             .commentCount(feed.getCommentCount())
             .ootds(List.of())
             .weather(WeatherFixture.createWeatherDto(feed.getWeather()))
-            .likedByMe(false)
             .createdAt(feed.getCreatedAt())
             .updatedAt(feed.getUpdatedAt())
             .isDeleted(true)
             .build();
     }
 
-    public static FeedDocument createfeedDocumentWithContent(Feed feed, String content) {
+    public static FeedDocument createFeedDocumentWithContent(Feed feed, String content) {
         return FeedDocument.builder()
             .id(feed.getId())
             .author(UserFixture.createAuthorDto(feed.getAuthor()))
@@ -154,7 +151,6 @@ public class FeedFixture {
             .commentCount(feed.getCommentCount())
             .ootds(List.of())
             .weather(WeatherFixture.createWeatherDto(feed.getWeather()))
-            .likedByMe(false)
             .createdAt(feed.getCreatedAt())
             .updatedAt(feed.getUpdatedAt())
             .isDeleted(feed.isDeleted())
@@ -170,7 +166,6 @@ public class FeedFixture {
             .commentCount(feed.getCommentCount())
             .ootds(List.of())
             .weather(WeatherFixture.createWeatherDtoWithPrecipitation(feed.getWeather()))
-            .likedByMe(false)
             .createdAt(feed.getCreatedAt())
             .updatedAt(feed.getUpdatedAt())
             .isDeleted(feed.isDeleted())

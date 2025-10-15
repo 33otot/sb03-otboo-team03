@@ -14,6 +14,7 @@ import com.samsamotot.otboo.feed.mapper.FeedDocumentMapper;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
@@ -63,8 +64,8 @@ public class FeedSearchRepositoryImpl implements FeedSearchRepositoryCustom {
 
         // 정렬 필드/방향 설정
         String sortField = switch (sortBy) {
-            case "createdAt" -> FIELD_CREATED_AT;
-            case "likeCount" -> FIELD_LIKE_COUNT;
+            case FIELD_CREATED_AT -> FIELD_CREATED_AT;
+            case FIELD_LIKE_COUNT -> FIELD_LIKE_COUNT;
             default -> throw new OtbooException(ErrorCode.INVALID_SORT_FIELD);
         };
         boolean asc = (sortDirection == SortDirection.ASCENDING);
@@ -85,7 +86,8 @@ public class FeedSearchRepositoryImpl implements FeedSearchRepositoryCustom {
             log.info(REPOSITORY + "search_after 값: {}", searchAfter);
         }
 
-        int pageSize = Math.max(1, limit) + 1;
+        int effectiveLimit = Math.max(1, limit);
+        int pageSize = effectiveLimit + 1;
 
         // NativeQuery 조립: 필터 + 정렬 + 페이지(size) + search_after
         NativeQueryBuilder nq = NativeQuery.builder()
@@ -112,15 +114,15 @@ public class FeedSearchRepositoryImpl implements FeedSearchRepositoryCustom {
             .map(feedDocumentMapper::toDto)
             .collect(Collectors.toList());
 
-        boolean hasNext = feedDtos.size() > limit;
+        boolean hasNext = feedDtos.size() > effectiveLimit;
         String nextCursor = null;
         UUID nextIdAfter = null;
 
         if (hasNext) {
-            FeedDto lastFeedDto =  feedDtos.get(limit - 1);
+            FeedDto lastFeedDto =  feedDtos.get(effectiveLimit - 1);
             nextCursor = resolveNextCursor(lastFeedDto, sortBy);
             nextIdAfter = lastFeedDto.id();
-            feedDtos = feedDtos.subList(0, limit);
+            feedDtos = feedDtos.subList(0, effectiveLimit);
         }
 
         long totalCount = countByFilter(keywordLike, skyStatusEqual, precipitationTypeEqual, authorIdEqual);
@@ -158,9 +160,9 @@ public class FeedSearchRepositoryImpl implements FeedSearchRepositoryCustom {
         bool.must(m -> m.term(t -> t.field("isDeleted").value(false)));
 
         if (StringUtils.hasText(keywordLike)) {
-            bool.must(m -> m.multiMatch(mm -> mm
+            bool.must(m -> m.match(mm -> mm
+                .field(FIELD_CONTENT)
                 .query(keywordLike)
-                .fields(List.of(FIELD_CONTENT))
                 .fuzziness("AUTO")
                 .lenient(true)
             ));
