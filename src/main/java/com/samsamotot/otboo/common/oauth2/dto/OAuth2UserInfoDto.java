@@ -23,4 +23,15 @@ public abstract class OAuth2UserInfoDto {
     public abstract String getEmail();
 
     public abstract String getImageUrl();
+
+    public boolean isEmailVerified() {
+        Object verified = attributes.get("email_verified");
+        if (verified instanceof Boolean) {
+            return (Boolean) verified;
+        }
+        if (verified instanceof String) {
+            return Boolean.parseBoolean((String) verified);
+        }
+        return false;
+    }
 }

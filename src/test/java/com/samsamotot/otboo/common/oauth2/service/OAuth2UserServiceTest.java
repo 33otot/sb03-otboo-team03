@@ -101,6 +101,7 @@ public class OAuth2UserServiceTest {
         attrs.put("email", email);
         attrs.put("name", name);
         attrs.put("picture", picture);
+        attrs.put("email_verified", true);
         return new DefaultOAuth2User(
             List.of(new SimpleGrantedAuthority("ROLE_USER")),
             attrs,

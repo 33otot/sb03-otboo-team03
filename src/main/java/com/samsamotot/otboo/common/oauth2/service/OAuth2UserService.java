@@ -32,7 +32,7 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class OAuth2UserService extends DefaultOAuth2UserService {
 
-    private final String SERVICE = "[OAuth2UserService] ";
+    private static final String SERVICE = "[OAuth2UserService] ";
 
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
@@ -65,9 +65,14 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 
         log.debug(SERVICE + "OAuth2 사용자 정보 처리 시작");
         // 표준화된 사용자 정보
-        Provider provider = Provider.valueOf(
-            req.getClientRegistration().getRegistrationId().trim().toUpperCase(java.util.Locale.ROOT)
-        );
+        Provider provider;
+        try {
+            provider = Provider.valueOf(
+                req.getClientRegistration().getRegistrationId().trim().toUpperCase(java.util.Locale.ROOT)
+            );
+        } catch (IllegalArgumentException e) {
+            throw new OtbooException(ErrorCode.INVALID_OAUTH2_PROVIDER);
+        }
 
         OAuth2UserInfoDto info = OAuth2UserInfoFactory.getOAuth2UserInfo(
             provider,
@@ -83,32 +88,49 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
             .orElse(null);
 
         if (user != null) {
+            log.debug(SERVICE + "기존 OAuth 사용자 발견 - provider: {}, providerId: {}", provider, providerUserId);
             return OAuth2UserPrincipal.create(user, oAuth2User.getAttributes());
         }
 
+        String email;
         if (provider == Provider.KAKAO) {
             // 가상 이메일 생성 (카카오는 이메일이 없을 수 있음)
-            final String generatedEmail =
-                KakaoEmailFactory.generate(name, providerUserId, userRepository::existsByEmail);
-            user = registerNewUser(provider, providerUserId, name, imageUrl, generatedEmail);
+            email = KakaoEmailFactory.generate(name, providerUserId, userRepository::existsByEmail);
+            log.debug(SERVICE + "Kakao 사용자 이메일 생성: {}", email);
+
+            user = registerNewUser(provider, providerUserId, name, imageUrl, email);
         } else {
             // 그 외는 이메일로 식별
-            final String email = info.getEmail();
+            email = info.getEmail();
             if (!StringUtils.hasText(email)) {
                 throw new OtbooException(ErrorCode.OAUTH2_EMAIL_NOT_FOUND);
             }
 
             // 구글은 이메일 검증 여부도 체크 (email_verified)
-            if (provider == Provider.GOOGLE) {
-                Object ev = info.getAttributes().get("email_verified");
-                if (!isEmailVerified(ev)) {
-                    throw new OtbooException(ErrorCode.OAUTH2_EMAIL_NOT_VERIFIED);
-                }
+            if (provider == Provider.GOOGLE && !info.isEmailVerified()) {
+                throw new OtbooException(ErrorCode.OAUTH2_EMAIL_NOT_VERIFIED);
             }
 
             user = userRepository.findByEmail(email)
-                .map(u -> updateExistingUser(u, info))
-                .orElseGet(() -> registerNewUser(provider, providerUserId, name, imageUrl, email));
+                .map(existingUser -> {
+                    // 이미 다른 OAuth provider로 연동되어 있는지 확인
+                    if (existingUser.getProviderId() != null &&
+                        !existingUser.getProvider().equals(provider)) {
+                        log.warn(SERVICE + "사용자가 이미 다른 OAuth provider로 연동됨 - 기존: {}, 요청: {}",
+                            existingUser.getProvider(), provider);
+                        throw new OtbooException(ErrorCode.OAUTH2_AUTHENTICATION_FAILED);
+                    }
+
+                    // OAuth 계정 연동 및 정보 업데이트
+                    log.debug(SERVICE + "기존 사용자에 OAuth 계정 연동 - email: {}, provider: {}", email,
+                        provider);
+                    return linkAndUpdateUser(existingUser, provider, providerUserId, info);
+                })
+                .orElseGet(() -> {
+                    // 새 사용자 등록
+                    log.debug(SERVICE + "신규 OAuth 사용자 등록 - email: {}, provider: {}", email, provider);
+                    return registerNewUser(provider, providerUserId, name, imageUrl, email);
+                });
         }
 
         return OAuth2UserPrincipal.create(user, oAuth2User.getAttributes());
@@ -140,6 +162,21 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     }
 
     /**
+     * 기존 사용자에 OAuth 계정을 연동하고 정보를 업데이트합니다.
+     */
+    private User linkAndUpdateUser(User existing, Provider provider, String providerId, OAuth2UserInfoDto info) {
+        // OAuth 계정 연동
+        existing.linkOAuthAccount(provider, providerId);
+
+        // 사용자 정보 업데이트
+        if (StringUtils.hasText(info.getName())) {
+            existing.updateUserInfo(info.getName());
+        }
+
+        return userRepository.save(existing);
+    }
+
+    /**
      * 기존 사용자의 정보를 업데이트합니다.
      */
     private User updateExistingUser(User existing, OAuth2UserInfoDto info) {
@@ -148,12 +185,5 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
             existing.updateUserInfo(info.getName());
         }
         return userRepository.save(existing);
-    }
-
-    private boolean isEmailVerified(Object v) {
-        if (v == null) return false;
-        if (v instanceof Boolean b) return b;
-        if (v instanceof String s) return Boolean.parseBoolean(s);
-        return false;
     }
 }

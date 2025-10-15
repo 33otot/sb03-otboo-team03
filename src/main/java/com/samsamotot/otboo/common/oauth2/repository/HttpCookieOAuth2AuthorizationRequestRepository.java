@@ -1,6 +1,5 @@
 package com.samsamotot.otboo.common.oauth2.repository;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.config.SecurityProperties;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +26,6 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements
     private static final int COOKIE_EXPIRE_SECONDS = 180; // 3분
     public static final String REPOSITORY = "[HttpCookieOAuth2AuthorizationRequestRepository] ";
 
-    private final ObjectMapper objectMapper;
     private final SecurityProperties securityProperties;
 
 
