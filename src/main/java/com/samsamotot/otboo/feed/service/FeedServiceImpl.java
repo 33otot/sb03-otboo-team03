@@ -11,6 +11,8 @@ import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
+import com.samsamotot.otboo.feed.dto.event.FeedDeleteEvent;
+import com.samsamotot.otboo.feed.dto.event.FeedSyncEvent;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
@@ -24,10 +26,8 @@ import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import jakarta.validation.Valid;
-import java.awt.Cursor;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -116,9 +116,9 @@ public class FeedServiceImpl implements FeedService {
 
         Feed saved = feedRepository.save(feed);
         FeedDto result = feedMapper.toDto(saved);
-        // Elasticsearch 동기화
-        feedDataSyncService.syncFeedToElasticsearch(result);
 
+        // Elasticsearch 동기화
+        eventPublisher.publishEvent(new FeedSyncEvent(result));
         log.debug(SERVICE + "피드 등록 완료: feedId = {}", saved.getId());
 
         eventPublisher.publishEvent(new FeedCreatedEvent(author));
@@ -158,7 +158,7 @@ public class FeedServiceImpl implements FeedService {
         CursorResponse<FeedDto> result = feedSearchRepository.findByCursor(
             cursor,
             idAfter,
-            limit + 1,
+            limit,
             sortBy,
             sortDirection,
             keywordLike,
@@ -196,10 +196,10 @@ public class FeedServiceImpl implements FeedService {
         String newContent = request.content();
         feed.updateContent(newContent);
         log.debug(SERVICE + "피드 수정 완료: feedId = {}, userId = {}", feedId, userId);
-
         FeedDto result = convertToDto(feed, userId);
+
         // Elasticsearch 동기화
-        feedDataSyncService.syncFeedToElasticsearch(result);
+        eventPublisher.publishEvent(new FeedSyncEvent(result));
 
         return result;
     }
@@ -228,8 +228,7 @@ public class FeedServiceImpl implements FeedService {
 
         feed.delete();
         // Elasticsearch에서 소프트 삭제 처리
-        feedDataSyncService.softDeleteFeedFromElasticsearch(feedId);
-
+        eventPublisher.publishEvent(new FeedDeleteEvent(feedId));
         log.debug(SERVICE + "피드 삭제 완료: feedId = {}, userId = {}", feedId, userId);
 
         return feed;
@@ -237,7 +236,7 @@ public class FeedServiceImpl implements FeedService {
 
     private void validateCursorRequest(String cursor, String sortBy) {
 
-        if (!sortBy.equals(SORT_BY_CREATED_AT) && !sortBy.equals(SORT_BY_LIKE_COUNT)) {
+        if (sortBy == null || (!sortBy.equals(SORT_BY_CREATED_AT) && !sortBy.equals(SORT_BY_LIKE_COUNT))) {
             throw new OtbooException(ErrorCode.INVALID_SORT_FIELD, Map.of("sortBy", sortBy));
         }
 
@@ -253,7 +252,7 @@ public class FeedServiceImpl implements FeedService {
 
         boolean likedByMe = false;
         if (currentUserId != null) {
-            feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), currentUserId);
+            likedByMe = feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), currentUserId);
         }
         FeedDto feedDto = feedMapper.toDto(feed);
 

@@ -92,7 +92,9 @@ public class FeedIntegrationTest {
     static ElasticsearchContainer es =
         new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.14.0")
             .withEnv("discovery.type", "single-node")
-            .withEnv("xpack.security.enabled", "false");
+            .withEnv("xpack.security.enabled", "false")
+            .withCommand("sh", "-c",
+                "bin/elasticsearch-plugin install analysis-nori --batch && exec /usr/local/bin/docker-entrypoint.sh");
 
     @DynamicPropertySource
     static void overrideProps(DynamicPropertyRegistry reg) {

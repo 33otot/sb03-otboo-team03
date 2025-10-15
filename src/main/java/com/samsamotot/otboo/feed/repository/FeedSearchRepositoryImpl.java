@@ -158,9 +158,9 @@ public class FeedSearchRepositoryImpl implements FeedSearchRepositoryCustom {
         bool.must(m -> m.term(t -> t.field("isDeleted").value(false)));
 
         if (StringUtils.hasText(keywordLike)) {
-            bool.must(m -> m.multiMatch(mm -> mm
+            bool.must(m -> m.match(mm -> mm
+                .field(FIELD_CONTENT)
                 .query(keywordLike)
-                .fields(List.of(FIELD_CONTENT))
                 .fuzziness("AUTO")
                 .lenient(true)
             ));

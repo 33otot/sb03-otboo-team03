@@ -140,13 +140,16 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
     restart: unless-stopped
     command: >
       /bin/bash -c "
         if [ ! -f /usr/share/elasticsearch/plugins/analysis-nori/plugin-descriptor.properties ]; then
           echo 'Installing analysis-nori plugin...' && \
-          bin/elasticsearch-plugin install --batch analysis-nori;
+          bin/elasticsearch-plugin install --batch analysis-nori || {
+            echo 'Failed to install nori plugin'; 
+            exit 1; 
+          };
         fi;
         elasticsearch;
       "

@@ -26,6 +26,8 @@ import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
+import com.samsamotot.otboo.feed.dto.event.FeedDeleteEvent;
+import com.samsamotot.otboo.feed.dto.event.FeedSyncEvent;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.entity.FeedClothes;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
@@ -151,7 +153,7 @@ public class FeedServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.id()).isEqualTo(expectedDto.id());
             assertThat(result.content()).isEqualTo(expectedDto.content());
-            verify(feedDataSyncService).syncFeedToElasticsearch(any(FeedDto.class));
+            verify(eventPublisher).publishEvent(any(FeedSyncEvent.class));
             verify(eventPublisher).publishEvent(any(FeedCreatedEvent.class));
         }
 
@@ -267,7 +269,7 @@ public class FeedServiceTest {
             verify(feedSearchRepository).findByCursor(
                 isNull(String.class),
                 isNull(UUID.class),
-                eq(request.limit() + 1),
+                eq(request.limit()),
                 eq(request.sortBy()),
                 eq(request.sortDirection()),
                 isNull(String.class),
@@ -314,7 +316,7 @@ public class FeedServiceTest {
             verify(feedSearchRepository).findByCursor(
                 isNull(String.class),
                 isNull(UUID.class),
-                eq(request.limit() + 1),
+                eq(request.limit()),
                 eq(request.sortBy()),
                 eq(request.sortDirection()),
                 isNull(String.class),
@@ -353,7 +355,7 @@ public class FeedServiceTest {
             verify(feedSearchRepository).findByCursor(
                 isNull(String.class),
                 isNull(UUID.class),
-                eq(request.limit() + 1),
+                eq(request.limit()),
                 eq(request.sortBy()),
                 eq(request.sortDirection()),
                 isNull(String.class),
@@ -393,7 +395,7 @@ public class FeedServiceTest {
             verify(feedSearchRepository).findByCursor(
                 isNull(String.class),
                 isNull(UUID.class),
-                eq(request.limit() + 1),
+                eq(request.limit()),
                 eq(request.sortBy()),
                 eq(request.sortDirection()),
                 isNull(String.class),
@@ -438,7 +440,7 @@ public class FeedServiceTest {
             verify(feedSearchRepository).findByCursor(
                 eq(request.cursor()),
                 eq(request.idAfter()),
-                eq(request.limit() + 1),
+                eq(request.limit()),
                 eq(request.sortBy()),
                 eq(request.sortDirection()),
                 eq(request.keywordLike()),
@@ -527,7 +529,7 @@ public class FeedServiceTest {
             verify(feedSearchRepository).findByCursor(
                 isNull(String.class),
                 isNull(UUID.class),
-                eq(request.limit() + 1),
+                eq(request.limit()),
                 eq(request.sortBy()),
                 eq(request.sortDirection()),
                 eq(request.keywordLike()),
@@ -589,7 +591,7 @@ public class FeedServiceTest {
             assertThat(result.id()).isEqualTo(feedId);
             assertThat(result.content()).isEqualTo(updateContent);
             assertThat(result.author().userId()).isEqualTo(authorId);
-            verify(feedDataSyncService).syncFeedToElasticsearch(any(FeedDto.class));
+            verify(eventPublisher).publishEvent(any(FeedSyncEvent.class));
         }
 
         @Test
@@ -660,7 +662,7 @@ public class FeedServiceTest {
             // then
             assertThat(result).isNotNull();
             assertThat(result.isDeleted()).isTrue();
-            verify(feedDataSyncService).softDeleteFeedFromElasticsearch(feedId);
+            verify(eventPublisher).publishEvent(any(FeedDeleteEvent.class));
         }
 
         @Test

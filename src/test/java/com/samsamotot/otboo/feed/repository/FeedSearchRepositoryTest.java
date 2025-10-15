@@ -113,7 +113,6 @@ class FeedSearchRepositoryTest {
                 .content(d.content())
                 .likeCount(d.likeCount())
                 .commentCount(d.commentCount())
-                .likedByMe(d.likedByMe())
                 .createdAt(d.createdAt())
                 .updatedAt(d.updatedAt())
                 .build();
@@ -188,7 +187,7 @@ class FeedSearchRepositoryTest {
         // 조건 검증용 문서
         Feed target = FeedFixture.createFeed(mockUser, mockWeather);
         ReflectionTestUtils.setField(target, "id", UUID.randomUUID());
-        FeedDocument targetDoc = FeedFixture.createfeedDocumentWithContent(target, "검색전용12345");
+        FeedDocument targetDoc = FeedFixture.createFeedDocumentWithContent(target, "검색전용12345");
         IndexOperations indexOps = operations.indexOps(FeedDocument.class);
         operations.save(targetDoc);
         indexOps.refresh();

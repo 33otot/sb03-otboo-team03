@@ -60,9 +60,6 @@
     "commentCount": {
       "type": "long"
     },
-    "likedByMe": {
-      "type": "boolean"
-    },
     "isDeleted": {
       "type": "boolean"
     }

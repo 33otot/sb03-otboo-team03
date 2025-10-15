@@ -32,7 +32,6 @@ public record FeedDocument(
     String content,
     long likeCount,
     long commentCount,
-    boolean likedByMe,
     boolean isDeleted
 ) {
 }

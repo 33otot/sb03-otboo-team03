@@ -33,24 +33,29 @@ public class ElasticsearchIndexConfig implements CommandLineRunner {
     @Override
     public void run(String... args) {
         // 인덱스 생성(+ @Setting/@Mapping 적용)
-        String indexName = createIndexIfNotExists(FeedDocument.class);
+        IndexCreationStatus status = createIndexIfNotExists(FeedDocument.class);
+        String indexName = status.indexName();
 
         // 인덱스 헬스 대기 (최대 10초)
         waitForYellowOrGreen(indexName, healthTimeoutMs);
 
         // 동기화
-        log.debug(CONFIG + "Elasticsearch data 초기 동기화 시작");
-        feedDataSyncService.syncAllFeedsToElasticsearch();
-        log.debug(CONFIG + "Elasticsearch data 초기 동기화 완료");
+        if (status.created()) {
+            log.debug(CONFIG + "Elasticsearch data 초기 동기화 시작");
+            feedDataSyncService.syncAllFeedsToElasticsearch();
+            log.debug(CONFIG + "Elasticsearch data 초기 동기화 완료");
+        } else {
+            log.debug(CONFIG + "기존 인덱스이므로 전체 동기화를 스킵합니다.");
+        }
     }
 
-    private String createIndexIfNotExists(Class<?> documentClass) {
+    private IndexCreationStatus createIndexIfNotExists(Class<?> documentClass) {
         IndexOperations indexOps = operations.indexOps(documentClass);
         String indexName = indexOps.getIndexCoordinates().getIndexName();
 
         if (indexOps.exists()) {
             log.debug(CONFIG + "인덱스가 존재하여 생성 스킵함. {}", indexName);
-            return indexName;
+            return new IndexCreationStatus(indexName, false);
         }
 
         log.debug(CONFIG + "인덱스가 존재하지 않아 생성 시도: {}", indexName);
@@ -85,7 +90,7 @@ public class ElasticsearchIndexConfig implements CommandLineRunner {
                 throw e;
             }
         }
-        return indexName;
+        return new IndexCreationStatus(indexName, true);
     }
 
     private void waitForYellowOrGreen(String indexName, long timeoutMs) {
@@ -100,4 +105,6 @@ public class ElasticsearchIndexConfig implements CommandLineRunner {
             log.warn(CONFIG + "인덱스 헬스 대기 실패/타임아웃: {} (index={})", e.getMessage(), indexName);
         }
     }
+
+    private record IndexCreationStatus(String indexName, boolean created) {}
 }

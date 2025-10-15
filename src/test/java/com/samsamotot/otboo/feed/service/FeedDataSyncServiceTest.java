@@ -158,7 +158,6 @@ class FeedDataSyncServiceTest {
                 .ootds(dto1.ootds())
                 .likeCount(dto1.likeCount())
                 .commentCount(dto1.commentCount())
-                .likedByMe(dto1.likedByMe())
                 .isDeleted(false)
                 .build();
 
