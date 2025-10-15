@@ -86,7 +86,7 @@ public class FeedDataSyncService {
             .ootds(feedDto.ootds())
             .likeCount(feedDto.likeCount())
             .commentCount(feedDto.commentCount())
-            .likedByMe(feedDto.likedByMe())
+            .likedByMe(false)
             .isDeleted(false)
             .build();
     }

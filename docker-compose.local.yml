@@ -151,7 +151,7 @@ services:
             exit 1; 
           };
         fi;
-        elasticsearch;
+        /usr/local/bin/docker-entrypoint.sh;
       "
   # Kibana 서비스 (필요시 활성화)
   kibana:

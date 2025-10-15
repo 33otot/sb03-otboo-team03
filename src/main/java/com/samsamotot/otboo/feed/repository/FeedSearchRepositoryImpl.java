@@ -86,7 +86,8 @@ public class FeedSearchRepositoryImpl implements FeedSearchRepositoryCustom {
             log.info(REPOSITORY + "search_after 값: {}", searchAfter);
         }
 
-        int pageSize = Math.max(1, limit) + 1;
+        int effectiveLimit = Math.max(1, limit);
+        int pageSize = effectiveLimit + 1;
 
         // NativeQuery 조립: 필터 + 정렬 + 페이지(size) + search_after
         NativeQueryBuilder nq = NativeQuery.builder()
@@ -113,15 +114,15 @@ public class FeedSearchRepositoryImpl implements FeedSearchRepositoryCustom {
             .map(feedDocumentMapper::toDto)
             .collect(Collectors.toList());
 
-        boolean hasNext = feedDtos.size() > limit;
+        boolean hasNext = feedDtos.size() > effectiveLimit;
         String nextCursor = null;
         UUID nextIdAfter = null;
 
         if (hasNext) {
-            FeedDto lastFeedDto =  feedDtos.get(limit - 1);
+            FeedDto lastFeedDto =  feedDtos.get(effectiveLimit - 1);
             nextCursor = resolveNextCursor(lastFeedDto, sortBy);
             nextIdAfter = lastFeedDto.id();
-            feedDtos = feedDtos.subList(0, limit);
+            feedDtos = feedDtos.subList(0, effectiveLimit);
         }
 
         long totalCount = countByFilter(keywordLike, skyStatusEqual, precipitationTypeEqual, authorIdEqual);

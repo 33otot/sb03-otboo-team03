@@ -26,11 +26,15 @@ public class FeedElasticsearchSyncListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onFeedSyncEvent(FeedSyncEvent event) {
-        log.debug(LISTENER + "피드 Elasticsearch 동기화 이벤트 시작");
-        Feed feed = feedRepository.findById(event.feedId())
-            .orElseThrow(() -> new IllegalStateException("Feed not found for sync: " + event.feedId()));
-        FeedDto feedDto = feedMapper.toDto(feed);
-        feedDataSyncService.syncFeedToElasticsearch(feedDto);
+        try {
+            log.debug(LISTENER + "피드 Elasticsearch 동기화 이벤트 시작");
+            Feed feed = feedRepository.findById(event.feedId())
+                .orElseThrow(() -> new IllegalStateException("Feed not found for sync: " + event.feedId()));
+            FeedDto feedDto = feedMapper.toDto(feed);
+            feedDataSyncService.syncFeedToElasticsearch(feedDto);
+        } catch (Exception e) {
+            log.warn(LISTENER + "동기화 실패: feedId=" + event.feedId(), e);
+        }
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

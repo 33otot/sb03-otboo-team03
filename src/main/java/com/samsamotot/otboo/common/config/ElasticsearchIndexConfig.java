@@ -4,6 +4,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.HealthStatus;
 import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import com.samsamotot.otboo.feed.document.FeedDocument;
+import com.samsamotot.otboo.feed.repository.FeedRepository;
+import com.samsamotot.otboo.feed.repository.FeedSearchRepository;
 import com.samsamotot.otboo.feed.service.FeedDataSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,8 @@ public class ElasticsearchIndexConfig implements CommandLineRunner {
     private final ElasticsearchOperations operations;
     private final ElasticsearchClient esClient;
     private final FeedDataSyncService feedDataSyncService;
+    private final FeedSearchRepository feedSearchRepository;
+    private final FeedRepository feedRepository;
 
     @Value("${spring.elasticsearch.health-timeout-ms:10000}")
     private long healthTimeoutMs;
@@ -45,7 +49,14 @@ public class ElasticsearchIndexConfig implements CommandLineRunner {
             feedDataSyncService.syncAllFeedsToElasticsearch();
             log.debug(CONFIG + "Elasticsearch data 초기 동기화 완료");
         } else {
-            log.debug(CONFIG + "기존 인덱스이므로 전체 동기화를 스킵합니다.");
+            long esCount = feedSearchRepository.count();
+            long dbCount = feedRepository.count();
+            if (esCount < dbCount) {
+                log.warn(CONFIG + "인덱스 문서 수({})가 DB 레코드 수({})보다 적음 → 재동기화 실행", esCount, dbCount);
+                feedDataSyncService.syncAllFeedsToElasticsearch();
+            } else {
+                log.debug(CONFIG + "기존 인덱스이므로 전체 동기화를 스킵합니다.");
+            }
         }
     }
 

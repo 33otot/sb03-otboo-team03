@@ -117,7 +117,7 @@ public class FeedServiceImpl implements FeedService {
         FeedDto result = feedMapper.toDto(saved);
 
         // Elasticsearch 동기화
-        eventPublisher.publishEvent(new FeedSyncEvent(feed.getId()));
+        eventPublisher.publishEvent(new FeedSyncEvent(saved.getId()));
         log.debug(SERVICE + "피드 등록 완료: feedId = {}", saved.getId());
 
         eventPublisher.publishEvent(new FeedCreatedEvent(author));
@@ -145,7 +145,7 @@ public class FeedServiceImpl implements FeedService {
         String cursor = request.cursor();
         UUID idAfter = request.idAfter();
         Integer limit = request.limit();
-        String sortBy = request.sortBy();
+        String sortBy = request.sortBy() == null ? SORT_BY_CREATED_AT : request.sortBy();
         SortDirection sortDirection = request.sortDirection();
         String keywordLike = request.keywordLike();
         SkyStatus skyStatusEqual = request.skyStatusEqual();
@@ -154,10 +154,11 @@ public class FeedServiceImpl implements FeedService {
 
         validateCursorRequest(cursor, sortBy);
 
+        int safeLimit = (limit == null || limit <= 0) ? 20 : Math.min(limit, 50);
         CursorResponse<FeedDto> result = feedSearchRepository.findByCursor(
             cursor,
             idAfter,
-            limit,
+            safeLimit,
             sortBy,
             sortDirection,
             keywordLike,
@@ -183,7 +184,7 @@ public class FeedServiceImpl implements FeedService {
             }
 
 
-        log.debug(SERVICE + "피드 목록 조회 완료 - 조회된 피드 수:{}, hasNext: {}", result.data().size(), result.hasNext());
+        log.debug(SERVICE + "피드 목록 조회 완료 - 조회된 피드 수:{}, hasNext: {}", newFeedDtos.size(), result.hasNext());
         return new CursorResponse<>(
             newFeedDtos,
             result.nextCursor(),
