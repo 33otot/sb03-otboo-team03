@@ -41,6 +41,9 @@ class WeatherTransactionServiceTest {
     @Mock
     private WeatherRepository weatherRepository;
 
+    @Mock
+    private WeatherDailyValueProvider weatherDailyValueProvider;
+
     private Grid grid;
     private Instant now;
 
@@ -109,22 +112,10 @@ class WeatherTransactionServiceTest {
                     .build();
             newWeatherList.add(weatherWithNullTemps);
 
-            given(weatherRepository.findTopByGridAndForecastAtOrderByForecastedAtDesc(eq(grid), any(Instant.class)))
-                    .willReturn(Optional.empty());
-
             LocalDate date = now.atZone(ZoneId.of("Asia/Seoul")).toLocalDate();
-            Instant maxTempTime = date.atTime(LocalTime.of(6, 0)).atZone(ZoneId.of("Asia/Seoul")).toInstant();
-            Instant minTempTime = date.atTime(LocalTime.of(21, 0)).atZone(ZoneId.of("Asia/Seoul")).toInstant();
 
-            Weather maxTempWeather = WeatherFixture.createWeatherWithMaxMinTemp(
-                    maxTempTime, now.minus(1, ChronoUnit.HOURS), 30.0, null);
-            Weather minTempWeather = WeatherFixture.createWeatherWithMaxMinTemp(
-                    minTempTime, now.minus(1, ChronoUnit.HOURS), null, 15.0);
-
-            given(weatherRepository.findTopByGridAndForecastAtOrderByForecastedAtDesc(grid, maxTempTime))
-                    .willReturn(Optional.of(maxTempWeather));
-            given(weatherRepository.findTopByGridAndForecastAtOrderByForecastedAtDesc(grid, minTempTime))
-                    .willReturn(Optional.of(minTempWeather));
+            given(weatherDailyValueProvider.findDailyTemperatureValue(grid, date, true)).willReturn(30.0);
+            given(weatherDailyValueProvider.findDailyTemperatureValue(grid, date, false)).willReturn(15.0);
 
             // When
             weatherTransactionService.updateWeather(grid, newWeatherList);
