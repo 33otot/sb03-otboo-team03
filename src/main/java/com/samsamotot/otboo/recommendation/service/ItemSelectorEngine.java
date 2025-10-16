@@ -107,7 +107,9 @@ public class ItemSelectorEngine {
             log.debug(ENGINE + "최종 결과가 비어 랜덤 폴백 수행");
             result.addAll(fallbackRecommendTopBottomOrDress(typeGroupsAll, rollCounter));
             result.addAll(fallbackRecommendOthers(typeGroupsAll, rollCounter));
-            return new RecommendationResult(result, true);
+
+            usedRandom = !result.isEmpty();
+            return new RecommendationResult(result, usedRandom);
         }
 
         // TOP/BOTTOM/DRESS가 없으면 랜덤 폴백 수행
@@ -118,9 +120,12 @@ public class ItemSelectorEngine {
         );
         if (!hasCore) {
             log.debug(ENGINE + "코어 아이템이 없어 코어 랜덤 폴백 수행");
-            usedRandom = true;
             List<OotdDto> coreFallback = fallbackRecommendTopBottomOrDress(typeGroupsAll, rollCounter);
-            result.addAll(coreFallback);
+
+            if (!coreFallback.isEmpty()) {
+                result.addAll(coreFallback);
+                usedRandom = true;
+            }
         }
 
         return new RecommendationResult(result, usedRandom);
