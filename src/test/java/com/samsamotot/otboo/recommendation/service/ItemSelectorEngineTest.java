@@ -18,12 +18,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -882,5 +884,82 @@ public class ItemSelectorEngineTest {
         Double s1 = (Double) ReflectionTestUtils.getField(out.get(1), "score");
         assertThat(s0).isEqualTo(0.55);
         assertThat(s1).isEqualTo(0.45);
+    }
+
+    @Test
+    void 폴백_hasPairAndHasDress_드레스를_선택한다() {
+        // given
+        Clothes t1 = Clothes.builder().name("T1").type(ClothesType.TOP).attributes(List.of()).build();
+        Clothes b1 = Clothes.builder().name("B1").type(ClothesType.BOTTOM).attributes(List.of()).build();
+        Clothes d1 = Clothes.builder().name("D1").type(ClothesType.DRESS).attributes(List.of()).build();
+        ReflectionTestUtils.setField(t1, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(b1, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(d1, "id", UUID.randomUUID());
+
+        Map<ClothesType, List<Clothes>> groups = Map.of(
+            ClothesType.TOP, List.of(t1),
+            ClothesType.BOTTOM, List.of(b1),
+            ClothesType.DRESS, List.of(d1)
+        );
+
+        Mockito.lenient().when(clothesMapper.toOotdDto(Mockito.any(Clothes.class)))
+            .thenAnswer(inv -> {
+                Clothes c = inv.getArgument(0);
+                return OotdDto.builder().clothesId(c.getId()).name(c.getName()).type(c.getType()).build();
+            });
+
+        // ThreadLocalRandom.current().nextBoolean() => true 로 강제 (드레스 경로)
+        try (MockedStatic<ThreadLocalRandom> mocked = Mockito.mockStatic(ThreadLocalRandom.class)) {
+            ThreadLocalRandom tlrMock = Mockito.mock(ThreadLocalRandom.class);
+            mocked.when(ThreadLocalRandom::current).thenReturn(tlrMock);
+            Mockito.when(tlrMock.nextBoolean()).thenReturn(true);
+
+            @SuppressWarnings("unchecked")
+            List<OotdDto> out = (List<OotdDto>) ReflectionTestUtils.invokeMethod(
+                itemSelectorEngine, "fallbackRecommendTopBottomOrDress", groups, 123L);
+
+            assertThat(out).hasSize(1);
+            assertThat(out.get(0).type()).isEqualTo(ClothesType.DRESS);
+            assertThat(out.get(0).name()).isEqualTo("D1");
+        }
+    }
+
+    @Test
+    void 폴백_hasPairAndHasDress_TOP_BOTTOM_한벌을_선택한다() {
+        // given
+        Clothes t1 = Clothes.builder().name("T1").type(ClothesType.TOP).attributes(List.of()).build();
+        Clothes b1 = Clothes.builder().name("B1").type(ClothesType.BOTTOM).attributes(List.of()).build();
+        Clothes d1 = Clothes.builder().name("D1").type(ClothesType.DRESS).attributes(List.of()).build();
+        ReflectionTestUtils.setField(t1, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(b1, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(d1, "id", UUID.randomUUID());
+
+        Map<ClothesType, List<Clothes>> groups = Map.of(
+            ClothesType.TOP, List.of(t1),
+            ClothesType.BOTTOM, List.of(b1),
+            ClothesType.DRESS, List.of(d1)
+        );
+
+        Mockito.lenient().when(clothesMapper.toOotdDto(Mockito.any(Clothes.class)))
+            .thenAnswer(inv -> {
+                Clothes c = inv.getArgument(0);
+                return OotdDto.builder().clothesId(c.getId()).name(c.getName()).type(c.getType()).build();
+            });
+
+        // ThreadLocalRandom.current().nextBoolean() => false 로 강제 (TOP/BOTTOM 경로)
+        try (MockedStatic<ThreadLocalRandom> mocked = Mockito.mockStatic(ThreadLocalRandom.class)) {
+            ThreadLocalRandom tlrMock = Mockito.mock(ThreadLocalRandom.class);
+            mocked.when(ThreadLocalRandom::current).thenReturn(tlrMock);
+            Mockito.when(tlrMock.nextBoolean()).thenReturn(false);
+
+            @SuppressWarnings("unchecked")
+            List<OotdDto> out = (List<OotdDto>) ReflectionTestUtils.invokeMethod(
+                itemSelectorEngine, "fallbackRecommendTopBottomOrDress", groups, 456L);
+
+            assertThat(out).hasSize(2);
+            assertThat(out.stream().map(OotdDto::type).sorted().toList())
+                .containsExactly(ClothesType.BOTTOM, ClothesType.TOP);
+            assertThat(out.stream().map(OotdDto::name).toList()).contains("T1", "B1");
+        }
     }
 }
