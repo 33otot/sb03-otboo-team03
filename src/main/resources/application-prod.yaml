@@ -33,10 +33,14 @@ spring:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  elasticsearch:
+    health-timeout-ms: 20000
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
+
   data:
     redis:
       host: ${REDIS_HOST:redis}
-      port: ${REDIS_PORT:6380}
+      port: ${REDIS_PORT:6380} # TLS 필수 (Serverless Redis only)
       ssl:
         enabled: true
 
@@ -52,6 +56,9 @@ spring:
             username="${CONFLUENT_API_KEY}"
             password="${CONFLUENT_API_SECRET}";
         mechanism: PLAIN
+        request.timeout.ms: 30000
+        reconnect.backoff.ms: 1000
+        reconnect.backoff.max.ms: 10000
       session.timeout.ms: 45000
 
     producer:
