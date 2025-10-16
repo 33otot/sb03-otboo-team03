@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -55,13 +56,13 @@ public class RedisConfig {
     public RedisMessageListenerContainer redisMessageListenerContainer(
             RedisConnectionFactory connectionFactory,
             com.samsamotot.otboo.sse.listener.SseRedisMessageListener sseRedisMessageListener) {
-        
+
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
-        
+
         // SSE 알림 채널 구독
         container.addMessageListener(sseRedisMessageListener, new PatternTopic("sse:notification:*"));
-        
+
         log.info("Redis SSE Message Listener Container initialized");
         return container;
     }
@@ -73,13 +74,17 @@ public class RedisConfig {
     public GenericJackson2JsonRedisSerializer redisSerializer(ObjectMapper objectMapper) {
         // ObjectMapper 복사 및 타입 정보 활성화 (다양한 객체 타입 지원)
         ObjectMapper redisObjectMapper = objectMapper.copy();
+        redisObjectMapper.registerModule(new JavaTimeModule());
         redisObjectMapper.activateDefaultTyping(
-            BasicPolymorphicTypeValidator.builder()
-                .allowIfSubType("com.samsamotot.otboo")
-                .build(),
-            DefaultTyping.NON_FINAL,
-            JsonTypeInfo.As.PROPERTY
-        );
+                        BasicPolymorphicTypeValidator.builder()
+                                .allowIfSubType("com.samsamotot.otboo")
+                                .allowIfSubType("java.util")
+                                .allowIfSubType("java.time")
+                                .allowIfSubType("java.lang")
+                                .build(),
+                        ObjectMapper.DefaultTyping.EVERYTHING,
+                        JsonTypeInfo.As.PROPERTY
+                );
         return new GenericJackson2JsonRedisSerializer(redisObjectMapper);
     }
 }
