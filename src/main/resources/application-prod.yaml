@@ -2,8 +2,8 @@ spring:
   config:
     activate:
       on-profile: prod
-    # .env 파일을 속성 소스로 추가
-    import: optional:file:.env[.properties]
+#    # .env 파일을 속성 소스로 추가
+#    import: optional:file:.env[.properties]
   
   # 운영환경에서는 SQL 초기화 비활성화 (이미 테이블이 존재)
   sql:
@@ -49,10 +49,7 @@ spring:
     properties:
       security.protocol: SASL_SSL
       sasl.mechanism: PLAIN
-      sasl.jaas.config: |
-        org.apache.kafka.common.security.plain.PlainLoginModule required
-        username='${CONFLUENT_API_KEY}'
-        password='${CONFLUENT_API_SECRET}';
+      sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="${CONFLUENT_API_KEY}" password="${CONFLUENT_API_SECRET}";
       session.timeout.ms: 45000
       request.timeout.ms: 30000
       reconnect.backoff.ms: 1000
