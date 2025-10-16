@@ -11,6 +11,7 @@ import com.samsamotot.otboo.clothes.entity.ClothesAttributeDef;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
+import com.samsamotot.otboo.recommendation.dto.RecommendationResult;
 import com.samsamotot.otboo.recommendation.type.Style;
 import java.time.Month;
 import java.util.List;
@@ -412,12 +413,10 @@ public class ItemSelectorEngineTest {
             .when(clothesMapper).toOotdDto(any(Clothes.class));
 
         // when
-        List<OotdDto> result = itemSelectorEngine.createRecommendation(
-            clothesList,
-            context,
-            0L,
-            Map.of()
+        RecommendationResult rr = itemSelectorEngine.createRecommendation(
+            clothesList, context, 0L, Map.of()
         );
+        List<OotdDto> result = rr.items();
 
         // then
         assertThat(result)
@@ -427,7 +426,7 @@ public class ItemSelectorEngineTest {
     }
 
     @Test
-    void 카테고리_내_모든_아이템이_임계값_미만이면_추천하지_않는다() {
+    void 카테고리_내_모든_아이템이_임계값_랜덤_추천이_발생한다() {
 
         // given
         double temperature = 20.0;
@@ -458,16 +457,19 @@ public class ItemSelectorEngineTest {
         doReturn(0.2).when(itemSelectorEngine).calculateScore(lowScoreClothes1, temperature, month, isRainy);
         doReturn(0.1).when(itemSelectorEngine).calculateScore(lowScoreClothes2, temperature, month, isRainy);
 
+//        Mockito.lenient().when(clothesMapper).toOotdDto(any(Clothes.class))
+//            .thenAnswer(inv -> {
+//                Clothes c = inv.getArgument(0);
+//                return OotdDto.builder().name(c.getName()).type(c.getType()).clothesId(c.getId()).build();
+//            });
+
         // when
-        List<OotdDto> result = itemSelectorEngine.createRecommendation(
-            clothesList,
-            context,
-            0L,
-            Map.of()
-        );
+        RecommendationResult rr = itemSelectorEngine.createRecommendation(clothesList, context, 0L, Map.of());
+        List<OotdDto> result = rr.items();
 
         // then
-        assertThat(result).isEmpty();
+        assertThat(rr.usedRandomFallback()).isTrue();
+        assertThat(result).isNotNull();
     }
 
     @Test
@@ -491,7 +493,8 @@ public class ItemSelectorEngineTest {
         doReturn(OotdDto.builder().name("단일 옷").build()).when(clothesMapper).toOotdDto(any(Clothes.class));
 
         // when
-        List<OotdDto> result = itemSelectorEngine.createRecommendation(List.of(clothes), context, 0L, Map.of());
+        RecommendationResult rr = itemSelectorEngine.createRecommendation(List.of(clothes), context, 0L, Map.of());
+        List<OotdDto> result = rr.items();
 
         // then
         assertThat(result).extracting("name").contains("단일 옷");
@@ -543,15 +546,10 @@ public class ItemSelectorEngineTest {
             .build();
 
         // when
-        List<OotdDto> result = itemSelectorEngine.createRecommendation(
-            List.of(),
-            context,
-            0L,
-            Map.of()
-        );
+        RecommendationResult rr = itemSelectorEngine.createRecommendation(List.of(), context, 0L, Map.of());
 
         // then
-        assertThat(result).isEmpty();
+        assertThat(rr.items()).isEmpty();
     }
 
     @Test

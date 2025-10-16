@@ -4,7 +4,9 @@ package com.samsamotot.otboo.recommendation.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
@@ -27,6 +29,7 @@ import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
 import com.samsamotot.otboo.recommendation.dto.RecommendationDto;
+import com.samsamotot.otboo.recommendation.dto.RecommendationResult;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
@@ -106,6 +109,13 @@ public class RecommendationServiceTest {
         Clothes clothes = ClothesFixture.createClothes();
         ReflectionTestUtils.setField(clothes, "id", UUID.randomUUID());
         mockClothesList = List.of(clothes);
+
+        lenient().when(itemSelectorEngine.createRecommendation(
+            anyList(),
+            any(RecommendationContextDto.class),
+            anyLong(),
+            anyMap()
+        )).thenReturn(new RecommendationResult(List.of(), true));
     }
 
     @Test
@@ -270,7 +280,8 @@ public class RecommendationServiceTest {
                 .name("테스트 상의")
                 .build()
         );
-        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(clothes);
+        RecommendationResult rr = new RecommendationResult(clothes, false);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
 
         String expectedReason = "추천 이유 테스트 문구";
         given(openAiEngine.generateRecommendationReason(
@@ -305,11 +316,12 @@ public class RecommendationServiceTest {
                 .build();
 
         List<OotdDto> clothes = List.of(topDto);
+        RecommendationResult rr = new RecommendationResult(clothes, false);
 
         given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
         given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
         given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
-        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(clothes);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
 
         doAnswer(invocation -> {
             RedisCallback<?> callback = invocation.getArgument(0);
@@ -337,8 +349,9 @@ public class RecommendationServiceTest {
         given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
 
         List<OotdDto> clothes = List.of();
+        RecommendationResult rr = new RecommendationResult(clothes, false);
 
-        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(clothes);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
 
         // when
         RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
