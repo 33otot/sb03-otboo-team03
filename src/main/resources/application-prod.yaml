@@ -47,19 +47,16 @@ spring:
   kafka:
     bootstrap-servers: ${CONFLUENT_BOOTSTRAP_SERVERS}
     properties:
-      security:
-        protocol: SASL_SSL
-      sasl:
-        jaas:
-          config: >
-            org.apache.kafka.common.security.plain.PlainLoginModule required
-            username="${CONFLUENT_API_KEY}"
-            password="${CONFLUENT_API_SECRET}";
-        mechanism: PLAIN
-        request.timeout.ms: 30000
-        reconnect.backoff.ms: 1000
-        reconnect.backoff.max.ms: 10000
+      security.protocol: SASL_SSL
+      sasl.mechanism: PLAIN
+      sasl.jaas.config: |
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username='${CONFLUENT_API_KEY}'
+        password='${CONFLUENT_API_SECRET}';
       session.timeout.ms: 45000
+      request.timeout.ms: 30000
+      reconnect.backoff.ms: 1000
+      reconnect.backoff.max.ms: 10000
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
