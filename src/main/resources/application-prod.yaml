@@ -39,10 +39,12 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST:redis}
-      port: ${REDIS_PORT:6380} # TLS 필수 (Serverless Redis only)
+      cluster:
+        nodes: ${REDIS_HOST:redis}:${REDIS_PORT:6380}
+        max-redirects: 3  # MOVED 명령을 따라갈 최대 횟수
       ssl:
         enabled: true
+      timeout: 2000ms  # 연결 타임아웃
 
   kafka:
     bootstrap-servers: ${CONFLUENT_BOOTSTRAP_SERVERS}
