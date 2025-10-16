@@ -10,6 +10,7 @@ import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
 import com.samsamotot.otboo.recommendation.dto.RecommendationDto;
+import com.samsamotot.otboo.recommendation.dto.RecommendationResult;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
@@ -46,6 +47,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     private static final double SENSITIVITY_BASE = 2.5;     // 기준값 상수
     private static final double CORRECTION_FACTOR = 1.0;    // 보정 강도
 
+    private static final String DEFAULT_REASON_ON_RANDOM = "오늘 날씨에 맞는 옷을 추천해드릴게요.";
     private static final String SERVICE = "[RecommendationServiceImpl] ";
 
     private final ProfileRepository profileRepository;
@@ -97,8 +99,16 @@ public class RecommendationServiceImpl implements RecommendationService {
         List<Clothes> clothesList = clothesRepository.findAllByOwnerId(userId);
 
         if (clothesList.isEmpty()) {
-            log.debug(SERVICE + "사용자 의상 목록이 비어 있습니다. userId: {}", userId);
-            throw new OtbooException(ErrorCode.CLOTHES_NOT_FOUND);
+            log.warn(SERVICE + "사용자 의상 목록이 비어있습니다: userId={}", userId);
+
+            RecommendationDto emptyResult = RecommendationDto.builder()
+                .userId(userId)
+                .weatherId(weatherId)
+                .clothes(List.of())
+                .reason("사용자 의상 목록이 비어있습니다. 의상을 추가한 후 다시 시도해주세요.")
+                .build();
+
+            return emptyResult;
         }
 
         // 사용자 온도 민감도(0~5) 및 보정값 계산
@@ -119,13 +129,14 @@ public class RecommendationServiceImpl implements RecommendationService {
         ) + correction;
 
         // 강수(비/눈) 여부 확인
-        boolean isRainingOrSnowing =  weather.getPrecipitationType() != Precipitation.NONE;
+        Precipitation p = weather.getPrecipitationType();
+        boolean isRainingOrSnowing = (p != null) && (p != Precipitation.NONE);
 
         // 현재 월 정보
         Month month = LocalDate.now().getMonth();
 
         // Redis에서 rollCounter 조회 (추천 횟수)
-        long rollCounter = getRollcounter(userId);
+        long rollCounter = getRollCounter(userId);
 
         // Redis에서 cooldownIdMap 조회 및 변환 (의상 타입별 쿨타임 관리)
         Map<ClothesType, UUID> cooldownIdMap = getCooldownIdMap(userId);
@@ -138,10 +149,13 @@ public class RecommendationServiceImpl implements RecommendationService {
             .build();
 
         // 추천 엔진 호출 및 결과 반환
-        List<OotdDto> recommendResult = itemSelectorEngine.createRecommendation(clothesList, context, rollCounter, cooldownIdMap);
+        RecommendationResult rr = itemSelectorEngine.createRecommendation(clothesList, context, rollCounter, cooldownIdMap);
 
-        // 추천 이유 생성
-        String reason = openAiEngine.generateRecommendationReason(temperature, isRainingOrSnowing, month, adjustedTemperature, sensitivity, recommendResult);
+        List<OotdDto> recommendResult = rr.items();
+
+        // 추천 이유 생성 (랜덤 추천의 경우 기본값)
+        String reason = rr.usedRandomFallback() ? DEFAULT_REASON_ON_RANDOM : openAiEngine.generateRecommendationReason(
+                temperature, isRainingOrSnowing, month, adjustedTemperature, sensitivity, recommendResult);
 
         log.debug(SERVICE + "의상 추천 완료: userId={}, weatherId={}, 추천 아이템 수={}, 추천 이유={}",
             userId, weatherId, recommendResult.size(), reason);
@@ -175,7 +189,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     /**
      * Redis에서 사용자별 추천 횟수(rollCounter)를 조회합니다.
      */
-    private long getRollcounter(UUID userId) {
+    private long getRollCounter(UUID userId) {
         Object rollCounterObj = redisTemplate.opsForValue().get("rollCounter:" + userId);
         long rollCounter;
         if (rollCounterObj instanceof Long) {

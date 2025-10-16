@@ -4,13 +4,16 @@ package com.samsamotot.otboo.recommendation.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.samsamotot.otboo.clothes.dto.OotdDto;
 import com.samsamotot.otboo.clothes.entity.Clothes;
@@ -27,11 +30,11 @@ import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
 import com.samsamotot.otboo.recommendation.dto.RecommendationDto;
+import com.samsamotot.otboo.recommendation.dto.RecommendationResult;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
-
 import java.time.Month;
 import java.util.List;
 import java.util.Map;
@@ -106,6 +109,13 @@ public class RecommendationServiceTest {
         Clothes clothes = ClothesFixture.createClothes();
         ReflectionTestUtils.setField(clothes, "id", UUID.randomUUID());
         mockClothesList = List.of(clothes);
+
+        lenient().when(itemSelectorEngine.createRecommendation(
+            anyList(),
+            any(RecommendationContextDto.class),
+            anyLong(),
+            anyMap()
+        )).thenReturn(new RecommendationResult(List.of(), true));
     }
 
     @Test
@@ -270,7 +280,8 @@ public class RecommendationServiceTest {
                 .name("테스트 상의")
                 .build()
         );
-        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(clothes);
+        RecommendationResult rr = new RecommendationResult(clothes, false);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
 
         String expectedReason = "추천 이유 테스트 문구";
         given(openAiEngine.generateRecommendationReason(
@@ -305,11 +316,12 @@ public class RecommendationServiceTest {
                 .build();
 
         List<OotdDto> clothes = List.of(topDto);
+        RecommendationResult rr = new RecommendationResult(clothes, false);
 
         given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
         given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
         given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
-        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(clothes);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
 
         doAnswer(invocation -> {
             RedisCallback<?> callback = invocation.getArgument(0);
@@ -337,14 +349,36 @@ public class RecommendationServiceTest {
         given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
 
         List<OotdDto> clothes = List.of();
+        RecommendationResult rr = new RecommendationResult(clothes, false);
 
-        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(clothes);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
 
         // when
         RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
 
         // then
         assertThat(result.clothes()).isEmpty();
+    }
+
+    @Test
+    void 옷장이_비어있을_경우_빈_추천을_반환한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(List.of()); // 빈 옷장
+
+        // when
+        RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        assertThat(result.clothes()).isEmpty();
+        verify(clothesRepository, times(1)).findAllByOwnerId(userId);
+        verifyNoInteractions(itemSelectorEngine);
+        verifyNoInteractions(openAiEngine);
     }
 
     @Test
@@ -378,5 +412,32 @@ public class RecommendationServiceTest {
             .isInstanceOf(OtbooException.class)
             .extracting(e -> ((OtbooException) e).getErrorCode())
             .isEqualTo(ErrorCode.PROFILE_NOT_FOUND);
+    }
+
+    @Test
+    void 랜덤폴백_경로에서는_기본_추천이유를_사용한다() {
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+
+        List<OotdDto> clothes = List.of(
+            OotdDto.builder()
+                .clothesId(UUID.randomUUID())
+                .type(ClothesType.TOP)
+                .name("임계값_미만_랜덤선택_상의")
+                .build()
+        );
+        RecommendationResult rr = new RecommendationResult(clothes, true);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
+
+        // when
+        RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        assertThat(result.reason()).isEqualTo("오늘 날씨에 맞는 옷을 추천해드릴게요.");
+        verifyNoInteractions(openAiEngine);
     }
 }
