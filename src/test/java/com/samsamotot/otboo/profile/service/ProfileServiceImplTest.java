@@ -7,6 +7,7 @@ import com.samsamotot.otboo.common.fixture.ProfileFixture;
 import com.samsamotot.otboo.common.storage.S3ImageStorage;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.repository.LocationRepository;
+import com.samsamotot.otboo.profile.dto.NotificationSettingUpdateRequest;
 import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.profile.dto.ProfileUpdateRequest;
 import com.samsamotot.otboo.profile.entity.Gender;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -263,6 +265,43 @@ public class ProfileServiceImplTest {
             assertThatThrownBy(() -> profileService.updateProfile(invalidUserId, request, null))
                     .isInstanceOf(OtbooException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PROFILE_NOT_FOUND);
+        }
+    }
+
+    @Nested
+    class UpdateWeatherNotificationEnabled {
+
+        @Test
+        void 존재하는_사용자의_설정을_변경_성공() {
+
+            // Given
+            NotificationSettingUpdateRequest request = new NotificationSettingUpdateRequest(false);
+            Profile existingProfile = ProfileFixture.profileWithWeatherEnabled(true);
+            UUID userId = UUID.randomUUID();
+
+            given(profileRepository.findByUserId(userId)).willReturn(Optional.of(existingProfile));
+
+            // When
+            profileService.updateNotificationEnabled(userId, request);
+
+            // Then
+            assertThat(existingProfile.isWeatherNotificationEnabled()).isFalse();
+        }
+
+        @Test
+        void 존재하지_않는_사용자로_요청하면_OtbooException() {
+
+            // Given
+            UUID nonExistentUserId = UUID.randomUUID();
+            NotificationSettingUpdateRequest request = new NotificationSettingUpdateRequest(false);
+
+            given(profileRepository.findByUserId(nonExistentUserId)).willReturn(Optional.empty());
+
+            // When
+            // Then
+            assertThrows(OtbooException.class, () -> {
+                profileService.updateNotificationEnabled(nonExistentUserId, request);
+            });
         }
     }
 }

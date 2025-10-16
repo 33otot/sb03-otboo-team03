@@ -2,11 +2,10 @@ package com.samsamotot.otboo.user.controller;
 
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.profile.dto.ProfileDto;
+import com.samsamotot.otboo.profile.dto.NotificationSettingUpdateRequest;
 import com.samsamotot.otboo.profile.service.ProfileService;
 import com.samsamotot.otboo.common.exception.OtbooException;
-import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.profile.dto.ProfileUpdateRequest;
-import com.samsamotot.otboo.profile.service.ProfileService;
 import com.samsamotot.otboo.user.controller.api.UserApi;
 import com.samsamotot.otboo.user.dto.ChangePasswordRequest;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
@@ -23,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,7 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.UUID;
 
 /**
- * 사용자 컨트롤러
+ * 사용자 관련 HTTP 요청을 처리하는 컨트롤러
  */
 @Slf4j
 @RestController
@@ -43,6 +43,12 @@ public class UserController implements UserApi {
     private final UserService userService;
     private final ProfileService profileService;
 
+    /**
+     * 신규 사용자 회원가입을 처리합니다.
+     *
+     * @param request 회원가입 요청 정보를 담은 DTO (email, name, password)
+     * @return 생성된 사용자 정보와 201 CREATED 상태코드를 담은 ResponseEntity
+     */
     @Override
     @PostMapping
     public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserCreateRequest request) {
@@ -59,8 +65,7 @@ public class UserController implements UserApi {
      * 사용자 ID를 기반으로 특정 사용자의 프로필을 조회합니다.
      *
      * @param userId 조회할 사용자의 고유 ID (UUID)
-     * @return 사용자 프로필 정보가 담긴 ResponseEntity<ProfileDto>
-     * @throws OtbooException 사용자를 찾을 수 없을 때 발생하는 예외
+     * @return 조회된 프로필 정보와 200 OK 상태코드를 담은 ResponseEntity
      */
     @Override
     @GetMapping("/{userId}/profiles")
@@ -104,6 +109,19 @@ public class UserController implements UserApi {
                 .body(profileDto);
     }
 
+    /**
+     * 다양한 조건에 따라 사용자 목록을 조회합니다. (커서 기반 페이징)
+     *
+     * @param limit         한 페이지에 표시할 항목 수
+     * @param sortBy        정렬 기준 필드
+     * @param sortDirection 정렬 방향 ("ASC" 또는 "DESC")
+     * @param cursor        페이지네이션을 위한 커서 값
+     * @param idAfter       커서 기반 페이지네이션을 위한 ID
+     * @param emailLike     이메일 주소 필터링 (포함 검색)
+     * @param roleEqual     사용자 역할 필터링 (정확히 일치)
+     * @param locked        계정 잠금 상태 필터링
+     * @return 페이징 및 필터링된 사용자 목록과 전체 개수를 담은 ResponseEntity
+     */
     @Override
     @GetMapping
     public ResponseEntity<UserDtoCursorResponse> getUserList(
@@ -151,6 +169,13 @@ public class UserController implements UserApi {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 특정 사용자의 역할을 수정합니다. (ADMIN 권한 필요)
+     *
+     * @param userId  역할을 수정할 사용자의 UUID
+     * @param request 새로운 역할을 담은 요청 DTO
+     * @return 수정된 사용자 정보와 200 OK 상태코드를 담은 ResponseEntity. ADMIN이 아닐 경우 403 Forbidden.
+     */
     @Override
     @PatchMapping("/{userId}/role")
     public ResponseEntity<UserDto> updateRole(
@@ -177,6 +202,29 @@ public class UserController implements UserApi {
         log.info(CONTROLLER + "권한 수정 완료 - 사용자 ID: {}, 변경된 권한: {}", userId, result.getRole());
 
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 현재 인증된 사용자의 날씨 알림 수신 여부를 수정합니다.
+     *
+     * @param userDetails 현재 인증된 사용자의 상세 정보
+     * @param request     날씨 알림 설정 값을 담은 요청 DTO
+     * @return 작업 성공 시 204 No Content 상태코드를 담은 ResponseEntity
+     */
+    @PatchMapping("/profiles/notification-weathers")
+    public ResponseEntity<Void> updateWeatherNotificationEnabled(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody NotificationSettingUpdateRequest request
+    ) {
+        log.info(CONTROLLER + "프로필 알림 수신 여부 수정 요청 - NotificationEnabled: {}", request.weatherNotificationEnabled());
+
+        profileService.updateNotificationEnabled(userDetails.getId(), request);
+
+        log.info(CONTROLLER + "프로필 알림 수신 여부 수정 완료");
+
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .build();
     }
 
     @Override

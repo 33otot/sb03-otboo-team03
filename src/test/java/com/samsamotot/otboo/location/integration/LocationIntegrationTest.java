@@ -1,6 +1,8 @@
 package com.samsamotot.otboo.location.integration;
 
+import com.samsamotot.otboo.common.config.SecurityTestConfig;
 import com.samsamotot.otboo.common.fixture.LocationFixture;
+import com.samsamotot.otboo.config.TestConfig;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.location.repository.LocationRepository;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
+@Import({TestConfig.class, SecurityTestConfig.class})
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = {

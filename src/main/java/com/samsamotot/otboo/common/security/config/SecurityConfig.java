@@ -1,29 +1,36 @@
 package com.samsamotot.otboo.common.security.config;
 
 
+import com.samsamotot.otboo.common.oauth2.handler.OAuth2LoginFailureHandler;
+import com.samsamotot.otboo.common.oauth2.handler.OAuth2LoginSuccessHandler;
+import com.samsamotot.otboo.common.oauth2.repository.HttpCookieOAuth2AuthorizationRequestRepository;
+import com.samsamotot.otboo.common.oauth2.service.OAuth2UserService;
 import com.samsamotot.otboo.common.security.csrf.SpaCsrfTokenRequestHandler;
 import com.samsamotot.otboo.common.security.jwt.JwtAuthenticationFilter;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Spring Security 설정 클래스
@@ -52,6 +59,7 @@ import java.util.List;
  *   <li>UsernamePasswordAuthenticationFilter: Spring Security 기본 인증 필터</li>
  * </ol>
  */
+@Profile("!test")
 @Slf4j
 @Configuration
 @EnableWebSecurity
@@ -60,7 +68,7 @@ import java.util.List;
 public class SecurityConfig {
     
     private final ObjectProvider<JwtAuthenticationFilter> jwtAuthenticationFilter;
-    
+
     @Value("${otboo.cors.allowed-origins:http://localhost:3000,http://localhost:8080}") 
     private String allowedOrigins;
     
@@ -71,10 +79,16 @@ public class SecurityConfig {
     private String cookieSameSite;
     
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(
+        HttpSecurity http,
+        OAuth2UserService oAuth2UserService,
+        OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
+        OAuth2LoginFailureHandler oAuth2LoginFailureHandler,
+        HttpCookieOAuth2AuthorizationRequestRepository repository
+    ) throws Exception {
         // CSRF 토큰 저장소 설정 (환경별 보안 속성 적용)
         CsrfTokenRepository csrfTokenRepository = createSecureCsrfTokenRepository();
-        
+
         http
             // CSRF 보호 활성화 (쿠키 기반)
             .csrf(csrf -> csrf
@@ -87,6 +101,7 @@ public class SecurityConfig {
                     "/api/auth/reset-password", // 비밀번호 초기화 CSRF 무시
                     "/api/users",
                     "/api/auth/csrf-token", // CSRF 토큰 조회 허용
+                    "/oauth2/**", "/login/oauth2/**",
                     "/api/weathers/**",
                     "/actuator/**",
                     "/api/sse",
@@ -100,12 +115,18 @@ public class SecurityConfig {
             
             // CORS 설정
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            
+
             // 세션 관리 (STATELESS로 설정하여 세션 사용 안함)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            
+
+            // 인증 실패 시 → 401 고정 (리다이렉트 방지)
+            .exceptionHandling(e -> e.authenticationEntryPoint(
+                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+            ))
+
             // 요청별 권한 설정
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                 .requestMatchers(
                     "/",                    // 루트 경로
                     "/index.html",         // 메인 페이지
@@ -119,6 +140,7 @@ public class SecurityConfig {
                     "/api/auth/reset-password", // 비밀번호 초기화 (공개 API)
                     "/api/users", // 회원가입
                     "/api/auth/csrf-token",
+                    "/oauth2/**", "/login/oauth2/**",
                     "/api/weathers/**", // 공개 API (인증 불필요)
                     "/actuator/**",
                     "/swagger-ui/**",
@@ -135,15 +157,24 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
 
                 .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
+                // 프로필 날씨 알림 설정 변경은 인증된 유저만 가능
+                .requestMatchers(HttpMethod.PATCH, "/api/users/profiles/notification-weathers").authenticated()
 
                 .requestMatchers("/api/notifications/**").authenticated()
 
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()
             )
-            
-            // 필터 추가 (존재하는 경우에만)
-            ;
+
+            // OAuth2 로그인 설정
+            .oauth2Login(o -> o
+                .authorizationEndpoint(a -> a.authorizationRequestRepository(repository))
+                .redirectionEndpoint(r -> r.baseUri("/oauth2/callback/*"))
+                .userInfoEndpoint(endpointConfig -> endpointConfig
+                    .userService(oAuth2UserService))
+                .successHandler(oAuth2LoginSuccessHandler)
+                .failureHandler(oAuth2LoginFailureHandler)
+            );
 
         // JWT 인증 필터 추가 (CSRF 필터는 Spring Security가 자동으로 처리)
         JwtAuthenticationFilter jwtFilterBean = jwtAuthenticationFilter.getIfAvailable();

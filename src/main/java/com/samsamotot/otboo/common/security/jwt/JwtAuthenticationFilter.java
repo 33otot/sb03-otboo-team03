@@ -79,7 +79,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
-    private final String JWTAUTHFILTER = "[JwtAuthenticationFilter] ";
+    private static final String JWTAUTHFILTER = "[JwtAuthenticationFilter] ";
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
     
@@ -197,14 +197,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
+
+        // Preflight 우회
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
         
         // JWT 인증을 건너뛸 경로들
         return path.startsWith("/api/auth/sign-in") ||
-                path.startsWith("/api/users") && request.getMethod().equals("POST") || // 회원가입
+                (path.startsWith("/api/users") && "POST".equals(request.getMethod())) || // 회원가입
                 path.startsWith("/api/auth/csrf-token") ||
+                path.startsWith("/api/auth/refresh") ||
+                path.startsWith("/api/login") ||
                 path.startsWith("/api/weathers") || // 공개 API
                 path.startsWith("/actuator") || // 모니터링
                 path.startsWith("/swagger-ui") ||
-                path.startsWith("/v3/api-docs");
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/error") || // 기본 오류 페이지
+                path.startsWith(("/oauth2/authorization")) ||
+                path.startsWith("/login/oauth2") || // OAuth2 로그인 시작
+                path.startsWith("/oauth2/"); // OAuth2 콜백 및 기타
     }
 }

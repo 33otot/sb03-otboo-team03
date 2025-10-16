@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.clothes.service;
+package com.samsamotot.otboo.clothes.service.impl;
 
 import com.samsamotot.otboo.clothes.dto.ClothesAttributeDefDto;
 import com.samsamotot.otboo.clothes.dto.request.ClothesAttributeDefCreateRequest;
@@ -9,7 +9,6 @@ import com.samsamotot.otboo.clothes.exception.definition.ClothesAttributeDefAlre
 import com.samsamotot.otboo.clothes.exception.definition.ClothesAttributeDefNotFoundException;
 import com.samsamotot.otboo.clothes.mapper.ClothesAttributeDefMapper;
 import com.samsamotot.otboo.clothes.repository.ClothesAttributeDefRepository;
-import com.samsamotot.otboo.clothes.service.impl.ClothesAttributeDefServiceImpl;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.fixture.ClothesAttributeDefFixture;
 import org.junit.jupiter.api.DisplayName;

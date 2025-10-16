@@ -113,6 +113,67 @@ services:
       retries: 3
       start_period: 10s
 
+  # Elasticsearch 서비스
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false # 보안 비활성화
+      - xpack.security.http.ssl.enabled=false # SSL 비활성화
+      - xpack.security.enrollment.enabled=false # 등록 비활성화
+      - bootstrap.memory_lock=true # 메모리 잠금 활성화
+      - xpack.monitoring.collection.enabled=true # 모니터링 활성화
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    cap_add:
+        - IPC_LOCK
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - otboo-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=30s' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    command: >
+      /bin/bash -c "
+        if [ ! -f /usr/share/elasticsearch/plugins/analysis-nori/plugin-descriptor.properties ]; then
+          echo 'Installing analysis-nori plugin...' && \
+          bin/elasticsearch-plugin install --batch analysis-nori || {
+            echo 'Failed to install nori plugin'; 
+            exit 1; 
+          };
+        fi;
+        /usr/local/bin/docker-entrypoint.sh;
+      "
+  # Kibana 서비스 (필요시 활성화)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.4
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+      - xpack.encryptedSavedObjects.encryptionKey=fhjskloppd678ehkdfdlliverpoolfcr
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "5601:5601"
+    networks:
+      - otboo-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
   # 로컬에서만 app 의존성 연결
   app:
     depends_on:
@@ -122,6 +183,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      elasticsearch:
+        condition: service_healthy
 
 volumes:
   otboo-postgres:
@@ -133,3 +196,6 @@ volumes:
   otboo-kafka:
     driver: local
     name: samsamotot-kafka
+  esdata:
+    driver: local
+    name: samsamotot-esdata

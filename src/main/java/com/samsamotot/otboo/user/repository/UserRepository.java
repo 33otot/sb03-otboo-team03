@@ -1,17 +1,17 @@
 package com.samsamotot.otboo.user.repository;
 
+import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.custom.UserRepositoryCustom;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 /**
  * 사용자 Repository
@@ -28,6 +28,8 @@ public interface UserRepository extends JpaRepository<User, UUID>, UserRepositor
     List<User> findByRole(Role role);
 
     List<User> findByIsLocked(Boolean locked);
+
+    Optional<User> findByProviderAndProviderId(Provider provider, String providerId);
     
     /**
      * 이메일 패턴으로 사용자 검색(관리자-사용자 관리의 이메일 검색)
@@ -63,4 +65,10 @@ public interface UserRepository extends JpaRepository<User, UUID>, UserRepositor
      */
     @Query("SELECT u.isLocked, COUNT(u) FROM User u GROUP BY u.isLocked")
     List<Object[]> countByIsLocked();
+    
+    /**
+     * 활성 사용자 ID 조회 (잠금되지 않은 사용자만)
+     */
+    @Query("SELECT u.id FROM User u WHERE u.isLocked = false")
+    List<UUID> findActiveUserIds();
 }
