@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class SseServiceImpl implements SseService {
     
-    private static final String SSE_SERVICE = "[SSE_SERVICE]";
+    private static final String SSE_SERVICE = "[SSE_SERVICE] ";
     private static final int MAX_BACKLOG = 1000;
     
     private final ObjectMapper objectMapper;
@@ -39,6 +39,12 @@ public class SseServiceImpl implements SseService {
     private final Map<UUID, SseEmitter> connections = new ConcurrentHashMap<>();
     private final Map<UUID, Deque<NotificationDto>> backlog = new ConcurrentHashMap<>();
 
+    /**
+     * 사용자에게 SSE 연결을 생성합니다.
+     * 
+     * @param userId 연결을 생성할 사용자 ID
+     * @return 생성된 SseEmitter 인스턴스
+     */
     @Override
     public SseEmitter createConnection(UUID userId) {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
@@ -63,6 +69,13 @@ public class SseServiceImpl implements SseService {
         return emitter;
     }
 
+    /**
+     * 특정 사용자에게 알림을 전송합니다.
+     * 로컬 연결이 있으면 직접 전송하고, 없으면 Redis Pub/Sub로 전송합니다.
+     * 
+     * @param userId 알림을 받을 사용자 ID
+     * @param notificationData 알림 데이터 (JSON 문자열)
+     */
     @Override
     public void sendNotification(UUID userId, String notificationData) {
         final NotificationDto dto;
@@ -99,6 +112,13 @@ public class SseServiceImpl implements SseService {
         publishNotification2(userId, notificationData);
     }
 
+    /**
+     * 사용자가 놓친 이벤트들을 재전송합니다.
+     * 
+     * @param userId 사용자 ID
+     * @param lastEventId 마지막으로 받은 이벤트 ID (null이면 아무것도 전송하지 않음)
+     * @param emitter SSE 연결 객체
+     */
     @Override
     public void replayMissedEvents(UUID userId, String lastEventId, SseEmitter emitter) {
         Deque<NotificationDto> q = backlog.get(userId);
@@ -129,16 +149,34 @@ public class SseServiceImpl implements SseService {
         }
     }
 
+    /**
+     * 현재 활성화된 SSE 연결 수를 반환합니다.
+     * 
+     * @return 활성 연결 수
+     */
     @Override
     public int getActiveConnectionCount() {
         return connections.size();
     }
 
+    /**
+     * 특정 사용자가 현재 연결되어 있는지 확인합니다.
+     * 
+     * @param userId 확인할 사용자 ID
+     * @return 연결 여부
+     */
     @Override
     public boolean isUserConnected(UUID userId) {
         return connections.containsKey(userId);
     }
 
+    /**
+     * 여러 사용자에게 동일한 알림을 배치로 전송합니다.
+     * 로컬 사용자에게는 직접 전송하고, 원격 사용자에게는 Redis Pub/Sub로 전송합니다.
+     * 
+     * @param userIds 알림을 받을 사용자 ID 목록
+     * @param notificationData 알림 데이터 (JSON 문자열)
+     */
     @Override
     public void sendBatchNotification(java.util.List<UUID> userIds, String notificationData) {
         try {
