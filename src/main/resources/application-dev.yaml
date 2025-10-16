@@ -45,6 +45,13 @@ spring:
     username:
     password:
 
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+      repositories:
+        enabled: false  # 개발 단계 Redis Repository 비활성화
 management:
   endpoints:
     web:

@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.user.config;
 
+import com.samsamotot.otboo.profile.entity.Profile;
+import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
@@ -21,6 +23,7 @@ public class AdminInitializer implements CommandLineRunner {
     private final String ADMIN_INITIALIZER = "[AdminInitializer] ";
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ProfileRepository profileRepository;
 
     /**
      * 관리자 계정 초기화 설정(application.yaml:.env파일 참조)
@@ -69,6 +72,14 @@ public class AdminInitializer implements CommandLineRunner {
         );
 
         userRepository.save(adminUser);
+
+        Profile adminProfile = Profile.builder()
+                .user(adminUser)
+                .name(adminUser.getUsername())
+                .weatherNotificationEnabled(true)
+                .build();
+
+        profileRepository.save(adminProfile);
 
         log.info(ADMIN_INITIALIZER + "관리자 계정({})이 성공적으로 생성되었습니다.", adminUsername);
 
