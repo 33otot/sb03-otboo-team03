@@ -957,8 +957,8 @@ public class ItemSelectorEngineTest {
                 itemSelectorEngine, "fallbackRecommendTopBottomOrDress", groups, 456L);
 
             assertThat(out).hasSize(2);
-            assertThat(out.stream().map(OotdDto::type).sorted().toList())
-                .containsExactly(ClothesType.BOTTOM, ClothesType.TOP);
+            assertThat(out.stream().map(OotdDto::type).toList())
+                .containsExactly(ClothesType.TOP, ClothesType.BOTTOM);
             assertThat(out.stream().map(OotdDto::name).toList()).contains("T1", "B1");
         }
     }
