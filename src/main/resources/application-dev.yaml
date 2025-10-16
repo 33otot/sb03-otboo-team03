@@ -50,8 +50,8 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
   elasticsearch:
-    username:
-    password:
+    health-timeout-ms: 10000
+    uris: elasticsearch:9200
 
 management:
   endpoints:

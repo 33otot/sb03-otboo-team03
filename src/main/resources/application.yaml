@@ -15,10 +15,6 @@ spring:
     redis:
       enable-statistics: true
 
-  elasticsearch:
-    health-timeout-ms: 10000
-    uris: elasticsearch:9200
-
   # LLM 설정 (OpenAI)
   ai:
     openai:
