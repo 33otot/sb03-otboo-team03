@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -24,6 +23,7 @@ public class WeatherTransactionService {
     private static final String SERVICE_NAME = "[WeatherTransactionService] ";
     
     private final WeatherRepository weatherRepository;
+    private final WeatherDailyValueProvider weatherDailyValueProvider;
 
     /**
      * 특정 격자(Grid)의 날씨 예보를 업데이트하고, 전날 대비 값을 계산하여 저장합니다.
@@ -112,33 +112,28 @@ public class WeatherTransactionService {
             LocalDate date = weather.getForecastAt().atZone(ZoneId.of("Asia/Seoul")).toLocalDate();
 
             if (weather.getTemperatureMax() == null) {
-                // computeIfAbsent: 캐시에 값이 없으면 DB 조회 함수를 실행
-                Double maxTemp = maxTempCache.computeIfAbsent(date, d -> findDailyTemperatureValue(grid, d, true));
-                if (maxTemp != null) {
-                    weather.setTemperatureMax(maxTemp);
+                if (!maxTempCache.containsKey(date)) {
+                    Double maxTemp = weatherDailyValueProvider.findDailyTemperatureValue(grid, date, true);
+                    maxTempCache.put(date, maxTemp);
+                }
+                Double maxTempFromCache = maxTempCache.get(date);
+                if (maxTempFromCache != null) {
+                    weather.setTemperatureMax(maxTempFromCache);
                 }
             }
 
             if (weather.getTemperatureMin() == null) {
-                Double minTemp = minTempCache.computeIfAbsent(date, d -> findDailyTemperatureValue(grid, d, false));
-                if (minTemp != null) {
-                    weather.setTemperatureMin(minTemp);
+                if (!minTempCache.containsKey(date)) {
+                    Double minTemp = weatherDailyValueProvider.findDailyTemperatureValue(grid, date, false);
+                    minTempCache.put(date, minTemp);
+                }
+                Double minTempFromCache = minTempCache.get(date);
+                if (minTempFromCache != null) {
+                    weather.setTemperatureMin(minTempFromCache);
                 }
             }
         }
         log.info(SERVICE_NAME + "최고/최저 기온 값 이어주기 완료. 처리된 날짜 수: {}", maxTempCache.size() + minTempCache.size());
-    }
-
-    /**
-     * 특정 '날짜'의 06시(최고) 또는 21시(최저) 예보를 DB에서 조회하여 '기온 값'만 반환합니다.
-     */
-    private Double findDailyTemperatureValue(Grid grid, LocalDate date, boolean isMax) {
-        LocalTime targetTime = isMax ? LocalTime.of(6, 0) : LocalTime.of(21, 0);
-        Instant targetInstant = date.atTime(targetTime).atZone(ZoneId.of("Asia/Seoul")).toInstant();
-
-        return weatherRepository.findTopByGridAndForecastAtOrderByForecastedAtDesc(grid, targetInstant)
-                .map(weather -> isMax ? weather.getTemperatureMax() : weather.getTemperatureMin())
-                .orElse(null);
     }
 
     /**
