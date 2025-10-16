@@ -458,6 +458,16 @@ public class ItemSelectorEngineTest {
         doReturn(0.2).when(itemSelectorEngine).calculateScore(lowScoreClothes1, temperature, month, isRainy);
         doReturn(0.1).when(itemSelectorEngine).calculateScore(lowScoreClothes2, temperature, month, isRainy);
 
+        Mockito.lenient().when(clothesMapper.toOotdDto(Mockito.any(Clothes.class)))
+            .thenAnswer(inv -> {
+                Clothes c = inv.getArgument(0);
+                return OotdDto.builder()
+                    .clothesId(c.getId())
+                    .name(c.getName())
+                    .type(c.getType())
+                    .build();
+            });
+
         // when
         RecommendationResult rr = itemSelectorEngine.createRecommendation(clothesList, context, 0L, Map.of());
         List<OotdDto> result = rr.items();
