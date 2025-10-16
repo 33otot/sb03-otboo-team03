@@ -14,6 +14,7 @@ import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
 import com.samsamotot.otboo.recommendation.dto.RecommendationResult;
 import com.samsamotot.otboo.recommendation.type.Style;
 import java.time.Month;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -711,5 +712,175 @@ public class ItemSelectorEngineTest {
         // then
         assertThat(rr.usedRandomFallback()).isTrue();
         assertThat(result.stream().map(OotdDto::type)).contains(ClothesType.HAT, ClothesType.BAG);
+    }
+
+    @Test
+    void recommendTopBottomOrDress_TOP_BOTTOM_둘다_임계값이상이면_두벌_선택된다() {
+        // given
+        RecommendationContextDto ctx = RecommendationContextDto.builder()
+            .adjustedTemperature(18.0)
+            .currentMonth(Month.OCTOBER)
+            .isRainingOrSnowing(false)
+            .build();
+
+        Clothes top = Clothes.builder().name("top").type(ClothesType.TOP).attributes(List.of()).build();
+        Clothes bottom = Clothes.builder().name("bottom").type(ClothesType.BOTTOM).attributes(List.of()).build();
+        ReflectionTestUtils.setField(top, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(bottom, "id", UUID.randomUUID());
+
+        // 임계값(0.4) 초과 점수로 스텁
+        Mockito.doReturn(0.8).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(top), Mockito.eq(18.0), Mockito.eq(Month.OCTOBER), Mockito.eq(false));
+        Mockito.doReturn(0.8).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(bottom), Mockito.eq(18.0), Mockito.eq(Month.OCTOBER), Mockito.eq(false));
+
+        Mockito.lenient().when(clothesMapper.toOotdDto(Mockito.any(Clothes.class)))
+            .thenAnswer(inv -> {
+                Clothes c = inv.getArgument(0);
+                return OotdDto.builder().clothesId(c.getId()).name(c.getName()).type(c.getType()).build();
+            });
+
+        Map<ClothesType, List<Clothes>> groups = Map.of(
+            ClothesType.TOP, List.of(top),
+            ClothesType.BOTTOM, List.of(bottom)
+        );
+        Map<UUID, Double> cache = new HashMap<>();
+
+        // when
+        @SuppressWarnings("unchecked")
+        List<OotdDto> out = (List<OotdDto>) ReflectionTestUtils.invokeMethod(
+            itemSelectorEngine, "recommendTopBottomOrDress", groups, ctx, 1L, cache);
+
+        // then
+        assertThat(out).hasSize(2);
+        assertThat(out.stream().map(OotdDto::type)).containsExactlyInAnyOrder(ClothesType.TOP, ClothesType.BOTTOM);
+    }
+
+    @Test
+    void recommendTopBottomOrDress_DRESS만_임계값이상이면_드레스_단일_선택된다() {
+        // given
+        RecommendationContextDto ctx = RecommendationContextDto.builder()
+            .adjustedTemperature(23.0)
+            .currentMonth(Month.JUNE)
+            .isRainingOrSnowing(false)
+            .build();
+
+        Clothes topLow = Clothes.builder().name("lowTop").type(ClothesType.TOP).attributes(List.of()).build();
+        Clothes bottomLow = Clothes.builder().name("lowBottom").type(ClothesType.BOTTOM).attributes(List.of()).build();
+        Clothes dressOk = Clothes.builder().name("dressOk").type(ClothesType.DRESS).attributes(List.of()).build();
+        ReflectionTestUtils.setField(topLow, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(bottomLow, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(dressOk, "id", UUID.randomUUID());
+
+        // TOP/BOTTOM은 임계값 미만, DRESS는 임계값 초과
+        Mockito.doReturn(0.2).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(topLow), Mockito.eq(23.0), Mockito.eq(Month.JUNE), Mockito.eq(false));
+        Mockito.doReturn(0.2).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(bottomLow), Mockito.eq(23.0), Mockito.eq(Month.JUNE), Mockito.eq(false));
+        Mockito.doReturn(0.7).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(dressOk), Mockito.eq(23.0), Mockito.eq(Month.JUNE), Mockito.eq(false));
+
+        Mockito.lenient().when(clothesMapper.toOotdDto(Mockito.any(Clothes.class)))
+            .thenAnswer(inv -> {
+                Clothes c = inv.getArgument(0);
+                return OotdDto.builder().clothesId(c.getId()).name(c.getName()).type(c.getType()).build();
+            });
+
+        Map<ClothesType, List<Clothes>> groups = Map.of(
+            ClothesType.TOP, List.of(topLow),
+            ClothesType.BOTTOM, List.of(bottomLow),
+            ClothesType.DRESS, List.of(dressOk)
+        );
+        Map<UUID, Double> cache = new HashMap<>();
+
+        // when
+        @SuppressWarnings("unchecked")
+        List<OotdDto> out = (List<OotdDto>) ReflectionTestUtils.invokeMethod(
+            itemSelectorEngine, "recommendTopBottomOrDress", groups, ctx, 7L, cache);
+
+        // then
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).type()).isEqualTo(ClothesType.DRESS);
+        assertThat(out.get(0).name()).isEqualTo("dressOk");
+    }
+
+    @Test
+    void recommendTopBottomOrDress_BOTTOM만_임계값이상이면_바텀_단일_선택된다() {
+        // given
+        RecommendationContextDto ctx = RecommendationContextDto.builder()
+            .adjustedTemperature(19.0)
+            .currentMonth(Month.MAY)
+            .isRainingOrSnowing(false)
+            .build();
+
+        Clothes topLow = Clothes.builder().name("lowTop").type(ClothesType.TOP).attributes(List.of()).build();
+        Clothes bottomOk = Clothes.builder().name("okBottom").type(ClothesType.BOTTOM).attributes(List.of()).build();
+        ReflectionTestUtils.setField(topLow, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(bottomOk, "id", UUID.randomUUID());
+
+        Mockito.doReturn(0.2).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(topLow), Mockito.eq(19.0), Mockito.eq(Month.MAY), Mockito.eq(false));
+        Mockito.doReturn(0.8).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(bottomOk), Mockito.eq(19.0), Mockito.eq(Month.MAY), Mockito.eq(false));
+
+        Mockito.lenient().when(clothesMapper.toOotdDto(Mockito.any(Clothes.class)))
+            .thenAnswer(inv -> {
+                Clothes c = inv.getArgument(0);
+                return OotdDto.builder().clothesId(c.getId()).name(c.getName()).type(c.getType()).build();
+            });
+
+        Map<ClothesType, List<Clothes>> groups = Map.of(
+            ClothesType.TOP, List.of(topLow),
+            ClothesType.BOTTOM, List.of(bottomOk)
+        );
+        Map<UUID, Double> cache = new HashMap<>();
+
+        // when
+        @SuppressWarnings("unchecked")
+        List<OotdDto> out = (List<OotdDto>) ReflectionTestUtils.invokeMethod(
+            itemSelectorEngine, "recommendTopBottomOrDress", groups, ctx, 5L, cache);
+
+        // then
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).type()).isEqualTo(ClothesType.BOTTOM);
+        assertThat(out.get(0).name()).isEqualTo("okBottom");
+    }
+
+    @Test
+    void withHarmonyBonus_후보_style_null이면_점수_그대로() {
+        // given
+        RecommendationContextDto ctx = RecommendationContextDto.builder()
+            .adjustedTemperature(20.0)
+            .currentMonth(Month.APRIL)
+            .isRainingOrSnowing(false)
+            .build();
+
+        // 스타일 속성 없는 아이템 2개
+        Clothes a = Clothes.builder().name("A").type(ClothesType.TOP).attributes(List.of()).build();
+        Clothes b = Clothes.builder().name("B").type(ClothesType.TOP).attributes(List.of()).build();
+        ReflectionTestUtils.setField(a, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(b, "id", UUID.randomUUID());
+
+        // 기본 점수 스텁
+        Mockito.doReturn(0.55).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(a), Mockito.eq(20.0), Mockito.eq(Month.APRIL), Mockito.eq(false));
+        Mockito.doReturn(0.45).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(b), Mockito.eq(20.0), Mockito.eq(Month.APRIL), Mockito.eq(false));
+
+        Map<UUID, Double> cache = new HashMap<>();
+        @SuppressWarnings("unchecked")
+        List<Object> scored = (List<Object>) ReflectionTestUtils.invokeMethod(
+            itemSelectorEngine, "buildScored", List.of(a, b), ctx, cache);
+
+        // when
+        @SuppressWarnings("unchecked")
+        List<Object> out = (List<Object>) ReflectionTestUtils.invokeMethod(
+            itemSelectorEngine, "withHarmonyBonus", scored, Style.CASUAL, 0.2);
+
+        // then
+        Double s0 = (Double) ReflectionTestUtils.getField(out.get(0), "score");
+        Double s1 = (Double) ReflectionTestUtils.getField(out.get(1), "score");
+        assertThat(s0).isEqualTo(0.55);
+        assertThat(s1).isEqualTo(0.45);
     }
 }
