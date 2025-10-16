@@ -112,17 +112,24 @@ public class WeatherTransactionService {
             LocalDate date = weather.getForecastAt().atZone(ZoneId.of("Asia/Seoul")).toLocalDate();
 
             if (weather.getTemperatureMax() == null) {
-                // computeIfAbsent: 캐시에 값이 없으면 DB 조회 함수를 실행
-                Double maxTemp = maxTempCache.computeIfAbsent(date, d -> weatherDailyValueProvider.findDailyTemperatureValue(grid, d, true));
-                if (maxTemp != null) {
-                    weather.setTemperatureMax(maxTemp);
+                if (!maxTempCache.containsKey(date)) {
+                    Double maxTemp = weatherDailyValueProvider.findDailyTemperatureValue(grid, date, true);
+                    maxTempCache.put(date, maxTemp);
+                }
+                Double maxTempFromCache = maxTempCache.get(date);
+                if (maxTempFromCache != null) {
+                    weather.setTemperatureMax(maxTempFromCache);
                 }
             }
 
             if (weather.getTemperatureMin() == null) {
-                Double minTemp = minTempCache.computeIfAbsent(date, d -> weatherDailyValueProvider.findDailyTemperatureValue(grid, d, false));
-                if (minTemp != null) {
-                    weather.setTemperatureMin(minTemp);
+                if (!minTempCache.containsKey(date)) {
+                    Double minTemp = weatherDailyValueProvider.findDailyTemperatureValue(grid, date, false);
+                    minTempCache.put(date, minTemp);
+                }
+                Double minTempFromCache = minTempCache.get(date);
+                if (minTempFromCache != null) {
+                    weather.setTemperatureMin(minTempFromCache);
                 }
             }
         }

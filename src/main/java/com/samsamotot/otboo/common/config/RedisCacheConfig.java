@@ -42,7 +42,7 @@ public class RedisCacheConfig {
     ) {
         log.info(CONFIG_NAME + "RedisCacheManager 초기화 시작");
 
-        // 모든 캐시에 적용될 기본 정잭 정의
+        // 모든 캐시에 적용될 기본 정책 정의
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 // Key는 String 형태로 저장
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))

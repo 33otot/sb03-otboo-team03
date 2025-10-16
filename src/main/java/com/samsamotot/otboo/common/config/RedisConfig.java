@@ -53,6 +53,7 @@ public class RedisConfig {
                                 .allowIfSubType("com.samsamotot.otboo")
                                 .allowIfSubType("java.util")
                                 .allowIfSubType("java.time")
+                                .allowIfSubType("java.lang")
                                 .build(),
                         ObjectMapper.DefaultTyping.EVERYTHING,
                         JsonTypeInfo.As.PROPERTY
