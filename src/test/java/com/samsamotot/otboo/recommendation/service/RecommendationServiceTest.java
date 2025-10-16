@@ -53,7 +53,6 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.C;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Recommendation 서비스 단위 테스트")
@@ -439,6 +438,6 @@ public class RecommendationServiceTest {
 
         // then
         assertThat(result.reason()).isEqualTo("오늘 날씨에 맞는 옷을 추천해드릴게요.");
-        verifyNoInteractions(openAiEngine);verifyNoInteractions(openAiEngine);
+        verifyNoInteractions(openAiEngine);
     }
 }

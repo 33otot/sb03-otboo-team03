@@ -74,13 +74,18 @@ public class ItemSelectorEngine {
     ) {
         boolean usedRandom = false;
 
+        // null-safety
+        final List<Clothes> safeClothes = (clothes == null) ? List.of() : clothes;
+        final Map<ClothesType, UUID> safeCooldown =
+            (cooldownIdMap == null) ? Map.of() : cooldownIdMap;
+
         // 전체 타입별 그룹화 (쿨다운 제외 X) - 랜덤 추천에서 사용
-        Map<ClothesType, List<Clothes>> typeGroupsAll = clothes.stream()
+        Map<ClothesType, List<Clothes>> typeGroupsAll = safeClothes.stream()
             .collect(Collectors.groupingBy(Clothes::getType));
 
         // 최근 추천된 옷 제외 - 정상 추천 경로에서 사용
-        List<Clothes> filtered = clothes.stream()
-            .filter(c -> !Objects.equals(cooldownIdMap.get(c.getType()), c.getId()))
+        List<Clothes> filtered = safeClothes.stream()
+            .filter(c -> !Objects.equals(safeCooldown.get(c.getType()), c.getId()))
             .toList();
 
         Map<ClothesType, List<Clothes>> typeGroupsFiltered = filtered.stream()
@@ -564,7 +569,7 @@ public class ItemSelectorEngine {
         OotdDto dto = clothesMapper.toOotdDto(clothes);
         if (dto != null) {
             result.add(dto);
-            log.info(ENGINE + "추천 성공: id={}, type={}, attributes={}", clothes.getId(), clothes.getType(), clothes.getAttributes());
+            log.debug(ENGINE + "추천 성공: id={}, type={}, attributes={}", clothes.getId(), clothes.getType(), clothes.getAttributes());
         } else {
             log.error(ENGINE + "추천된 의상 DTO 변환 실패: id={}, type={}", clothes.getId(), clothes.getType());
         }
@@ -580,7 +585,7 @@ public class ItemSelectorEngine {
                 List<Clothes> group = typeGroups.get(type);
                 if (group != null) {
                     for (Clothes c : group) {
-                        if (Objects.equals(c.getId(), dto.clothesId())) {
+                        if (dto.clothesId() != null && Objects.equals(c.getId(), dto.clothesId())) {
                             return extractStyle(c);
                         }
                     }

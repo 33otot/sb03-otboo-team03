@@ -427,7 +427,7 @@ public class ItemSelectorEngineTest {
     }
 
     @Test
-    void 카테고리_내_모든_아이템이_임계값_랜덤_추천이_발생한다() {
+    void 카테고리_내_모든_아이템이_임계값_미만이면_랜덤_추천이_발생한다() {
 
         // given
         double temperature = 20.0;
@@ -464,7 +464,7 @@ public class ItemSelectorEngineTest {
 
         // then
         assertThat(rr.usedRandomFallback()).isTrue();
-        assertThat(result).isNotNull();
+        assertThat(result).isNotEmpty();
     }
 
     @Test
