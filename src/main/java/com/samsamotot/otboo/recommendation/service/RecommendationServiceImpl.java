@@ -129,13 +129,14 @@ public class RecommendationServiceImpl implements RecommendationService {
         ) + correction;
 
         // 강수(비/눈) 여부 확인
-        boolean isRainingOrSnowing =  weather.getPrecipitationType() != Precipitation.NONE;
+        Precipitation p = weather.getPrecipitationType();
+        boolean isRainingOrSnowing = (p != null) && (p != Precipitation.NONE);
 
         // 현재 월 정보
         Month month = LocalDate.now().getMonth();
 
         // Redis에서 rollCounter 조회 (추천 횟수)
-        long rollCounter = getRollcounter(userId);
+        long rollCounter = getRollCounter(userId);
 
         // Redis에서 cooldownIdMap 조회 및 변환 (의상 타입별 쿨타임 관리)
         Map<ClothesType, UUID> cooldownIdMap = getCooldownIdMap(userId);
@@ -188,7 +189,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     /**
      * Redis에서 사용자별 추천 횟수(rollCounter)를 조회합니다.
      */
-    private long getRollcounter(UUID userId) {
+    private long getRollCounter(UUID userId) {
         Object rollCounterObj = redisTemplate.opsForValue().get("rollCounter:" + userId);
         long rollCounter;
         if (rollCounterObj instanceof Long) {

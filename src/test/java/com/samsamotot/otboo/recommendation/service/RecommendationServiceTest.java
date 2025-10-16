@@ -13,6 +13,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.samsamotot.otboo.clothes.dto.OotdDto;
 import com.samsamotot.otboo.clothes.entity.Clothes;
@@ -52,6 +53,7 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.testcontainers.shaded.org.checkerframework.checker.units.qual.C;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Recommendation 서비스 단위 테스트")
@@ -376,6 +378,8 @@ public class RecommendationServiceTest {
         // then
         assertThat(result.clothes()).isEmpty();
         verify(clothesRepository, times(1)).findAllByOwnerId(userId);
+        verifyNoInteractions(itemSelectorEngine);
+        verifyNoInteractions(openAiEngine);
     }
 
     @Test
@@ -409,5 +413,32 @@ public class RecommendationServiceTest {
             .isInstanceOf(OtbooException.class)
             .extracting(e -> ((OtbooException) e).getErrorCode())
             .isEqualTo(ErrorCode.PROFILE_NOT_FOUND);
+    }
+
+    @Test
+    void 랜덤폴백_경로에서는_기본_추천이유를_사용한다() {
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+
+        List<OotdDto> clothes = List.of(
+            OotdDto.builder()
+                .clothesId(UUID.randomUUID())
+                .type(ClothesType.TOP)
+                .name("임계값_미만_랜덤선택_상의")
+                .build()
+        );
+        RecommendationResult rr = new RecommendationResult(clothes, true);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
+
+        // when
+        RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        assertThat(result.reason()).isEqualTo("오늘 날씨에 맞는 옷을 추천해드릴게요.");
+        verifyNoInteractions(openAiEngine);verifyNoInteractions(openAiEngine);
     }
 }

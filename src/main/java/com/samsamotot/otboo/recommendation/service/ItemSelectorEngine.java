@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.SplittableRandom;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -362,7 +361,7 @@ public class ItemSelectorEngine {
         boolean hasDress = !dresses.isEmpty();
 
         if (hasPair && hasDress) {
-            boolean pickDress = ThreadLocalRandom.current().nextBoolean();
+            boolean pickDress = new SplittableRandom(mixSeed(rollCounter, "coreChoice")).nextInt(2) == 0;
             if (pickDress) {
                 addDtoIfNotNull(result, getRandomCandidate(dresses, mixSeed(rollCounter, ClothesType.DRESS)));
                 return result;
@@ -401,8 +400,8 @@ public class ItemSelectorEngine {
     }
 
     /**
-     * TOP, BOTTOM, DRESS 외의 나머지 타입을 추천합니다.
-     * 모든 후보의 점수가 임계값 미만이면 랜덤으로 하나를 선택합니다.
+     * TOP, BOTTOM, DRESS 외의 나머지 타입에서 임계값 이상 후보만 softmax로 선택합니다.
+     * (임계값 이상 후보가 없으면 스킵되며, 최종 결과가 비었을 때 상위 레벨의 랜덤 폴백이 적용됩니다.)
      */
     private List<OotdDto> recommendOthers(
         Map<ClothesType, List<Clothes>> typeGroups,
@@ -490,9 +489,13 @@ public class ItemSelectorEngine {
      * 캐시된 점수가 없으면 계산 후 캐시에 저장합니다.
      */
     private double scoreOf(Clothes c, RecommendationContextDto ctx, Map<UUID, Double> cache) {
-        Clothes item = c;
-        return cache.computeIfAbsent(item.getId(), id ->
-            calculateScore(item, ctx.adjustedTemperature(), ctx.currentMonth(), ctx.isRainingOrSnowing())
+        UUID id = c.getId();
+        if (id == null) {
+            // 영속화 전/테스트 데이터 등 ID 없음: 캐시 미사용
+            return calculateScore(c, ctx.adjustedTemperature(), ctx.currentMonth(), ctx.isRainingOrSnowing());
+        }
+        return cache.computeIfAbsent(id, k ->
+            calculateScore(c, ctx.adjustedTemperature(), ctx.currentMonth(), ctx.isRainingOrSnowing())
         );
     }
 

@@ -18,14 +18,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -908,20 +906,26 @@ public class ItemSelectorEngineTest {
                 return OotdDto.builder().clothesId(c.getId()).name(c.getName()).type(c.getType()).build();
             });
 
-        // ThreadLocalRandom.current().nextBoolean() => true 로 강제 (드레스 경로)
-        try (MockedStatic<ThreadLocalRandom> mocked = Mockito.mockStatic(ThreadLocalRandom.class)) {
-            ThreadLocalRandom tlrMock = Mockito.mock(ThreadLocalRandom.class);
-            mocked.when(ThreadLocalRandom::current).thenReturn(tlrMock);
-            Mockito.when(tlrMock.nextBoolean()).thenReturn(true);
-
-            @SuppressWarnings("unchecked")
-            List<OotdDto> out = (List<OotdDto>) ReflectionTestUtils.invokeMethod(
-                itemSelectorEngine, "fallbackRecommendTopBottomOrDress", groups, 123L);
-
-            assertThat(out).hasSize(1);
-            assertThat(out.get(0).type()).isEqualTo(ClothesType.DRESS);
-            assertThat(out.get(0).name()).isEqualTo("D1");
+        // pickDress == true 가 되는 rollCounter 탐색
+        long rollCounterForDress = -1L;
+        for (long rc = 0; rc < 10_000; rc++) {
+            long seed = (long) ReflectionTestUtils.invokeMethod(itemSelectorEngine, "mixSeed", rc, "coreChoice");
+            if (new java.util.SplittableRandom(seed).nextInt(2) == 0) {
+                rollCounterForDress = rc;
+                break;
+            }
         }
+        assertThat(rollCounterForDress).isNotEqualTo(-1L);
+
+        // when
+        @SuppressWarnings("unchecked")
+        List<OotdDto> out = (List<OotdDto>) ReflectionTestUtils.invokeMethod(
+            itemSelectorEngine, "fallbackRecommendTopBottomOrDress", groups, rollCounterForDress);
+
+        // then
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).type()).isEqualTo(ClothesType.DRESS);
+        assertThat(out.get(0).name()).isEqualTo("D1");
     }
 
     @Test
@@ -946,20 +950,26 @@ public class ItemSelectorEngineTest {
                 return OotdDto.builder().clothesId(c.getId()).name(c.getName()).type(c.getType()).build();
             });
 
-        // ThreadLocalRandom.current().nextBoolean() => false 로 강제 (TOP/BOTTOM 경로)
-        try (MockedStatic<ThreadLocalRandom> mocked = Mockito.mockStatic(ThreadLocalRandom.class)) {
-            ThreadLocalRandom tlrMock = Mockito.mock(ThreadLocalRandom.class);
-            mocked.when(ThreadLocalRandom::current).thenReturn(tlrMock);
-            Mockito.when(tlrMock.nextBoolean()).thenReturn(false);
-
-            @SuppressWarnings("unchecked")
-            List<OotdDto> out = (List<OotdDto>) ReflectionTestUtils.invokeMethod(
-                itemSelectorEngine, "fallbackRecommendTopBottomOrDress", groups, 456L);
-
-            assertThat(out).hasSize(2);
-            assertThat(out.stream().map(OotdDto::type).toList())
-                .containsExactly(ClothesType.TOP, ClothesType.BOTTOM);
-            assertThat(out.stream().map(OotdDto::name).toList()).contains("T1", "B1");
+        // pickDress == false 가 되는 rollCounter 찾기
+        long rollCounterForTopBottom = -1L;
+        for (long rc = 0; rc < 10_000; rc++) {
+            long seed = (long) ReflectionTestUtils.invokeMethod(itemSelectorEngine, "mixSeed", rc, "coreChoice");
+            if (new java.util.SplittableRandom(seed).nextInt(2) != 0) {
+                rollCounterForTopBottom = rc;
+                break;
+            }
         }
+        assertThat(rollCounterForTopBottom).isNotEqualTo(-1L);
+
+        // when
+        @SuppressWarnings("unchecked")
+        List<OotdDto> out = (List<OotdDto>) ReflectionTestUtils.invokeMethod(
+            itemSelectorEngine, "fallbackRecommendTopBottomOrDress", groups, rollCounterForTopBottom);
+
+        // then
+        assertThat(out).hasSize(2);
+        assertThat(out.get(0).type()).isEqualTo(ClothesType.TOP);
+        assertThat(out.get(1).type()).isEqualTo(ClothesType.BOTTOM);
+        assertThat(out.stream().map(OotdDto::name)).contains("T1", "B1");
     }
 }
