@@ -1,6 +1,8 @@
 package com.samsamotot.otboo.follow.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.samsamotot.otboo.common.config.SecurityTestConfig;
+import com.samsamotot.otboo.config.TestConfig;
 import com.samsamotot.otboo.follow.dto.FollowCreateRequest;
 import com.samsamotot.otboo.follow.dto.FollowDto;
 import com.samsamotot.otboo.follow.dto.FollowListResponse;
@@ -15,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -42,6 +45,7 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER
 @DisplayName("Follow 통합 테스트")
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import({TestConfig.class, SecurityTestConfig.class})
 @Testcontainers
 @DirtiesContext(classMode = AFTER_CLASS)
 @ActiveProfiles("test")

@@ -1,10 +1,12 @@
 package com.samsamotot.otboo.sse.integration;
 
+import com.samsamotot.otboo.common.config.SecurityTestConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.security.jwt.JwtTokenProvider;
 import com.samsamotot.otboo.notification.dto.NotificationDto;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.sse.service.SseService;
+import com.samsamotot.otboo.config.TestConfig;
 import com.samsamotot.otboo.sse.service.SseServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,7 @@ import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -39,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 
 @SpringBootTest
+@Import({TestConfig.class, SecurityTestConfig.class})
 @AutoConfigureMockMvc(addFilters = false) // 보안 필터 off
 @ActiveProfiles("test")
 @Transactional
@@ -135,7 +139,7 @@ public class SseIntegrationTest {
         // Given
         UUID userId = UUID.randomUUID();
         var emitter = sseService.createConnection(userId);
-        
+
         NotificationDto notification = NotificationDto.builder()
             .id(UUID.randomUUID())
             .title("테스트 알림")
@@ -143,7 +147,7 @@ public class SseIntegrationTest {
             .level(NotificationLevel.INFO)
             .receiverId(userId)
             .build();
-        
+
         String notificationJson = objectMapper.writeValueAsString(notification);
 
         // When
@@ -152,7 +156,7 @@ public class SseIntegrationTest {
         // Then
         // 로컬 연결이 있으므로 직접 전송되어야 함
         assertThat(sseService.isUserConnected(userId)).isTrue();
-        
+
         emitter.complete();
     }
 
@@ -162,7 +166,7 @@ public class SseIntegrationTest {
         // Given
         UUID userId = UUID.randomUUID();
         // 로컬 연결은 생성하지 않음 (원격 사용자 시뮬레이션)
-        
+
         NotificationDto notification = NotificationDto.builder()
             .id(UUID.randomUUID())
             .title("원격 알림")
@@ -170,7 +174,7 @@ public class SseIntegrationTest {
             .level(NotificationLevel.INFO)
             .receiverId(userId)
             .build();
-        
+
         String notificationJson = objectMapper.writeValueAsString(notification);
 
         // When
@@ -188,13 +192,13 @@ public class SseIntegrationTest {
         UUID localUser1 = UUID.randomUUID();
         UUID localUser2 = UUID.randomUUID();
         UUID remoteUser = UUID.randomUUID();
-        
+
         // 로컬 사용자 연결 생성
         var emitter1 = sseService.createConnection(localUser1);
         var emitter2 = sseService.createConnection(localUser2);
-        
+
         List<UUID> userIds = List.of(localUser1, localUser2, remoteUser);
-        
+
         NotificationDto notification = NotificationDto.builder()
             .id(UUID.randomUUID())
             .title("배치 알림")
@@ -202,7 +206,7 @@ public class SseIntegrationTest {
             .level(NotificationLevel.INFO)
             .receiverId(localUser1) // 첫 번째 사용자 ID 사용
             .build();
-        
+
         String notificationJson = objectMapper.writeValueAsString(notification);
 
         // When
@@ -213,7 +217,7 @@ public class SseIntegrationTest {
         assertThat(sseService.isUserConnected(localUser2)).isTrue();
         assertThat(sseService.isUserConnected(remoteUser)).isFalse();
         assertThat(sseService.getActiveConnectionCount()).isEqualTo(2);
-        
+
         emitter1.complete();
         emitter2.complete();
     }
