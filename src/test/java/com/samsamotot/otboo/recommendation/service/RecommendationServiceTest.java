@@ -34,7 +34,6 @@ import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
-
 import java.time.Month;
 import java.util.List;
 import java.util.Map;
@@ -358,6 +357,25 @@ public class RecommendationServiceTest {
 
         // then
         assertThat(result.clothes()).isEmpty();
+    }
+
+    @Test
+    void 옷장이_비어있을_경우_빈_추천을_반환한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(List.of()); // 빈 옷장
+
+        // when
+        RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        assertThat(result.clothes()).isEmpty();
+        verify(clothesRepository, times(1)).findAllByOwnerId(userId);
     }
 
     @Test

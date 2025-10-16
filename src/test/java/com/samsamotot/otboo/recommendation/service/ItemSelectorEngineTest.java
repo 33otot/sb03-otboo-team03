@@ -457,12 +457,6 @@ public class ItemSelectorEngineTest {
         doReturn(0.2).when(itemSelectorEngine).calculateScore(lowScoreClothes1, temperature, month, isRainy);
         doReturn(0.1).when(itemSelectorEngine).calculateScore(lowScoreClothes2, temperature, month, isRainy);
 
-//        Mockito.lenient().when(clothesMapper).toOotdDto(any(Clothes.class))
-//            .thenAnswer(inv -> {
-//                Clothes c = inv.getArgument(0);
-//                return OotdDto.builder().name(c.getName()).type(c.getType()).clothesId(c.getId()).build();
-//            });
-
         // when
         RecommendationResult rr = itemSelectorEngine.createRecommendation(clothesList, context, 0L, Map.of());
         List<OotdDto> result = rr.items();
@@ -567,5 +561,155 @@ public class ItemSelectorEngineTest {
 
         // then
         assertThat(score).isGreaterThan(0.0);
+    }
+
+    @Test
+    void 쿨다운_아이템은_후보에서_제외된다() {
+        // given
+        UUID cooldownTopId = UUID.randomUUID();
+
+        Clothes top1 = Clothes.builder().name("쿨다운 상의")
+            .type(ClothesType.TOP).attributes(List.of()).build();
+        ReflectionTestUtils.setField(top1, "id", cooldownTopId);
+
+        Clothes top2 = Clothes.builder().name("정상 상의")
+            .type(ClothesType.TOP).attributes(List.of()).build();
+        ReflectionTestUtils.setField(top2, "id", UUID.randomUUID());
+
+        RecommendationContextDto ctx = RecommendationContextDto.builder()
+            .adjustedTemperature(20.0).currentMonth(Month.APRIL).isRainingOrSnowing(false).build();
+
+        doReturn(0.8).when(itemSelectorEngine).calculateScore(top2, 20.0, Month.APRIL, false);
+
+        Mockito.lenient().when(clothesMapper.toOotdDto(any(Clothes.class)))
+            .thenAnswer(inv -> {
+                Clothes c = inv.getArgument(0);
+                return OotdDto.builder().clothesId(c.getId()).name(c.getName()).type(c.getType()).build();
+            });
+
+        // when
+        RecommendationResult rr = itemSelectorEngine.createRecommendation(
+            List.of(top1, top2), ctx, 0L, Map.of(ClothesType.TOP, cooldownTopId)
+        );
+        List<OotdDto> out = rr.items();
+
+        // then
+        assertThat(out).extracting(OotdDto::name).containsExactly("정상 상의");
+    }
+
+    @Test
+    void 모든_아이템_임계값_미만이면_랜덤폴백_발생() {
+
+        // given
+        RecommendationContextDto context = RecommendationContextDto.builder()
+            .adjustedTemperature(20.0)
+            .currentMonth(Month.MAY)
+            .isRainingOrSnowing(false)
+            .build();
+
+        Clothes lowTop = Clothes.builder().name("lowTop")
+            .type(ClothesType.TOP).build();
+        Clothes lowBottom = Clothes.builder().name("lowBottom")
+            .type(ClothesType.BOTTOM).build();
+        ReflectionTestUtils.setField(lowTop, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(lowBottom, "id", UUID.randomUUID());
+
+        List<Clothes> clothesList = List.of(lowTop, lowBottom);
+
+        Mockito.doReturn(0.1).when(itemSelectorEngine)
+            .calculateScore(Mockito.eq(lowTop), Mockito.anyDouble(), Mockito.any(), Mockito.anyBoolean());
+        Mockito.doReturn(0.05).when(itemSelectorEngine)
+            .calculateScore(Mockito.eq(lowBottom), Mockito.anyDouble(), Mockito.any(), Mockito.anyBoolean());
+
+        Mockito.lenient().when(clothesMapper.toOotdDto(Mockito.any(Clothes.class)))
+            .thenAnswer(inv -> {
+                Clothes c = inv.getArgument(0);
+                return OotdDto.builder().name(c.getName()).type(c.getType()).clothesId(c.getId()).build();
+            });
+
+        // when
+        RecommendationResult rr = itemSelectorEngine.createRecommendation(clothesList, context, 0L, Map.of());
+        List<OotdDto> result = rr.items();
+
+        // then
+        assertThat(rr.usedRandomFallback()).isTrue();
+        assertThat(result).isNotNull();
+        assertThat(result).isNotEmpty();
+    }
+
+    @Test
+    void 코어_아이템_부재시_코어랜덤폴백_추가됨() {
+
+        // given
+        RecommendationContextDto context = RecommendationContextDto.builder()
+            .adjustedTemperature(20.0)
+            .currentMonth(Month.MAY)
+            .isRainingOrSnowing(false)
+            .build();
+
+        Clothes hat = Clothes.builder().name("hat")
+            .type(ClothesType.HAT).build();
+        Clothes top = Clothes.builder().name("top")
+            .type(ClothesType.TOP).build();
+        ReflectionTestUtils.setField(hat, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(top, "id", UUID.randomUUID());
+
+        List<Clothes> clothesList = List.of(hat, top);
+
+        Mockito.doReturn(0.90).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(hat), Mockito.eq(20.0), Mockito.eq(Month.MAY), Mockito.eq(false));
+        Mockito.doReturn(0.10).when(itemSelectorEngine)
+            .calculateScore(Mockito.same(top), Mockito.eq(20.0), Mockito.eq(Month.MAY), Mockito.eq(false));
+
+        Mockito.lenient().when(clothesMapper.toOotdDto(Mockito.any(Clothes.class)))
+            .thenAnswer(inv -> {
+                Clothes c = inv.getArgument(0);
+                return OotdDto.builder().name(c.getName()).type(c.getType()).clothesId(c.getId()).build();
+            });
+
+        // when
+        RecommendationResult rr = itemSelectorEngine.createRecommendation(clothesList, context, 42L, Map.of());
+        List<OotdDto> result = rr.items();
+
+        // then
+        assertThat(rr.usedRandomFallback()).isTrue();
+        assertThat(result).isNotEmpty();
+        assertThat(result.stream().map(OotdDto::type)).contains(ClothesType.TOP);
+    }
+
+    @Test
+    void 나머지_타입_전부_임계값_미만이면_fallbackRecommendOthers_에서_각타입_하나씩_선택된다() {
+
+        // given
+        RecommendationContextDto context = RecommendationContextDto.builder()
+            .adjustedTemperature(18.0)
+            .currentMonth(Month.MARCH)
+            .isRainingOrSnowing(false)
+            .build();
+
+        Clothes hat = Clothes.builder().name("hat")
+            .type(ClothesType.HAT).build();
+        Clothes bag = Clothes.builder().name("bag")
+            .type(ClothesType.BAG).build();
+        ReflectionTestUtils.setField(hat, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(bag, "id", UUID.randomUUID());
+        List<Clothes> clothesList = List.of(hat, bag);
+
+        Mockito.doReturn(0.1).when(itemSelectorEngine)
+            .calculateScore(Mockito.any(Clothes.class), Mockito.anyDouble(), Mockito.any(), Mockito.anyBoolean());
+
+        Mockito.lenient().when(clothesMapper.toOotdDto(Mockito.any(Clothes.class)))
+            .thenAnswer(inv -> {
+                Clothes c = inv.getArgument(0);
+                return OotdDto.builder().name(c.getName()).type(c.getType()).clothesId(c.getId()).build();
+            });
+
+        // when
+        RecommendationResult rr = itemSelectorEngine.createRecommendation(clothesList, context, 99L, Map.of());
+        List<OotdDto> result = rr.items();
+
+        // then
+        assertThat(rr.usedRandomFallback()).isTrue();
+        assertThat(result.stream().map(OotdDto::type)).contains(ClothesType.HAT, ClothesType.BAG);
     }
 }
