@@ -150,5 +150,50 @@ class WeatherTransactionServiceTest {
             long daysDifference = ChronoUnit.DAYS.between(captureThreshold, Instant.now());
             assertThat(daysDifference).isEqualTo(3);
         }
+
+        @Test
+        @DisplayName("전날 데이터가 없을 경우 비교 값은 null로 유지")
+        void 전날_데이터가_없으면_비교값은_null_유지() {
+            // Given
+            Weather todayWeather = WeatherFixture.createWeather(now.plus(1, ChronoUnit.HOURS), now, 25.0, 60.0);
+            List<Weather> newWeatherList = new ArrayList<>(List.of(todayWeather));
+
+            // 어제 날씨 데이터가 없도록 설정 (Optional.empty() 반환)
+            given(weatherRepository.findTopByGridAndForecastAtOrderByForecastedAtDesc(any(Grid.class), any(Instant.class)))
+                    .willReturn(Optional.empty());
+
+            // When
+            weatherTransactionService.updateWeather(grid, newWeatherList);
+
+            // Then
+            // 비교 값이 null로 유지되었는지 확인
+            assertThat(todayWeather.getTemperatureComparedToDayBefore()).isNull();
+            assertThat(todayWeather.getHumidityComparedToDayBefore()).isNull();
+        }
+
+        @Test
+        @DisplayName("최고/최저 기온 조회 결과가 null일 경우 기존 null 값 유지")
+        void 최고_최저_기온_조회값이_null이면_null_유지() {
+            // Given
+            List<Weather> newWeatherList = new ArrayList<>();
+            Weather weatherWithNullTemps = Weather.builder()
+                    .grid(grid)
+                    .forecastAt(now)
+                    .forecastedAt(now)
+                    .temperatureMax(null)
+                    .temperatureMin(null)
+                    .build();
+            newWeatherList.add(weatherWithNullTemps);
+
+            // DailyValueProvider가 null을 반환하도록 설정
+            given(weatherDailyValueProvider.findDailyTemperatureValue(any(Grid.class), any(LocalDate.class), any(boolean.class))).willReturn(null);
+
+            // When
+            weatherTransactionService.updateWeather(grid, newWeatherList);
+
+            // Then
+            assertThat(weatherWithNullTemps.getTemperatureMax()).isNull();
+            assertThat(weatherWithNullTemps.getTemperatureMin()).isNull();
+        }
     }
 }
