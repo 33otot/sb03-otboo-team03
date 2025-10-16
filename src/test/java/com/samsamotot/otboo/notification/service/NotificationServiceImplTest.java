@@ -584,8 +584,8 @@ class NotificationServiceImplTest {
         notificationService.sendBatchSseNotifications(notifications);
 
         // then
-        then(objectMapper).should(times(2)).writeValueAsString(any());
-        then(sseService).should(times(2)).sendNotification(any(UUID.class), anyString());
+        then(objectMapper).should(times(1)).writeValueAsString(any());
+        then(sseService).should(times(1)).sendBatchNotification(anyList(), anyString());
     }
 
     @Test
@@ -604,8 +604,8 @@ class NotificationServiceImplTest {
         notificationService.sendBatchSseNotifications(notifications);
 
         // then
-        then(objectMapper).should().writeValueAsString(any());
-        then(sseService).should(never()).sendNotification(any(UUID.class), anyString());
+        then(objectMapper).should(atLeastOnce()).writeValueAsString(any());
+        then(sseService).should(never()).sendBatchNotification(anyList(), anyString());
     }
 
     @Test
@@ -619,14 +619,14 @@ class NotificationServiceImplTest {
 
         given(objectMapper.writeValueAsString(any())).willReturn("{}");
         willThrow(new RuntimeException("SSE 서비스 오류"))
-            .given(sseService).sendNotification(any(UUID.class), anyString());
+            .given(sseService).sendBatchNotification(anyList(), anyString());
 
         // when
         notificationService.sendBatchSseNotifications(notifications);
 
         // then
-        then(objectMapper).should().writeValueAsString(any());
-        then(sseService).should().sendNotification(any(UUID.class), anyString());
+        then(objectMapper).should(atLeastOnce()).writeValueAsString(any());
+        then(sseService).should().sendBatchNotification(anyList(), anyString());
     }
 
     @Test

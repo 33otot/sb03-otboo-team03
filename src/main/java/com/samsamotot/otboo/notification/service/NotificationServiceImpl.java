@@ -151,23 +151,45 @@ public class NotificationServiceImpl implements NotificationService {
     
     /**
      * 저장된 알림 목록에 대해 SSE로 실시간 발행한다.
+     * 분산 환경을 고려하여 배치 전송을 사용한다.
      * 
      * @param notifications 발행할 알림 목록
      */
     protected void sendBatchSseNotifications(List<Notification> notifications) {
-        notifications.forEach(notification -> {
-            try {
-                String notificationJson = objectMapper.writeValueAsString(toDto(notification));
-                sseService.sendNotification(notification.getReceiver().getId(), notificationJson);
-                log.debug(NOTIFICATION_SERVICE + "SSE 발행 완료 - user: {}, title: '{}'", 
-                    notification.getReceiver().getId(), notification.getTitle());
-            } catch (Exception e) {
-                log.error(NOTIFICATION_SERVICE + "SSE 발행 실패 - user: {}, title: '{}'", 
-                    notification.getReceiver().getId(), notification.getTitle(), e);
-            }
-        });
-        
-        log.info(NOTIFICATION_SERVICE + "SSE 발행 완료 - {}건 발행", notifications.size());
+        if (notifications.isEmpty()) {
+            return;
+        }
+
+        // 첫 번째 알림을 기준으로 배치 전송 (모든 알림이 동일한 내용이라고 가정)
+        Notification firstNotification = notifications.get(0);
+        try {
+            String notificationJson = objectMapper.writeValueAsString(toDto(firstNotification));
+            
+            // 사용자 ID 목록 추출
+            List<UUID> userIds = notifications.stream()
+                .map(notification -> notification.getReceiver().getId())
+                .toList();
+            
+            // 분산 SSE 배치 전송 사용
+            sseService.sendBatchNotification(userIds, notificationJson);
+            
+            log.info(NOTIFICATION_SERVICE + "분산 SSE 배치 발행 완료 - {}건 발행", notifications.size());
+        } catch (Exception e) {
+            log.error(NOTIFICATION_SERVICE + "분산 SSE 배치 발행 실패", e);
+            
+            // 배치 전송 실패 시 개별 전송으로 폴백
+            notifications.forEach(notification -> {
+                try {
+                    String notificationJson = objectMapper.writeValueAsString(toDto(notification));
+                    sseService.sendNotification(notification.getReceiver().getId(), notificationJson);
+                    log.debug(NOTIFICATION_SERVICE + "개별 SSE 발행 완료 - user: {}, title: '{}'", 
+                        notification.getReceiver().getId(), notification.getTitle());
+                } catch (Exception ex) {
+                    log.error(NOTIFICATION_SERVICE + "개별 SSE 발행 실패 - user: {}, title: '{}'", 
+                        notification.getReceiver().getId(), notification.getTitle(), ex);
+                }
+            });
+        }
     }
 
     /**
