@@ -1,11 +1,15 @@
 package com.samsamotot.otboo.auth.service;
 
 import com.samsamotot.otboo.auth.dto.LoginRequest;
+import com.samsamotot.otboo.auth.dto.ResetPasswordRequest;
 import com.samsamotot.otboo.auth.service.impl.AuthServiceImpl;
+import com.samsamotot.otboo.common.email.EmailService;
+import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.csrf.CsrfTokenService;
 import com.samsamotot.otboo.common.security.jwt.JwtDto;
 import com.samsamotot.otboo.common.security.jwt.JwtTokenProvider;
+import com.samsamotot.otboo.common.security.jwt.TokenInvalidationService;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.entity.Provider;
 import com.samsamotot.otboo.user.entity.Role;
@@ -43,6 +47,10 @@ class AuthServiceImplTest {
     private CsrfTokenService csrfTokenService;
     @Mock
     private UserMapper userMapper;
+    @Mock
+    private TokenInvalidationService tokenInvalidationService;
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -172,6 +180,198 @@ class AuthServiceImplTest {
         // invalid token path
         given(jwtTokenProvider.validateToken("bad.jwt")).willThrow(new RuntimeException("invalid"));
         authService.logout("bad.jwt");
+    }
+
+    @Test
+    @DisplayName("CSRF 토큰 조회 성공")
+    void getCsrfToken_success() {
+        // given
+        given(csrfTokenService.generateCsrfToken()).willReturn("csrf-token");
+
+        // when
+        String result = authService.getCsrfToken();
+
+        // then
+        assertThat(result).isEqualTo("csrf-token");
+    }
+
+    @Test
+    @DisplayName("토큰 갱신 성공")
+    void refreshToken_success() throws Exception {
+        // given
+        String refreshToken = "valid.refresh.token";
+        UUID userId = UUID.randomUUID();
+        User user = User.builder()
+            .email("test@example.com")
+            .username("tester")
+            .password("encoded-password")
+            .provider(Provider.LOCAL)
+            .providerId(null)
+            .role(Role.USER)
+            .isLocked(false)
+            .temporaryPasswordExpiresAt((Instant) null)
+            .build();
+        ReflectionTestUtils.setField(user, "id", userId);
+
+        long currentEpoch = Instant.now().getEpochSecond();
+        long expirationEpoch = currentEpoch + 3600L;
+
+        given(jwtTokenProvider.validateToken(refreshToken)).willReturn(true);
+        given(jwtTokenProvider.getUserIdFromToken(refreshToken)).willReturn(userId);
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(jwtTokenProvider.createAccessToken(userId)).willReturn("new.access.jwt");
+        given(jwtTokenProvider.createRefreshToken(userId)).willReturn("new.refresh.jwt");
+        given(jwtTokenProvider.getExpirationTime("new.access.jwt")).willReturn(expirationEpoch);
+        given(userMapper.toDto(user)).willReturn(UserDto.builder().id(userId).email("test@example.com").name("tester").locked(false).build());
+
+        // when
+        JwtDto result = authService.refreshToken(refreshToken);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getAccessToken()).isEqualTo("new.access.jwt");
+        assertThat(result.getRefreshToken()).isEqualTo("new.refresh.jwt");
+        assertThat(result.getExpiresIn()).isBetween(3550L, 3600L);
+        assertThat(result.getUserDto()).isNotNull();
+        assertThat(result.getUserDto().getId()).isEqualTo(userId);
+    }
+
+    @Test
+    @DisplayName("토큰 갱신 실패: 유효하지 않은 토큰")
+    void refreshToken_failure_invalidToken() throws Exception {
+        // given
+        String refreshToken = "invalid.token";
+        given(jwtTokenProvider.validateToken(refreshToken)).willThrow(new RuntimeException("Invalid token"));
+
+        // expect
+        assertThatThrownBy(() -> authService.refreshToken(refreshToken))
+            .isInstanceOf(OtbooException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TOKEN_INVALID);
+    }
+
+    @Test
+    @DisplayName("토큰 갱신 실패: 사용자 없음")
+    void refreshToken_failure_userNotFound() throws Exception {
+        // given
+        String refreshToken = "valid.refresh.token";
+        UUID userId = UUID.randomUUID();
+        given(jwtTokenProvider.validateToken(refreshToken)).willReturn(true);
+        given(jwtTokenProvider.getUserIdFromToken(refreshToken)).willReturn(userId);
+        given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+        // expect
+        assertThatThrownBy(() -> authService.refreshToken(refreshToken))
+            .isInstanceOf(OtbooException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TOKEN_INVALID);
+    }
+
+    @Test
+    @DisplayName("토큰 갱신 실패: 잠긴 계정")
+    void refreshToken_failure_userLocked() throws Exception {
+        // given
+        String refreshToken = "valid.refresh.token";
+        UUID userId = UUID.randomUUID();
+        User lockedUser = User.builder()
+            .email("test@example.com")
+            .username("tester")
+            .password("encoded-password")
+            .provider(Provider.LOCAL)
+            .providerId(null)
+            .role(Role.USER)
+            .isLocked(true)
+            .temporaryPasswordExpiresAt((Instant) null)
+            .build();
+        ReflectionTestUtils.setField(lockedUser, "id", userId);
+
+        given(jwtTokenProvider.validateToken(refreshToken)).willReturn(true);
+        given(jwtTokenProvider.getUserIdFromToken(refreshToken)).willReturn(userId);
+        given(userRepository.findById(userId)).willReturn(Optional.of(lockedUser));
+
+        // expect
+        assertThatThrownBy(() -> authService.refreshToken(refreshToken))
+            .isInstanceOf(OtbooException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.TOKEN_INVALID);
+    }
+
+    @Test
+    @DisplayName("비밀번호 초기화 성공")
+    void resetPassword_success() {
+        // given
+        ResetPasswordRequest request = new ResetPasswordRequest("test@example.com");
+        User user = User.builder()
+            .email("test@example.com")
+            .username("tester")
+            .password("encoded-password")
+            .provider(Provider.LOCAL)
+            .providerId(null)
+            .role(Role.USER)
+            .isLocked(false)
+            .temporaryPasswordExpiresAt((Instant) null)
+            .build();
+        ReflectionTestUtils.setField(user, "id", UUID.randomUUID());
+
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(user));
+
+        // when
+        authService.resetPassword(request);
+
+        // then
+        // 예외가 발생하지 않으면 성공
+    }
+
+    @Test
+    @DisplayName("비밀번호 초기화 실패: 사용자 없음")
+    void resetPassword_failure_userNotFound() {
+        // given
+        ResetPasswordRequest request = new ResetPasswordRequest("none@example.com");
+        given(userRepository.findByEmail("none@example.com")).willReturn(Optional.empty());
+
+        // expect
+        assertThatThrownBy(() -> authService.resetPassword(request))
+            .isInstanceOf(OtbooException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공: 유효한 토큰")
+    void logout_success_validToken() throws Exception {
+        // given
+        String refreshToken = "valid.refresh.token";
+        String jti = "jti-123";
+        Long expEpoch = Instant.now().getEpochSecond() + 3600L;
+
+        given(jwtTokenProvider.validateToken(refreshToken)).willReturn(true);
+        given(jwtTokenProvider.getJti(refreshToken)).willReturn(jti);
+        given(jwtTokenProvider.getExpirationTime(refreshToken)).willReturn(expEpoch);
+
+        // when
+        authService.logout(refreshToken);
+
+        // then
+        // 예외가 발생하지 않으면 성공
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공: null 토큰")
+    void logout_success_nullToken() {
+        // when
+        authService.logout(null);
+
+        // then
+        // 예외가 발생하지 않으면 성공
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공: 짧은 토큰")
+    void logout_success_shortToken() {
+        // given
+        String shortToken = "abc";
+
+        // when
+        authService.logout(shortToken);
+
+        // then
+        // 예외가 발생하지 않으면 성공
     }
 }
 
