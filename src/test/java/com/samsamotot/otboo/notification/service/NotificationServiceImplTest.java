@@ -643,4 +643,16 @@ class NotificationServiceImplTest {
         then(objectMapper).shouldHaveNoInteractions();
         then(sseService).shouldHaveNoInteractions();
     }
+
+    @Test
+    void 사용자의_모든_알림_삭제() {
+        // given
+        UUID userId = UUID.randomUUID();
+
+        // when
+        notificationService.deleteAllByUserId(userId);
+
+        // then
+        verify(notificationRepository).deleteAllByUserId(userId);
+    }
 }

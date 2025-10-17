@@ -5,6 +5,7 @@ import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.mapper.ClothesMapper;
 import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
+import com.samsamotot.otboo.recommendation.dto.RecommendationResult;
 import com.samsamotot.otboo.recommendation.type.RecommendationAttribute;
 import com.samsamotot.otboo.recommendation.type.Season;
 import com.samsamotot.otboo.recommendation.type.Style;
@@ -48,8 +49,16 @@ public class ItemSelectorEngine {
 
     private final ClothesMapper clothesMapper;
 
+    private static final class Scored {
+        final Clothes c;
+        final double score; // [0,1]
+        final Style style;
+        Scored(Clothes c, double score, Style style) { this.c = c; this.score = score; this.style = style; }
+    }
+
     /**
      * 옷장 목록에서 추천 후보를 추려 각 카테고리별로 softmax 샘플링으로 추천합니다.
+     * 추천 실패 시 랜덤 추천으로 대체합니다.
      *
      * @param clothes 사용자의 옷장에 있는 옷 목록
      * @param context 추천 컨텍스트(온도, 월, 강수 등)
@@ -57,32 +66,69 @@ public class ItemSelectorEngine {
      * @param cooldownIdMap 최근 추천된 옷(타입별) 맵
      * @return 추천된 OotdDto 리스트
      */
-    public List<OotdDto> createRecommendation(
+    public RecommendationResult createRecommendation(
         List<Clothes> clothes,
         RecommendationContextDto context,
         long rollCounter,
         Map<ClothesType, UUID> cooldownIdMap
     ) {
-        // 최근 추천된 옷 제외
-        List<Clothes> filtered = clothes.stream()
-            .filter(c -> !cooldownIdMap.containsKey(c.getType()) || !cooldownIdMap.get(c.getType()).equals(c.getId()))
+        boolean usedRandom = false;
+
+        // null-safety
+        final List<Clothes> safeClothes = (clothes == null) ? List.of() : clothes;
+        final Map<ClothesType, UUID> safeCooldown =
+            (cooldownIdMap == null) ? Map.of() : cooldownIdMap;
+
+        // 전체 타입별 그룹화 (쿨다운 제외 X) - 랜덤 추천에서 사용
+        Map<ClothesType, List<Clothes>> typeGroupsAll = safeClothes.stream()
+            .collect(Collectors.groupingBy(Clothes::getType));
+
+        // 최근 추천된 옷 제외 - 정상 추천 경로에서 사용
+        List<Clothes> filtered = safeClothes.stream()
+            .filter(c -> !Objects.equals(safeCooldown.get(c.getType()), c.getId()))
             .toList();
 
-        // 타입별 그룹화
-        Map<ClothesType, List<Clothes>> typeGroups = filtered.stream()
+        Map<ClothesType, List<Clothes>> typeGroupsFiltered = filtered.stream()
             .collect(Collectors.groupingBy(Clothes::getType));
 
         // 점수 캐시 (중복 계산 방지)
         Map<UUID, Double> scoreCache = new HashMap<>();
 
         // TOP/BOTTOM 또는 DRESS 조합 우선 추천
-        List<OotdDto> ootds = recommendTopBottomOrDress(typeGroups, context, rollCounter, scoreCache);
-        Style anchorStyle = findAnchorStyle(ootds, typeGroups);
+        List<OotdDto> ootds = recommendTopBottomOrDress(typeGroupsFiltered, context, rollCounter, scoreCache);
+        Style anchorStyle = findAnchorStyle(ootds, typeGroupsFiltered);
 
         // 나머지 타입 추천
         List<OotdDto> result = new ArrayList<>(ootds);
-        result.addAll(recommendOthers(typeGroups, context, rollCounter, anchorStyle, scoreCache));
-        return result;
+        result.addAll(recommendOthers(typeGroupsFiltered, context, rollCounter, anchorStyle, scoreCache));
+
+        // 최종 결과가 비었으면 랜덤 폴백 수행
+        if (result.isEmpty()) {
+            log.debug(ENGINE + "최종 결과가 비어 랜덤 폴백 수행");
+            result.addAll(fallbackRecommendTopBottomOrDress(typeGroupsAll, rollCounter));
+            result.addAll(fallbackRecommendOthers(typeGroupsAll, rollCounter));
+
+            usedRandom = !result.isEmpty();
+            return new RecommendationResult(result, usedRandom);
+        }
+
+        // TOP/BOTTOM/DRESS가 없으면 랜덤 폴백 수행
+        boolean hasCore = result.stream().anyMatch(dto ->
+            dto.type() == ClothesType.TOP ||
+                dto.type() == ClothesType.BOTTOM ||
+                dto.type() == ClothesType.DRESS
+        );
+        if (!hasCore) {
+            log.debug(ENGINE + "코어 아이템이 없어 코어 랜덤 폴백 수행");
+            List<OotdDto> coreFallback = fallbackRecommendTopBottomOrDress(typeGroupsAll, rollCounter);
+
+            if (!coreFallback.isEmpty()) {
+                result.addAll(coreFallback);
+                usedRandom = true;
+            }
+        }
+
+        return new RecommendationResult(result, usedRandom);
     }
 
     /**
@@ -197,7 +243,6 @@ public class ItemSelectorEngine {
 
     /**
      * TOP/BOTTOM 조합 또는 DRESS을 추천합니다.
-     * (조합이 안되면 단일 아이템 추천)
      */
     private List<OotdDto> recommendTopBottomOrDress(
         Map<ClothesType, List<Clothes>> typeGroups,
@@ -208,87 +253,165 @@ public class ItemSelectorEngine {
         log.debug(ENGINE + "TOP/BOTTOM 또는 DRESS 추천 시작");
         List<OotdDto> result = new ArrayList<>();
 
-        // 각 타입별 후보 필터링 및 점수 계산
-        List<Clothes> dressCandidates = filterByScore(typeGroups.getOrDefault(ClothesType.DRESS, List.of()), context, scoreCache);
-        List<Double> dressScores = calculateScores(dressCandidates, context, scoreCache);
+        // 점수 한 번만 계산
+        List<Scored> tops = buildScored(typeGroups.getOrDefault(ClothesType.TOP, List.of()), context, scoreCache);
+        List<Scored> bottoms = buildScored(typeGroups.getOrDefault(ClothesType.BOTTOM, List.of()), context, scoreCache);
+        List<Scored> dresses = buildScored(typeGroups.getOrDefault(ClothesType.DRESS, List.of()), context, scoreCache);
 
-        List<Clothes> topCandidates = filterByScore(typeGroups.getOrDefault(ClothesType.TOP, List.of()), context, scoreCache);
-        List<Double> topScores = calculateScores(topCandidates, context, scoreCache);
+        // 임계값 이상
+        List<Scored> topsOK    = filterAboveThreshold(tops);
+        List<Scored> bottomsOK = filterAboveThreshold(bottoms);
+        List<Scored> dressesOK = filterAboveThreshold(dresses);
 
-        List<Clothes> bottomCandidates = filterByScore(typeGroups.getOrDefault(ClothesType.BOTTOM, List.of()), context, scoreCache);
+        // 조합 우선: TOP/BOTTOM 있으면, TOP 고르고 BOTTOM에 보너스 가산 후 softmax
+        if (!topsOK.isEmpty() && !bottomsOK.isEmpty()) {
+            Clothes topPicked = softmaxPick(topsOK, mixSeed(rollCounter, ClothesType.TOP));
+            Style anchor = extractStyle(topPicked);
+            Clothes bottomPicked = softmaxPick(
+                withHarmonyBonus(bottomsOK, anchor, STYLE_WEIGHT),
+                mixSeed(rollCounter, ClothesType.BOTTOM)
+            );
 
-        // TOP/BOTTOM 조합 추천
-        if (!topCandidates.isEmpty() && !bottomCandidates.isEmpty()) {
-            int selectedTopIdx = softmaxSample(topScores, mixSeed(rollCounter, ClothesType.TOP));
-            Clothes selectedTop = getCandidate(topCandidates, selectedTopIdx);
-            Style topStyle = extractStyle(selectedTop);
-
-            // BOTTOM 후보별 스타일 조화 점수 반영
-            List<Double> bottomScores = new ArrayList<>();
-            for (Clothes c : bottomCandidates) {
-                double base = scoreOf(c, context, scoreCache);
-                double harmony = calculateHarmonyScore(topStyle, extractStyle(c));
-                double score = Math.min(1.0, base + (harmony * STYLE_WEIGHT) / 10.0);
-                bottomScores.add(score);
+            if (topPicked != null && bottomPicked != null) {
+                addDtoIfNotNull(result, topPicked);
+                addDtoIfNotNull(result, bottomPicked);
+                return result;
             }
-            int selectedBottomIdx = softmaxSample(bottomScores, mixSeed(rollCounter, ClothesType.BOTTOM));
-            Clothes selectedBottom = getCandidate(bottomCandidates, selectedBottomIdx);
+        }
 
-            boolean hasTopBottom = selectedTop != null && selectedBottom != null;
-
-            double topBottomSelectedAvg = hasTopBottom
-                ? (topScores.get(selectedTopIdx) + bottomScores.get(selectedBottomIdx)) / 2.0
-                : 0.0;
-
-            int selectedDressIdx = softmaxSample(dressScores, mixSeed(rollCounter, ClothesType.DRESS));
-            double selectedDressScore = (selectedDressIdx >= 0 && selectedDressIdx < dressScores.size())
-                ? dressScores.get(selectedDressIdx)
-                : 0.0;
-
-            // DRESS가 더 적합하면 DRESS 추천, 아니면 TOP/BOTTOM 조합 추천
-            if (selectedDressScore >= topBottomSelectedAvg && !dressCandidates.isEmpty()) {
-                Clothes selectedDress = getCandidate(dressCandidates, selectedDressIdx);
-                addDtoIfNotNull(result, selectedDress);
-            } else if (hasTopBottom) {
-                addDtoIfNotNull(result, selectedTop);
-                addDtoIfNotNull(result, selectedBottom);
-            } else {
-                log.info(ENGINE + "추천 가능한 TOP/BOTTOM 조합이 없습니다.");
-            }
+        // DRESS 단일
+        if (!dressesOK.isEmpty()) {
+            Clothes d = softmaxPick(dressesOK, mixSeed(rollCounter, ClothesType.DRESS));
+            addDtoIfNotNull(result, d);
             return result;
         }
 
-        // DRESS 단일 추천
-        if (!dressCandidates.isEmpty()) {
-            int selectedDressIdx = softmaxSample(dressScores, mixSeed(rollCounter, ClothesType.DRESS));
-            Clothes selectedDress = getCandidate(dressCandidates, selectedDressIdx);
-            addDtoIfNotNull(result, selectedDress);
+        // 단일 TOP 혹은 단일 BOTTOM
+        if (!topsOK.isEmpty()) {
+            addDtoIfNotNull(result, softmaxPick(topsOK, mixSeed(rollCounter, ClothesType.TOP)));
+            return result;
+        }
+        if (!bottomsOK.isEmpty()) {
+            addDtoIfNotNull(result, softmaxPick(bottomsOK, mixSeed(rollCounter, ClothesType.BOTTOM)));
             return result;
         }
 
-        // TOP만 있을 때 단일 추천
-        if (!topCandidates.isEmpty()) {
-            int selectedTopIdx = softmaxSample(topScores, mixSeed(rollCounter, ClothesType.TOP));
-            Clothes selectedTop = getCandidate(topCandidates, selectedTopIdx);
-            addDtoIfNotNull(result, selectedTop);
-            return result;
-        }
-
-        // BOTTOM만 있을 때 단일 추천
-        List<Double> bottomScores = calculateScores(bottomCandidates, context, scoreCache);
-        if (!bottomCandidates.isEmpty()) {
-            int selectedBottomIdx = softmaxSample(bottomScores, mixSeed(rollCounter, ClothesType.BOTTOM));
-            Clothes selectedBottom = getCandidate(bottomCandidates, selectedBottomIdx);
-            addDtoIfNotNull(result, selectedBottom);
-            return result;
-        }
-
-        log.info(ENGINE + "추천 가능한 TOP/BOTTOM/DRESS 조합이 없습니다.");
+        log.debug(ENGINE + "코어 점수 기반 후보 없음(임계값={})", scoreThreshold);
         return result;
     }
 
     /**
-     * TOP, BOTTOM, DRESS 외의 나머지 타입을 추천합니다.
+     * 점수 목록을 생성합니다.
+     */
+    private List<Scored> buildScored(List<Clothes> items, RecommendationContextDto ctx, Map<UUID, Double> cache) {
+        if (items == null || items.isEmpty()) return List.of();
+        List<Scored> out = new ArrayList<>(items.size());
+        for (Clothes c : items) {
+            double s = scoreOf(c, ctx, cache);
+            out.add(new Scored(c, s, extractStyle(c)));
+        }
+        return out;
+    }
+
+    /**
+     * 임계값 이상 점수만 필터링합니다.
+     */
+    private List<Scored> filterAboveThreshold(List<Scored> scored) {
+        return scored.stream().filter(s -> s.score >= scoreThreshold).toList();
+    }
+
+    /**
+     * 두 스타일 간 조화 점수를 계산해 보너스 점수를 가산합니다.
+     */
+    private List<Scored> withHarmonyBonus(List<Scored> scored, Style anchor, double weight) {
+        if (anchor == null || scored.isEmpty()) return scored;
+        List<Scored> out = new ArrayList<>(scored.size());
+        for (Scored s : scored) {
+            if (s.style == null) {
+                out.add(s);
+                continue;
+            }
+            double harmony = calculateHarmonyScore(anchor, s.style);
+            double bonus = (harmony / 10.0) * weight;
+            out.add(new Scored(s.c, Math.min(1.0, s.score + bonus), s.style));
+        }
+        return out;
+    }
+
+    /**
+     * softmax 선택
+     */
+    private Clothes softmaxPick(List<Scored> scored, long seedSalt) {
+        if (scored.isEmpty()) return null;
+        List<Double> arr = scored.stream().map(s -> s.score).toList();
+        int idx = softmaxSample(arr, seedSalt);
+        return (idx >= 0 && idx < scored.size()) ? scored.get(idx).c : null;
+    }
+
+    /**
+     * TOP/BOTTOM 또는 DRESS을 랜덤으로 추천합니다.
+     * - TOP/BOTTOM 둘 다 있으면 한 벌 추천
+     * - DRESS가 있으면 50% 확률로 DRESS, 아니면 TOP/BOTTOM 한 벌
+     * - 둘 중 하나만 있으면 그것만 추천
+     * - 모두 없으면 빈 리스트 반환
+     */
+    private List<OotdDto> fallbackRecommendTopBottomOrDress(
+        Map<ClothesType, List<Clothes>> typeGroups,
+        long rollCounter
+    ) {
+        log.debug(ENGINE + "랜덤 TOP/BOTTOM 또는 DRESS 추천 시작");
+
+        List<OotdDto> result = new ArrayList<>();
+
+        List<Clothes> tops = typeGroups.getOrDefault(ClothesType.TOP, List.of());
+        List<Clothes> bottoms = typeGroups.getOrDefault(ClothesType.BOTTOM, List.of());
+        List<Clothes> dresses = typeGroups.getOrDefault(ClothesType.DRESS, List.of());
+
+        boolean hasPair  = !tops.isEmpty() && !bottoms.isEmpty();
+        boolean hasDress = !dresses.isEmpty();
+
+        if (hasPair && hasDress) {
+            boolean pickDress = new SplittableRandom(mixSeed(rollCounter, "coreChoice")).nextInt(2) == 0;
+            if (pickDress) {
+                addDtoIfNotNull(result, getRandomCandidate(dresses, mixSeed(rollCounter, ClothesType.DRESS)));
+                return result;
+            } else {
+                addDtoIfNotNull(result, getRandomCandidate(tops, mixSeed(rollCounter, ClothesType.TOP)));
+                addDtoIfNotNull(result, getRandomCandidate(bottoms, mixSeed(rollCounter, ClothesType.BOTTOM)));
+                return result;
+            }
+        }
+
+        // TOP/BOTTOM 한 벌 가능
+        if (hasPair) {
+            addDtoIfNotNull(result, getRandomCandidate(tops, mixSeed(rollCounter, ClothesType.TOP)));
+            addDtoIfNotNull(result, getRandomCandidate(bottoms, mixSeed(rollCounter, ClothesType.BOTTOM)));
+            return result;
+        }
+
+        // DRESS 단일 가능
+        if (hasDress) {
+            addDtoIfNotNull(result, getRandomCandidate(dresses, mixSeed(rollCounter, ClothesType.DRESS)));
+            return result;
+        }
+
+        // TOP만 또는 BOTTOM만 있는 경우
+        if (!tops.isEmpty()) {
+            addDtoIfNotNull(result, getRandomCandidate(tops, mixSeed(rollCounter, ClothesType.TOP)));
+            return result;
+        }
+        if (!bottoms.isEmpty()) {
+            addDtoIfNotNull(result, getRandomCandidate(bottoms, mixSeed(rollCounter, ClothesType.BOTTOM)));
+            return result;
+        }
+
+        log.debug(ENGINE + "랜덤 폴백 대상(TOP/BOTTOM/DRESS)이 없습니다.");
+        return result;
+    }
+
+    /**
+     * TOP, BOTTOM, DRESS 외의 나머지 타입에서 임계값 이상 후보만 softmax로 선택합니다.
+     * (임계값 이상 후보가 없으면 스킵되며, 최종 결과가 비었을 때 상위 레벨의 랜덤 폴백이 적용됩니다.)
      */
     private List<OotdDto> recommendOthers(
         Map<ClothesType, List<Clothes>> typeGroups,
@@ -299,54 +422,60 @@ public class ItemSelectorEngine {
     ) {
         log.debug(ENGINE + "나머지 타입 추천 시작");
         List<OotdDto> result = new ArrayList<>();
-        for (Map.Entry<ClothesType, List<Clothes>> entry : typeGroups.entrySet()) {
-            ClothesType type = entry.getKey();
-            // TOP/BOTTOM/DRESS는 제외
-            if (type == ClothesType.TOP || type == ClothesType.BOTTOM || type == ClothesType.DRESS)
-                continue;
 
-            List<Clothes> candidates = filterByScore(entry.getValue(), context, scoreCache);
-            List<Double> scores = new ArrayList<>(candidates.size());
+        for (Map.Entry<ClothesType, List<Clothes>> e : typeGroups.entrySet()) {
+            ClothesType type = e.getKey();
+            if (type == ClothesType.TOP || type == ClothesType.BOTTOM || type == ClothesType.DRESS) continue;
 
-            for (Clothes c : candidates) {
-                double base = scoreOf(c, context, scoreCache);
-                double harmony = (anchorStyle != null) ? calculateHarmonyScore(anchorStyle, extractStyle(c)) : 0.0;
-                double score = Math.min(1.0, base + (harmony / 10.0) * OTHER_STYLE_WEIGHT);
-                scores.add(score);
-            }
+            List<Scored> scored = buildScored(e.getValue(), context, scoreCache);
+            List<Scored> ok = filterAboveThreshold(scored);
+            ok = withHarmonyBonus(ok, anchorStyle, OTHER_STYLE_WEIGHT);
 
-            if (candidates.isEmpty()) {
-                log.info(ENGINE + "추천 가능한 의상이 없습니다. 임계값={}, type={}", scoreThreshold, type);
+            if (ok.isEmpty()) {
+                log.debug(ENGINE + "임계값 이상 후보 없음: type={}, threshold={}", type, scoreThreshold);
                 continue;
             }
-
-            int selectedIdx = softmaxSample(scores, mixSeed(rollCounter, type));
-            Clothes selected = getCandidate(candidates, selectedIdx);
-            addDtoIfNotNull(result, selected);
+            Clothes pick = softmaxPick(ok, mixSeed(rollCounter, type));
+            addDtoIfNotNull(result, pick);
         }
         return result;
     }
 
     /**
-     * 임계값 이상 후보 필터링
+     * 나머지 타입을 랜덤으로 추천합니다.
      */
-    private List<Clothes> filterByScore(List<Clothes> clothes, RecommendationContextDto context, Map<UUID, Double> scoreCache) {
-        List<Clothes> filtered = clothes.stream()
-            .filter(c -> scoreOf(c, context, scoreCache) >= scoreThreshold)
-            .toList();
-        log.debug(ENGINE + "filterByScore: before={}, after={}, threshold={}", clothes.size(), filtered.size(), scoreThreshold);
-        return filtered;
+    private List<OotdDto> fallbackRecommendOthers(
+        Map<ClothesType, List<Clothes>> typeGroups,
+        long rollCounter
+    ) {
+        log.debug(ENGINE + "나머지 타입 랜덤 추천 시작");
+        List<OotdDto> result = new ArrayList<>();
+
+        for (Map.Entry<ClothesType, List<Clothes>> entry : typeGroups.entrySet()) {
+            ClothesType type = entry.getKey();
+            // 코어 타입 제외
+            if (type == ClothesType.TOP || type == ClothesType.BOTTOM || type == ClothesType.DRESS) continue;
+
+            List<Clothes> candidates = entry.getValue();
+            if (candidates == null || candidates.isEmpty()) continue;
+
+            Clothes picked = getRandomCandidate(candidates, mixSeed(rollCounter, type));
+            addDtoIfNotNull(result, picked);
+        }
+
+        if (result.isEmpty()) {
+            log.debug(ENGINE + "랜덤 폴백 대상(나머지 타입)이 없습니다.");
+        }
+        return result;
     }
 
     /**
-     * 후보별 점수 리스트 반환
+     * 후보 중 랜덤으로 하나 반환
      */
-    private List<Double> calculateScores(List<Clothes> clothes, RecommendationContextDto context, Map<UUID, Double> scoreCache) {
-        List<Double> scores = clothes.stream()
-            .map(c -> scoreOf(c, context, scoreCache))
-            .toList();
-        log.debug(ENGINE + "calculateScores: scores={}", scores);
-        return scores;
+    private Clothes getRandomCandidate(List<Clothes> candidates, long seed) {
+        if (candidates == null || candidates.isEmpty()) return null;
+        int idx = new SplittableRandom(seed).nextInt(candidates.size());
+        return candidates.get(idx);
     }
 
     /**
@@ -370,12 +499,14 @@ public class ItemSelectorEngine {
      * 캐시된 점수가 없으면 계산 후 캐시에 저장합니다.
      */
     private double scoreOf(Clothes c, RecommendationContextDto ctx, Map<UUID, Double> cache) {
-        if (!cache.containsKey(c.getId())) {
-            double score = calculateScore(c, ctx.adjustedTemperature(), ctx.currentMonth(), ctx.isRainingOrSnowing());
-            log.debug(ENGINE + "scoreOf: cache miss for id={}, calculated score={}", c.getId(), score);
-            cache.put(c.getId(), score);
+        UUID id = c.getId();
+        if (id == null) {
+            // 영속화 전/테스트 데이터 등 ID 없음: 캐시 미사용
+            return calculateScore(c, ctx.adjustedTemperature(), ctx.currentMonth(), ctx.isRainingOrSnowing());
         }
-        return cache.get(c.getId());
+        return cache.computeIfAbsent(id, k ->
+            calculateScore(c, ctx.adjustedTemperature(), ctx.currentMonth(), ctx.isRainingOrSnowing())
+        );
     }
 
     /**
@@ -436,13 +567,6 @@ public class ItemSelectorEngine {
     }
 
     /**
-     * 후보 중 softmax 인덱스에 해당하는 옷 반환
-     */
-    private Clothes getCandidate(List<Clothes> candidates, int idx) {
-        return (idx >= 0 && idx < candidates.size()) ? candidates.get(idx) : null;
-    }
-
-    /**
      * DTO 변환 및 null 체크 후 리스트에 추가
      */
     private void addDtoIfNotNull(List<OotdDto> result, Clothes clothes) {
@@ -450,7 +574,7 @@ public class ItemSelectorEngine {
         OotdDto dto = clothesMapper.toOotdDto(clothes);
         if (dto != null) {
             result.add(dto);
-            log.info(ENGINE + "추천 성공: id={}, type={}, attributes={}", clothes.getId(), clothes.getType(), clothes.getAttributes());
+            log.debug(ENGINE + "추천 성공: id={}, type={}, attributes={}", clothes.getId(), clothes.getType(), clothes.getAttributes());
         } else {
             log.error(ENGINE + "추천된 의상 DTO 변환 실패: id={}, type={}", clothes.getId(), clothes.getType());
         }
@@ -466,7 +590,7 @@ public class ItemSelectorEngine {
                 List<Clothes> group = typeGroups.get(type);
                 if (group != null) {
                     for (Clothes c : group) {
-                        if (c.getId().equals(dto.clothesId())) {
+                        if (dto.clothesId() != null && Objects.equals(c.getId(), dto.clothesId())) {
                             return extractStyle(c);
                         }
                     }

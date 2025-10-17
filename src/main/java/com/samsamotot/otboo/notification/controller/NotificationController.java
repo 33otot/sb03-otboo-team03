@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.notification.controller;
 
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.notification.controller.api.NotificationApi;
 import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import com.samsamotot.otboo.notification.dto.NotificationRequest;
@@ -7,6 +8,7 @@ import com.samsamotot.otboo.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +40,7 @@ public class NotificationController implements NotificationApi {
      * @param limit    조회할 데이터 개수 (필수)
      * @return NotificationListResponse (알림 목록 + 페이지네이션 정보)
      */
+    @Override
     @GetMapping
     public ResponseEntity<NotificationListResponse> getNotifications(
         @RequestParam(required = false) Instant cursor,
@@ -56,10 +59,21 @@ public class NotificationController implements NotificationApi {
      * @param notificationId 삭제할 알림의 식별자(UUID)
      * @return 204 No Content
      */
+    @Override
     @DeleteMapping("/{notificationId}")
     public ResponseEntity<Void> deleteNotifications(@PathVariable UUID notificationId) {
         notificationService.delete(notificationId);
         log.info(NOTIFICATION_CONTROLLER + "알람이 삭제 되었습니다.: {}", notificationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @DeleteMapping
+    public ResponseEntity<Void> deleteAllByUserId(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        UUID userId = userDetails.getId();
+        notificationService.deleteAllByUserId(userId);
         return ResponseEntity.noContent().build();
     }
 }
