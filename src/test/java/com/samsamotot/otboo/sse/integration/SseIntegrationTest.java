@@ -94,7 +94,6 @@ public class SseIntegrationTest {
 
         awaitTrue(() -> connections().containsKey(userId), 500);
 
-        // 기존 연결을 모두 제거하고 FailingEmitter만 추가
         java.util.Set<SseEmitter> userConnections = connections().get(userId);
         userConnections.clear();
 
@@ -118,29 +117,28 @@ public class SseIntegrationTest {
         // when
         assertDoesNotThrow(() -> sseService.sendNotification(userId, json));
 
-        // then - FailingEmitter가 제거되어 연결이 비어있어야 함
+        // then
         assertTrue(userConnections.isEmpty());
     }
 
     @Test
     @DisplayName("분산 SSE 연결 생성 및 관리")
     void 분산_SSE_연결_생성_및_관리() {
-        // Given
+        // given
         UUID userId = UUID.randomUUID();
 
-        // When
+        // when
         var emitter = sseService.createConnection(userId);
 
-        // Then - 느슨한 검증
+        // then
         assertThat(emitter).isNotNull();
-        // 연결 상태는 생성 직후에는 불안정할 수 있으므로 느슨하게 검증
         assertThat(sseService.getActiveConnectionCount()).isGreaterThanOrEqualTo(0);
     }
 
     @Test
     @DisplayName("로컬 사용자에게 직접 알림 전송")
     void 로컬_사용자에게_직접_알림_전송() throws Exception {
-        // Given
+        // given
         UUID userId = UUID.randomUUID();
         var emitter = sseService.createConnection(userId);
 
@@ -154,11 +152,10 @@ public class SseIntegrationTest {
 
         String notificationJson = objectMapper.writeValueAsString(notification);
 
-        // When
+        // when
         sseService.sendNotification(userId, notificationJson);
 
-        // Then
-        // 로컬 연결이 있으므로 직접 전송되어야 함
+        // then
         assertThat(sseService.isUserConnected(userId)).isTrue();
 
         emitter.complete();
@@ -167,9 +164,8 @@ public class SseIntegrationTest {
     @Test
     @DisplayName("원격 사용자에게 Redis Pub/Sub 전송")
     void 원격_사용자에게_Redis_PubSub_전송() throws Exception {
-        // Given
+        // given
         UUID userId = UUID.randomUUID();
-        // 로컬 연결은 생성하지 않음 (원격 사용자 시뮬레이션)
 
         NotificationDto notification = NotificationDto.builder()
             .id(UUID.randomUUID())
@@ -181,48 +177,138 @@ public class SseIntegrationTest {
 
         String notificationJson = objectMapper.writeValueAsString(notification);
 
-        // When
+        // when
         sseService.sendNotification(userId, notificationJson);
 
-        // Then
-        // 로컬 연결이 없으므로 Redis Pub/Sub로 전송되어야 함
+        // then
         assertThat(sseService.isUserConnected(userId)).isFalse();
     }
 
-//    @Test
-//    @DisplayName("배치 알림 전송 테스트")
-//    void 배치_알림_전송_테스트() throws Exception {
-//        // Given
-//        UUID localUser1 = UUID.randomUUID();
-//        UUID localUser2 = UUID.randomUUID();
-//        UUID remoteUser = UUID.randomUUID();
-//
-//        // 로컬 사용자 연결 생성
-//        var emitter1 = sseService.createConnection(localUser1);
-//        var emitter2 = sseService.createConnection(localUser2);
-//
-//        List<UUID> userIds = List.of(localUser1, localUser2, remoteUser);
-//
-//        NotificationDto notification = NotificationDto.builder()
-//            .id(UUID.randomUUID())
-//            .title("배치 알림")
-//            .content("분산 배치 전송 테스트")
-//            .level(NotificationLevel.INFO)
-//            .receiverId(localUser1) // 첫 번째 사용자 ID 사용
-//            .build();
-//
-//        String notificationJson = objectMapper.writeValueAsString(notification);
-//
-//        // When
-//        sseService.sendBatchNotification(userIds, notificationJson);
-//
-//        // Then
-//        assertThat(sseService.isUserConnected(localUser1)).isTrue();
-//        assertThat(sseService.isUserConnected(localUser2)).isTrue();
-//        assertThat(sseService.isUserConnected(remoteUser)).isFalse();
-//        assertThat(sseService.getActiveConnectionCount()).isEqualTo(2);
-//
-//        emitter1.complete();
-//        emitter2.complete();
-//    }
+    @Test
+    @DisplayName("Redis에서 받은 메시지를 로컬 연결로만 전송")
+    void Redis_메시지_로컬_전송() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        var emitter = sseService.createConnection(userId);
+
+        NotificationDto notification = NotificationDto.builder()
+            .id(UUID.randomUUID())
+            .title("Redis 알림")
+            .content("Redis에서 받은 메시지 테스트")
+            .level(NotificationLevel.INFO)
+            .receiverId(userId)
+            .build();
+
+        String notificationJson = objectMapper.writeValueAsString(notification);
+
+        // when
+        sseService.sendLocalNotification(userId, notificationJson);
+
+        // then
+        assertThat(sseService.isUserConnected(userId)).isTrue();
+
+        emitter.complete();
+    }
+
+    @Test
+    @DisplayName("Redis 메시지 처리 시 로컬 연결 없음")
+    void Redis_메시지_로컬_연결_없음() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+
+        NotificationDto notification = NotificationDto.builder()
+            .id(UUID.randomUUID())
+            .title("Redis 알림")
+            .content("로컬 연결 없는 Redis 메시지 테스트")
+            .level(NotificationLevel.INFO)
+            .receiverId(userId)
+            .build();
+
+        String notificationJson = objectMapper.writeValueAsString(notification);
+
+        // when
+        sseService.sendLocalNotification(userId, notificationJson);
+
+        // then
+        assertThat(sseService.isUserConnected(userId)).isFalse();
+    }
+
+    @Test
+    @DisplayName("다중 연결 지원 테스트")
+    void 다중_연결_지원_테스트() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        
+        var emitter1 = sseService.createConnection(userId);
+        var emitter2 = sseService.createConnection(userId);
+        var emitter3 = sseService.createConnection(userId);
+
+        java.util.Set<SseEmitter> userConnections = connections().get(userId);
+        int userConnectionCount = userConnections.size();
+
+        NotificationDto notification = NotificationDto.builder()
+            .id(UUID.randomUUID())
+            .title("다중 연결 알림")
+            .content("여러 탭에 동시 전송 테스트")
+            .level(NotificationLevel.INFO)
+            .receiverId(userId)
+            .build();
+
+        String notificationJson = objectMapper.writeValueAsString(notification);
+
+        // when
+        sseService.sendNotification(userId, notificationJson);
+
+        // then
+        assertThat(sseService.isUserConnected(userId)).isTrue();
+        
+        assertThat(userConnectionCount).isEqualTo(3);
+
+        emitter1.complete();
+        emitter2.complete();
+        emitter3.complete();
+    }
+
+    @Test
+    @DisplayName("다중 연결 중 일부 실패 시 나머지 연결 유지")
+    void 다중_연결_일부_실패_테스트() throws Exception {
+        // given
+        UUID userId = UUID.randomUUID();
+        
+        var normalEmitter = sseService.createConnection(userId);
+        
+        java.util.Set<SseEmitter> userConnections = connections().get(userId);
+        class FailingEmitter extends SseEmitter {
+            FailingEmitter() { super(Long.MAX_VALUE); }
+            @Override public void send(SseEventBuilder builder) throws IOException {
+                throw new IOException("connection failed");
+            }
+        }
+        FailingEmitter failingEmitter = new FailingEmitter();
+        userConnections.add(failingEmitter);
+        
+        int initialConnectionCount = userConnections.size();
+        assertThat(initialConnectionCount).isEqualTo(2);
+
+        NotificationDto notification = NotificationDto.builder()
+            .id(UUID.randomUUID())
+            .title("일부 실패 알림")
+            .content("일부 연결 실패 테스트")
+            .level(NotificationLevel.INFO)
+            .receiverId(userId)
+            .build();
+
+        String notificationJson = objectMapper.writeValueAsString(notification);
+
+        // when
+        sseService.sendNotification(userId, notificationJson);
+
+        // then
+        assertThat(sseService.isUserConnected(userId)).isTrue();
+        assertThat(userConnections.size()).isEqualTo(1); // 정상 연결만 남아있어야 함
+        assertThat(userConnections.contains(failingEmitter)).isFalse(); // 실패한 연결은 제거되어야 함
+
+        normalEmitter.complete();
+    }
+
 }

@@ -18,6 +18,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,11 +43,11 @@ class SseServiceImplTest {
     private ObjectMapper objectMapper;
 
     @SuppressWarnings("unchecked")
-    private Map<UUID, SseEmitter> connections() {
+    private Map<UUID, Set<SseEmitter>> connections() {
         try {
             Field f = SseServiceImpl.class.getDeclaredField("connections");
             f.setAccessible(true);
-            return (Map<UUID, SseEmitter>) f.get(sseService);
+            return (Map<UUID, Set<SseEmitter>>) f.get(sseService);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -108,7 +109,7 @@ class SseServiceImplTest {
 
     @Test
     void 연결_성공() throws Exception {
-        // fiven
+        // given
         UUID userId = UUID.randomUUID();
 
         // when
@@ -117,7 +118,8 @@ class SseServiceImplTest {
         // then
         assertNotNull(emitter);
         assertTrue(connections().containsKey(userId));
-        assertEquals(1, connections().size());
+        assertEquals(1, connections().get(userId).size());
+        assertTrue(connections().get(userId).contains(emitter));
     }
 
     @Test
@@ -127,7 +129,7 @@ class SseServiceImplTest {
         sseService.createConnection(userId);
 
         TestEmitter testEmitter = new TestEmitter();
-        connections().put(userId, testEmitter);
+        connections().get(userId).add(testEmitter);
 
         NotificationDto dto = NotificationDto.builder()
             .id(UUID.randomUUID())
@@ -151,7 +153,8 @@ class SseServiceImplTest {
 
         TestEmitter testEmitter = new TestEmitter();
         testEmitter.throwOnSend = true;
-        connections().put(userId, testEmitter);
+        connections().get(userId).clear(); // 기존 연결 제거
+        connections().get(userId).add(testEmitter); // 실패할 emitter만 추가
 
         NotificationDto dto = NotificationDto.builder()
             .id(UUID.randomUUID())
@@ -284,7 +287,7 @@ class SseServiceImplTest {
         // then
         assertNotNull(emitter);
         assertTrue(connections().containsKey(userId), "연결 생성 후 맵에 등록되어야 함");
-        assertEquals(emitter, connections().get(userId), "생성된 emitter가 맵에 저장되어야 함");
+        assertTrue(connections().get(userId).contains(emitter), "생성된 emitter가 맵에 저장되어야 함");
     }
 
     @Test
@@ -298,9 +301,11 @@ class SseServiceImplTest {
         sseService.createConnection(userId2);
 
         // then
-        assertEquals(2, connections().size(), "두 개의 연결이 생성되어야 함");
+        assertEquals(2, connections().size(), "두 개의 사용자 연결이 생성되어야 함");
         assertTrue(connections().containsKey(userId1), "첫 번째 사용자 연결이 있어야 함");
         assertTrue(connections().containsKey(userId2), "두 번째 사용자 연결이 있어야 함");
+        assertEquals(1, connections().get(userId1).size(), "첫 번째 사용자 연결 수");
+        assertEquals(1, connections().get(userId2).size(), "두 번째 사용자 연결 수");
     }
 
     @Test
@@ -346,8 +351,10 @@ class SseServiceImplTest {
         SseEmitter emitter2 = sseService.createConnection(userId);
 
         // then
-        assertEquals(1, connections().size(), "중복 연결 시 하나만 유지되어야 함");
-        assertEquals(emitter2, connections().get(userId), "마지막 연결이 유지되어야 함");
+        assertEquals(1, connections().size(), "동일 사용자이므로 하나의 엔트리만 있어야 함");
+        assertEquals(2, connections().get(userId).size(), "두 개의 연결이 모두 유지되어야 함");
+        assertTrue(connections().get(userId).contains(emitter1), "첫 번째 연결이 유지되어야 함");
+        assertTrue(connections().get(userId).contains(emitter2), "두 번째 연결이 유지되어야 함");
     }
 
     @Test
@@ -357,7 +364,7 @@ class SseServiceImplTest {
         sseService.createConnection(userId);
 
         TestEmitter testEmitter = new TestEmitter();
-        connections().put(userId, testEmitter);
+        connections().get(userId).add(testEmitter);
 
         NotificationDto dto = NotificationDto.builder()
             .id(UUID.randomUUID())
@@ -423,7 +430,7 @@ class SseServiceImplTest {
         sseService.createConnection(userId);
 
         TestEmitter testEmitter = new TestEmitter();
-        connections().put(userId, testEmitter);
+        connections().get(userId).add(testEmitter);
 
         when(objectMapper.readValue(anyString(), eq(NotificationDto.class)))
             .thenThrow(new RuntimeException("Invalid JSON"));
@@ -457,7 +464,7 @@ class SseServiceImplTest {
         sseService.createConnection(userId);
 
         TestEmitter testEmitter = new TestEmitter();
-        connections().put(userId, testEmitter);
+        connections().get(userId).add(testEmitter);
 
         NotificationDto dto = NotificationDto.builder()
             .id(UUID.randomUUID())
