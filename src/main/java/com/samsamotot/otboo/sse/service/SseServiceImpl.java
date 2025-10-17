@@ -20,17 +20,18 @@ import java.util.concurrent.ConcurrentHashMap;
  * FileName     : SseServiceImpl
  * Author       : dounguk
  * Date         : 2025. 9. 29.
- * Description  : Kafka를 활용한 분산 SSE 서비스 구현체
+ * Description  : Redis를 활용한 분산 SSE 서비스 구현체
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SseServiceImpl implements SseService {
     
-    private static final String SSE_SERVICE = "[SSE_SERVICE] ";
+    private static final String SSE_SERVICE = "[SseServiceImpl] ";
     private static final int MAX_BACKLOG = 1000;
     
     private final ObjectMapper objectMapper;
+    private final MessagingStrategyService messagingStrategyService;
     
     @Autowired(required = false)
     private KafkaTemplate<String, String> kafkaTemplate;
@@ -64,8 +65,7 @@ public class SseServiceImpl implements SseService {
             removeEmitter(userId, emitter);
         });
 
-        connections.computeIfAbsent(userId, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
-                   .add(emitter);
+        connections.computeIfAbsent(userId, k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(emitter);
         int totalConnections = connections.values().stream().mapToInt(java.util.Set::size).sum();
         log.info(SSE_SERVICE + "생성 user: {}, 총 연결수: {}", userId, totalConnections);
         return emitter;
@@ -73,7 +73,7 @@ public class SseServiceImpl implements SseService {
 
     /**
      * 특정 사용자에게 알림을 전송합니다.
-     * 로컬 연결이 있으면 직접 전송하고, 없으면 Kafka로 전송합니다.
+     * 로컬 연결이 있으면 직접 전송하고, 없으면 Redis Pub/Sub로 전송합니다.
      * 
      * @param userId 알림을 받을 사용자 ID
      * @param notificationData 알림 데이터 (JSON 문자열)
@@ -93,30 +93,31 @@ public class SseServiceImpl implements SseService {
         q.addLast(dto);
         while (q.size() > MAX_BACKLOG) q.pollFirst();
 
-        // 로컬 연결 확인
+        // 항상 메시징 전략을 통해 분산 메시징 수행
+        try {
+            NotificationDto notificationDto = objectMapper.readValue(notificationData, NotificationDto.class);
+            messagingStrategyService.publishNotification(userId, notificationDto);
+            log.info(SSE_SERVICE + "메시징 전략 발행 완료 - userId: {}", userId);
+        } catch (Exception e) {
+            log.error(SSE_SERVICE + "메시징 전략 발행 실패 - userId: {}", userId, e);
+        }
+
+        // 로컬 연결이 있으면 로컬로도 전송 (중복 전송 방지)
         Set<SseEmitter> emitters = connections.get(userId);
         if (emitters != null && !emitters.isEmpty()) {
-            boolean delivered = false;
             for (SseEmitter em : emitters.toArray(new SseEmitter[0])) { // 방어적 복사
                 try {
                     em.send(SseEmitter.event()
                         .name("notifications")
                         .id(dto.getId().toString())
                         .data(notificationData));
-                    delivered = true;
+                    log.info(SSE_SERVICE + "로컬 알림 전송 완료 - user: {}", userId);
                 } catch (Exception e) {
                     log.error(SSE_SERVICE + "로컬 알림 전송실패 user: {}", userId, e);
                     removeEmitter(userId, em);
                 }
             }
-            if (delivered) {
-                log.debug(SSE_SERVICE + "로컬 알림 전송 user: {}", userId);
-                return;
-            }
         }
-
-        // 로컬 연결이 없으면 Kafka로 다른 서버에 전송 요청
-        publishNotification(userId, notificationData);
     }
 
     /**
@@ -131,6 +132,7 @@ public class SseServiceImpl implements SseService {
         Deque<NotificationDto> q = backlog.get(userId);
         if (q == null || q.isEmpty()) return;
 
+        // lastEventId가 null이면 아무것도 전송하지 않음
         if (lastEventId == null || lastEventId.isBlank()) {
             return;
         }
@@ -146,6 +148,7 @@ public class SseServiceImpl implements SseService {
                         .data(json));
                 } catch (Exception e) {
                     log.error(SSE_SERVICE + "리플레이 실패 user: {}, notificationId: {}", userId, dto.getId(), e);
+                    // IOException 발생 시 중단
                     break;
                 }
             } else if (dto.getId().toString().equals(lastEventId)) {
@@ -161,7 +164,7 @@ public class SseServiceImpl implements SseService {
      */
     @Override
     public int getActiveConnectionCount() {
-        return connections.values().stream().mapToInt(java.util.Set::size).sum();
+        return connections.values().stream().mapToInt(Set::size).sum();
     }
 
     /**
@@ -210,9 +213,9 @@ public class SseServiceImpl implements SseService {
                     removeEmitter(userId, em);
                 }
             }
-            log.debug(SSE_SERVICE + "로컬 알림 전송 완료 user: {}", userId);
+            log.info(SSE_SERVICE + "로컬 알림 전송 완료 user: {}", userId);
         } else {
-            log.debug(SSE_SERVICE + "로컬 연결 없음 - 알림 건너뜀 user: {}", userId);
+            log.info(SSE_SERVICE + "로컬 연결 없음 - 알림 건너뜀 user: {}", userId);
         }
     }
 
@@ -227,36 +230,5 @@ public class SseServiceImpl implements SseService {
             set.remove(emitter);
             return set.isEmpty() ? null : set;
         });
-    }
-
-    /**
-     * 특정 사용자에게 알림을 Kafka로 발행
-     * 
-     * @param userId 알림을 받을 사용자 ID
-     * @param notificationData 알림 데이터 (JSON 문자열)
-     */
-    private void publishNotification(UUID userId, String notificationData) {
-        if (kafkaTemplate == null) {
-            log.debug(SSE_SERVICE + "Kafka 비활성화 - 알림 발행 건너뜀 userId: {}", userId);
-            return;
-        }
-        
-        try {
-            String topic = "sse-notifications";
-            String key = userId.toString();
-            
-            kafkaTemplate.send(topic, key, notificationData)
-                .whenComplete((result, ex) -> {
-                    if (ex == null) {
-                        log.debug(SSE_SERVICE + "알림 발행 성공 - userId: {}, topic: {}, partition: {}, offset: {}", 
-                                 userId, topic, result.getRecordMetadata().partition(), result.getRecordMetadata().offset());
-                    } else {
-                        log.error(SSE_SERVICE + "알림 발행 실패 - userId: {}", userId, ex);
-                    }
-                });
-                
-        } catch (Exception e) {
-            log.error(SSE_SERVICE + "알림 발행 실패 - userId: {}", userId, e);
-        }
     }
 }

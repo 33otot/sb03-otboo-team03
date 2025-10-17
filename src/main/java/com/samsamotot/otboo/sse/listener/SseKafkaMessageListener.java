@@ -25,7 +25,7 @@ import java.util.UUID;
 @Slf4j
 public class SseKafkaMessageListener {
 
-    private static final String SSE_KAFKA_LISTENER = "[SSE_KAFKA_LISTENER] ";
+    private static final String SSE_KAFKA_LISTENER = "[SseKafkaMessageListener] ";
     
     private final SseService sseService;
     private final ObjectMapper objectMapper;
@@ -50,7 +50,7 @@ public class SseKafkaMessageListener {
             @Header(KafkaHeaders.OFFSET) long offset) {
         
         try {
-            log.debug(SSE_KAFKA_LISTENER + "메시지 수신 - userId: {}, partition: {}, offset: {}, bytes: {}", 
+            log.info(SSE_KAFKA_LISTENER + "메시지 수신 - userId: {}, partition: {}, offset: {}, bytes: {}", 
                      userId, partition, offset, notificationData.length());
             
             NotificationDto notificationDto = objectMapper.readValue(notificationData, NotificationDto.class);
@@ -59,7 +59,7 @@ public class SseKafkaMessageListener {
             
             sseService.sendLocalNotification(userIdUuid, notificationData);
             
-            log.debug(SSE_KAFKA_LISTENER + "메시지 처리 완료 - userId: {}, notificationId: {}, partition: {}, offset: {}", 
+            log.info(SSE_KAFKA_LISTENER + "메시지 처리 완료 - userId: {}, notificationId: {}, partition: {}, offset: {}", 
                      userId, notificationDto.getId(), partition, offset);
                      
         } catch (Exception e) {

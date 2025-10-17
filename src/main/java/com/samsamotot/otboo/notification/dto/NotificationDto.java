@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.notification.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.samsamotot.otboo.notification.entity.Notification;
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import lombok.AllArgsConstructor;
@@ -19,7 +21,6 @@ import java.util.UUID;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class NotificationDto {
     private UUID id;
     private Instant createdAt;
@@ -27,6 +28,22 @@ public class NotificationDto {
     private String title;
     private String content;
     private NotificationLevel level; // INFO, WARNING, ERROR
+
+    @JsonCreator
+    public NotificationDto(
+            @JsonProperty("id") UUID id,
+            @JsonProperty("createdAt") Instant createdAt,
+            @JsonProperty("receiverId") UUID receiverId,
+            @JsonProperty("title") String title,
+            @JsonProperty("content") String content,
+            @JsonProperty("level") NotificationLevel level) {
+        this.id = id;
+        this.createdAt = createdAt;
+        this.receiverId = receiverId;
+        this.title = title;
+        this.content = content;
+        this.level = level;
+    }
 
     public static NotificationDto from(Notification notification) {
         return NotificationDto.builder()

@@ -15,9 +15,12 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ContainerProperties;
+import org.springframework.kafka.listener.*;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.springframework.kafka.listener.ContainerProperties.AckMode.BATCH;
 
 /**
  * PackageName  : com.samsamotot.otboo.common.config
@@ -133,14 +136,13 @@ public class KafkaConfig {
         
         log.info(KAFKA_CONFIG + "Kafka Listener Container Factory 설정 시작");
         
-        ConcurrentKafkaListenerContainerFactory<String, String> factory = 
-            new ConcurrentKafkaListenerContainerFactory<>();
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
         
-        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.BATCH);
+        factory.getContainerProperties().setAckMode(BATCH);
         factory.getContainerProperties().setPollTimeout(3000);
         
-        factory.setCommonErrorHandler(new org.springframework.kafka.listener.DefaultErrorHandler((record, exception) -> {
+        factory.setCommonErrorHandler(new DefaultErrorHandler((record, exception) -> {
             log.error(KAFKA_CONFIG + "Kafka 메시지 처리 중 오류 발생: {}", exception.getMessage(), exception);
         }));
         
