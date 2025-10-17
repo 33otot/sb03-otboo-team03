@@ -98,6 +98,7 @@ public class SecurityConfig {
                     "/api/auth/sign-in",
                     "/api/auth/sign-out",  // 로그아웃 CSRF 무시
                     "/api/auth/refresh",
+                    "/api/auth/reset-password", // 비밀번호 초기화 CSRF 무시
                     "/api/users",
                     "/api/auth/csrf-token", // CSRF 토큰 조회 허용
                     "/oauth2/**", "/login/oauth2/**",
@@ -136,6 +137,7 @@ public class SecurityConfig {
                     "/api/auth/sign-in",
                     "/api/auth/sign-out",  // 로그아웃
                     "/api/auth/refresh",  // JWT 토큰 갱신
+                    "/api/auth/reset-password", // 비밀번호 초기화 (공개 API)
                     "/api/users", // 회원가입
                     "/api/auth/csrf-token",
                     "/oauth2/**", "/login/oauth2/**",

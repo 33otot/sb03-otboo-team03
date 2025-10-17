@@ -3,6 +3,7 @@ package com.samsamotot.otboo.common.security.jwt;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -34,9 +35,13 @@ public class TokenInvalidationService {
             // TTL이 0 이하이면 등록할 필요가 없으므로 조기 종료
             return;
         }
-        String key = BLACKLIST_PREFIX + jti;
-        redisTemplate.opsForValue().set(key, Boolean.TRUE, ttlSeconds, TimeUnit.SECONDS);
-        log.debug("블랙리스트 등록 - jti: {}, ttl: {}s", jti, ttlSeconds);
+        try {
+            String key = BLACKLIST_PREFIX + jti;
+            redisTemplate.opsForValue().set(key, Boolean.TRUE, ttlSeconds, TimeUnit.SECONDS);
+            log.debug("블랙리스트 등록 - jti: {}, ttl: {}s", jti, ttlSeconds);
+        } catch (DataAccessException e) {
+            log.warn("Redis 연결 실패로 블랙리스트 등록 실패 - jti: {}, error: {}", jti, e.getMessage());
+        }
     }
 
     /**
@@ -47,9 +52,15 @@ public class TokenInvalidationService {
      */
     public boolean isBlacklisted(String jti) {
         if (jti == null || jti.isBlank()) return false;
-        String key = BLACKLIST_PREFIX + jti;
-        Boolean exists = redisTemplate.hasKey(key);
-        return Boolean.TRUE.equals(exists);
+        try {
+            String key = BLACKLIST_PREFIX + jti;
+            Boolean exists = redisTemplate.hasKey(key);
+            return Boolean.TRUE.equals(exists);
+        } catch (DataAccessException e) {
+            log.warn("Redis 연결 실패로 블랙리스트 확인 실패 - jti: {}, error: {}", jti, e.getMessage());
+            // Redis 연결 실패 시 보안상 안전하게 false 반환 (토큰을 유효한 것으로 처리)
+            return false;
+        }
     }
 
     /**
@@ -60,10 +71,14 @@ public class TokenInvalidationService {
      */
     public void setUserInvalidAfter(String userId, Instant invalidAfter) {
         if (userId == null || userId.isBlank() || invalidAfter == null) return;
-        String key = buildInvalidAfterKey(userId);
-        // 값은 epoch millis로 저장
-        redisTemplate.opsForValue().set(key, invalidAfter.toEpochMilli());
-        log.info("사용자 컷오프 설정 - userId: {}, invalidAfter: {}", userId, invalidAfter);
+        try {
+            String key = buildInvalidAfterKey(userId);
+            // 값은 epoch millis로 저장
+            redisTemplate.opsForValue().set(key, invalidAfter.toEpochMilli());
+            log.info("사용자 컷오프 설정 - userId: {}, invalidAfter: {}", userId, invalidAfter);
+        } catch (DataAccessException e) {
+            log.warn("Redis 연결 실패로 사용자 컷오프 설정 실패 - userId: {}, error: {}", userId, e.getMessage());
+        }
     }
 
     /**
@@ -74,12 +89,15 @@ public class TokenInvalidationService {
      */
     public Long getUserInvalidAfterMillis(String userId) {
         if (userId == null || userId.isBlank()) return null;
-        Object value = redisTemplate.opsForValue().get(buildInvalidAfterKey(userId));
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
         try {
+            Object value = redisTemplate.opsForValue().get(buildInvalidAfterKey(userId));
+            if (value instanceof Number number) {
+                return number.longValue();
+            }
             return value != null ? Long.parseLong(String.valueOf(value)) : null;
+        } catch (DataAccessException e) {
+            log.warn("Redis 연결 실패로 사용자 컷오프 조회 실패 - userId: {}, error: {}", userId, e.getMessage());
+            return null;
         } catch (NumberFormatException e) {
             return null;
         }

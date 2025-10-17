@@ -102,6 +102,9 @@ dependencies {
 
 	// WebClient
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	
+	// Mail
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
     // Direct Message
     implementation "org.springframework.security:spring-security-messaging"

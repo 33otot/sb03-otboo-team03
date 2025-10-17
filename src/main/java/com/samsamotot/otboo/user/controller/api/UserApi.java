@@ -1,14 +1,25 @@
 package com.samsamotot.otboo.user.controller.api;
 
+import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.samsamotot.otboo.common.exception.ErrorResponse;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.profile.dto.NotificationSettingUpdateRequest;
 import com.samsamotot.otboo.profile.dto.ProfileDto;
 import com.samsamotot.otboo.profile.dto.ProfileUpdateRequest;
+import com.samsamotot.otboo.user.dto.ChangePasswordRequest;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
 import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,14 +28,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.UUID;
 
 /**
  * 사용자 API 인터페이스
@@ -174,5 +177,33 @@ public interface UserApi {
     ResponseEntity<Void> updateWeatherNotificationEnabled(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody NotificationSettingUpdateRequest request
+    );
+
+    @Operation(
+        summary = "비밀번호 변경",
+        description = "비밀번호를 변경합니다.",
+        operationId = "changePassword"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(
+                responseCode = "204",
+                description = "비밀번호 변경 성공"
+            ),
+            @ApiResponse(
+                responseCode = "400",
+                description = "비밀번호 변경 실패(잘못된 요청)",
+                content = @Content(mediaType = "*/*", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                responseCode = "404",
+                description = "비밀번호 변경 실패(사용자 없음)",
+                content = @Content(mediaType = "*/*", schema = @Schema(implementation = ErrorResponse.class))
+            )
+        }
+    )
+    ResponseEntity<Void> changePassword(
+        @Parameter(description = "사용자 ID") UUID userId,
+        @Parameter(description = "비밀번호 변경 요청") ChangePasswordRequest request
     );
 }

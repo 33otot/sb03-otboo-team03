@@ -45,4 +45,11 @@ public interface UserService {
      * @return 수정된 사용자 정보
      */
     UserDto updateUserRole(UUID userId, UserRoleUpdateRequest request);
+    
+    /**
+     * 비밀번호 변경
+     * @param userId 사용자 ID
+     * @param request 비밀번호 변경 요청 DTO
+     */
+    void changePassword(UUID userId, ChangePasswordRequest request);
 }
