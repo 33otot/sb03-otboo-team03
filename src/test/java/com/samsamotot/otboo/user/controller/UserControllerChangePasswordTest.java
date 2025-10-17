@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.user.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -10,6 +12,7 @@ import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import org.springframework.test.util.ReflectionTestUtils;
 import com.samsamotot.otboo.user.service.UserService;
+import com.samsamotot.otboo.profile.service.ProfileService;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +40,8 @@ class UserControllerChangePasswordTest {
     private UserService userService;
 
     @Mock
+    private ProfileService profileService;
+
     private UserController userController;
 
     private UUID userId;
@@ -45,6 +50,7 @@ class UserControllerChangePasswordTest {
 
     @BeforeEach
     void setUp() {
+        userController = new UserController(userService, profileService);
         mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
         objectMapper = new ObjectMapper();
 
@@ -75,12 +81,13 @@ class UserControllerChangePasswordTest {
         void 유효한_요청으로_비밀번호_변경_성공() throws Exception {
             // given
             setupAuthentication();
+            doNothing().when(userService).changePassword(any(UUID.class), any(ChangePasswordRequest.class));
 
             // when & then
             mockMvc.perform(patch("/api/users/{userId}/password", userId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(validRequest)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
         }
     }
 
@@ -98,7 +105,7 @@ class UserControllerChangePasswordTest {
             mockMvc.perform(patch("/api/users/{userId}/password", userId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(validRequest)))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
         }
 
         @Test
@@ -120,7 +127,7 @@ class UserControllerChangePasswordTest {
             mockMvc.perform(patch("/api/users/{userId}/password", userId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(validRequest)))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
         }
     }
 
@@ -133,6 +140,7 @@ class UserControllerChangePasswordTest {
         void 영문과_숫자_포함_비밀번호_검증_성공() throws Exception {
             // given
             setupAuthentication();
+            doNothing().when(userService).changePassword(any(UUID.class), any(ChangePasswordRequest.class));
             ChangePasswordRequest validPasswordRequest = ChangePasswordRequest.builder()
                 .password("password123")
                 .build();
@@ -141,23 +149,87 @@ class UserControllerChangePasswordTest {
             mockMvc.perform(patch("/api/users/{userId}/password", userId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(validPasswordRequest)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
         }
 
         @Test
-        @DisplayName("영문만_포함된_비밀번호_검증_성공")
-        void 영문만_포함된_비밀번호_검증_성공() throws Exception {
+        @DisplayName("영문만_포함된_비밀번호_검증_실패")
+        void 영문만_포함된_비밀번호_검증_실패() throws Exception {
             // given
             setupAuthentication();
-            ChangePasswordRequest validPasswordRequest = ChangePasswordRequest.builder()
-                .password("password123")
+            ChangePasswordRequest invalidPasswordRequest = ChangePasswordRequest.builder()
+                .password("password")
                 .build();
 
             // when & then
             mockMvc.perform(patch("/api/users/{userId}/password", userId)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(validPasswordRequest)))
-                .andExpect(status().isOk());
+                    .content(objectMapper.writeValueAsString(invalidPasswordRequest)))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("숫자만_포함된_비밀번호_검증_실패")
+        void 숫자만_포함된_비밀번호_검증_실패() throws Exception {
+            // given
+            setupAuthentication();
+            ChangePasswordRequest invalidPasswordRequest = ChangePasswordRequest.builder()
+                .password("123456")
+                .build();
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidPasswordRequest)))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("최소_길이_미만_비밀번호_검증_실패")
+        void 최소_길이_미만_비밀번호_검증_실패() throws Exception {
+            // given
+            setupAuthentication();
+            ChangePasswordRequest invalidPasswordRequest = ChangePasswordRequest.builder()
+                .password("ab1")
+                .build();
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidPasswordRequest)))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("빈_비밀번호_검증_실패")
+        void 빈_비밀번호_검증_실패() throws Exception {
+            // given
+            setupAuthentication();
+            ChangePasswordRequest invalidPasswordRequest = ChangePasswordRequest.builder()
+                .password("")
+                .build();
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidPasswordRequest)))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("null_비밀번호_검증_실패")
+        void null_비밀번호_검증_실패() throws Exception {
+            // given
+            setupAuthentication();
+            ChangePasswordRequest invalidPasswordRequest = ChangePasswordRequest.builder()
+                .password(null)
+                .build();
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidPasswordRequest)))
+                .andExpect(status().isBadRequest());
         }
     }
 
@@ -170,6 +242,7 @@ class UserControllerChangePasswordTest {
         void 최소_길이_비밀번호_검증_성공() throws Exception {
             // given
             setupAuthentication();
+            doNothing().when(userService).changePassword(any(UUID.class), any(ChangePasswordRequest.class));
             ChangePasswordRequest minLengthRequest = ChangePasswordRequest.builder()
                 .password("abc123")
                 .build();
@@ -178,7 +251,46 @@ class UserControllerChangePasswordTest {
             mockMvc.perform(patch("/api/users/{userId}/password", userId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(minLengthRequest)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("최대_길이_비밀번호_검증_성공")
+        void 최대_길이_비밀번호_검증_성공() throws Exception {
+            // given
+            setupAuthentication();
+            doNothing().when(userService).changePassword(any(UUID.class), any(ChangePasswordRequest.class));
+            ChangePasswordRequest maxLengthRequest = ChangePasswordRequest.builder()
+                .password("a".repeat(50) + "123")
+                .build();
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(maxLengthRequest)))
+                .andExpect(status().isNoContent());
+        }
+    }
+
+    @Nested
+    @DisplayName("인증 실패 테스트")
+    class AuthenticationFailureTests {
+
+        @Test
+        @DisplayName("잘못된_인증_타입_403_에러")
+        void 잘못된_인증_타입_403_에러() throws Exception {
+            // given
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                "invalidPrincipal", null, null);
+            SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+            securityContext.setAuthentication(authentication);
+            SecurityContextHolder.setContext(securityContext);
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isForbidden());
         }
     }
 }
