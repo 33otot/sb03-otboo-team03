@@ -52,6 +52,25 @@ spring:
       password: ${REDIS_PASSWORD:}
       repositories:
         enabled: false  # 개발 단계 Redis Repository 비활성화
+
+  # Kafka 설정 (환경 변수로 제어)
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:}
+    consumer:
+      group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:otboo-sse-group}
+      auto-offset-reset: latest
+      enable-auto-commit: true
+      auto-commit-interval-ms: 1000
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 5
+      buffer-memory: 33554432
 management:
   endpoints:
     web:

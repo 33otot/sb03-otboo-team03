@@ -5,7 +5,7 @@ import com.samsamotot.otboo.notification.dto.NotificationDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * FileName     : SseServiceImpl
  * Author       : dounguk
  * Date         : 2025. 9. 29.
- * Description  : Redis를 활용한 분산 SSE 서비스 구현체
+ * Description  : Kafka를 활용한 분산 SSE 서비스 구현체
  */
 @Service
 @RequiredArgsConstructor
@@ -33,7 +33,7 @@ public class SseServiceImpl implements SseService {
     private final ObjectMapper objectMapper;
     
     @Autowired(required = false)
-    private StringRedisTemplate redisTemplate;
+    private KafkaTemplate<String, String> kafkaTemplate;
 
     // 로컬 서버의 SSE 연결 관리 (사용자당 다중 연결 지원)
     private final Map<UUID, Set<SseEmitter>> connections = new ConcurrentHashMap<>();
@@ -73,7 +73,7 @@ public class SseServiceImpl implements SseService {
 
     /**
      * 특정 사용자에게 알림을 전송합니다.
-     * 로컬 연결이 있으면 직접 전송하고, 없으면 Redis Pub/Sub로 전송합니다.
+     * 로컬 연결이 있으면 직접 전송하고, 없으면 Kafka로 전송합니다.
      * 
      * @param userId 알림을 받을 사용자 ID
      * @param notificationData 알림 데이터 (JSON 문자열)
@@ -115,7 +115,7 @@ public class SseServiceImpl implements SseService {
             }
         }
 
-        // 로컬 연결이 없으면 Redis Pub/Sub로 다른 서버에 전송 요청
+        // 로컬 연결이 없으면 Kafka로 다른 서버에 전송 요청
         publishNotification(userId, notificationData);
     }
 
@@ -131,7 +131,6 @@ public class SseServiceImpl implements SseService {
         Deque<NotificationDto> q = backlog.get(userId);
         if (q == null || q.isEmpty()) return;
 
-        // lastEventId가 null이면 아무것도 전송하지 않음
         if (lastEventId == null || lastEventId.isBlank()) {
             return;
         }
@@ -147,7 +146,6 @@ public class SseServiceImpl implements SseService {
                         .data(json));
                 } catch (Exception e) {
                     log.error(SSE_SERVICE + "리플레이 실패 user: {}, notificationId: {}", userId, dto.getId(), e);
-                    // IOException 발생 시 중단
                     break;
                 }
             } else if (dto.getId().toString().equals(lastEventId)) {
@@ -232,21 +230,31 @@ public class SseServiceImpl implements SseService {
     }
 
     /**
-     * 특정 사용자에게 알림을 Redis Pub/Sub로 발행
+     * 특정 사용자에게 알림을 Kafka로 발행
      * 
      * @param userId 알림을 받을 사용자 ID
      * @param notificationData 알림 데이터 (JSON 문자열)
      */
     private void publishNotification(UUID userId, String notificationData) {
-        if (redisTemplate == null) {
-            log.debug(SSE_SERVICE + "Redis 비활성화 - 알림 발행 건너뜀 userId: {}", userId);
+        if (kafkaTemplate == null) {
+            log.debug(SSE_SERVICE + "Kafka 비활성화 - 알림 발행 건너뜀 userId: {}", userId);
             return;
         }
         
         try {
-            String channel = "sse:notification:" + userId;
-            redisTemplate.convertAndSend(channel, notificationData);
-            log.debug(SSE_SERVICE + "알림 발행 - userId: {}, channel: {}", userId, channel);
+            String topic = "sse-notifications";
+            String key = userId.toString();
+            
+            kafkaTemplate.send(topic, key, notificationData)
+                .whenComplete((result, ex) -> {
+                    if (ex == null) {
+                        log.debug(SSE_SERVICE + "알림 발행 성공 - userId: {}, topic: {}, partition: {}, offset: {}", 
+                                 userId, topic, result.getRecordMetadata().partition(), result.getRecordMetadata().offset());
+                    } else {
+                        log.error(SSE_SERVICE + "알림 발행 실패 - userId: {}", userId, ex);
+                    }
+                });
+                
         } catch (Exception e) {
             log.error(SSE_SERVICE + "알림 발행 실패 - userId: {}", userId, e);
         }
