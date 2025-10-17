@@ -17,11 +17,13 @@ import java.util.UUID;
  * FileName     : SseRedisMessageListener
  * Author       : dounguk
  * Date         : 2025. 10. 16.
- * Description  : Redis Pub/Sub를 통한 SSE 메시지 수신 처리
+ * Description  : Redis Pub/Sub를 통한 SSE 메시지 수신 처리 (DEPRECATED - Kafka로 마이그레이션됨)
+ * @deprecated Kafka 기반 메시징으로 마이그레이션됨. SseKafkaMessageListener 사용 권장.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@Deprecated
 public class SseRedisMessageListener implements MessageListener {
 
     private static final String SSE_REDIS_LISTENER = "[SSE_REDIS_LISTENER] ";

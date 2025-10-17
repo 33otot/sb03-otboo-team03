@@ -49,10 +49,11 @@ public class RedisConfig {
 
     /**
      * Redis Pub/Sub 메시지 리스너 컨테이너 (SSE용)
-     * 테스트 환경에서는 비활성화
+     * Kafka로 마이그레이션으로 인해 비활성화
      */
     @Bean
     @Profile("!test")
+    @Deprecated
     public RedisMessageListenerContainer redisMessageListenerContainer(
             RedisConnectionFactory connectionFactory,
             com.samsamotot.otboo.sse.listener.SseRedisMessageListener sseRedisMessageListener) {
@@ -65,6 +66,10 @@ public class RedisConfig {
 
         log.info("Redis SSE Message Listener Container initialized");
         return container;
+
+//        // Kafka로 마이그레이션으로 인해 비활성화
+//        log.warn("Redis SSE Message Listener Container is deprecated. Use Kafka instead.");
+//        return null;
     }
 
     /**
