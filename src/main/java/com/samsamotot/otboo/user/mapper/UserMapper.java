@@ -12,7 +12,7 @@ public interface UserMapper {
 
     @Mapping(source = "id", target = "userId")
     @Mapping(source = "username", target = "name")
-    @Mapping(target = "profileImageUrl", ignore = true)
+    @Mapping(expression = "java(user.getProfile() != null ? user.getProfile().getProfileImageUrl() : null)", target = "profileImageUrl")
     AuthorDto toAuthorDto(User user);
 
     @Mapping(source = "name", target = "username")

@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import com.samsamotot.otboo.profile.entity.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
@@ -44,10 +45,14 @@ public class User extends BaseEntity {
 
     @Column(name = "temporary_password_expires_at")
     private Instant temporaryPasswordExpiresAt;
+
+   // 양방향 1:1 매핑 - User가 주인
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Profile profile;
     
     @Builder
     private User(String email, String username, String password, Provider provider, String providerId, Role role,
-                Boolean isLocked, Instant temporaryPasswordExpiresAt) {
+                Boolean isLocked, Instant temporaryPasswordExpiresAt, Profile profile) {
     this.email = email;
     this.username = username;
     this.password = password;
@@ -56,6 +61,7 @@ public class User extends BaseEntity {
     this.role = role != null ? role : Role.USER;
     this.isLocked = isLocked != null ? isLocked : false;
     this.temporaryPasswordExpiresAt = temporaryPasswordExpiresAt;
+    this.profile = profile;
     }
     
     public static User createUser(String email, String username, String password, Provider provider, String providerId, PasswordEncoder passwordEncoder) {
