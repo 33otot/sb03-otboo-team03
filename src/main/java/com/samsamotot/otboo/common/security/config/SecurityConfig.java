@@ -155,6 +155,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST,"/api/clothes/attribute-defs").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE,"/api/clothes/attribute-defs/**").hasRole("ADMIN")
+                
+                // 사용자 계정 잠금 기능은 ADMIN 유저만 가능
+                .requestMatchers(HttpMethod.PATCH, "/api/users/*/lock").hasRole("ADMIN")
 
                 .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
                 // 프로필 날씨 알림 설정 변경은 인증된 유저만 가능
