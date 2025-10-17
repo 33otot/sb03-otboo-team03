@@ -26,4 +26,6 @@ public interface NotificationService {
     NotificationListResponse getNotifications(@Valid NotificationRequest request);
 
     void delete(UUID notificationId);
+
+    void deleteAllByUserId(UUID userId);
 }

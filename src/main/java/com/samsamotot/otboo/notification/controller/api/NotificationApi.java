@@ -1,8 +1,10 @@
 package com.samsamotot.otboo.notification.controller.api;
 
 import com.samsamotot.otboo.common.exception.ErrorResponse;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.notification.dto.NotificationListResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -65,4 +67,11 @@ public interface NotificationApi {
     })
     @DeleteMapping("/{notificationId}")
     ResponseEntity<Void> deleteNotifications(@PathVariable UUID notificationId);
+
+    @Operation(summary = "사용자의 모든 알림 삭제", description = "로그인된 사용자의 모든 알림을 삭제합니다.")
+    @ApiResponse(responseCode = "204", description = "알림 전체 삭제 성공")
+    @DeleteMapping
+    ResponseEntity<Void> deleteAllByUserId(
+            @Parameter(hidden = true) CustomUserDetails userDetails
+    );
 }

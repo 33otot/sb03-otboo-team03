@@ -259,6 +259,19 @@ public class NotificationServiceImpl implements NotificationService {
         log.info(NOTIFICATION_SERVICE + "삭제 완료: notificationId={}, userId={}", notificationId, currentUserId);
     }
 
+    /**
+     * 특정 사용자의 모든 알림을 삭제합니다.
+     * @param userId 알림을 삭제할 사용자의 UUID
+     */
+    @Override
+    @Transactional
+    public void deleteAllByUserId(UUID userId) {
+        log.info(NOTIFICATION_SERVICE + "사용자의 모든 알림 삭제 시도");
+
+        notificationRepository.deleteAllByUserId(userId);
+        log.info(NOTIFICATION_SERVICE + "사용자의 모든 알림 삭제 완료");
+    }
+
     /*
         로그인 유저 아이디를 가져온다.
      */
