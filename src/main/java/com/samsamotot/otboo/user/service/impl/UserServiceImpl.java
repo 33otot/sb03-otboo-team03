@@ -214,4 +214,34 @@ public class UserServiceImpl implements UserService {
         
         log.info(SERVICE + "비밀번호 변경 완료 - 사용자 ID: {}", userId);
     }
+    
+    @Override
+    public UserDto updateUserLockStatus(UUID userId, UserLockRequest request) {
+        log.info(SERVICE + "계정 잠금 상태 변경 시도 - 사용자 ID: {}, 잠금 상태: {}", userId, request.locked());
+        
+        // 사용자 조회
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> {
+                log.warn(SERVICE + "계정 잠금 상태 변경 시 사용자 조회 실패 - 사용자 ID: {}", userId);
+                return new OtbooException(ErrorCode.USER_NOT_FOUND);
+            });
+        
+        // 현재 잠금 상태 저장
+        Boolean previousLockStatus = user.isLocked();
+        
+        // 잠금 상태 변경
+        user.changeLockStatus(request.locked());
+
+        // 계정이 잠기는 경우 모든 토큰 무효화 (자동 로그아웃 처리)
+        if (request.locked()) {
+            log.info(SERVICE + "계정 잠금으로 인한 토큰 무효화 - 사용자 ID: {}", userId);
+            tokenInvalidationService.setUserInvalidAfter(userId.toString(), java.time.Instant.now());
+        }
+        
+        log.info(SERVICE + "계정 잠금 상태 변경 완료 - 사용자 ID: {}, 이전 상태: {}, 새로운 상태: {}", 
+            userId, previousLockStatus, request.locked());
+        
+        // DTO 변환하여 반환
+        return userMapper.toDto(user);
+    }
 }
