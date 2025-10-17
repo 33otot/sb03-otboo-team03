@@ -48,7 +48,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     long countByReceiver_Id(UUID userId);
 
     @Modifying
-    @Transactional
     @Query("DELETE FROM Notification n WHERE n.receiver.id = :userId")
     void deleteAllByUserId(@Param("userId") UUID userId);
 }
