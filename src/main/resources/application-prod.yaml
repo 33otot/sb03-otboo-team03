@@ -113,6 +113,7 @@ logging:
   level:
     org.hibernate.sql: INFO
     org.hibernate.type.descriptor.sql.BasicBinder: INFO
+    org.springframework.security.web.access.intercept.FilterSecurityInterceptor: DEBUG
     com.samsamotot.otboo: INFO
 
 server:
