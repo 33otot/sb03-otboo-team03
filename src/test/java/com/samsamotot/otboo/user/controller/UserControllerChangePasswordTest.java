@@ -292,5 +292,151 @@ class UserControllerChangePasswordTest {
                     .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isForbidden());
         }
+
+        @Test
+        @DisplayName("authentication_principal이_null인_경우_403_에러")
+        void authentication_principal이_null인_경우_403_에러() throws Exception {
+            // given
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                null, null, null);
+            SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+            securityContext.setAuthentication(authentication);
+            SecurityContextHolder.setContext(securityContext);
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("로그 메시지 테스트")
+    class LogMessageTests {
+
+        @Test
+        @DisplayName("성공_케이스에서_로그_메시지_확인")
+        void 성공_케이스에서_로그_메시지_확인() throws Exception {
+            // given
+            setupAuthentication();
+            doNothing().when(userService).changePassword(any(UUID.class), any(ChangePasswordRequest.class));
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("실패_케이스에서_로그_메시지_확인")
+        void 실패_케이스에서_로그_메시지_확인() throws Exception {
+            // given
+            SecurityContextHolder.clearContext();
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("경계값 및 엣지 케이스 테스트")
+    class EdgeCaseTests {
+
+        @Test
+        @DisplayName("매우_긴_비밀번호_처리")
+        void 매우_긴_비밀번호_처리() throws Exception {
+            // given
+            setupAuthentication();
+            doNothing().when(userService).changePassword(any(UUID.class), any(ChangePasswordRequest.class));
+            ChangePasswordRequest longPasswordRequest = ChangePasswordRequest.builder()
+                .password("a".repeat(1000) + "123")
+                .build();
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(longPasswordRequest)))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("특수문자_포함_비밀번호_처리")
+        void 특수문자_포함_비밀번호_처리() throws Exception {
+            // given
+            setupAuthentication();
+            doNothing().when(userService).changePassword(any(UUID.class), any(ChangePasswordRequest.class));
+            ChangePasswordRequest specialCharRequest = ChangePasswordRequest.builder()
+                .password("Pass@123!@#$%^&*()")
+                .build();
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(specialCharRequest)))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("유니코드_문자_포함_비밀번호_처리")
+        void 유니코드_문자_포함_비밀번호_처리() throws Exception {
+            // given
+            setupAuthentication();
+            doNothing().when(userService).changePassword(any(UUID.class), any(ChangePasswordRequest.class));
+            ChangePasswordRequest unicodeRequest = ChangePasswordRequest.builder()
+                .password("한글123abc")
+                .build();
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(unicodeRequest)))
+                .andExpect(status().isNoContent());
+        }
+    }
+
+    @Nested
+    @DisplayName("메서드 파라미터 테스트")
+    class MethodParameterTests {
+
+        @Test
+        @DisplayName("다른_사용자_ID로_요청시_로그_메시지_확인")
+        void 다른_사용자_ID로_요청시_로그_메시지_확인() throws Exception {
+            // given
+            UUID otherUserId = UUID.randomUUID();
+            User otherUser = UserFixture.createUserWithEmail("other@example.com");
+            ReflectionTestUtils.setField(otherUser, "id", otherUserId);
+            CustomUserDetails otherUserDetails = new CustomUserDetails(otherUser);
+
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                otherUserDetails, null, otherUserDetails.getAuthorities());
+            SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+            securityContext.setAuthentication(authentication);
+            SecurityContextHolder.setContext(securityContext);
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("동일_사용자_ID로_요청시_성공")
+        void 동일_사용자_ID로_요청시_성공() throws Exception {
+            // given
+            setupAuthentication();
+            doNothing().when(userService).changePassword(any(UUID.class), any(ChangePasswordRequest.class));
+
+            // when & then
+            mockMvc.perform(patch("/api/users/{userId}/password", userId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isNoContent());
+        }
     }
 }

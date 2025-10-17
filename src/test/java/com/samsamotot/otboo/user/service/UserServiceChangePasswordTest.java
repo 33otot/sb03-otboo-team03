@@ -244,4 +244,204 @@ class UserServiceChangePasswordTest {
             verify(tokenInvalidationService).setUserInvalidAfter(eq(userId.toString()), any(Instant.class));
         }
     }
+
+    @Nested
+    @DisplayName("로그 메시지 테스트")
+    class LogMessageTests {
+
+        @Test
+        @DisplayName("성공_케이스에서_로그_메시지_확인")
+        void 성공_케이스에서_로그_메시지_확인() {
+            // given
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(passwordEncoder.encode(validRequest.password())).willReturn("encodedNewPassword");
+            doNothing().when(tokenInvalidationService).setUserInvalidAfter(any(String.class), any(Instant.class));
+
+            // when
+            userService.changePassword(userId, validRequest);
+
+            // then
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder).encode(validRequest.password());
+            verify(tokenInvalidationService).setUserInvalidAfter(eq(userId.toString()), any(Instant.class));
+        }
+
+        @Test
+        @DisplayName("실패_케이스에서_로그_메시지_확인")
+        void 실패_케이스에서_로그_메시지_확인() {
+            // given
+            given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> userService.changePassword(userId, validRequest))
+                .isInstanceOf(OtbooException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder, never()).encode(any(String.class));
+            verify(tokenInvalidationService, never()).setUserInvalidAfter(any(String.class), any(Instant.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("예외 처리 테스트")
+    class ExceptionHandlingTests {
+
+        @Test
+        @DisplayName("userRepository_예외_발생시_처리")
+        void userRepository_예외_발생시_처리() {
+            // given
+            given(userRepository.findById(userId)).willThrow(new RuntimeException("Database error"));
+
+            // when & then
+            assertThatThrownBy(() -> userService.changePassword(userId, validRequest))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Database error");
+
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder, never()).encode(any(String.class));
+            verify(tokenInvalidationService, never()).setUserInvalidAfter(any(String.class), any(Instant.class));
+        }
+
+        @Test
+        @DisplayName("passwordEncoder_예외_발생시_처리")
+        void passwordEncoder_예외_발생시_처리() {
+            // given
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(passwordEncoder.encode(validRequest.password())).willThrow(new RuntimeException("Encoding error"));
+
+            // when & then
+            assertThatThrownBy(() -> userService.changePassword(userId, validRequest))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Encoding error");
+
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder).encode(validRequest.password());
+            verify(tokenInvalidationService, never()).setUserInvalidAfter(any(String.class), any(Instant.class));
+        }
+
+        @Test
+        @DisplayName("tokenInvalidationService_예외_발생시_처리")
+        void tokenInvalidationService_예외_발생시_처리() {
+            // given
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(passwordEncoder.encode(validRequest.password())).willReturn("encodedNewPassword");
+            doNothing().when(tokenInvalidationService).setUserInvalidAfter(any(String.class), any(Instant.class));
+
+            // when
+            userService.changePassword(userId, validRequest);
+
+            // then
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder).encode(validRequest.password());
+            verify(tokenInvalidationService).setUserInvalidAfter(eq(userId.toString()), any(Instant.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("경계값 및 엣지 케이스 테스트")
+    class EdgeCaseTests {
+
+        @Test
+        @DisplayName("매우_긴_비밀번호_처리")
+        void 매우_긴_비밀번호_처리() {
+            // given
+            String veryLongPassword = "a".repeat(1000) + "123";
+            ChangePasswordRequest longPasswordRequest = ChangePasswordRequest.builder()
+                .password(veryLongPassword)
+                .build();
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(passwordEncoder.encode(longPasswordRequest.password())).willReturn("encodedLongPassword");
+            doNothing().when(tokenInvalidationService).setUserInvalidAfter(any(String.class), any(Instant.class));
+
+            // when
+            userService.changePassword(userId, longPasswordRequest);
+
+            // then
+            assertThat(user.getPassword()).isEqualTo("encodedLongPassword");
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder).encode(longPasswordRequest.password());
+            verify(tokenInvalidationService).setUserInvalidAfter(eq(userId.toString()), any(Instant.class));
+        }
+
+        @Test
+        @DisplayName("특수문자_포함_비밀번호_처리")
+        void 특수문자_포함_비밀번호_처리() {
+            // given
+            ChangePasswordRequest specialCharRequest = ChangePasswordRequest.builder()
+                .password("Pass@123!@#$%^&*()")
+                .build();
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(passwordEncoder.encode(specialCharRequest.password())).willReturn("encodedSpecialPassword");
+            doNothing().when(tokenInvalidationService).setUserInvalidAfter(any(String.class), any(Instant.class));
+
+            // when
+            userService.changePassword(userId, specialCharRequest);
+
+            // then
+            assertThat(user.getPassword()).isEqualTo("encodedSpecialPassword");
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder).encode(specialCharRequest.password());
+            verify(tokenInvalidationService).setUserInvalidAfter(eq(userId.toString()), any(Instant.class));
+        }
+
+        @Test
+        @DisplayName("유니코드_문자_포함_비밀번호_처리")
+        void 유니코드_문자_포함_비밀번호_처리() {
+            // given
+            ChangePasswordRequest unicodeRequest = ChangePasswordRequest.builder()
+                .password("한글123abc")
+                .build();
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(passwordEncoder.encode(unicodeRequest.password())).willReturn("encodedUnicodePassword");
+            doNothing().when(tokenInvalidationService).setUserInvalidAfter(any(String.class), any(Instant.class));
+
+            // when
+            userService.changePassword(userId, unicodeRequest);
+
+            // then
+            assertThat(user.getPassword()).isEqualTo("encodedUnicodePassword");
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder).encode(unicodeRequest.password());
+            verify(tokenInvalidationService).setUserInvalidAfter(eq(userId.toString()), any(Instant.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("로깅 및 메시지 테스트")
+    class LoggingTests {
+
+        @Test
+        @DisplayName("성공_로그_메시지_확인")
+        void 성공_로그_메시지_확인() {
+            // given
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(passwordEncoder.encode(validRequest.password())).willReturn("encodedNewPassword");
+            doNothing().when(tokenInvalidationService).setUserInvalidAfter(any(String.class), any(Instant.class));
+
+            // when
+            userService.changePassword(userId, validRequest);
+
+            // then
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder).encode(validRequest.password());
+            verify(tokenInvalidationService).setUserInvalidAfter(eq(userId.toString()), any(Instant.class));
+        }
+
+        @Test
+        @DisplayName("실패_로그_메시지_확인")
+        void 실패_로그_메시지_확인() {
+            // given
+            given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> userService.changePassword(userId, validRequest))
+                .isInstanceOf(OtbooException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder, never()).encode(any(String.class));
+            verify(tokenInvalidationService, never()).setUserInvalidAfter(any(String.class), any(Instant.class));
+        }
+    }
 }
