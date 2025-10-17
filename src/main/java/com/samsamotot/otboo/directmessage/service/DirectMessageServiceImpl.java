@@ -5,6 +5,8 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomDto; // Added
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse; // Added
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
@@ -116,6 +118,24 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             .sortBy("createdAt")
             .sortDirection("DESCENDING")
             .build();
+    }
+
+    @Override
+    public DirectMessageRoomListResponse getConversationList() {
+        UUID myId = currentUserId();
+        log.info(DM_SERVICE + "대화방 목록 조회 시작 - userId: {}", myId);
+
+        List<DirectMessage> conversations = directMessageRepository.findConversationsByUserId(myId);
+
+        List<DirectMessageRoomDto> rooms = conversations.stream()
+            .map(dm -> {
+                User partner = dm.getSender().getId().equals(myId) ? dm.getReceiver() : dm.getSender();
+                return directMessageMapper.toRoomDto(partner, dm);
+            })
+            .toList();
+
+        log.info(DM_SERVICE + "대화방 목록 조회 완료 - rooms count: {}", rooms.size());
+        return new DirectMessageRoomListResponse(rooms);
     }
 
     /**

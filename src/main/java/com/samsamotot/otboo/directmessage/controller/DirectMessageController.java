@@ -1,27 +1,29 @@
 package com.samsamotot.otboo.directmessage.controller;
 
-import com.samsamotot.otboo.common.dto.CursorResponse;
-import com.samsamotot.otboo.directmessage.dto.*;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.controller.api.DirectMessageApi;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse;
+import com.samsamotot.otboo.directmessage.dto.DmTopicKey;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
-import com.samsamotot.otboo.directmessage.entity.DirectMessage;
+import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
 import jakarta.validation.Valid;
+import java.security.Principal;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.security.Principal;
-import java.time.Instant;
-import java.util.UUID;
 
 /**
  * PackageName  : com.samsamotot.otboo.directmessage.controller
@@ -59,6 +61,19 @@ public class DirectMessageController implements DirectMessageApi {
     ) {
         MessageRequest request = new MessageRequest(userId, cursor, idAfter, limit);
         return ResponseEntity.ok().body(directMessageService.getMessages(request));
+    }
+
+    /**
+     * 현재 사용자의 모든 대화방 목록을 조회하는 API
+     *
+     * @param userDetails 현재 로그인한 사용자 정보
+     * @return 대화방 목록 및 마지막 메시지 정보
+     */
+    @GetMapping("/rooms")
+    public ResponseEntity<DirectMessageRoomListResponse> getConversationRooms(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ResponseEntity.ok().body(directMessageService.getConversationList());
     }
 
     /**

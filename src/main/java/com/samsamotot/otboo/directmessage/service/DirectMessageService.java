@@ -4,6 +4,7 @@ import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse; // Added
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 
@@ -20,4 +21,6 @@ public interface DirectMessageService {
     DirectMessageListResponse getMessages(@Valid MessageRequest request);
 
     DirectMessageDto sendMessage(UUID senderId, SendDmRequest request);
+
+    DirectMessageRoomListResponse getConversationList();
 }

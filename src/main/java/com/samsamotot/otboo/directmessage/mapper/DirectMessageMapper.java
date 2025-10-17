@@ -1,7 +1,9 @@
 package com.samsamotot.otboo.directmessage.mapper;
 
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomDto;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
+import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.mapper.UserMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -21,6 +23,11 @@ public interface DirectMessageMapper {
     @Mapping(source = "message", target = "content")
     @Mapping(source = "createdAt",   target = "createdAt")
     DirectMessageDto toDto(DirectMessage entity);
+
+    @Mapping(source = "partnerUser", target = "partner")
+    @Mapping(source = "directMessage.message", target = "lastMessage")
+    @Mapping(source = "directMessage.createdAt", target = "lastMessageSentAt")
+    DirectMessageRoomDto toRoomDto(User partnerUser, DirectMessage directMessage);
 }
 
 
