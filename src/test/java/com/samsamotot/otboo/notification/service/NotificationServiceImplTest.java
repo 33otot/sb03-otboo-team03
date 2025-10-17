@@ -585,7 +585,7 @@ class NotificationServiceImplTest {
 
         // then
         then(objectMapper).should(times(2)).writeValueAsString(any());
-        then(sseService).should(never()).sendBatchNotification(anyList(), anyString());
+//        then(sseService).should(never()).sendBatchNotification(anyList(), anyString());
         then(sseService).should(times(2)).sendNotification(any(UUID.class), anyString());
     }
 
@@ -606,7 +606,7 @@ class NotificationServiceImplTest {
 
         // then
         then(objectMapper).should(atLeastOnce()).writeValueAsString(any());
-        then(sseService).should(never()).sendBatchNotification(anyList(), anyString());
+//        then(sseService).should(never()).sendBatchNotification(anyList(), anyString());
         then(sseService).should(never()).sendNotification(any(UUID.class), anyString());
     }
 

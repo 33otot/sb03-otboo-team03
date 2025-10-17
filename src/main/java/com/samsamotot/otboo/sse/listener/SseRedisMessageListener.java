@@ -9,6 +9,7 @@ import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
@@ -31,10 +32,10 @@ public class SseRedisMessageListener implements MessageListener {
     @Override
     public void onMessage(Message message, byte[] pattern) {
         try {
-            String channel = new String(message.getChannel());
-            String messageStr = new String(message.getBody());
+            String channel = new String(message.getChannel(), StandardCharsets.UTF_8);
+            String messageStr = new String(message.getBody(), StandardCharsets.UTF_8);
             
-            log.debug(SSE_REDIS_LISTENER + "메시지 수신 - channel: {}, message: {}", channel, messageStr);
+            log.debug(SSE_REDIS_LISTENER + "메시지 수신 - channel: {}, bytes: {}", channel, message.getBody().length);
             
             // 채널에서 userId 추출 (sse:notification:userId)
             if (channel.startsWith("sse:notification:")) {
@@ -44,16 +45,16 @@ public class SseRedisMessageListener implements MessageListener {
                 // 메시지를 NotificationDto로 파싱
                 NotificationDto notificationDto = objectMapper.readValue(messageStr, NotificationDto.class);
                 
-                // 로컬 SSE 연결로 메시지 전송
-                sseService.sendNotification(userId, messageStr);
+                // 로컬 SSE 연결로만 메시지 전송 (재발행 방지)
+                sseService.sendLocalNotification(userId, messageStr);
                 
                 log.debug(SSE_REDIS_LISTENER + "메시지 처리 완료 - userId: {}, notificationId: {}", 
                          userId, notificationDto.getId());
             }
                      
         } catch (Exception e) {
-            log.error(SSE_REDIS_LISTENER + "메시지 처리 실패 - channel: {}, message: {}", 
-                     new String(message.getChannel()), new String(message.getBody()), e);
+            log.error(SSE_REDIS_LISTENER + "메시지 처리 실패 - channel: {}, bytes: {}", 
+                     new String(message.getChannel(), StandardCharsets.UTF_8), message.getBody().length, e);
         }
     }
 }

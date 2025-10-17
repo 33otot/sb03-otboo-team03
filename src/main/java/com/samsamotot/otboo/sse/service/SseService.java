@@ -15,11 +15,13 @@ public interface SseService {
 
     void sendNotification(UUID userId, String notificationData);
 
+    void sendLocalNotification(UUID userId, String notificationData);
+
     void replayMissedEvents(UUID userId, String lastEventId, SseEmitter emitter);
 
     int getActiveConnectionCount();
 
     boolean isUserConnected(UUID userId);
 
-    void sendBatchNotification(java.util.List<UUID> userIds, String notificationData);
+//    void sendBatchNotification(java.util.List<UUID> userIds, String notificationData);
 }

@@ -5,13 +5,13 @@ import com.samsamotot.otboo.notification.dto.NotificationDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
 import java.util.Deque;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,10 +33,10 @@ public class SseServiceImpl implements SseService {
     private final ObjectMapper objectMapper;
     
     @Autowired(required = false)
-    private RedisTemplate<String, Object> redisTemplate;
+    private StringRedisTemplate redisTemplate;
 
-    // 로컬 서버의 SSE 연결 관리
-    private final Map<UUID, SseEmitter> connections = new ConcurrentHashMap<>();
+    // 로컬 서버의 SSE 연결 관리 (사용자당 다중 연결 지원)
+    private final Map<UUID, Set<SseEmitter>> connections = new ConcurrentHashMap<>();
     private final Map<UUID, Deque<NotificationDto>> backlog = new ConcurrentHashMap<>();
 
     /**
@@ -50,22 +50,24 @@ public class SseServiceImpl implements SseService {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
 
         emitter.onCompletion(() -> {
-            log.debug(SSE_SERVICE + "연결 성공 후 종료 userId: {}", userId);
-            connections.remove(userId);
+            log.debug(SSE_SERVICE + "연결 종료 userId: {}", userId);
+            removeEmitter(userId, emitter);
         });
 
         emitter.onTimeout(() -> {
             log.debug(SSE_SERVICE + "타임아웃 userId: {}", userId);
-            connections.remove(userId);
+            removeEmitter(userId, emitter);
         });
 
         emitter.onError(e -> {
             log.error(SSE_SERVICE + "연결 에러 for user: {}", userId, e);
-            connections.remove(userId);
+            removeEmitter(userId, emitter);
         });
 
-        connections.put(userId, emitter);
-        log.info(SSE_SERVICE + "생성 user: {}, 총: {}", userId, connections.size());
+        connections.computeIfAbsent(userId, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
+                   .add(emitter);
+        int totalConnections = connections.values().stream().mapToInt(java.util.Set::size).sum();
+        log.info(SSE_SERVICE + "생성 user: {}, 총 연결수: {}", userId, totalConnections);
         return emitter;
     }
 
@@ -92,24 +94,29 @@ public class SseServiceImpl implements SseService {
         while (q.size() > MAX_BACKLOG) q.pollFirst();
 
         // 로컬 연결 확인
-        SseEmitter emitter = connections.get(userId);
-        if (emitter != null) {
-            // 로컬 연결이 있으면 직접 전송
-            try {
-                emitter.send(SseEmitter.event()
-                    .name("notifications")
-                    .id(dto.getId().toString())
-                    .data(notificationData));
+        Set<SseEmitter> emitters = connections.get(userId);
+        if (emitters != null && !emitters.isEmpty()) {
+            boolean delivered = false;
+            for (SseEmitter em : emitters.toArray(new SseEmitter[0])) { // 방어적 복사
+                try {
+                    em.send(SseEmitter.event()
+                        .name("notifications")
+                        .id(dto.getId().toString())
+                        .data(notificationData));
+                    delivered = true;
+                } catch (Exception e) {
+                    log.error(SSE_SERVICE + "로컬 알림 전송실패 user: {}", userId, e);
+                    removeEmitter(userId, em);
+                }
+            }
+            if (delivered) {
                 log.debug(SSE_SERVICE + "로컬 알림 전송 user: {}", userId);
                 return;
-            } catch (IOException e) {
-                log.error(SSE_SERVICE + "로컬 알림 전송실패 user: {}", userId, e);
-                connections.compute(userId, (k, v) -> v == emitter ? null : v);
             }
         }
 
         // 로컬 연결이 없으면 Redis Pub/Sub로 다른 서버에 전송 요청
-        publishNotification2(userId, notificationData);
+        publishNotification(userId, notificationData);
     }
 
     /**
@@ -156,7 +163,7 @@ public class SseServiceImpl implements SseService {
      */
     @Override
     public int getActiveConnectionCount() {
-        return connections.size();
+        return connections.values().stream().mapToInt(java.util.Set::size).sum();
     }
 
     /**
@@ -167,50 +174,61 @@ public class SseServiceImpl implements SseService {
      */
     @Override
     public boolean isUserConnected(UUID userId) {
-        return connections.containsKey(userId);
+        java.util.Set<SseEmitter> set = connections.get(userId);
+        return set != null && !set.isEmpty();
     }
 
     /**
-     * 여러 사용자에게 동일한 알림을 배치로 전송합니다.
-     * 로컬 사용자에게는 직접 전송하고, 원격 사용자에게는 Redis Pub/Sub로 전송합니다.
+     * Redis에서 받은 메시지를 로컬 SSE 연결로만 전송 (재발행 방지)
      * 
-     * @param userIds 알림을 받을 사용자 ID 목록
+     * @param userId 알림을 받을 사용자 ID
      * @param notificationData 알림 데이터 (JSON 문자열)
      */
-    @Override
-    public void sendBatchNotification(java.util.List<UUID> userIds, String notificationData) {
+    public void sendLocalNotification(UUID userId, String notificationData) {
+        final NotificationDto dto;
         try {
-            // JSON 유효성 검사
-            objectMapper.readValue(notificationData, NotificationDto.class);
+            dto = objectMapper.readValue(notificationData, NotificationDto.class);
         } catch (Exception e) {
-            log.error(SSE_SERVICE + "잘못된 JSON for batch notification", e);
+            log.error(SSE_SERVICE + "잘못된 JSON, user={}", userId, e);
             return;
         }
 
-        java.util.List<UUID> localUsers = new java.util.ArrayList<>();
-        java.util.List<UUID> remoteUsers = new java.util.ArrayList<>();
+        // 백로그에 추가
+        Deque<NotificationDto> q = backlog.computeIfAbsent(userId, k -> new java.util.concurrent.ConcurrentLinkedDeque<>());
+        q.addLast(dto);
+        while (q.size() > MAX_BACKLOG) q.pollFirst();
 
-        // 사용자를 로컬/원격으로 분류
-        for (UUID userId : userIds) {
-            if (connections.containsKey(userId)) {
-                localUsers.add(userId);
-            } else {
-                remoteUsers.add(userId);
+        // 로컬 연결 확인 및 전송
+        Set<SseEmitter> emitters = connections.get(userId);
+        if (emitters != null && !emitters.isEmpty()) {
+            for (SseEmitter em : emitters.toArray(new SseEmitter[0])) { // 방어적 복사
+                try {
+                    em.send(SseEmitter.event()
+                        .name("notifications")
+                        .id(dto.getId().toString())
+                        .data(notificationData));
+                } catch (Exception e) {
+                    log.error(SSE_SERVICE + "로컬 알림 전송실패 user: {}", userId, e);
+                    removeEmitter(userId, em);
+                }
             }
+            log.debug(SSE_SERVICE + "로컬 알림 전송 완료 user: {}", userId);
+        } else {
+            log.debug(SSE_SERVICE + "로컬 연결 없음 - 알림 건너뜀 user: {}", userId);
         }
+    }
 
-        // 로컬 사용자들에게 직접 전송
-        for (UUID userId : localUsers) {
-            sendNotification(userId, notificationData);
-        }
-
-        // 원격 사용자들에게는 Redis Pub/Sub로 전송
-        if (!remoteUsers.isEmpty()) {
-            publishBatchNotification2(remoteUsers, notificationData);
-        }
-
-        log.info(SSE_SERVICE + "배치 알림 전송 완료 - 로컬: {}, 원격: {}", 
-                localUsers.size(), remoteUsers.size());
+    /**
+     * 사용자별 Emitter 제거 헬퍼 메서드
+     * 
+     * @param userId 사용자 ID
+     * @param emitter 제거할 Emitter
+     */
+    private void removeEmitter(UUID userId, SseEmitter emitter) {
+        connections.computeIfPresent(userId, (k, set) -> {
+            set.remove(emitter);
+            return set.isEmpty() ? null : set;
+        });
     }
 
     /**
@@ -219,7 +237,7 @@ public class SseServiceImpl implements SseService {
      * @param userId 알림을 받을 사용자 ID
      * @param notificationData 알림 데이터 (JSON 문자열)
      */
-    private void publishNotification2(UUID userId, String notificationData) {
+    private void publishNotification(UUID userId, String notificationData) {
         if (redisTemplate == null) {
             log.debug(SSE_SERVICE + "Redis 비활성화 - 알림 발행 건너뜀 userId: {}", userId);
             return;
@@ -232,18 +250,5 @@ public class SseServiceImpl implements SseService {
         } catch (Exception e) {
             log.error(SSE_SERVICE + "알림 발행 실패 - userId: {}", userId, e);
         }
-    }
-
-    /**
-     * 여러 사용자에게 동일한 알림을 배치로 발행
-     * 
-     * @param userIds 알림을 받을 사용자 ID 목록
-     * @param notificationData 알림 데이터 (JSON 문자열)
-     */
-    private void publishBatchNotification2(java.util.List<UUID> userIds, String notificationData) {
-        for (UUID userId : userIds) {
-            publishNotification2(userId, notificationData);
-        }
-        log.info(SSE_SERVICE + "배치 알림 발행 완료 - 대상 사용자 수: {}", userIds.size());
     }
 }
