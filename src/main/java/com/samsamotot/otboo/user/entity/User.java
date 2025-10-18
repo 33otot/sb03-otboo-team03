@@ -1,15 +1,17 @@
 package com.samsamotot.otboo.user.entity;
 
 import com.samsamotot.otboo.common.entity.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import com.samsamotot.otboo.profile.entity.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.time.Instant;
 
 /**
  * 사용자 엔티티
@@ -45,14 +47,10 @@ public class User extends BaseEntity {
 
     @Column(name = "temporary_password_expires_at")
     private Instant temporaryPasswordExpiresAt;
-
-   // 양방향 1:1 매핑 - User가 주인
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private Profile profile;
     
     @Builder
     private User(String email, String username, String password, Provider provider, String providerId, Role role,
-                Boolean isLocked, Instant temporaryPasswordExpiresAt, Profile profile) {
+                Boolean isLocked, Instant temporaryPasswordExpiresAt) {
     this.email = email;
     this.username = username;
     this.password = password;
@@ -61,7 +59,6 @@ public class User extends BaseEntity {
     this.role = role != null ? role : Role.USER;
     this.isLocked = isLocked != null ? isLocked : false;
     this.temporaryPasswordExpiresAt = temporaryPasswordExpiresAt;
-    this.profile = profile;
     }
     
     public static User createUser(String email, String username, String password, Provider provider, String providerId, PasswordEncoder passwordEncoder) {

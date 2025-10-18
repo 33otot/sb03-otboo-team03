@@ -120,6 +120,17 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             .build();
     }
 
+    /**
+     * 현재 사용자의 모든 대화방 목록을 조회하는 서비스 메서드.
+     *
+     * <p>흐름:
+     * 1. 현재 사용자 ID를 인증 컨텍스트에서 조회한다.
+     * 2. DirectMessageRepository를 통해 대화방 목록을 조회한다.
+     * 3. 각 대화방에 대해 상대방 정보와 마지막 메시지를 포함한 DTO로 변환한다.
+     * 4. 변환된 DTO 리스트를 응답 객체에 담아 반환한다.
+     *
+     * @return 대화방 목록 및 마지막 메시지 정보를 담은 응답 객체
+     */
     @Override
     public DirectMessageRoomListResponse getConversationList() {
         UUID myId = currentUserId();

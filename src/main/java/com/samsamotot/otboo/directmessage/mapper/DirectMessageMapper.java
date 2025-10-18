@@ -18,13 +18,13 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = UserMapper.class)
 public interface DirectMessageMapper {
 
-    @Mapping(source = "sender", target = "sender")
-    @Mapping(source = "receiver", target = "receiver")
+    @Mapping(source = "sender", target = "sender", qualifiedByName = "toAuthorDto")
+    @Mapping(source = "receiver", target = "receiver", qualifiedByName = "toAuthorDto")
     @Mapping(source = "message", target = "content")
     @Mapping(source = "createdAt",   target = "createdAt")
     DirectMessageDto toDto(DirectMessage entity);
 
-    @Mapping(source = "partnerUser", target = "partner")
+    @Mapping(source = "partnerUser", target = "partner", qualifiedByName = "toAuthorDto")
     @Mapping(source = "directMessage.message", target = "lastMessage")
     @Mapping(source = "directMessage.createdAt", target = "lastMessageSentAt")
     DirectMessageRoomDto toRoomDto(User partnerUser, DirectMessage directMessage);
