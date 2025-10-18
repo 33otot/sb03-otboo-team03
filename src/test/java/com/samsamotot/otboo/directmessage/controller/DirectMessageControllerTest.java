@@ -13,7 +13,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.common.config.SecurityTestConfig;
-import com.samsamotot.otboo.common.fixture.ProfileFixture;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
@@ -23,7 +22,6 @@ import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse;
 import com.samsamotot.otboo.directmessage.dto.DmTopicKey;
 import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
-import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import java.security.Principal;
@@ -174,8 +172,6 @@ class DirectMessageControllerTest {
 
         User mockUser = UserFixture.createValidUser();
         ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
-        Profile mockProfile = ProfileFixture.createProfile(mockUser);
-        ReflectionTestUtils.setField(mockUser, "profile", mockProfile);
         CustomUserDetails mockPrincipal = new CustomUserDetails(mockUser);
 
         // when & then
