@@ -5,6 +5,8 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomDto;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
@@ -12,6 +14,7 @@ import com.samsamotot.otboo.directmessage.mapper.DirectMessageMapper;
 import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
 import com.samsamotot.otboo.notification.dto.event.DirectMessageReceivedEvent;
 import com.samsamotot.otboo.notification.service.NotificationService;
+import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -379,4 +382,37 @@ class DirectMessageServiceImplTest {
         assertThat(ev.content()).isEqualTo(longContent);
     }
 
+    @Test
+    void 정상적으로_대화방_목록을_가져온다() throws Exception {
+        // given
+        loginAsUserId(myId, myEmail);
+
+        List<DirectMessage> mockConversations = new java.util.ArrayList<>();
+        for (int i = 0; i < 25; i++) {
+            User sender = stubUser(myId, false);
+            User receiver = stubUser(UUID.randomUUID(), false);
+            DirectMessage dm = mock(DirectMessage.class);
+            when(dm.getSender()).thenReturn(sender);
+            when(dm.getReceiver()).thenReturn(receiver);
+            mockConversations.add(dm);
+
+            DirectMessageRoomDto mockRoomDto = DirectMessageRoomDto.builder()
+                .partner(AuthorDto.builder().userId(receiver.getId()).name("user" + i).build())
+                .lastMessage("Last message " + i)
+                .lastMessageSentAt(Instant.now().plusSeconds(i))
+                .build();
+            when(directMessageMapper.toRoomDto(eq(receiver), eq(dm))).thenReturn(mockRoomDto);
+        }
+
+        given(directMessageRepository.findConversationsByUserId(myId)).willReturn(mockConversations);
+
+        // when
+        DirectMessageRoomListResponse response = directMessageService.getConversationList();
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.rooms()).hasSize(25);
+        then(directMessageRepository).should().findConversationsByUserId(myId);
+        then(directMessageMapper).should(times(25)).toRoomDto(any(User.class), any(DirectMessage.class));
+    }
 }
