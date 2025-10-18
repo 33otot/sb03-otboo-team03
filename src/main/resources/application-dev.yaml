@@ -50,6 +50,7 @@ spring:
       host: redis
       port: 6379
       password: ${REDIS_PASSWORD:}
+      timeout: 1s  # Redis 연결 타임아웃 1초
       repositories:
         enabled: false  # 개발 단계 Redis Repository 비활성화
 
