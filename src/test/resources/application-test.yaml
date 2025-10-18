@@ -56,6 +56,20 @@ spring:
     jdbc:
       initialize-schema: always
 
+  # Mail 설정 (빌드를 위한 임시 설정)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: dummy@example.com
+    password: dummy-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
   # 테스트 환경에서 Kafka 비활성화
   kafka:
     bootstrap-servers: localhost:9092
