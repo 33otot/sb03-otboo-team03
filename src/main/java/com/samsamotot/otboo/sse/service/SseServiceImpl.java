@@ -2,6 +2,7 @@ package com.samsamotot.otboo.sse.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.notification.dto.NotificationDto;
+import com.samsamotot.otboo.sse.strategy.SseNotificationStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,7 @@ public class SseServiceImpl implements SseService {
     private static final int MAX_BACKLOG = 1000;
     
     private final ObjectMapper objectMapper;
-    private final MessagingStrategyService messagingStrategyService;
+    private final SseNotificationStrategy sseNotificationStrategy;
     
     @Autowired(required = false)
     private KafkaTemplate<String, String> kafkaTemplate;
@@ -96,7 +97,7 @@ public class SseServiceImpl implements SseService {
         // 항상 메시징 전략을 통해 분산 메시징 수행
         try {
             NotificationDto notificationDto = objectMapper.readValue(notificationData, NotificationDto.class);
-            messagingStrategyService.publishNotification(userId, notificationDto);
+            sseNotificationStrategy.publishNotification(userId, notificationDto);
             log.info(SSE_SERVICE + "메시징 전략 발행 완료 - userId: {}", userId);
         } catch (Exception e) {
             log.error(SSE_SERVICE + "메시징 전략 발행 실패 - userId: {}", userId, e);
