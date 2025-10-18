@@ -15,6 +15,4 @@ import java.util.UUID;
 public interface SseNotificationStrategy {
 
     void publishNotification(UUID userId, NotificationDto notification);
-
-    String getCurrentStrategy();
 }

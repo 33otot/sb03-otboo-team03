@@ -6,7 +6,6 @@ import com.samsamotot.otboo.sse.strategy.SseNotificationStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -33,9 +32,6 @@ public class SseServiceImpl implements SseService {
     
     private final ObjectMapper objectMapper;
     private final SseNotificationStrategy sseNotificationStrategy;
-    
-    @Autowired(required = false)
-    private KafkaTemplate<String, String> kafkaTemplate;
 
     // 로컬 서버의 SSE 연결 관리 (사용자당 다중 연결 지원)
     private final Map<UUID, Set<SseEmitter>> connections = new ConcurrentHashMap<>();

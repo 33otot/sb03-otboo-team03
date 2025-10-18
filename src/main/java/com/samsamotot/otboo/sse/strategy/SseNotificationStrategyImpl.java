@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -36,10 +35,10 @@ public class SseNotificationStrategyImpl implements SseNotificationStrategy {
     private KafkaTemplate<String, String> kafkaTemplate;
 
     @Autowired(required = false)
-    private RedisSseNotificationTransport redisSseNotificationService;
+    private RedisSseNotificationTransport redisSseNotificationTransport;
 
     @Autowired(required = false)
-    private MemorySseNotificationTransport memorySseNotificationService;
+    private MemorySseNotificationTransport memorySseNotificationTransport;
 
     /**
      * 메시징 전략을 결정하고 메시지를 발행합니다.
@@ -81,7 +80,7 @@ public class SseNotificationStrategyImpl implements SseNotificationStrategy {
      * Redis 사용 가능 여부 확인
      */
     private boolean isRedisAvailable() {
-        return redisSseNotificationService != null && redisSseNotificationService.isAvailable();
+        return redisSseNotificationTransport != null && redisSseNotificationTransport.isAvailable();
     }
 
     /**
@@ -113,8 +112,8 @@ public class SseNotificationStrategyImpl implements SseNotificationStrategy {
      */
     private void publishViaRedis(UUID userId, String notificationData) {
         try {
-            if (redisSseNotificationService != null && redisSseNotificationService.isAvailable()) {
-                redisSseNotificationService.publishNotification(userId, notificationData);
+            if (redisSseNotificationTransport != null && redisSseNotificationTransport.isAvailable()) {
+                redisSseNotificationTransport.publishNotification(userId, notificationData);
                 log.info(SSE_NOTIFICATION_STRATEGY_IMPL + "Redis 발행 성공 - userId: {}", userId);
             } else {
                 log.warn(SSE_NOTIFICATION_STRATEGY_IMPL + "Redis 사용 불가, Memory로 Fallback - userId: {}", userId);
@@ -131,28 +130,14 @@ public class SseNotificationStrategyImpl implements SseNotificationStrategy {
      */
     private void publishViaMemory(UUID userId, String notificationData) {
         try {
-            if (memorySseNotificationService != null) {
-                memorySseNotificationService.publishNotification(userId, notificationData);
+            if (memorySseNotificationTransport != null) {
+                memorySseNotificationTransport.publishNotification(userId, notificationData);
                 log.info(SSE_NOTIFICATION_STRATEGY_IMPL + "Memory 발행 성공 - userId: {}", userId);
             } else {
                 log.error(SSE_NOTIFICATION_STRATEGY_IMPL + "모든 메시징 방식 실패 - userId: {}", userId);
             }
         } catch (Exception e) {
             log.error(SSE_NOTIFICATION_STRATEGY_IMPL + "Memory 발행 실패 - userId: {}", userId, e);
-        }
-    }
-
-    /**
-     * 현재 사용 중인 메시징 전략 반환
-     */
-    @Override
-    public String getCurrentStrategy() {
-        if (isKafkaAvailable()) {
-            return "KAFKA";
-        } else if (isRedisAvailable()) {
-            return "REDIS";
-        } else {
-            return "MEMORY";
         }
     }
 }
