@@ -805,3 +805,44 @@ INSERT INTO weathers (
 (GEN_RANDOM_UUID(), NOW(), 'c0000000-0000-0000-0000-000000000006', '2025-10-03 21:00:00'::TIMESTAMPTZ, '2025-09-30 11:00:00'::TIMESTAMPTZ, 22.0, 0.0, 70.0, -20.0, 60.0, 1.0, 'RAIN', 'CLOUDY', 'WEAK', 1.0, 25.0, 18.0),
 -- 2025-10-04 (최고: 24, 최저: 17)
 (GEN_RANDOM_UUID(), NOW(), 'c0000000-0000-0000-0000-000000000006', '2025-10-04 00:00:00'::TIMESTAMPTZ, '2025-09-30 11:00:00'::TIMESTAMPTZ, 21.0, 0.0, 75.0, -15.0, 0.0, 0.0, 'NONE', 'CLEAR', 'WEAK', 1.0, 24.0, 17.0);
+
+-- Postgres
+WITH extra_users AS (
+    INSERT INTO users (id, email, username, password, provider, role, is_locked, created_at, updated_at)
+        SELECT
+            gen_random_uuid(),
+            'seed_user_' || gs || '@example.com',
+            'seed_user_' || gs,
+            '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa',
+            'LOCAL','USER', FALSE, NOW(), NOW()
+        FROM generate_series(1, 75) AS gs
+        RETURNING id
+),
+     targets AS (
+         SELECT id FROM extra_users LIMIT 45
+     ),
+     seed_pairs AS (
+         SELECT
+             gen_random_uuid() AS dm_id,
+             'a0000000-0000-0000-0000-000000000001'::uuid AS me,
+             t.id AS other_id,
+             NOW() - (row_number() OVER () * interval '1 hour') AS created_at,
+             '안녕하세요! seed message #' || row_number() OVER () AS message
+         FROM targets t
+     )
+INSERT INTO direct_messages(id, sender_id, receiver_id, created_at, message)
+SELECT
+    dm_id,               -- 요청
+    me,
+    other_id,
+    created_at,
+    message
+FROM seed_pairs
+UNION ALL
+SELECT
+    gen_random_uuid(),   -- 답장
+    other_id,
+    me,
+    created_at + interval '5 minute',
+    '네, 반갑습니다! reply #' || row_number() OVER ()
+FROM seed_pairs;
