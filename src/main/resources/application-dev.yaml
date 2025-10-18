@@ -4,7 +4,7 @@ spring:
       on-profile: dev
     # .env 파일을 속성 소스로 추가
     import: optional:file:.env[.properties]
-  
+
   # PostgreSQL 데이터베이스 초기화
   sql:
     init:
@@ -42,17 +42,17 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
   elasticsearch:
-    username:
-    password:
+    health-timeout-ms: 10000
+    uris: elasticsearch:9200
 
   data:
     redis:
       host: redis
       port: 6379
       password: ${REDIS_PASSWORD:}
-      timeout: 1s  # Redis 연결 타임아웃 1초
       repositories:
         enabled: false  # 개발 단계 Redis Repository 비활성화
+
 
   # Kafka 설정 (환경 변수로 제어)
   kafka:
@@ -72,6 +72,7 @@ spring:
       batch-size: 16384
       linger-ms: 5
       buffer-memory: 33554432
+
 management:
   endpoints:
     web:
