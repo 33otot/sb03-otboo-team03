@@ -151,23 +151,29 @@ public class NotificationServiceImpl implements NotificationService {
     
     /**
      * 저장된 알림 목록에 대해 SSE로 실시간 발행한다.
+     * 각 사용자별로 개별 알림을 전송하여 올바른 UUID를 보장한다.
      * 
      * @param notifications 발행할 알림 목록
      */
     protected void sendBatchSseNotifications(List<Notification> notifications) {
+        if (notifications.isEmpty()) {
+            return;
+        }
+
+        // 각 알림을 개별적으로 전송 (올바른 UUID 보장)
         notifications.forEach(notification -> {
             try {
                 String notificationJson = objectMapper.writeValueAsString(toDto(notification));
                 sseService.sendNotification(notification.getReceiver().getId(), notificationJson);
-                log.debug(NOTIFICATION_SERVICE + "SSE 발행 완료 - user: {}, title: '{}'", 
-                    notification.getReceiver().getId(), notification.getTitle());
+                log.debug(NOTIFICATION_SERVICE + "개별 SSE 발행 완료 - user: {}, title: '{}', id: {}", 
+                    notification.getReceiver().getId(), notification.getTitle(), notification.getId());
             } catch (Exception e) {
-                log.error(NOTIFICATION_SERVICE + "SSE 발행 실패 - user: {}, title: '{}'", 
-                    notification.getReceiver().getId(), notification.getTitle(), e);
+                log.error(NOTIFICATION_SERVICE + "개별 SSE 발행 실패 - user: {}, title: '{}', id: {}", 
+                    notification.getReceiver().getId(), notification.getTitle(), notification.getId(), e);
             }
         });
         
-        log.info(NOTIFICATION_SERVICE + "SSE 발행 완료 - {}건 발행", notifications.size());
+        log.info(NOTIFICATION_SERVICE + "개별 SSE 발행 완료 - {}건 발행", notifications.size());
     }
 
     /**

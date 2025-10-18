@@ -28,14 +28,6 @@ import com.samsamotot.otboo.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Slice;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.UUID;
 
 /**
  * 사용자 서비스 구현체
@@ -201,5 +193,25 @@ public class UserServiceImpl implements UserService {
         
         // DTO 변환하여 반환
         return userMapper.toDto(user);
+    }
+    
+    @Override
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
+        log.info(SERVICE + "비밀번호 변경 시도 - 사용자 ID: {}", userId);
+        
+        // 사용자 조회
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> {
+                log.warn(SERVICE + "비밀번호 변경 시 사용자 조회 실패 - 사용자 ID: {}", userId);
+                return new OtbooException(ErrorCode.USER_NOT_FOUND);
+            });
+        
+        // 비밀번호 변경 (임시 비밀번호 만료 시간 초기화 포함)
+        user.changePassword(request.password(), passwordEncoder);
+        
+        // 컷오프: 비밀번호 변경 시 이전 토큰 무효화
+        tokenInvalidationService.setUserInvalidAfter(userId.toString(), java.time.Instant.now());
+        
+        log.info(SERVICE + "비밀번호 변경 완료 - 사용자 ID: {}", userId);
     }
 }
