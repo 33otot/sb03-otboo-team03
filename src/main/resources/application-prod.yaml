@@ -68,7 +68,7 @@ spring:
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all  # 모든 복제본에 메시지 저장 확인
       retries: 3 # 실패 시 재시도 횟수
 
@@ -76,7 +76,7 @@ spring:
       group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:otboo-group}
       auto-offset-reset: latest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       enable-auto-commit: false # 수동 커밋으로 메시지 손실 방지 (메시지 처리 실패 시 재처리 가능)
       properties:
         max.poll.interval.ms: 300000
