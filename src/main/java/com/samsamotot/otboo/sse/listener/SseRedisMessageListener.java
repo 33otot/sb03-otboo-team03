@@ -17,14 +17,15 @@ import java.util.UUID;
  * FileName     : SseRedisMessageListener
  * Author       : dounguk
  * Date         : 2025. 10. 16.
- * Description  : Redis Pub/Sub를 통한 SSE 메시지 수신 처리
+ * Description  : Redis Pub/Sub를 통한 SSE 메시지 수신 처리 (Kafka Fallback용)
+ *                Kafka가 사용 불가능할 때 Redis를 통한 메시징 처리
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class SseRedisMessageListener implements MessageListener {
 
-    private static final String SSE_REDIS_LISTENER = "[SSE_REDIS_LISTENER] ";
+    private static final String SSE_REDIS_LISTENER = "[SseRedisMessageListener] ";
     
     private final SseService sseService;
     private final ObjectMapper objectMapper;
@@ -35,7 +36,7 @@ public class SseRedisMessageListener implements MessageListener {
             String channel = new String(message.getChannel(), StandardCharsets.UTF_8);
             String messageStr = new String(message.getBody(), StandardCharsets.UTF_8);
             
-            log.debug(SSE_REDIS_LISTENER + "메시지 수신 - channel: {}, bytes: {}", channel, message.getBody().length);
+            log.info(SSE_REDIS_LISTENER + "메시지 수신 - channel: {}, bytes: {}", channel, message.getBody().length);
             
             // 채널에서 userId 추출 (sse:notification:userId)
             if (channel.startsWith("sse:notification:")) {
@@ -48,7 +49,7 @@ public class SseRedisMessageListener implements MessageListener {
                 // 로컬 SSE 연결로만 메시지 전송 (재발행 방지)
                 sseService.sendLocalNotification(userId, messageStr);
                 
-                log.debug(SSE_REDIS_LISTENER + "메시지 처리 완료 - userId: {}, notificationId: {}", 
+                log.info(SSE_REDIS_LISTENER + "메시지 처리 완료 - userId: {}, notificationId: {}", 
                          userId, notificationDto.getId());
             }
                      

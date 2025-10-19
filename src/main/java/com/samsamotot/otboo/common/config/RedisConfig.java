@@ -49,7 +49,7 @@ public class RedisConfig {
 
     /**
      * Redis Pub/Sub 메시지 리스너 컨테이너 (SSE용)
-     * 테스트 환경에서는 비활성화
+     * Kafka Fallback용으로 활성화
      */
     @Bean
     @Profile("!test")
@@ -60,10 +60,9 @@ public class RedisConfig {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
 
-        // SSE 알림 채널 구독
         container.addMessageListener(sseRedisMessageListener, new PatternTopic("sse:notification:*"));
 
-        log.info("Redis SSE Message Listener Container initialized");
+        log.info("[Redis SSE Message Listener Container] initialized (Fallback for Kafka)");
         return container;
     }
 
