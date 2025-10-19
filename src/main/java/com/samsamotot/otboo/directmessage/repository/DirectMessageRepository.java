@@ -80,13 +80,13 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
             SELECT
                 m.*,
                 ROW_NUMBER() OVER(PARTITION BY
-                    CASE WHEN sender_id > receiver_id THEN sender_id ELSE receiver_id END,
-                    CASE WHEN sender_id > receiver_id THEN receiver_id ELSE sender_id END
-                ORDER BY created_at DESC, id DESC) as rn
+                    CASE WHEN sender_id > receiver_id THEN CAST(sender_id AS VARCHAR) ELSE CAST(receiver_id AS VARCHAR) END,
+                    CASE WHEN sender_id > receiver_id THEN CAST(receiver_id AS VARCHAR) ELSE CAST(sender_id AS VARCHAR) END
+                ORDER BY created_at DESC) as rn
             FROM direct_messages m
             WHERE m.sender_id = :userId OR m.receiver_id = :userId
         )
-        SELECT * FROM ranked_messages WHERE rn = 1 ORDER BY created_at DESC, id DESC
+        SELECT * FROM ranked_messages WHERE rn = 1 ORDER BY created_at DESC
     """, nativeQuery = true)
     List<DirectMessage> findConversationsByUserId(@Param("userId") UUID userId);
 }
