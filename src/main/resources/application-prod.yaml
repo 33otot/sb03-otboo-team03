@@ -56,29 +56,31 @@ spring:
       timeout: 2000ms
 
   kafka:
-    bootstrap-servers: ${CONFLUENT_BOOTSTRAP_SERVERS}
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
     properties:
       security.protocol: SASL_SSL
       sasl.mechanism: PLAIN
       sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="${CONFLUENT_API_KEY}" password="${CONFLUENT_API_SECRET}";
       session.timeout.ms: 45000
-      request.timeout.ms: 30000
+      request.timeout.ms: 60000
       reconnect.backoff.ms: 1000
       reconnect.backoff.max.ms: 10000
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.springframework.kafka.support.serializer.StringSerializer
       acks: all  # 모든 복제본에 메시지 저장 확인
       retries: 3 # 실패 시 재시도 횟수
 
     consumer:
       group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:otboo-group}
-      auto-offset-reset: earliest
+      auto-offset-reset: latest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.StringDeserializer
       enable-auto-commit: false # 수동 커밋으로 메시지 손실 방지 (메시지 처리 실패 시 재처리 가능)
       properties:
+        max.poll.interval.ms: 300000
+        heartbeat.interval.ms: 3000
         spring.json.trusted.packages: "com.samsamotot.otboo.*" # 역직렬화 보안
 
 management:
