@@ -10,6 +10,7 @@ import static org.mockito.BDDMockito.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.lenient;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.when;
@@ -45,6 +46,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -467,5 +470,65 @@ class DirectMessageServiceImplTest {
 
         then(directMessageMapper).should(times(25))
             .toRoomDto(any(User.class), any(DirectMessage.class), anyMap());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void 대화_목록이_없을_때_빈_리스트를_반환한다(List<UUID> messageIds) {
+        // given
+        loginAsUserId(myId, myEmail);
+        given(directMessageRepository.findLastMessageIdsOfConversations(myId)).willReturn(messageIds);
+
+        // when
+        DirectMessageRoomListResponse response = directMessageService.getConversationList();
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.rooms()).isEmpty();
+        then(directMessageRepository).should().findLastMessageIdsOfConversations(myId);
+        then(directMessageRepository).should(never()).findWithUsersByIds(any());
+        then(profileRepository).should(never()).findByUserIdIn(any());
+    }
+
+    @Test
+    void 프로필_이미지가_없는_사용자가_있어도_정상_동작한다() {
+        // given
+        loginAsUserId(myId, myEmail);
+
+        User me = stubUser(myId, false);
+        User partner1 = stubUser(otherId, false);
+        UUID partner2Id = UUID.randomUUID();
+        User partner2 = stubUser(partner2Id, false);
+
+        // 파트너 1: 프로필 이미지 있음
+        Profile profile1 = mock(Profile.class);
+        when(profile1.getUser()).thenReturn(partner1);
+        when(profile1.getProfileImageUrl()).thenReturn("http://image.com/user1.jpg");
+        DirectMessage dm1 = mock(DirectMessage.class);
+        when(dm1.getSender()).thenReturn(me); // 미리 생성한 Mock 객체 사용
+        when(dm1.getReceiver()).thenReturn(partner1);
+
+        // 파트너 2: 프로필 이미지 없음 (null)
+        Profile profile2 = mock(Profile.class);
+        when(profile2.getUser()).thenReturn(partner2);
+        when(profile2.getProfileImageUrl()).thenReturn(null);
+        DirectMessage dm2 = mock(DirectMessage.class);
+        when(dm2.getSender()).thenReturn(partner2);
+        when(dm2.getReceiver()).thenReturn(me); // 미리 생성한 Mock 객체 사용
+
+        List<UUID> messageIds = List.of(UUID.randomUUID(), UUID.randomUUID());
+        given(directMessageRepository.findLastMessageIdsOfConversations(myId)).willReturn(messageIds);
+        given(directMessageRepository.findWithUsersByIds(messageIds)).willReturn(List.of(dm1, dm2));
+        given(profileRepository.findByUserIdIn(Set.of(partner1.getId(), partner2.getId()))).willReturn(List.of(profile1, profile2));
+
+        // when
+        directMessageService.getConversationList();
+
+        // then
+        // NullPointerException이 발생하지 않고 정상적으로 실행 완료되는 것을 확인
+        then(directMessageRepository).should().findLastMessageIdsOfConversations(myId);
+        then(directMessageRepository).should().findWithUsersByIds(messageIds);
+        then(profileRepository).should().findByUserIdIn(Set.of(otherId, partner2Id));
+        then(directMessageMapper).should(times(2)).toRoomDto(any(User.class), any(DirectMessage.class), anyMap());
     }
 }
