@@ -140,4 +140,12 @@ public class User extends BaseEntity {
     public void updateUserInfo(String username) {
         this.username = username;
     }
+
+    /**
+     * OAuth 제공자 정보를 연동합니다.
+     */
+    public void linkOAuthAccount(Provider provider, String providerId) {
+        this.provider = provider;
+        this.providerId = providerId;
+    }
 }

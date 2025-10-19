@@ -8,9 +8,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.samsamotot.otboo.common.config.SecurityTestConfig;
 import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.fixture.WeatherFixture;
+import com.samsamotot.otboo.config.TestConfig;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
@@ -31,6 +33,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.annotation.DirtiesContext;
@@ -47,6 +50,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import({TestConfig.class, SecurityTestConfig.class})
 @DirtiesContext(classMode = AFTER_CLASS)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers

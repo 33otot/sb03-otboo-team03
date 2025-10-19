@@ -10,11 +10,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import com.samsamotot.otboo.common.oauth2.handler.OAuth2LoginFailureHandler;
+import com.samsamotot.otboo.common.oauth2.handler.OAuth2LoginSuccessHandler;
+import com.samsamotot.otboo.common.oauth2.service.OAuth2UserService;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
@@ -44,6 +48,15 @@ class AuthControllerTest {
 
     @MockBean
     private SecurityProperties securityProperties;
+
+    @MockBean
+    private OAuth2UserService oAuth2UserService;
+
+    @MockBean
+    private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+
+    @MockBean
+    private OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -128,6 +141,53 @@ class AuthControllerTest {
     @DisplayName("/api/auth/refresh 실패: 리프레시 토큰이 없을 때 400 에러")
     void refreshToken_failure_noToken() throws Exception {
         mockMvc.perform(post("/api/auth/refresh"))
+        .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("/api/auth/reset-password 성공: 비밀번호 초기화 요청")
+    void resetPassword_success() throws Exception {
+        String requestJson = objectMapper.writeValueAsString(Map.of("email", "test@example.com"));
+
+        mockMvc.perform(post("/api/auth/reset-password")
+            .contentType("application/json")
+            .content(requestJson))
+        .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("/api/auth/reset-password 실패: 잘못된 JSON 형식")
+    void resetPassword_failure_invalidJson() throws Exception {
+        mockMvc.perform(post("/api/auth/reset-password")
+            .contentType("application/json")
+            .content("invalid json"))
+        .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("/api/auth/reset-password 실패: 이메일 누락")
+    void resetPassword_failure_missingEmail() throws Exception {
+        String requestJson = "{}";
+
+        mockMvc.perform(post("/api/auth/reset-password")
+            .contentType("application/json")
+            .content(requestJson))
+        .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("/api/auth/sign-out 실패: 빈 리프레시 토큰")
+    void signOut_failure_emptyToken() throws Exception {
+        mockMvc.perform(post("/api/auth/sign-out")
+            .cookie(new jakarta.servlet.http.Cookie("REFRESH_TOKEN", "")))
+        .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("/api/auth/refresh 실패: 빈 리프레시 토큰")
+    void refreshToken_failure_emptyToken() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh")
+            .cookie(new jakarta.servlet.http.Cookie("REFRESH_TOKEN", "")))
         .andExpect(status().isBadRequest());
     }
 }

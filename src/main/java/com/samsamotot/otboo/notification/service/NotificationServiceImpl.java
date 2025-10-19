@@ -151,23 +151,29 @@ public class NotificationServiceImpl implements NotificationService {
     
     /**
      * 저장된 알림 목록에 대해 SSE로 실시간 발행한다.
+     * 각 사용자별로 개별 알림을 전송하여 올바른 UUID를 보장한다.
      * 
      * @param notifications 발행할 알림 목록
      */
     protected void sendBatchSseNotifications(List<Notification> notifications) {
+        if (notifications.isEmpty()) {
+            return;
+        }
+
+        // 각 알림을 개별적으로 전송 (올바른 UUID 보장)
         notifications.forEach(notification -> {
             try {
                 String notificationJson = objectMapper.writeValueAsString(toDto(notification));
                 sseService.sendNotification(notification.getReceiver().getId(), notificationJson);
-                log.debug(NOTIFICATION_SERVICE + "SSE 발행 완료 - user: {}, title: '{}'", 
-                    notification.getReceiver().getId(), notification.getTitle());
+                log.debug(NOTIFICATION_SERVICE + "개별 SSE 발행 완료 - user: {}, title: '{}', id: {}", 
+                    notification.getReceiver().getId(), notification.getTitle(), notification.getId());
             } catch (Exception e) {
-                log.error(NOTIFICATION_SERVICE + "SSE 발행 실패 - user: {}, title: '{}'", 
-                    notification.getReceiver().getId(), notification.getTitle(), e);
+                log.error(NOTIFICATION_SERVICE + "개별 SSE 발행 실패 - user: {}, title: '{}', id: {}", 
+                    notification.getReceiver().getId(), notification.getTitle(), notification.getId(), e);
             }
         });
         
-        log.info(NOTIFICATION_SERVICE + "SSE 발행 완료 - {}건 발행", notifications.size());
+        log.info(NOTIFICATION_SERVICE + "개별 SSE 발행 완료 - {}건 발행", notifications.size());
     }
 
     /**
@@ -245,10 +251,19 @@ public class NotificationServiceImpl implements NotificationService {
         UUID currentUserId = currentUserId();
 
         Notification notification = notificationRepository.findById(notificationId)
-            .orElseThrow(() -> {
-                log.warn(NOTIFICATION_SERVICE + "알림을 찾을 수 없음: notificationId={}", notificationId);
-                return new OtbooException(ErrorCode.NOTIFICATION_NOT_FOUND);
-            });
+            .orElse(null);
+            
+        if (notification == null) {
+            // 이미 삭제된 알림인 경우 백로그에서만 제거하고 성공으로 처리
+            log.info(NOTIFICATION_SERVICE + "이미 삭제된 알림 - notificationId={}, userId={}", notificationId, currentUserId);
+            try {
+                sseService.removeNotificationFromBacklog(currentUserId, notificationId);
+                log.info(NOTIFICATION_SERVICE + "SSE 백로그에서 알림 제거 완료: notificationId={}", notificationId);
+            } catch (Exception e) {
+                log.warn(NOTIFICATION_SERVICE + "SSE 백로그에서 알림 제거 실패: notificationId={}", notificationId, e);
+            }
+            return; // 성공으로 처리
+        }
 
         if (!notification.getReceiver().getId().equals(currentUserId)) {
             log.warn(NOTIFICATION_SERVICE + "권한 없음: userId={}, notificationOwnerId={}",
@@ -256,7 +271,37 @@ public class NotificationServiceImpl implements NotificationService {
             throw new OtbooException(ErrorCode.NOTIFICATION_NOT_FOUND);
         }
         notificationRepository.delete(notification);
+        
+        // SSE 백로그에서도 해당 알림 제거
+        try {
+            sseService.removeNotificationFromBacklog(currentUserId, notificationId);
+            log.info(NOTIFICATION_SERVICE + "SSE 백로그에서 알림 제거 완료: notificationId={}", notificationId);
+        } catch (Exception e) {
+            log.warn(NOTIFICATION_SERVICE + "SSE 백로그에서 알림 제거 실패: notificationId={}", notificationId, e);
+        }
+        
         log.info(NOTIFICATION_SERVICE + "삭제 완료: notificationId={}, userId={}", notificationId, currentUserId);
+    }
+
+    /**
+     * 특정 사용자의 모든 알림을 삭제합니다.
+     * @param userId 알림을 삭제할 사용자의 UUID
+     */
+    @Override
+    @Transactional
+    public void deleteAllByUserId(UUID userId) {
+        log.info(NOTIFICATION_SERVICE + "사용자의 모든 알림 삭제 시도");
+
+        notificationRepository.deleteAllByUserId(userId);
+        log.info(NOTIFICATION_SERVICE + "사용자의 모든 알림 삭제 완료");
+        
+        // SSE 백로그도 전체 정리
+        try {
+            sseService.clearBacklog(userId);
+            log.info(NOTIFICATION_SERVICE + "SSE 백로그 전체 정리 완료: userId={}", userId);
+        } catch (Exception e) {
+            log.warn(NOTIFICATION_SERVICE + "SSE 백로그 전체 정리 실패: userId={}", userId, e);
+        }
     }
 
     /*

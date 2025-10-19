@@ -1,8 +1,9 @@
 package com.samsamotot.otboo.common.exception;
 
+import org.springframework.http.HttpStatus;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
@@ -88,10 +89,21 @@ public enum ErrorCode {
     ADMIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "AD001", "관리자 권한이 필요합니다."),
     USER_ROLE_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "AD002", "사용자 권한 업데이트에 실패했습니다."),
 
+    // 이메일 관련 에러
+    EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EM001", "이메일 발송에 실패했습니다."),
+
     // 커서 기반 페이지네이션 관련 에러
     INVALID_CURSOR_FORMAT(HttpStatus.BAD_REQUEST, "P001", "잘못된 커서 형식입니다."),
     INVALID_SORT_FIELD(HttpStatus.BAD_REQUEST,"P002", "지원하지 않는 정렬 필드입니다."),
-    INVALID_SORT_DIRECTION(HttpStatus.BAD_REQUEST,"P003", "지원하지 않는 정렬 방향입니다.");
+    INVALID_SORT_DIRECTION(HttpStatus.BAD_REQUEST,"P003", "지원하지 않는 정렬 방향입니다."),
+
+    // OAuth2 관련 에러
+    INVALID_OAUTH2_PROVIDER(HttpStatus.BAD_REQUEST, "OA001", "지원하지 않는 OAuth2 제공자입니다."),
+    OAUTH2_AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "OA002", "OAuth2 인증에 실패했습니다."),
+    OAUTH2_USER_INFO_NOT_FOUND(HttpStatus.UNAUTHORIZED, "OA003", "OAuth2 사용자 정보를 찾을 수 없습니다."),
+    OAUTH2_EMAIL_NOT_FOUND(HttpStatus.BAD_REQUEST, "OA004", "OAuth2 제공자에서 이메일을 찾을 수 없습니다."),
+    INVALID_OAUTH2_USER_INFO(HttpStatus.BAD_REQUEST, "OA005", "OAuth2 사용자 정보가 올바르지 않습니다."),
+    OAUTH2_EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "OA006", "OAuth2 제공자에서 이메일이 인증되지 않았습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

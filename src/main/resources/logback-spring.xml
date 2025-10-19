@@ -91,28 +91,34 @@
     </springProfile>
 
     <springProfile name="prod">
-        <root level="WARN">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="JSON_FILE"/>
         </root>
 
         <!-- Application specific loggers -->
         <logger name="com._otot.otboo" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="JSON_FILE"/>
         </logger>
-        
+
         <!-- Spring Framework loggers -->
         <logger name="org.springframework.security" level="WARN" additivity="false">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="JSON_FILE"/>
         </logger>
         <logger name="org.springframework.web" level="WARN" additivity="false">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="JSON_FILE"/>
         </logger>
         <logger name="org.springframework.data" level="WARN" additivity="false">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="JSON_FILE"/>
         </logger>
         
         <!-- Hibernate loggers -->
         <logger name="org.hibernate.SQL" level="WARN" additivity="false">
+            <appender-ref ref="CONSOLE"/>
             <appender-ref ref="JSON_FILE"/>
         </logger>
     </springProfile>

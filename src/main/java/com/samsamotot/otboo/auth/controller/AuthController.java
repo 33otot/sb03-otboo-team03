@@ -1,6 +1,8 @@
 package com.samsamotot.otboo.auth.controller;
 
+import com.samsamotot.otboo.auth.controller.api.AuthApi;
 import com.samsamotot.otboo.auth.dto.LoginRequest;
+import com.samsamotot.otboo.auth.dto.ResetPasswordRequest;
 import com.samsamotot.otboo.auth.service.AuthService;
 import com.samsamotot.otboo.common.security.jwt.JwtDto;
 import com.samsamotot.otboo.common.config.SecurityProperties;
@@ -25,7 +27,7 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Tag(name = "인증", description = "로그인, 로그아웃, CSRF 토큰 관련 API")
-public class AuthController {
+public class AuthController implements AuthApi {
     
     private final AuthService authService;
     private final SecurityProperties securityProperties;
@@ -136,5 +138,15 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
     
-    
+    @Override
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        log.info("[AuthController] 비밀번호 초기화 요청 - 이메일: {}", request.email());
+        
+        authService.resetPassword(request);
+        
+        log.info("[AuthController] 비밀번호 초기화 성공 - 이메일: {}", request.email());
+        
+        return ResponseEntity.noContent().build();
+    }
 }

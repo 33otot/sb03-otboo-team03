@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.samsamotot.otboo.auth.dto.LoginRequest;
+import com.samsamotot.otboo.auth.dto.ResetPasswordRequest;
 import com.samsamotot.otboo.auth.service.AuthService;
+import com.samsamotot.otboo.common.email.EmailService;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.csrf.CsrfTokenService;
@@ -39,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final CsrfTokenService csrfTokenService;
     private final TokenInvalidationService tokenInvalidationService;
     private final UserMapper userMapper;
+    private final EmailService emailService;
     
     @Override
     public JwtDto login(LoginRequest request) {
@@ -163,5 +166,45 @@ public class AuthServiceImpl implements AuthService {
             log.warn(SERVICE + "토큰 갱신 실패: {}", e.getMessage());
             throw new OtbooException(ErrorCode.TOKEN_INVALID);
         }
+    }
+    
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        log.info(SERVICE + "비밀번호 초기화 시도 - 이메일: {}", request.email());
+        
+        // 사용자 조회
+        User user = userRepository.findByEmail(request.email())
+            .orElseThrow(() -> {
+                log.warn(SERVICE + "비밀번호 초기화 시 사용자 조회 실패 - 이메일: {}", request.email());
+                return new OtbooException(ErrorCode.USER_NOT_FOUND);
+            });
+        
+        // 임시 비밀번호 생성 (8자리 영문+숫자+특수문자 조합)
+        String temporaryPassword = generateTemporaryPassword();
+        
+        // 사용자 임시 비밀번호 설정 (3분 만료)
+        user.setTemporaryPassword(temporaryPassword, passwordEncoder);
+        
+        // 이메일 발송
+        emailService.sendTemporaryPassword(request.email(), temporaryPassword);
+        
+        log.info(SERVICE + "비밀번호 초기화 성공 - 이메일: {}", request.email());
+    }
+    
+    /**
+     * 임시 비밀번호 생성 (8자리 영문+숫자+특수문자 조합)
+     * 
+     * @return 임시 비밀번호
+     */
+    private String generateTemporaryPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        StringBuilder password = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+        
+        for (int i = 0; i < 8; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        
+        return password.toString();
     }
 }
