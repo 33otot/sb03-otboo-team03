@@ -147,7 +147,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         // 네이티브 쿼리로 각 대화방의 마지막 메시지 ID 목록만 조회
         List<UUID> lastMessageIds = directMessageRepository.findLastMessageIdsOfConversations(myId);
 
-        if (lastMessageIds.isEmpty()) {
+        if (lastMessageIds == null || lastMessageIds.isEmpty()) {
             return new DirectMessageRoomListResponse(Collections.emptyList());
         }
 
@@ -164,7 +164,11 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
         // userId -> profileImageUrl 맵 구성
         Map<UUID, String> profileUrlMap = profiles.stream()
-            .collect(Collectors.toMap(p -> p.getUser().getId(), Profile::getProfileImageUrl));
+            .collect(Collectors.toMap(
+                p -> p.getUser().getId(),
+                p -> p.getProfileImageUrl() != null ? p.getProfileImageUrl() : "", // null 값을 빈 문자열로 대체
+                (oldValue, newValue) -> newValue // 중복 키 발생 시 새로운 값으로 덮어쓰기
+            ));
 
         List<DirectMessageRoomDto> rooms = conversations.stream()
             .map(dm -> {
