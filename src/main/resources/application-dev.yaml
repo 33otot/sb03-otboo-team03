@@ -4,7 +4,7 @@ spring:
       on-profile: dev
     # .env 파일을 속성 소스로 추가
     import: optional:file:.env[.properties]
-  
+
   # PostgreSQL 데이터베이스 초기화
   sql:
     init:
@@ -42,8 +42,8 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
   elasticsearch:
-    username:
-    password:
+    health-timeout-ms: 10000
+    uris: elasticsearch:9200
 
   data:
     redis:
@@ -52,6 +52,40 @@ spring:
       password: ${REDIS_PASSWORD:}
       repositories:
         enabled: false  # 개발 단계 Redis Repository 비활성화
+
+  # Mail 설정 (빌드를 위한 임시 설정)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: dummy@example.com
+    password: dummy-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+  # Kafka 설정 (환경 변수로 제어)
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:}
+    consumer:
+      group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:otboo-sse-group}
+      auto-offset-reset: latest
+      enable-auto-commit: true
+      auto-commit-interval-ms: 1000
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 5
+      buffer-memory: 33554432
+
 management:
   endpoints:
     web:

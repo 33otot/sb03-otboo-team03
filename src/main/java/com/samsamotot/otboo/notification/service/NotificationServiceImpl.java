@@ -251,10 +251,19 @@ public class NotificationServiceImpl implements NotificationService {
         UUID currentUserId = currentUserId();
 
         Notification notification = notificationRepository.findById(notificationId)
-            .orElseThrow(() -> {
-                log.warn(NOTIFICATION_SERVICE + "알림을 찾을 수 없음: notificationId={}", notificationId);
-                return new OtbooException(ErrorCode.NOTIFICATION_NOT_FOUND);
-            });
+            .orElse(null);
+            
+        if (notification == null) {
+            // 이미 삭제된 알림인 경우 백로그에서만 제거하고 성공으로 처리
+            log.info(NOTIFICATION_SERVICE + "이미 삭제된 알림 - notificationId={}, userId={}", notificationId, currentUserId);
+            try {
+                sseService.removeNotificationFromBacklog(currentUserId, notificationId);
+                log.info(NOTIFICATION_SERVICE + "SSE 백로그에서 알림 제거 완료: notificationId={}", notificationId);
+            } catch (Exception e) {
+                log.warn(NOTIFICATION_SERVICE + "SSE 백로그에서 알림 제거 실패: notificationId={}", notificationId, e);
+            }
+            return; // 성공으로 처리
+        }
 
         if (!notification.getReceiver().getId().equals(currentUserId)) {
             log.warn(NOTIFICATION_SERVICE + "권한 없음: userId={}, notificationOwnerId={}",
@@ -262,6 +271,15 @@ public class NotificationServiceImpl implements NotificationService {
             throw new OtbooException(ErrorCode.NOTIFICATION_NOT_FOUND);
         }
         notificationRepository.delete(notification);
+        
+        // SSE 백로그에서도 해당 알림 제거
+        try {
+            sseService.removeNotificationFromBacklog(currentUserId, notificationId);
+            log.info(NOTIFICATION_SERVICE + "SSE 백로그에서 알림 제거 완료: notificationId={}", notificationId);
+        } catch (Exception e) {
+            log.warn(NOTIFICATION_SERVICE + "SSE 백로그에서 알림 제거 실패: notificationId={}", notificationId, e);
+        }
+        
         log.info(NOTIFICATION_SERVICE + "삭제 완료: notificationId={}, userId={}", notificationId, currentUserId);
     }
 
@@ -276,6 +294,14 @@ public class NotificationServiceImpl implements NotificationService {
 
         notificationRepository.deleteAllByUserId(userId);
         log.info(NOTIFICATION_SERVICE + "사용자의 모든 알림 삭제 완료");
+        
+        // SSE 백로그도 전체 정리
+        try {
+            sseService.clearBacklog(userId);
+            log.info(NOTIFICATION_SERVICE + "SSE 백로그 전체 정리 완료: userId={}", userId);
+        } catch (Exception e) {
+            log.warn(NOTIFICATION_SERVICE + "SSE 백로그 전체 정리 실패: userId={}", userId, e);
+        }
     }
 
     /*

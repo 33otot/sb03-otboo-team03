@@ -23,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -252,26 +253,6 @@ class NotificationServiceImplTest {
         assertEquals(2, res.data().size());
         then(notificationRepository).should()
             .findAllBefore(eq(myId), eq(ts), eq(idAfter), argThat(p -> p.getPageSize() == limit + 1));
-    }
-
-    @Test
-    void 알림_객체_확인한다_실패() throws Exception {
-        // given
-        String email = UserFixture.VALID_EMAIL;
-        UUID myId = UUID.randomUUID();
-        User me = newUserWith(email, myId);
-        mockAuthUser(me);
-
-        UUID targetNotificationId = UUID.randomUUID();
-        given(notificationRepository.findById(targetNotificationId))
-            .willReturn(Optional.empty());
-
-        // when
-        OtbooException ex = assertThrows(OtbooException.class, () -> notificationService.delete(targetNotificationId));
-
-        // then
-        assertEquals(ErrorCode.NOTIFICATION_NOT_FOUND, ex.getErrorCode());
-        then(notificationRepository).should(never()).delete(any(Notification.class));
     }
 
     @Test
@@ -585,7 +566,6 @@ class NotificationServiceImplTest {
 
         // then
         then(objectMapper).should(times(2)).writeValueAsString(any());
-//        then(sseService).should(never()).sendBatchNotification(anyList(), anyString());
         then(sseService).should(times(2)).sendNotification(any(UUID.class), anyString());
     }
 
@@ -606,7 +586,6 @@ class NotificationServiceImplTest {
 
         // then
         then(objectMapper).should(atLeastOnce()).writeValueAsString(any());
-//        then(sseService).should(never()).sendBatchNotification(anyList(), anyString());
         then(sseService).should(never()).sendNotification(any(UUID.class), anyString());
     }
 
@@ -653,6 +632,240 @@ class NotificationServiceImplTest {
         notificationService.deleteAllByUserId(userId);
 
         // then
-        verify(notificationRepository).deleteAllByUserId(userId);
+        then(notificationRepository).should().deleteAllByUserId(userId);
+        then(sseService).should().clearBacklog(userId);
+    }
+
+    @Test
+    void 사용자의_모든_알림_삭제_SSE_백로그_정리_실패() {
+        // given
+        UUID userId = UUID.randomUUID();
+        willThrow(new RuntimeException("SSE 백로그 정리 실패"))
+            .given(sseService).clearBacklog(userId);
+
+        // when
+        assertDoesNotThrow(() -> notificationService.deleteAllByUserId(userId));
+
+        // then
+        then(notificationRepository).should().deleteAllByUserId(userId);
+        then(sseService).should().clearBacklog(userId);
+    }
+
+    @Test
+    void 이미_삭제된_알림_삭제_시도() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID notificationId = UUID.randomUUID();
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.empty()); // 이미 삭제된 알림
+
+        // when
+        assertDoesNotThrow(() -> notificationService.delete(notificationId));
+
+        // then
+        then(notificationRepository).should().findById(notificationId);
+        then(notificationRepository).should(never()).delete(any(Notification.class));
+        then(sseService).should().removeNotificationFromBacklog(myId, notificationId);
+    }
+
+    @Test
+    void 이미_삭제된_알림_삭제_시도_SSE_백로그_정리_실패() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID notificationId = UUID.randomUUID();
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.empty()); // 이미 삭제된 알림
+
+        willThrow(new RuntimeException("SSE 백로그 정리 실패"))
+            .given(sseService).removeNotificationFromBacklog(myId, notificationId);
+
+        // when
+        assertDoesNotThrow(() -> notificationService.delete(notificationId));
+
+        // then
+        then(notificationRepository).should().findById(notificationId);
+        then(notificationRepository).should(never()).delete(any(Notification.class));
+        then(sseService).should().removeNotificationFromBacklog(myId, notificationId);
+    }
+
+    @Test
+    void 알림_삭제_시_SSE_백로그에서도_제거() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID notificationId = UUID.randomUUID();
+        Notification mine = newNotification(me, Instant.now(), notificationId, "내 알림");
+
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.of(mine));
+
+        // when
+        assertDoesNotThrow(() -> notificationService.delete(notificationId));
+
+        // then
+        then(notificationRepository).should().delete(same(mine));
+        then(sseService).should().removeNotificationFromBacklog(myId, notificationId);
+    }
+
+    @Test
+    void 알림_삭제_시_SSE_백로그_정리_실패해도_DB_삭제는_성공() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID notificationId = UUID.randomUUID();
+        Notification mine = newNotification(me, Instant.now(), notificationId, "내 알림");
+
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.of(mine));
+
+        willThrow(new RuntimeException("SSE 백로그 정리 실패"))
+            .given(sseService).removeNotificationFromBacklog(myId, notificationId);
+
+        // when
+        assertDoesNotThrow(() -> notificationService.delete(notificationId));
+
+        then(notificationRepository).should().delete(same(mine));
+        then(sseService).should().removeNotificationFromBacklog(myId, notificationId);
+    }
+
+    @Test
+    void 알림_저장_정상적인_경우() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID receiverId = UUID.randomUUID();
+        User receiver = newUserWith("receiver@test.com", receiverId);
+        String title = "테스트 알림";
+        String content = "알림 저장 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        given(userRepository.findById(receiverId)).willReturn(Optional.of(receiver));
+        given(notificationRepository.save(any(Notification.class))).willAnswer(invocation -> {
+            Notification notification = invocation.getArgument(0);
+            // Notification은 @Getter만 있으므로 ID 설정 불가, 그대로 반환
+            return notification;
+        });
+
+        // when
+        Notification result = notificationService.save(receiverId, title, content, level);
+
+        // then
+        assertNotNull(result);
+        assertEquals(title, result.getTitle());
+        assertEquals(content, result.getContent());
+        assertEquals(level, result.getLevel());
+        assertEquals(receiverId, result.getReceiver().getId());
+
+        then(userRepository).should().findById(receiverId);
+        then(notificationRepository).should().save(any(Notification.class));
+    }
+
+    @Test
+    void 알림_저장_존재하지_않는_사용자() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID receiverId = UUID.randomUUID();
+        String title = "테스트 알림";
+        String content = "알림 저장 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        given(userRepository.findById(receiverId)).willReturn(Optional.empty());
+
+        // when n then
+        assertThrows(OtbooException.class, () -> 
+            notificationService.save(receiverId, title, content, level));
+        then(userRepository).should().findById(receiverId);
+        then(notificationRepository).should(never()).save(any());
+    }
+
+    @Test
+    void 알림_목록_조회_정상적인_경우() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        NotificationRequest request = new NotificationRequest(null, null, 10);
+        
+        Notification notification1 = newNotification(me, Instant.now(), UUID.randomUUID(), "첫 번째 알림");
+        Notification notification2 = newNotification(me, Instant.now(), UUID.randomUUID(), "두 번째 알림");
+
+        List<Notification> notifications = List.of(notification1, notification2);
+
+        given(notificationRepository.findLatest(myId, PageRequest.of(0, 11)))
+            .willReturn(notifications);
+        given(notificationRepository.countByReceiver_Id(myId))
+            .willReturn(2L);
+
+        // when
+        NotificationListResponse result = notificationService.getNotifications(request);
+
+        // then
+        assertNotNull(result);
+        assertEquals(2, result.data().size());
+        assertEquals(2L, result.totalCount());
+
+        then(notificationRepository).should().findLatest(myId, PageRequest.of(0, 11));
+        then(notificationRepository).should().countByReceiver_Id(myId);
+    }
+
+    @Test
+    void 알림_목록_조회_빈_결과() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        NotificationRequest request = new NotificationRequest(null, null, 10);
+        
+        given(notificationRepository.findLatest(myId, PageRequest.of(0, 11)))
+            .willReturn(List.of());
+        given(notificationRepository.countByReceiver_Id(myId))
+            .willReturn(0L);
+
+        // when
+        NotificationListResponse result = notificationService.getNotifications(request);
+
+        // then
+        assertNotNull(result);
+        assertTrue(result.data().isEmpty());
+        assertEquals(0L, result.totalCount());
+    }
+
+    @Test
+    void 사용자의_모든_알림_삭제_SSE_백로그_정리_실패해도_DB_삭제는_성공() {
+        // given
+        UUID userId = UUID.randomUUID();
+        willThrow(new RuntimeException("SSE 백로그 정리 실패"))
+            .given(sseService).clearBacklog(userId);
+
+        // when n then
+        assertDoesNotThrow(() -> notificationService.deleteAllByUserId(userId));
+        
+        then(notificationRepository).should().deleteAllByUserId(userId);
+        then(sseService).should().clearBacklog(userId);
     }
 }
