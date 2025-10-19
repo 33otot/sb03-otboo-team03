@@ -3,7 +3,7 @@ spring:
     activate:
       on-profile: prod
 #    # .env 파일을 속성 소스로 추가
-#    import: optional:file:.env[.properties]
+    import: optional:file:.env[.properties]
   
   # 운영환경에서는 SQL 초기화 비활성화 (이미 테이블이 존재)
   sql:
