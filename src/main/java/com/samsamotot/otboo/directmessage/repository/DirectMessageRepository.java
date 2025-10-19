@@ -70,23 +70,36 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
     long countBetween(@Param("me") UUID me, @Param("other") UUID other);
 
 
-    /*
-        대화방 목록 조회
-        - 사용자가 참여한 모든 대화(sender or receiver)를 조회
-        - 각 대화의 가장 최근 메시지 1개만 선택
+    /**
+     * 1. 각 대화방의 마지막 메시지 ID를 찾는 네이티브 쿼리.
+     * ROW_NUMBER()를 사용하여 동률 문제를 해결하고, 가장 효율적으로 ID만 선택합니다.
      */
     @Query(value = """
-        WITH ranked_messages AS (
-            SELECT
-                m.*,
-                ROW_NUMBER() OVER(PARTITION BY
-                    CASE WHEN sender_id > receiver_id THEN CAST(sender_id AS VARCHAR) ELSE CAST(receiver_id AS VARCHAR) END,
-                    CASE WHEN sender_id > receiver_id THEN CAST(receiver_id AS VARCHAR) ELSE CAST(sender_id AS VARCHAR) END
-                ORDER BY created_at DESC) as rn
-            FROM direct_messages m
-            WHERE m.sender_id = :userId OR m.receiver_id = :userId
-        )
-        SELECT * FROM ranked_messages WHERE rn = 1 ORDER BY created_at DESC
-    """, nativeQuery = true)
-    List<DirectMessage> findConversationsByUserId(@Param("userId") UUID userId);
+        SELECT DISTINCT ON (
+          LEAST(sender_id, receiver_id),
+          GREATEST(sender_id, receiver_id)
+        ) id
+        FROM direct_messages
+        WHERE sender_id = :userId OR receiver_id = :userId
+        ORDER BY
+          LEAST(sender_id, receiver_id),
+          GREATEST(sender_id, receiver_id),
+          created_at DESC,
+          id DESC
+        """, nativeQuery = true)
+    List<UUID> findLastMessageIdsOfConversations(@Param("userId") UUID userId);
+
+    /**
+     * 2. ID 목록을 받아 DirectMessage와 연관된 User 엔티티를 JOIN FETCH로 한 번에 조회합니다.
+     * N+1 문제를 완벽하게 해결합니다.
+     */
+    @Query("""
+        SELECT DISTINCT dm
+        FROM DirectMessage dm
+        JOIN FETCH dm.sender
+        JOIN FETCH dm.receiver
+        WHERE dm.id IN :ids
+        ORDER BY dm.createdAt DESC, dm.id DESC
+        """)
+    List<DirectMessage> findWithUsersByIds(@Param("ids") List<UUID> ids);
 }

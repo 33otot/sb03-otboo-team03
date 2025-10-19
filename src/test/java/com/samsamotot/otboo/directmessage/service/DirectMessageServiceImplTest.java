@@ -404,22 +404,25 @@ class DirectMessageServiceImplTest {
         List<DirectMessage> mockConversations = new ArrayList<>();
         List<User> partners = new ArrayList<>();
         Set<UUID> partnerIds = new HashSet<>();
+        List<UUID> lastMessageIds = new ArrayList<>();
 
         for (int i = 0; i < 25; i++) {
             User sender = stubUser(myId, false);
-            // 충돌 없도록 UUID 고정 생성 (랜덤 대신 i 기반)
             UUID partnerId = UUID.nameUUIDFromBytes(("partner-" + i).getBytes(StandardCharsets.UTF_8));
             User receiver = stubUser(partnerId, false);
 
             DirectMessage dm = mock(DirectMessage.class);
+
             when(dm.getSender()).thenReturn(sender);
             when(dm.getReceiver()).thenReturn(receiver);
+
+            UUID dmId = UUID.nameUUIDFromBytes(("dm-" + i).getBytes(StandardCharsets.UTF_8));
+            lastMessageIds.add(dmId);
 
             mockConversations.add(dm);
             partners.add(receiver);
             partnerIds.add(partnerId);
 
-            // mapper 컨텍스트 버전 스텁 (Map 내용은 anyMap()으로 매칭)
             DirectMessageRoomDto mockRoomDto = DirectMessageRoomDto.builder()
                 .partner(AuthorDto.builder().userId(receiver.getId()).name("user" + i).build())
                 .lastMessage("Last message " + i)
@@ -429,23 +432,20 @@ class DirectMessageServiceImplTest {
                 .thenReturn(mockRoomDto);
         }
 
-        // DM 목록 조회 스텁
-        given(directMessageRepository.findConversationsByUserId(myId))
-            .willReturn(mockConversations);
+        given(directMessageRepository.findLastMessageIdsOfConversations(myId))
+            .willReturn(lastMessageIds);
 
-        // 배치 프로필 조회 스텁
-        // userId -> profileImageUrl 더미 데이터 구성
+        given(directMessageRepository.findWithUsersByIds(argThat(ids ->
+            ids != null && ids.size() == lastMessageIds.size() && ids.containsAll(lastMessageIds)
+        ))).willReturn(mockConversations);
+
+        // 배치 프로필 조회
         List<Profile> profileList = partners.stream()
-            .map(u -> {
-                Profile p = Profile.builder()
-                    .user(u)
-                    .profileImageUrl("https://cdn.example.com/" + u.getId() + ".png")
-                    .build();
-                return p;
-            })
+            .map(u -> Profile.builder()
+                .user(u)
+                .profileImageUrl("https://cdn.example.com/" + u.getId() + ".png")
+                .build())
             .toList();
-
-        // 인자로 넘어오는 Set이 우리가 모은 partnerIds를 포함하면 OK
         given(profileRepository.findByUserIdIn(argThat(ids -> ids.containsAll(partnerIds))))
             .willReturn(profileList);
 
@@ -456,11 +456,15 @@ class DirectMessageServiceImplTest {
         assertThat(response).isNotNull();
         assertThat(response.rooms()).hasSize(25);
 
-        then(directMessageRepository).should().findConversationsByUserId(myId);
+        then(directMessageRepository).should().findLastMessageIdsOfConversations(myId);
+
+        ArgumentCaptor<List<UUID>> idsCaptor = ArgumentCaptor.forClass(List.class);
+        then(directMessageRepository).should().findWithUsersByIds(idsCaptor.capture());
+        assertThat(idsCaptor.getValue()).containsExactlyInAnyOrderElementsOf(lastMessageIds);
+
         then(profileRepository).should()
             .findByUserIdIn(argThat(ids -> ids.containsAll(partnerIds)));
 
-        // 컨텍스트 Map 버전의 매퍼가 호출되어야 함
         then(directMessageMapper).should(times(25))
             .toRoomDto(any(User.class), any(DirectMessage.class), anyMap());
     }

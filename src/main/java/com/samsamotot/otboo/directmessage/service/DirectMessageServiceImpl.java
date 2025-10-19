@@ -18,6 +18,7 @@ import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -143,7 +144,15 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         UUID myId = currentUserId();
         log.info(DM_SERVICE + "대화방 목록 조회 시작 - userId: {}", myId);
 
-        List<DirectMessage> conversations = directMessageRepository.findConversationsByUserId(myId);
+        // 네이티브 쿼리로 각 대화방의 마지막 메시지 ID 목록만 조회
+        List<UUID> lastMessageIds = directMessageRepository.findLastMessageIdsOfConversations(myId);
+
+        if (lastMessageIds.isEmpty()) {
+            return new DirectMessageRoomListResponse(Collections.emptyList());
+        }
+
+        // JPQL과 JOIN FETCH로 메시지와 사용자 정보를 한 번에 로드 (N+1 해결)
+        List<DirectMessage> conversations = directMessageRepository.findWithUsersByIds(lastMessageIds);
 
         // 대화 상대 userId 수집
         Set<UUID> partnerIds = conversations.stream()
