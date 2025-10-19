@@ -53,19 +53,19 @@ spring:
       repositories:
         enabled: false  # 개발 단계 Redis Repository 비활성화
 
-  # Mail 설정 (빌드를 위한 임시 설정)
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: dummy@example.com
-    password: dummy-password
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
+#  # Mail 설정 (빌드를 위한 임시 설정)
+#  mail:
+#    host: smtp.gmail.com
+#    port: 587
+#    username: dummy@example.com
+#    password: dummy-password
+#    properties:
+#      mail:
+#        smtp:
+#          auth: true
+#          starttls:
+#            enable: true
+#            required: true
 
   # Kafka 설정 (환경 변수로 제어)
   kafka:
