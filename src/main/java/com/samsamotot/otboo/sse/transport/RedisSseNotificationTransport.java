@@ -3,6 +3,7 @@ package com.samsamotot.otboo.sse.transport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -32,11 +33,14 @@ public class RedisSseNotificationTransport {
         if (redisTemplate == null) {
             return false;
         }
-        
+
         try {
             // Redis 연결 테스트
-            redisTemplate.getConnectionFactory().getConnection().ping();
+            try (RedisConnection connection = redisTemplate.getConnectionFactory().getConnection()) {
+                connection.ping();
+            }
             return true;
+
         } catch (Exception e) {
             log.warn(REDIS_SSE_NOTIFICATION_TRANSPORT + "Redis 연결 불가: {}", e.getMessage());
             return false;

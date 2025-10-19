@@ -38,7 +38,7 @@ public class SseServiceImpl implements SseService {
     private final Map<UUID, Deque<NotificationDto>> backlog = new ConcurrentHashMap<>();
 
     /**
-     * 사용자에게 SSE 연결을 생성합니다.
+     * 사용자에게 SSE 연결을 생성합니다(emitter을 이용한 로컬 연결)
      * 
      * @param userId 연결을 생성할 사용자 ID
      * @return 생성된 SseEmitter 인스턴스
