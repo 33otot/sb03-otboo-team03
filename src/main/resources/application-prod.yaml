@@ -37,14 +37,23 @@ spring:
     health-timeout-ms: 20000
     uris: ${ELASTICSEARCH_URIS:localhost:9200}
 
+#  data:
+#    redis:
+#      cluster:
+#        nodes: ${REDIS_HOST:redis}:${REDIS_PORT:6380}
+#        max-redirects: 3  # MOVED 명령을 따라갈 최대 횟수
+#      ssl:
+#        enabled: true
+#      timeout: 2000ms  # 연결 타임아웃
+
   data:
     redis:
-      cluster:
-        nodes: ${REDIS_HOST:redis}:${REDIS_PORT:6380}
-        max-redirects: 3  # MOVED 명령을 따라갈 최대 횟수
+      # 단일 노드 설정
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6380}
       ssl:
         enabled: true
-      timeout: 2000ms  # 연결 타임아웃
+      timeout: 2000ms
 
   kafka:
     bootstrap-servers: ${CONFLUENT_BOOTSTRAP_SERVERS}
