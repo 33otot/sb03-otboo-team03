@@ -28,5 +28,7 @@ public class SecurityProperties {
      * 쿠키의 SameSite 속성 (Lax, Strict, None)
      */
     private String sameSite = "Lax";
+
+    private String domain;
   }
 }

@@ -37,15 +37,6 @@ spring:
     health-timeout-ms: 20000
     uris: ${ELASTICSEARCH_URIS:localhost:9200}
 
-#  data:
-#    redis:
-#      cluster:
-#        nodes: ${REDIS_HOST:redis}:${REDIS_PORT:6380}
-#        max-redirects: 3  # MOVED 명령을 따라갈 최대 횟수
-#      ssl:
-#        enabled: true
-#      timeout: 2000ms  # 연결 타임아웃
-
   data:
     redis:
       # 단일 노드 설정
@@ -100,7 +91,8 @@ otboo:
   security:
     cookie:
       secure: true  # 운영환경에서는 true
-      same-site: Strict  # 운영환경에서는 Strict
+      same-site: None  # 운영환경에서는 Strict
+      domain: samsam-otot.duckdns.org
 
   # JWT 설정
   jwt:
