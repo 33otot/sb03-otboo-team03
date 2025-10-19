@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.directmessage.service;
 
+import static java.util.function.UnaryOperator.identity;
+
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
@@ -19,7 +21,10 @@ import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -144,37 +149,66 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         UUID myId = currentUserId();
         log.info(DM_SERVICE + "대화방 목록 조회 시작 - userId: {}", myId);
 
-        // 네이티브 쿼리로 각 대화방의 마지막 메시지 ID 목록만 조회
-        List<UUID> lastMessageIds = directMessageRepository.findLastMessageIdsOfConversations(myId);
+        // 마지막 메시지 ID 목록
+        List<UUID> lastMessageIds = Optional
+            .ofNullable(directMessageRepository.findLastMessageIdsOfConversations(myId))
+            .orElseGet(List::of);
 
-        if (lastMessageIds == null || lastMessageIds.isEmpty()) {
-            return new DirectMessageRoomListResponse(Collections.emptyList());
+        if (lastMessageIds.isEmpty()) {
+            return new DirectMessageRoomListResponse(List.of());
         }
 
-        // JPQL과 JOIN FETCH로 메시지와 사용자 정보를 한 번에 로드 (N+1 해결)
-        List<DirectMessage> conversations = directMessageRepository.findWithUsersByIds(lastMessageIds);
+        // 메시지 + 유저 로드 (JOIN FETCH)
+        List<DirectMessage> conversations = Optional
+            .ofNullable(directMessageRepository.findWithUsersByIds(lastMessageIds))
+            .orElseGet(List::of);
+
+        if (conversations.isEmpty()) {
+            return new DirectMessageRoomListResponse(List.of());
+        }
 
         // 대화 상대 userId 수집
         Set<UUID> partnerIds = conversations.stream()
-            .map(dm -> dm.getSender().getId().equals(myId) ? dm.getReceiver().getId() : dm.getSender().getId())
-            .collect(Collectors.toSet());
+            .map(dm -> {
+                User s = dm.getSender();
+                User r = dm.getReceiver();
+                UUID sid = (s != null ? s.getId() : null);
+                UUID rid = (r != null ? r.getId() : null);
+                return Objects.equals(sid, myId) ? rid : sid;
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
 
         // 프로필 배치 조회
-        List<Profile> profiles = profileRepository.findByUserIdIn(partnerIds);
+        List<Profile> profiles = Optional
+            .ofNullable(profileRepository.findByUserIdIn(partnerIds))
+            .orElseGet(List::of);
 
         // userId -> profileImageUrl 맵 구성
-        Map<UUID, String> profileUrlMap = profiles.stream()
-            .collect(Collectors.toMap(
-                p -> p.getUser().getId(),
-                p -> p.getProfileImageUrl() != null ? p.getProfileImageUrl() : "", // null 값을 빈 문자열로 대체
-                (oldValue, newValue) -> newValue // 중복 키 발생 시 새로운 값으로 덮어쓰기
-            ));
+        Map<UUID, String> profileUrlMap = partnerIds.stream()
+            .collect(Collectors.toMap(identity(), id -> ""));
+
+        for (Profile p : profiles) {
+            if (p != null && p.getUser() != null && p.getUser().getId() != null) {
+                profileUrlMap.put(p.getUser().getId(),
+                    Optional.ofNullable(p.getProfileImageUrl()).orElse(""));
+            }
+        }
 
         List<DirectMessageRoomDto> rooms = conversations.stream()
             .map(dm -> {
-                User partner = dm.getSender().getId().equals(myId) ? dm.getReceiver() : dm.getSender();
+                User partner = (dm.getSender() != null && myId.equals(dm.getSender().getId()))
+                    ? dm.getReceiver()
+                    : dm.getSender();
+
+                // partner가 null일 수 있는 이슈 방어
+                if (partner == null) {
+                    log.warn("[DM_SERVICE] partner is null. dmId={}", dm.getId());
+                    return null;
+                }
                 return directMessageMapper.toRoomDto(partner, dm, profileUrlMap);
             })
+            .filter(Objects::nonNull)
             .toList();
 
         log.info(DM_SERVICE + "대화방 목록 조회 완료 - rooms count: {}", rooms.size());
