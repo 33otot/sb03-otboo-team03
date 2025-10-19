@@ -51,11 +51,18 @@ public class SseNotificationStrategyImpl implements SseNotificationStrategy {
         try {
             String notificationData = objectMapper.writeValueAsString(notification);
 
+            // 디버그 로그 추가
+            log.info(SSE_NOTIFICATION_STRATEGY_IMPL + "알림 발행 시작 - userId: {}", userId);
+            log.info(SSE_NOTIFICATION_STRATEGY_IMPL + "Kafka 사용 가능: {}, Redis 사용 가능: {}", isKafkaAvailable(), isRedisAvailable());
+
             if (isKafkaAvailable()) {
+                log.info(SSE_NOTIFICATION_STRATEGY_IMPL + "Kafka 전략 선택 - userId: {}", userId);
                 publishViaKafka(userId, notificationData);
             } else if (isRedisAvailable()) {
+                log.info(SSE_NOTIFICATION_STRATEGY_IMPL + "Redis 전략 선택 - userId: {}", userId);
                 publishViaRedis(userId, notificationData);
             } else {
+                log.info(SSE_NOTIFICATION_STRATEGY_IMPL + "Memory 전략 선택 - userId: {}", userId);
                 publishViaMemory(userId, notificationData);
             }
         } catch (Exception e) {
