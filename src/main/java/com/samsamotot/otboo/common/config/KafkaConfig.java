@@ -43,6 +43,21 @@ public class KafkaConfig {
     @Value("${spring.kafka.consumer.group-id:otboo-sse-group}")
     private String groupId;
 
+    @Value("${spring.kafka.properties.security.protocol:}")
+    private String securityProtocol;
+
+    @Value("${spring.kafka.properties.sasl.mechanism:}")
+    private String saslMechanism;
+
+    @Value("${spring.kafka.properties.sasl.jaas.config:}")
+    private String saslJaasConfig;
+
+    @Value("${spring.kafka.properties.session.timeout.ms:45000}")
+    private String sessionTimeoutMs;
+
+    @Value("${spring.kafka.properties.request.timeout.ms:30000}")
+    private String requestTimeoutMs;
+
     /**
      * Kafka Producer 설정
      */
@@ -54,11 +69,22 @@ public class KafkaConfig {
         }
         
         log.info(KAFKA_CONFIG + "Producer Factory 설정 시작 - bootstrapServers: {}", bootstrapServers);
-        
+
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
+        // SASL 인증 설정 추가
+        if (securityProtocol != null && !securityProtocol.trim().isEmpty()) {
+            configProps.put("security.protocol", securityProtocol);
+            configProps.put("sasl.mechanism", saslMechanism);
+            configProps.put("sasl.jaas.config", saslJaasConfig);
+            configProps.put("session.timeout.ms", sessionTimeoutMs);
+            configProps.put("request.timeout.ms", requestTimeoutMs);
+            log.info(KAFKA_CONFIG + "SASL 인증 설정 적용 - protocol: {}, mechanism: {}",
+                securityProtocol, saslMechanism);
+        }
         
         // 성능 및 안정성 설정
         configProps.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -107,6 +133,17 @@ public class KafkaConfig {
         configProps.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+
+        // SASL 인증 설정 추가
+        if (securityProtocol != null && !securityProtocol.trim().isEmpty()) {
+            configProps.put("security.protocol", securityProtocol);
+            configProps.put("sasl.mechanism", saslMechanism);
+            configProps.put("sasl.jaas.config", saslJaasConfig);
+            configProps.put("session.timeout.ms", sessionTimeoutMs);
+            configProps.put("request.timeout.ms", requestTimeoutMs);
+            log.info(KAFKA_CONFIG + "SASL 인증 설정 적용 - protocol: {}, mechanism: {}",
+                securityProtocol, saslMechanism);
+        }
         
         // 오프셋 관리 설정
         configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
