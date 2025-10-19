@@ -22,6 +22,8 @@ public interface SseService {
     int getActiveConnectionCount();
 
     boolean isUserConnected(UUID userId);
-
-//    void sendBatchNotification(java.util.List<UUID> userIds, String notificationData);
+    
+    void removeNotificationFromBacklog(UUID userId, UUID notificationId);
+    
+    void clearBacklog(UUID userId);
 }
