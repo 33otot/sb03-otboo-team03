@@ -120,6 +120,9 @@ logging:
     org.springframework.security.web.access.intercept.FilterSecurityInterceptor: DEBUG
     com.samsamotot.otboo: INFO
 
+websocket:
+  allowed-origins: https://samsam-otot.duckdns.org
+
 server:
   port: ${SERVER_PORT:8080}
   forward-headers-strategy: framework
