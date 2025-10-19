@@ -87,6 +87,12 @@ public class SseNotificationStrategyImpl implements SseNotificationStrategy {
      * Kafka를 통한 메시지 발행
      */
     private void publishViaKafka(UUID userId, String notificationData) {
+        if (kafkaTemplate == null) {
+            log.warn(SSE_NOTIFICATION_STRATEGY_IMPL + "KafkaTemplate이 null입니다. Redis로 Fallback - userId: {}", userId);
+            publishViaRedis(userId, notificationData);
+            return;
+        }
+        
         try {
             String topic = "sse-notifications";
             String key = userId.toString();

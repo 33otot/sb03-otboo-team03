@@ -99,22 +99,7 @@ public class SseServiceImpl implements SseService {
             log.error(SSE_SERVICE + "메시징 전략 발행 실패 - userId: {}", userId, e);
         }
 
-        // 로컬 연결이 있으면 로컬로도 전송 (중복 전송 방지)
-        Set<SseEmitter> emitters = connections.get(userId);
-        if (emitters != null && !emitters.isEmpty()) {
-            for (SseEmitter em : emitters.toArray(new SseEmitter[0])) { // 방어적 복사
-                try {
-                    em.send(SseEmitter.event()
-                        .name("notifications")
-                        .id(dto.getId().toString())
-                        .data(notificationData));
-                    log.info(SSE_SERVICE + "로컬 알림 전송 완료 - user: {}", userId);
-                } catch (Exception e) {
-                    log.error(SSE_SERVICE + "로컬 알림 전송실패 user: {}", userId, e);
-                    removeEmitter(userId, em);
-                }
-            }
-        }
+        // 로컬 전송은 리스너에서 처리 (중복 전송 방지)
     }
 
     /**
@@ -227,5 +212,42 @@ public class SseServiceImpl implements SseService {
             set.remove(emitter);
             return set.isEmpty() ? null : set;
         });
+    }
+
+    /**
+     * 백로그에서 특정 알림을 제거합니다.
+     * 
+     * @param userId 사용자 ID
+     * @param notificationId 제거할 알림 ID
+     */
+    @Override
+    public void removeNotificationFromBacklog(UUID userId, UUID notificationId) {
+        Deque<NotificationDto> q = backlog.get(userId);
+        if (q == null || q.isEmpty()) {
+            log.debug(SSE_SERVICE + "백로그가 비어있음 - userId: {}", userId);
+            return;
+        }
+
+        boolean removed = q.removeIf(dto -> dto.getId().equals(notificationId));
+        if (removed) {
+            log.info(SSE_SERVICE + "백로그에서 알림 제거 완료 - userId: {}, notificationId: {}", userId, notificationId);
+        } else {
+            log.debug(SSE_SERVICE + "백로그에서 알림을 찾을 수 없음 - userId: {}, notificationId: {}", userId, notificationId);
+        }
+    }
+
+    /**
+     * 사용자의 모든 백로그를 정리합니다.
+     * 
+     * @param userId 사용자 ID
+     */
+    @Override
+    public void clearBacklog(UUID userId) {
+        Deque<NotificationDto> q = backlog.remove(userId);
+        if (q != null && !q.isEmpty()) {
+            log.info(SSE_SERVICE + "백로그 전체 정리 완료 - userId: {}, 제거된 알림 수: {}", userId, q.size());
+        } else {
+            log.debug(SSE_SERVICE + "백로그가 이미 비어있음 - userId: {}", userId);
+        }
     }
 }

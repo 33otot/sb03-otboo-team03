@@ -110,15 +110,15 @@ public class KafkaConfig {
         
         // 오프셋 관리 설정
         configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
-        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
-        configProps.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 1000); // 커밋 간격
+        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false); // 수동 커밋 사용
+        configProps.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 1000); // 커밋 간격 (수동 커밋에서는 무시됨)
 
         // 성능 설정
         configProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 500); // 한 번에 가져올 최대 레코드 수
         configProps.put(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 1); // 최소 fetch 크기
         configProps.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 500); // 최대 fetch 대기 시간
         
-        log.info(KAFKA_CONFIG + "Consumer 설정 완료 - 오프셋: latest, 커밋간격: 1s, 최대폴링: 500개");
+        log.info(KAFKA_CONFIG + "Consumer 설정 완료 - 오프셋: latest, 수동커밋: BATCH, 최대폴링: 500개");
         
         return new DefaultKafkaConsumerFactory<>(configProps);
     }

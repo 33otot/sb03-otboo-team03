@@ -22,4 +22,8 @@ public interface SseService {
     int getActiveConnectionCount();
 
     boolean isUserConnected(UUID userId);
+    
+    void removeNotificationFromBacklog(UUID userId, UUID notificationId);
+    
+    void clearBacklog(UUID userId);
 }
