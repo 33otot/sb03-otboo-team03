@@ -68,8 +68,6 @@ public class FollowServiceImpl implements FollowService {
      */
     @Transactional
     @Override
-    @CacheEvict(value = {"following-list", "followers-list", "follow-summary"}, 
-               key = "#request.followerId()", allEntries = true)
     public FollowDto follow(FollowCreateRequest request) {
 
         log.info(FOLLOW_SERVICE + "팔로우 요청 수신: followerId={}, followeeId={}", request.followerId(), request.followeeId());
@@ -131,7 +129,6 @@ public class FollowServiceImpl implements FollowService {
     }
 
 
-    @Cacheable(value = "follow-summary", key = "#userId")
     @Override
     public FollowSummaryDto findFollowSummaries(UUID userId) {
         log.info(FOLLOW_SERVICE + "팔로우 요약 조회 시작: targetUserId={}", userId);
@@ -187,7 +184,6 @@ public class FollowServiceImpl implements FollowService {
      * @return 팔로잉 목록과 페이징 정보를 담은 {@link FollowListResponse}
      * @throws OtbooException 존재하지 않는 사용자이거나, 잠금 계정일 경우 발생
      */
-    @Cacheable(value = "following-list", key = "#request.followerId() + ':' + (#request.cursor() != null ? #request.cursor() : 'first')")
     @Override
     public FollowListResponse getFollowings(FollowingRequest request) {
         log.info(FOLLOW_SERVICE + "팔로잉 목록 조회 시작: followerId={}, limit={}, cursor={}, idAfter={}, nameLike={}",
@@ -265,7 +261,6 @@ public class FollowServiceImpl implements FollowService {
      * @return 팔로워 목록과 페이징 정보를 담은 {@link FollowListResponse}
      * @throws OtbooException 존재하지 않는 사용자이거나, 잠금 계정일 경우 발생
      */
-    @Cacheable(value = "followers-list", key = "#request.followerId() + ':' + (#request.cursor() != null ? #request.cursor() : 'first')")
     @Override
     public FollowListResponse getFollowers(FollowingRequest request) {
         log.info(FOLLOW_SERVICE + "팔로워 목록 조회 시작: followeeId(target)={}, limit={}, cursor={}, idAfter={}, nameLike={}",
@@ -336,7 +331,6 @@ public class FollowServiceImpl implements FollowService {
      */
     @Transactional
     @Override
-    @CacheEvict(value = {"following-list", "followers-list", "follow-summary"}, allEntries = true)
     public void unfollow(UUID followId) {
         log.info(FOLLOW_SERVICE + "언팔로우 시작: followeeId={}", followId);
         if (!followRepository.existsById(followId)) {
