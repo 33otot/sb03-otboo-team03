@@ -198,3 +198,11 @@ dependencyManagement {
 tasks.named('compileTestJava', JavaCompile).configure {
     options.compilerArgs += ['-Xlint:unchecked','-Xlint:deprecation']
 }
+
+// 테스트 실행 시 활성 프로필을 'test'로 설정
+test {
+    useJUnitPlatform()
+    systemProperty "spring.profiles.active",
+            System.getProperty("spring.profiles.active", "test")
+}
+
