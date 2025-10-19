@@ -6,7 +6,9 @@ import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.dto.UserDto;
+import java.util.Map;
 import java.util.UUID;
+import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -22,11 +24,18 @@ public abstract class UserMapper {
     @Autowired
     ProfileRepository profileRepository;
 
+    // AuthorDto 매핑 메서드 (프로필 URL DB 조회)
     @Named("toAuthorDto")
     @Mapping(source = "id", target = "userId")
     @Mapping(source = "username", target = "name")
     @Mapping(source = "id", target = "profileImageUrl", qualifiedByName = "profileUrlByUserId")
     public abstract AuthorDto toAuthorDto(User user);
+
+    // AuthorDto 매핑 메서드 (프로필 URL 맵 사용)
+    @Mapping(source = "id", target = "userId")
+    @Mapping(source = "username", target = "name")
+    @Mapping(target = "profileImageUrl", expression = "java(profileUrlMap.get(user.getId()))")
+    public abstract AuthorDto toAuthorDto(User user, @Context Map<UUID, String> profileUrlMap);
 
     @Mapping(source = "name", target = "username")
     @Mapping(source = "password", target = "password")

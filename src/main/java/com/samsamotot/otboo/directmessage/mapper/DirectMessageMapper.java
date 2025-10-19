@@ -5,6 +5,9 @@ import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomDto;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.mapper.UserMapper;
+import java.util.Map;
+import java.util.UUID;
+import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -24,10 +27,14 @@ public interface DirectMessageMapper {
     @Mapping(source = "createdAt",   target = "createdAt")
     DirectMessageDto toDto(DirectMessage entity);
 
-    @Mapping(source = "partnerUser", target = "partner", qualifiedByName = "toAuthorDto")
-    @Mapping(source = "directMessage.message", target = "lastMessage")
-    @Mapping(source = "directMessage.createdAt", target = "lastMessageSentAt")
-    DirectMessageRoomDto toRoomDto(User partnerUser, DirectMessage directMessage);
+    @Mapping(target = "partner", expression = "java(userMapper.toAuthorDto(partner, profileUrlMap))")
+    @Mapping(source = "dm.message", target = "lastMessage")
+    @Mapping(source = "dm.createdAt", target = "lastMessageSentAt")
+    DirectMessageRoomDto toRoomDto(
+        User partner,
+        DirectMessage dm,
+        @Context Map<UUID, String> profileUrlMap
+    );
 }
 
 

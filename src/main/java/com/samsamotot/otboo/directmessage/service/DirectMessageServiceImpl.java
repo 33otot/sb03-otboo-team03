@@ -13,9 +13,14 @@ import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.mapper.DirectMessageMapper;
 import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
 import com.samsamotot.otboo.notification.dto.event.DirectMessageReceivedEvent;
+import com.samsamotot.otboo.profile.entity.Profile;
+import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -47,6 +52,8 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     private final DirectMessageRepository directMessageRepository;
 
     private final UserRepository userRepository;
+
+    private final ProfileRepository profileRepository;
 
     private final DirectMessageMapper directMessageMapper;
 
@@ -138,10 +145,22 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
         List<DirectMessage> conversations = directMessageRepository.findConversationsByUserId(myId);
 
+        // 대화 상대 userId 수집
+        Set<UUID> partnerIds = conversations.stream()
+            .map(dm -> dm.getSender().getId().equals(myId) ? dm.getReceiver().getId() : dm.getSender().getId())
+            .collect(Collectors.toSet());
+
+        // 프로필 배치 조회
+        List<Profile> profiles = profileRepository.findByUserIdIn(partnerIds);
+
+        // userId -> profileImageUrl 맵 구성
+        Map<UUID, String> profileUrlMap = profiles.stream()
+            .collect(Collectors.toMap(p -> p.getUser().getId(), Profile::getProfileImageUrl));
+
         List<DirectMessageRoomDto> rooms = conversations.stream()
             .map(dm -> {
                 User partner = dm.getSender().getId().equals(myId) ? dm.getReceiver() : dm.getSender();
-                return directMessageMapper.toRoomDto(partner, dm);
+                return directMessageMapper.toRoomDto(partner, dm, profileUrlMap);
             })
             .toList();
 

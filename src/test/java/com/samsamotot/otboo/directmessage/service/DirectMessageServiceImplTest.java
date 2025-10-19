@@ -1,5 +1,20 @@
 package com.samsamotot.otboo.directmessage.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.anyMap;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.atLeast;
+import static org.mockito.BDDMockito.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.lenient;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.times;
+import static org.mockito.BDDMockito.when;
+import static org.mockito.BDDMockito.willAnswer;
+
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
@@ -13,10 +28,19 @@ import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.mapper.DirectMessageMapper;
 import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
 import com.samsamotot.otboo.notification.dto.event.DirectMessageReceivedEvent;
-import com.samsamotot.otboo.notification.service.NotificationService;
+import com.samsamotot.otboo.profile.entity.Profile;
+import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,19 +53,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import java.lang.reflect.Method;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.*;
-import static org.mockito.Mockito.*;
 
 /**
  * PackageName  : com.samsamotot.otboo.directmessage.service
@@ -68,6 +79,9 @@ class DirectMessageServiceImplTest {
 
     @Mock
     private DirectMessageRepository directMessageRepository;
+
+    @Mock
+    private ProfileRepository profileRepository;
 
     @Mock
     private DirectMessageMapper directMessageMapper;
@@ -387,24 +401,53 @@ class DirectMessageServiceImplTest {
         // given
         loginAsUserId(myId, myEmail);
 
-        List<DirectMessage> mockConversations = new java.util.ArrayList<>();
+        List<DirectMessage> mockConversations = new ArrayList<>();
+        List<User> partners = new ArrayList<>();
+        Set<UUID> partnerIds = new HashSet<>();
+
         for (int i = 0; i < 25; i++) {
             User sender = stubUser(myId, false);
-            User receiver = stubUser(UUID.randomUUID(), false);
+            // 충돌 없도록 UUID 고정 생성 (랜덤 대신 i 기반)
+            UUID partnerId = UUID.nameUUIDFromBytes(("partner-" + i).getBytes(StandardCharsets.UTF_8));
+            User receiver = stubUser(partnerId, false);
+
             DirectMessage dm = mock(DirectMessage.class);
             when(dm.getSender()).thenReturn(sender);
             when(dm.getReceiver()).thenReturn(receiver);
-            mockConversations.add(dm);
 
+            mockConversations.add(dm);
+            partners.add(receiver);
+            partnerIds.add(partnerId);
+
+            // mapper 컨텍스트 버전 스텁 (Map 내용은 anyMap()으로 매칭)
             DirectMessageRoomDto mockRoomDto = DirectMessageRoomDto.builder()
                 .partner(AuthorDto.builder().userId(receiver.getId()).name("user" + i).build())
                 .lastMessage("Last message " + i)
                 .lastMessageSentAt(Instant.now().plusSeconds(i))
                 .build();
-            when(directMessageMapper.toRoomDto(eq(receiver), eq(dm))).thenReturn(mockRoomDto);
+            when(directMessageMapper.toRoomDto(eq(receiver), eq(dm), anyMap()))
+                .thenReturn(mockRoomDto);
         }
 
-        given(directMessageRepository.findConversationsByUserId(myId)).willReturn(mockConversations);
+        // DM 목록 조회 스텁
+        given(directMessageRepository.findConversationsByUserId(myId))
+            .willReturn(mockConversations);
+
+        // 배치 프로필 조회 스텁
+        // userId -> profileImageUrl 더미 데이터 구성
+        List<Profile> profileList = partners.stream()
+            .map(u -> {
+                Profile p = Profile.builder()
+                    .user(u)
+                    .profileImageUrl("https://cdn.example.com/" + u.getId() + ".png")
+                    .build();
+                return p;
+            })
+            .toList();
+
+        // 인자로 넘어오는 Set이 우리가 모은 partnerIds를 포함하면 OK
+        given(profileRepository.findByUserIdIn(argThat(ids -> ids.containsAll(partnerIds))))
+            .willReturn(profileList);
 
         // when
         DirectMessageRoomListResponse response = directMessageService.getConversationList();
@@ -412,7 +455,13 @@ class DirectMessageServiceImplTest {
         // then
         assertThat(response).isNotNull();
         assertThat(response.rooms()).hasSize(25);
+
         then(directMessageRepository).should().findConversationsByUserId(myId);
-        then(directMessageMapper).should(times(25)).toRoomDto(any(User.class), any(DirectMessage.class));
+        then(profileRepository).should()
+            .findByUserIdIn(argThat(ids -> ids.containsAll(partnerIds)));
+
+        // 컨텍스트 Map 버전의 매퍼가 호출되어야 함
+        then(directMessageMapper).should(times(25))
+            .toRoomDto(any(User.class), any(DirectMessage.class), anyMap());
     }
 }
