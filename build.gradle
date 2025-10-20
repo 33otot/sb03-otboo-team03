@@ -37,7 +37,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis' // Redis 데이터베이스
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' // OAuth2 클라이언트
     implementation 'org.springframework.boot:spring-boot-starter-security' // 보안
-    implementation 'org.springframework.security:spring-security-messaging' // WebSocket 보안
     implementation 'org.springframework.boot:spring-boot-starter-validation' // 데이터 검증
     implementation 'org.springframework.boot:spring-boot-starter-web' // 웹 MVC
     implementation 'org.springframework.boot:spring-boot-starter-websocket' // 웹소켓
@@ -93,9 +92,9 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test' // 보안 테스트
 
     // TestContainer
-    testImplementation 'org.testcontainers:junit-jupiter:1.19.3' // 컨테이너 기반 테스트
-    testImplementation 'org.testcontainers:postgresql:1.19.3' // PostgreSQL 컨테이너 테스트
-    testImplementation "org.testcontainers:elasticsearch:1.21.3" // Elasticsearch 컨테이너 테스트
+    testImplementation 'org.testcontainers:junit-jupiter' // 컨테이너 기반 테스트
+    testImplementation 'org.testcontainers:postgresql' // PostgreSQL 컨테이너 테스트
+    testImplementation "org.testcontainers:elasticsearch" // Elasticsearch 컨테이너 테스트
 
     // Mockito
     testImplementation 'org.mockito:mockito-core' // 모킹 프레임워크
@@ -189,6 +188,7 @@ jacocoTestCoverageVerification {
 dependencyManagement {
     imports {
         mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
+        mavenBom "org.testcontainers:testcontainers-bom:1.21.3"
     }
 }
 
