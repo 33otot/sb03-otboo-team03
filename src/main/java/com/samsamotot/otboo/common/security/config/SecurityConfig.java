@@ -161,6 +161,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/users/profiles/notification-weathers").authenticated()
 
                 .requestMatchers("/api/notifications/**").authenticated()
+                // DM 대화방 목록 조회는 인증된 유저만 가능
+                .requestMatchers(HttpMethod.GET, "/api/direct-messages/rooms").authenticated()
 
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()

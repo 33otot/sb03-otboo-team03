@@ -15,6 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse; // Added
+import org.springframework.security.core.annotation.AuthenticationPrincipal; // Added
+import com.samsamotot.otboo.common.security.service.CustomUserDetails; // Added
 
 import java.time.Instant;
 import java.util.Locale;
@@ -53,5 +56,27 @@ public interface DirectMessageApi {
         @RequestParam(required = false) Instant cursor,
         @RequestParam(required = false) UUID idAfter,
         @RequestParam Integer limit
+    );
+
+    @Operation(summary = "대화방 목록 조회", description = "현재 사용자의 모든 대화방 목록과 각 대화방의 마지막 메시지 정보를 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "대화방 목록 조회 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = DirectMessageRoomListResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "인증 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    @GetMapping("/rooms")
+    ResponseEntity<DirectMessageRoomListResponse> getConversationRooms(
+        @AuthenticationPrincipal CustomUserDetails userDetails
     );
 }

@@ -1,27 +1,29 @@
 package com.samsamotot.otboo.directmessage.controller;
 
-import com.samsamotot.otboo.common.dto.CursorResponse;
-import com.samsamotot.otboo.directmessage.dto.*;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.controller.api.DirectMessageApi;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse;
+import com.samsamotot.otboo.directmessage.dto.DmTopicKey;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
-import com.samsamotot.otboo.directmessage.entity.DirectMessage;
+import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
 import jakarta.validation.Valid;
+import java.security.Principal;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.security.Principal;
-import java.time.Instant;
-import java.util.UUID;
 
 /**
  * PackageName  : com.samsamotot.otboo.directmessage.controller
@@ -62,13 +64,27 @@ public class DirectMessageController implements DirectMessageApi {
     }
 
     /**
+     * 현재 사용자의 모든 대화방 목록을 조회하는 API
+     *
+     * @param userDetails 현재 로그인한 사용자 정보
+     * @return 대화방 목록 및 마지막 메시지 정보
+     */
+    @GetMapping("/rooms")
+    public ResponseEntity<DirectMessageRoomListResponse> getConversationRooms(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ResponseEntity.ok().body(directMessageService.getConversationList());
+    }
+
+    /**
      * WebSocket 클라이언트가 "/direct-messages_send" 경로로 보낸 메시지를 처리한다.
      *
      * <p>흐름:
      * 1. 인증 Principal을 확인한다 (없으면 null 반환).
      * 2. 요청을 서비스 계층에 위임해 메시지를 저장하고 DTO를 얻는다.
      * 3. 대화 상대 두 명(me, receiverId)에 대한 STOMP destination을 계산한다.
-     * 4. SimpMessagingTemplate을 이용해 해당 destination으로 브로드캐스트한다.
+     * 4. SimpMessaging
+     * Template을 이용해 해당 destination으로 브로드캐스트한다.
      *
      * @param request   전송 요청 (수신자 ID, 내용 등)
      * @param principal 인증 정보 (현재 WebSocket 세션 사용자)
