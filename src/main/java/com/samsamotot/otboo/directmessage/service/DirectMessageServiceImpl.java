@@ -192,18 +192,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         if (partnerIds.isEmpty()) {
             log.info(DM_SERVICE + "파트너가 없어 프로필 조회 생략 - userId: {}", myId);
 
-            Map<UUID, String> emptyProfileMap = Map.of();
-            List<DirectMessageRoomDto> rooms = ordered.stream()
-                .map(dm -> {
-                    User partner = partnerOf(dm, myId);
-                    if (partner == null) {
-                        log.warn(DM_SERVICE + "partner is null. dmId={}", dm.getId());
-                        return null;
-                    }
-                    return directMessageMapper.toRoomDto(partner, dm, emptyProfileMap);
-                })
-                .filter(Objects::nonNull)
-                .toList();
+            List<DirectMessageRoomDto> rooms = toRooms(ordered, myId, Map.of());
 
             log.info(DM_SERVICE + "대화방 목록 조회 완료 - rooms count: {}", rooms.size());
             return new DirectMessageRoomListResponse(rooms);
@@ -226,17 +215,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         }
 
         // DTO 매핑
-        List<DirectMessageRoomDto> rooms = ordered.stream()
-            .map(dm -> {
-                User partner = partnerOf(dm, myId);
-                if (partner == null) {
-                    log.warn(DM_SERVICE + "partner is null. dmId={}", dm.getId());
-                    return null;
-                }
-                return directMessageMapper.toRoomDto(partner, dm, profileUrlMap);
-            })
-            .filter(Objects::nonNull)
-            .toList();
+        List<DirectMessageRoomDto> rooms = toRooms(ordered, myId, profileUrlMap);
 
         log.info(DM_SERVICE + "대화방 목록 조회 완료 - rooms count: {}", rooms.size());
         return new DirectMessageRoomListResponse(rooms);
@@ -302,6 +281,20 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         }
 
         throw new OtbooException(ErrorCode.UNAUTHORIZED);
+    }
+
+    private List<DirectMessageRoomDto> toRooms(List<DirectMessage> ordered, UUID myId, Map<UUID,String> profileUrlMap) {
+        return ordered.stream()
+            .map(dm -> {
+                User partner = partnerOf(dm, myId);
+                if (partner == null) {
+                    log.warn(DM_SERVICE + "partner is null. dmId={}", dm.getId());
+                    return null;
+                }
+                return directMessageMapper.toRoomDto(partner, dm, profileUrlMap);
+            })
+            .filter(Objects::nonNull)
+            .toList();
     }
 
     private User partnerOf(DirectMessage dm, UUID myId) {
