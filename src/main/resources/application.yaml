@@ -119,9 +119,6 @@ app:
     username: ${ADMIN_USERNAME}
     password: ${ADMIN_PASSWORD}
 
-websocket:
-  allowed-origins: http://localhost:3000,http://localhost:8080
-
 # LLM 설정
 llm:
   reason:

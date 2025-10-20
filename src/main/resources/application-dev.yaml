@@ -131,6 +131,9 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     com.samsamotot.otboo: DEBUG
 
+websocket:
+  allowed-origins: http://localhost:3000,http://localhost:8080
+
 server:
   port: ${SERVER_PORT:8080}
 
