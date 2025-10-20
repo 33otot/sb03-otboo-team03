@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.common.config;
+package com.samsamotot.otboo.common.config.websocket;
 
 import com.samsamotot.otboo.directmessage.interceptor.StompAuthChannelInterceptor;
 import lombok.RequiredArgsConstructor;
@@ -8,17 +8,21 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 /**
  * PackageName  : com.samsamotot.otboo.common.config
- * FileName     : WebSocketSecurityConfig
+ * FileName     : WebSocketInbountConfig
  * Author       : dounguk
  * Date         : 2025. 9. 26.
  */
 
+
 @Configuration
 @RequiredArgsConstructor
-public class WebSocketSecurityConfig implements WebSocketMessageBrokerConfigurer {
+class WebSocketInboundConfig implements WebSocketMessageBrokerConfigurer {
+
     private final StompAuthChannelInterceptor auth;
 
     @Override public void configureClientInboundChannel(ChannelRegistration reg) {
         reg.interceptors(auth);
     }
 }
+
+

@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.common.config;
+package com.samsamotot.otboo.common.config.elasticsearch;
 
 import java.time.Instant;
 import java.time.LocalDateTime;

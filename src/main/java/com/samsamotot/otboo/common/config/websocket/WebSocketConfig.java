@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.common.config;
+package com.samsamotot.otboo.common.config.websocket;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;

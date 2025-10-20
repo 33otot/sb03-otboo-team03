@@ -1,4 +1,4 @@
-package com.samsamotot.otboo.common.config;
+package com.samsamotot.otboo.common.config.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.HealthStatus;
