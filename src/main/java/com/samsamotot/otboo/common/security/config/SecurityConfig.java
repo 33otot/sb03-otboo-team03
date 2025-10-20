@@ -208,8 +208,9 @@ public class SecurityConfig {
         
         // 설정에서 허용된 Origin 목록 파싱
         List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        configuration.setAllowedOrigins(origins);
-        
+//        configuration.setAllowedOrigins(origins);
+        configuration.setAllowedOriginPatterns(origins);
+
         // 허용할 HTTP 메서드 설정
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         
