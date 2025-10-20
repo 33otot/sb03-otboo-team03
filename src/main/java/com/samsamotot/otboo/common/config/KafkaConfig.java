@@ -150,14 +150,4 @@ public class KafkaConfig {
         
         return factory;
     }
-
-    /**
-     * ObjectMapper Bean (JSON 직렬화/역직렬화용)
-     */
-    @Bean
-    public ObjectMapper kafkaObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        return mapper;
-    }
 }

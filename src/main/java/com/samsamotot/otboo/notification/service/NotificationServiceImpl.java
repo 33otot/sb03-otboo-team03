@@ -61,17 +61,17 @@ public class NotificationServiceImpl implements NotificationService {
     public Notification save(UUID receiverId, String title, String content, NotificationLevel level) {
 
         User receiver = userRepository.findById(receiverId)
-                .orElseThrow(() -> {
-                    log.warn(NOTIFICATION_SERVICE + "인증 사용자 조회 실패: receiverId={} (DB에 없음)", receiverId);
-                    return new OtbooException(ErrorCode.UNAUTHORIZED);
-                });
+            .orElseThrow(() -> {
+                log.warn(NOTIFICATION_SERVICE + "인증 사용자 조회 실패: receiverId={} (DB에 없음)", receiverId);
+                return new OtbooException(ErrorCode.UNAUTHORIZED);
+            });
 
         Notification notification = Notification.builder()
-                .receiver(receiver)
-                .title(title)
-                .content(content)
-                .level(level)
-                .build();
+            .receiver(receiver)
+            .title(title)
+            .content(content)
+            .level(level)
+            .build();
 
         Notification saved = notificationRepository.save(notification);
 
