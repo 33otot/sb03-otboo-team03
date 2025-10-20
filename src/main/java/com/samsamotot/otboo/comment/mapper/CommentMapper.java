@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = UserMapper.class)
 public interface CommentMapper {
 
-    @Mapping(source = "author", target = "author")
+    @Mapping(source = "author", target = "author",  qualifiedByName = "toAuthorDto")
     @Mapping(source = "feed.id", target = "feedId")
     CommentDto toDto(Comment comment);
 }

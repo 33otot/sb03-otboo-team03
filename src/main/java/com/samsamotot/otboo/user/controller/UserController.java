@@ -13,6 +13,7 @@ import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
 import com.samsamotot.otboo.user.dto.UserListRequest;
 import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
+import com.samsamotot.otboo.user.dto.UserLockRequest;
 import com.samsamotot.otboo.user.entity.Role;
 import com.samsamotot.otboo.user.service.UserService;
 import jakarta.validation.Valid;
@@ -257,5 +258,26 @@ public class UserController implements UserApi {
         log.info(CONTROLLER + "비밀번호 변경 성공 - 사용자 ID: {}", userId);
 
         return ResponseEntity.noContent().build();
+    }
+    
+    /**
+     * 사용자 계정 잠금 상태를 변경합니다 (관리자 전용).
+     *
+     * @param userId  잠금 상태를 변경할 사용자 ID
+     * @param request 계정 잠금 요청 DTO
+     * @return 변경된 사용자 정보
+     */
+    @PatchMapping("/{userId}/lock")
+    public ResponseEntity<UserDto> updateUserLockStatus(
+        @PathVariable UUID userId,
+        @Valid @RequestBody UserLockRequest request
+    ) {
+        log.info(CONTROLLER + "계정 잠금 상태 변경 요청 - 사용자 ID: {}, 잠금 상태: {}", userId, request.locked());
+
+        UserDto result = userService.updateUserLockStatus(userId, request);
+
+        log.info(CONTROLLER + "계정 잠금 상태 변경 완료 - 사용자 ID: {}, 잠금 상태: {}", userId, result.getLocked());
+
+        return ResponseEntity.ok(result);
     }
 }

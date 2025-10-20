@@ -20,7 +20,7 @@ import org.mapstruct.ReportingPolicy;
 )
 public interface FollowMapper {
 
-    @Mapping(target = "followee", source = "followee")
-    @Mapping(target = "follower", source = "follower")
+    @Mapping(target = "followee", source = "followee",  qualifiedByName = "toAuthorDto")
+    @Mapping(target = "follower", source = "follower",  qualifiedByName = "toAuthorDto")
     FollowDto toDto(Follow follow);
 }
