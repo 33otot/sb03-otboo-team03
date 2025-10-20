@@ -7,8 +7,8 @@ import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
-import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomDto; // Added
-import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse; // Added
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomDto;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
@@ -20,12 +20,15 @@ import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
-import java.util.Collections;
+import java.time.Instant;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,10 +39,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * PackageName  : com.samsamotot.otboo.directmessage.service
@@ -167,17 +166,48 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             return new DirectMessageRoomListResponse(List.of());
         }
 
+        // 마지막 메시지 ID 순서대로 정렬
+        Map<UUID, DirectMessage> dmById = conversations.stream()
+            .collect(Collectors.toMap(DirectMessage::getId, Function.identity()));
+        List<DirectMessage> ordered = lastMessageIds.stream()
+            .map(dmById::get)
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (ordered.isEmpty()) {
+            log.warn(DM_SERVICE + "lastMessageIds는 있으나 조회 결과가 비어 재정렬 실패 - size={}", lastMessageIds.size());
+            return new DirectMessageRoomListResponse(List.of());
+        }
+
         // 대화 상대 userId 수집
-        Set<UUID> partnerIds = conversations.stream()
+        Set<UUID> partnerIds = ordered.stream()
             .map(dm -> {
-                User s = dm.getSender();
-                User r = dm.getReceiver();
-                UUID sid = (s != null ? s.getId() : null);
-                UUID rid = (r != null ? r.getId() : null);
-                return Objects.equals(sid, myId) ? rid : sid;
+                User partner = partnerOf(dm, myId);
+                return partner != null ? partner.getId() : null;
             })
             .filter(Objects::nonNull)
             .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        // 파트너가 하나도 없으면 프로필 조회 생략 후 바로 매핑
+        if (partnerIds.isEmpty()) {
+            log.info(DM_SERVICE + "파트너가 없어 프로필 조회 생략 - userId: {}", myId);
+
+            Map<UUID, String> emptyProfileMap = Map.of();
+            List<DirectMessageRoomDto> rooms = ordered.stream()
+                .map(dm -> {
+                    User partner = partnerOf(dm, myId);
+                    if (partner == null) {
+                        log.warn(DM_SERVICE + "partner is null. dmId={}", dm.getId());
+                        return null;
+                    }
+                    return directMessageMapper.toRoomDto(partner, dm, emptyProfileMap);
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+            log.info(DM_SERVICE + "대화방 목록 조회 완료 - rooms count: {}", rooms.size());
+            return new DirectMessageRoomListResponse(rooms);
+        }
 
         // 프로필 배치 조회
         List<Profile> profiles = Optional
@@ -195,15 +225,12 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             }
         }
 
-        List<DirectMessageRoomDto> rooms = conversations.stream()
+        // DTO 매핑
+        List<DirectMessageRoomDto> rooms = ordered.stream()
             .map(dm -> {
-                User partner = (dm.getSender() != null && myId.equals(dm.getSender().getId()))
-                    ? dm.getReceiver()
-                    : dm.getSender();
-
-                // partner가 null일 수 있는 이슈 방어
+                User partner = partnerOf(dm, myId);
                 if (partner == null) {
-                    log.warn("[DM_SERVICE] partner is null. dmId={}", dm.getId());
+                    log.warn(DM_SERVICE + "partner is null. dmId={}", dm.getId());
                     return null;
                 }
                 return directMessageMapper.toRoomDto(partner, dm, profileUrlMap);
@@ -275,5 +302,12 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         }
 
         throw new OtbooException(ErrorCode.UNAUTHORIZED);
+    }
+
+    private User partnerOf(DirectMessage dm, UUID myId) {
+        User s = dm.getSender();
+        User r = dm.getReceiver();
+        if (s != null && myId.equals(s.getId())) return r;
+        return s;
     }
 }
