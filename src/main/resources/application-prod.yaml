@@ -35,7 +35,7 @@ spring:
 
   elasticsearch:
     health-timeout-ms: 20000
-    uris: ${ELASTICSEARCH_URIS:localhost:9200}
+    uris: ${ELASTICSEARCH_URIS:172.31.36.45:9200}
 
   data:
     redis:
