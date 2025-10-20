@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.directmessage.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import lombok.Builder;
 
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Builder
 public record DirectMessageDto(
     UUID id,
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Instant createdAt,
     AuthorDto sender,
     AuthorDto receiver,

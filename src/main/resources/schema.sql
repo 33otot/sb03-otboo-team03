@@ -339,3 +339,12 @@ CREATE INDEX IF NOT EXISTS idx_dm_pair_created_at ON direct_messages (sender_id,
 
 -- Location index
 CREATE INDEX IF NOT EXISTS idx_locations_coordinates ON locations (longitude, latitude); -- 경도/위도
+
+-- DM 대화방 목록 조회를 위한 표현식 인덱스
+CREATE INDEX IF NOT EXISTS idx_dm_conversation_lookup
+ON direct_messages (
+  LEAST(sender_id, receiver_id),
+  GREATEST(sender_id, receiver_id),
+  created_at DESC,
+  id DESC
+);

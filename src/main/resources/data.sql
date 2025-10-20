@@ -646,11 +646,11 @@ INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, ge
 
 -- direct_messages (5)
 INSERT INTO direct_messages (id, sender_id, receiver_id, created_at, message) VALUES
-                                                                                           (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000002', NOW() - interval '4 day', '안녕하세요'),
-                                                                                           (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', NOW() - interval '3 day', '네 안녕하세요!'),
-                                                                                           (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000003', NOW() - interval '2 day', '피드 잘보고 갑니다'),
-                                                                                           (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', NOW() - interval '1 day', '질문 있습니다'),
-                                                                                           (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000002', NOW(), '오늘 날씨 어때요?');
+                                                                                  (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000002', NOW() - interval '4 day', '안녕하세요'),
+                                                                                  (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', NOW() - interval '3 day', '네 안녕하세요!'),
+                                                                                  (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000003', NOW() - interval '2 day', '피드 잘보고 갑니다'),
+                                                                                  (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', NOW() - interval '1 day', '질문 있습니다'),
+                                                                                  (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000002', NOW(), '오늘 날씨 어때요?');
 
 -- feed_clothes (5)
 INSERT INTO feed_clothes (id, feed_id, clothes_id, created_at) VALUES
@@ -805,3 +805,65 @@ INSERT INTO weathers (
 (GEN_RANDOM_UUID(), NOW(), 'c0000000-0000-0000-0000-000000000006', '2025-10-03 21:00:00'::TIMESTAMPTZ, '2025-09-30 11:00:00'::TIMESTAMPTZ, 22.0, 0.0, 70.0, -20.0, 60.0, 1.0, 'RAIN', 'CLOUDY', 'WEAK', 1.0, 25.0, 18.0),
 -- 2025-10-04 (최고: 24, 최저: 17)
 (GEN_RANDOM_UUID(), NOW(), 'c0000000-0000-0000-0000-000000000006', '2025-10-04 00:00:00'::TIMESTAMPTZ, '2025-09-30 11:00:00'::TIMESTAMPTZ, 21.0, 0.0, 75.0, -15.0, 0.0, 0.0, 'NONE', 'CLEAR', 'WEAK', 1.0, 24.0, 17.0);
+
+-- 추가 유저 45명 생성 및 대화 메시지 시드 데이터 삽입
+WITH extra_users AS (
+    INSERT INTO users (id, email, username, password, provider, role, is_locked, created_at, updated_at)
+        SELECT
+            gen_random_uuid(),
+            'seed_user_' || gs || '@example.com',
+            'seed_user_' || gs,
+            '$2a$12$IVaVY0vlOV/08y7cAkd7e.z5kDBluSSvuOJukVnnCVCjzbXBZpzwa',
+            'LOCAL','USER', FALSE, NOW(), NOW()
+        FROM generate_series(1, 45) AS gs
+        RETURNING id, username
+),
+     profiles_for_extra AS (   -- ★ 추가 유저들의 프로필을 한 번에 생성
+         INSERT INTO profiles (id, user_id, location_id, created_at, updated_at, name, gender, birth_date, temperature_sensitivity, profile_image_url)
+             SELECT
+                 gen_random_uuid()                                  AS id,
+                 eu.id                                              AS user_id,
+                 -- location_id 라운드로빈 (프로젝트의 실제 location uuid로 교체 가능)
+                 (ARRAY[
+                     'b0000000-0000-0000-0000-000000000001'::uuid,
+                     'b0000000-0000-0000-0000-000000000002'::uuid,
+                     'b0000000-0000-0000-0000-000000000003'::uuid,
+                     'b0000000-0000-0000-0000-000000000004'::uuid,
+                     'b0000000-0000-0000-0000-000000000005'::uuid,
+                     'b0000000-0000-0000-0000-000000000006'::uuid
+                     ])[ ((row_number() over ()) - 1) % 6 + 1 ]         AS location_id,
+                 NOW(), NOW(),
+                 eu.username                                        AS name,
+                 CASE WHEN (row_number() over ()) % 2 = 0 THEN 'MALE' ELSE 'FEMALE' END AS gender,
+                 (DATE '1988-01-01' + ((row_number() over ()) * 120) * INTERVAL '1 day')::date AS birth_date,
+                 /* 2.0 ~ 4.5 사이 가변값 */ (2.0 + ((row_number() over ()) % 6) * 0.5)    AS temperature_sensitivity,
+                 NULL                                               AS profile_image_url
+             FROM extra_users eu
+             -- 기존에 프로필이 있으면 만들지 않기(재실행 안전)
+             WHERE NOT EXISTS (SELECT 1 FROM profiles p WHERE p.user_id = eu.id)
+             RETURNING user_id
+     ),
+     targets AS (            -- 45명만 추려서 대화방 타깃으로
+         SELECT eu.id FROM extra_users eu LIMIT 45
+     ),
+     seed_pairs AS (         -- 메인유저(user1)과의 페어 + 요청 메시지 타임스탬프
+         SELECT
+             gen_random_uuid() AS dm_id,
+             'a0000000-0000-0000-0000-000000000001'::uuid AS me,
+             t.id AS other_id,
+             NOW() - (row_number() OVER () * interval '1 hour') AS created_at,
+             '안녕하세요! seed message #' || row_number() OVER () AS message
+         FROM targets t
+     )
+INSERT INTO direct_messages(id, sender_id, receiver_id, created_at, message)
+-- 요청
+SELECT dm_id, me, other_id, created_at, message FROM seed_pairs
+UNION ALL
+-- 답장(5분 후)
+SELECT
+    gen_random_uuid(),
+    other_id,
+    me,
+    created_at + interval '5 minute',
+    concat('네, 반갑습니다! reply #', row_number() OVER ())
+FROM seed_pairs;
