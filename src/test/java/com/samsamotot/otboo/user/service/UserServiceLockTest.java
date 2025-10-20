@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
@@ -186,6 +187,7 @@ class UserServiceLockTest {
 
         // then
         // 토큰 무효화가 호출되지 않아야 함 (잠금 해제 시에는 토큰 무효화하지 않음)
+        verify(tokenInvalidationService, never()).setUserInvalidAfter(eq(userId.toString()), any(Instant.class));
         }
     }
 }
