@@ -21,6 +21,7 @@ public class SecurityTestConfig {
                 .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
                 .requestMatchers(HttpMethod.PATCH, "/api/users/profiles/notification-weathers").authenticated()
                 .requestMatchers("/api/notifications/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/direct-messages/rooms").authenticated()
                 .anyRequest().permitAll()
             )
             .build();

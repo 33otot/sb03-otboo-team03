@@ -16,7 +16,7 @@ import org.mapstruct.NullValueMappingStrategy;
 )
 public interface FeedMapper {
 
-    @Mapping(source = "author", target = "author")
+    @Mapping(source = "author", target = "author",  qualifiedByName = "toAuthorDto")
     @Mapping(source = "weather", target = "weather")
     @Mapping(source = "feedClothes", target = "ootds")
     @Mapping(target = "likedByMe", ignore = true)

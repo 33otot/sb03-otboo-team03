@@ -4,23 +4,70 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.lettuce.core.ClientOptions;
+import io.lettuce.core.SocketOptions;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
+@Profile("!test")
 @RequiredArgsConstructor
 @Slf4j
 public class RedisConfig {
+
+    @Value("${spring.data.redis.host}")
+    private String redisHost;
+
+    @Value("${spring.data.redis.port}")
+    private int redisPort;
+
+    /**
+     * LettuceConnectionFactory를 명시적으로 설정 (타임아웃 포함)
+     */
+    @Bean
+    @Primary
+    public LettuceConnectionFactory redisConnectionFactory() {
+        // Redis 서버 설정
+        RedisStandaloneConfiguration serverConfig = new RedisStandaloneConfiguration();
+        serverConfig.setHostName(redisHost);
+        serverConfig.setPort(redisPort);
+
+        // Lettuce 클라이언트 설정
+        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+            .clientOptions(
+                ClientOptions.builder()
+                    .socketOptions(
+                        SocketOptions.builder()
+                            .connectTimeout(Duration.ofSeconds(10))
+                            .build()
+                    )
+                    .build()
+            )
+            .commandTimeout(Duration.ofSeconds(10))
+            .useSsl()
+            .build();
+
+        log.info("[RedisConfig] LettuceConnectionFactory 생성 - host: {}, port: {}, timeout: 10s",
+            redisHost, redisPort);
+
+        return new LettuceConnectionFactory(serverConfig, clientConfig);
+    }
 
     /**
      * RedisTemplate Bean을 등록합니다. (직렬화 방식 명시)

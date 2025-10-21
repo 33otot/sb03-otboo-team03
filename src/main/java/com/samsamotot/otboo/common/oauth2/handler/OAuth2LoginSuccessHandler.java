@@ -50,6 +50,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             .httpOnly(true)
             .secure(securityProperties.getCookie().isSecure())
             .sameSite(securityProperties.getCookie().getSameSite())
+            .domain(securityProperties.getCookie().getDomain())
             .path("/")
             .maxAge(7 * 24 * 60 * 60)
             .build();

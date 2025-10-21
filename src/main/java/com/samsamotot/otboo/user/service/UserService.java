@@ -52,4 +52,12 @@ public interface UserService {
      * @param request 비밀번호 변경 요청 DTO
      */
     void changePassword(UUID userId, ChangePasswordRequest request);
+    
+    /**
+     * 사용자 계정 잠금 상태 변경 (관리자용)
+     * @param userId 잠금 상태를 변경할 사용자 ID
+     * @param request 계정 잠금 요청 DTO
+     * @return 수정된 사용자 정보
+     */
+    UserDto updateUserLockStatus(UUID userId, UserLockRequest request);
 }

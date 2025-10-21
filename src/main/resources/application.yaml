@@ -15,6 +15,18 @@ spring:
     redis:
       enable-statistics: true
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
   # LLM 설정 (OpenAI)
   ai:
     openai:
@@ -106,9 +118,6 @@ app:
     email: ${ADMIN_EMAIL}
     username: ${ADMIN_USERNAME}
     password: ${ADMIN_PASSWORD}
-
-websocket:
-  allowed-origins: http://localhost:3000,http://localhost:8080
 
 # LLM 설정
 llm:

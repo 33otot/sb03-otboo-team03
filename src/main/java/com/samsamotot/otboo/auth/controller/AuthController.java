@@ -60,6 +60,7 @@ public class AuthController implements AuthApi {
             .path("/")
             .maxAge(7 * 24 * 60 * 60) // 7일
             .sameSite(securityProperties.getCookie().getSameSite())
+            .domain(securityProperties.getCookie().getDomain())
             .build();
         
         // 리프레시 토큰을 제외한 응답 객체 생성
@@ -101,6 +102,7 @@ public class AuthController implements AuthApi {
             .path("/")
             .maxAge(0) // 즉시 삭제
             .sameSite(securityProperties.getCookie().getSameSite())
+            .domain(securityProperties.getCookie().getDomain())
             .build();
         
         return ResponseEntity.ok()

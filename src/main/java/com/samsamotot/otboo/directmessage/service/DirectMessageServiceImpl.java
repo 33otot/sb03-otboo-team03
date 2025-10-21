@@ -1,19 +1,35 @@
 package com.samsamotot.otboo.directmessage.service;
 
+import static java.util.function.UnaryOperator.identity;
+
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomDto;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.entity.DirectMessage;
 import com.samsamotot.otboo.directmessage.mapper.DirectMessageMapper;
 import com.samsamotot.otboo.directmessage.repository.DirectMessageRepository;
 import com.samsamotot.otboo.notification.dto.event.DirectMessageReceivedEvent;
+import com.samsamotot.otboo.profile.entity.Profile;
+import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
+import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -23,10 +39,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * PackageName  : com.samsamotot.otboo.directmessage.service
@@ -45,6 +57,8 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     private final DirectMessageRepository directMessageRepository;
 
     private final UserRepository userRepository;
+
+    private final ProfileRepository profileRepository;
 
     private final DirectMessageMapper directMessageMapper;
 
@@ -119,6 +133,95 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     }
 
     /**
+     * 현재 사용자의 모든 대화방 목록을 조회하는 서비스 메서드.
+     *
+     * <p>흐름:
+     * 1. 현재 사용자 ID를 인증 컨텍스트에서 조회한다.
+     * 2. DirectMessageRepository를 통해 대화방 목록을 조회한다.
+     * 3. 각 대화방에 대해 상대방 정보와 마지막 메시지를 포함한 DTO로 변환한다.
+     * 4. 변환된 DTO 리스트를 응답 객체에 담아 반환한다.
+     *
+     * @return 대화방 목록 및 마지막 메시지 정보를 담은 응답 객체
+     */
+    @Override
+    public DirectMessageRoomListResponse getConversationList() {
+        UUID myId = currentUserId();
+        log.info(DM_SERVICE + "대화방 목록 조회 시작 - userId: {}", myId);
+
+        // 마지막 메시지 ID 목록
+        List<UUID> lastMessageIds = Optional
+            .ofNullable(directMessageRepository.findLastMessageIdsOfConversations(myId))
+            .orElseGet(List::of);
+
+        if (lastMessageIds.isEmpty()) {
+            return new DirectMessageRoomListResponse(List.of());
+        }
+
+        // 메시지 + 유저 로드 (JOIN FETCH)
+        List<DirectMessage> conversations = Optional
+            .ofNullable(directMessageRepository.findWithUsersByIds(lastMessageIds))
+            .orElseGet(List::of);
+
+        if (conversations.isEmpty()) {
+            return new DirectMessageRoomListResponse(List.of());
+        }
+
+        // 마지막 메시지 ID 순서대로 정렬
+        Map<UUID, DirectMessage> dmById = conversations.stream()
+            .collect(Collectors.toMap(DirectMessage::getId, Function.identity()));
+        List<DirectMessage> ordered = lastMessageIds.stream()
+            .map(dmById::get)
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (ordered.isEmpty()) {
+            log.warn(DM_SERVICE + "lastMessageIds는 있으나 조회 결과가 비어 재정렬 실패 - size={}", lastMessageIds.size());
+            return new DirectMessageRoomListResponse(List.of());
+        }
+
+        // 대화 상대 userId 수집
+        Set<UUID> partnerIds = ordered.stream()
+            .map(dm -> {
+                User partner = partnerOf(dm, myId);
+                return partner != null ? partner.getId() : null;
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        // 파트너가 하나도 없으면 프로필 조회 생략 후 바로 매핑
+        if (partnerIds.isEmpty()) {
+            log.info(DM_SERVICE + "파트너가 없어 프로필 조회 생략 - userId: {}", myId);
+
+            List<DirectMessageRoomDto> rooms = toRooms(ordered, myId, Map.of());
+
+            log.info(DM_SERVICE + "대화방 목록 조회 완료 - rooms count: {}", rooms.size());
+            return new DirectMessageRoomListResponse(rooms);
+        }
+
+        // 프로필 배치 조회
+        List<Profile> profiles = Optional
+            .ofNullable(profileRepository.findByUserIdIn(partnerIds))
+            .orElseGet(List::of);
+
+        // userId -> profileImageUrl 맵 구성
+        Map<UUID, String> profileUrlMap = partnerIds.stream()
+            .collect(Collectors.toMap(identity(), id -> ""));
+
+        for (Profile p : profiles) {
+            if (p != null && p.getUser() != null && p.getUser().getId() != null) {
+                profileUrlMap.put(p.getUser().getId(),
+                    Optional.ofNullable(p.getProfileImageUrl()).orElse(""));
+            }
+        }
+
+        // DTO 매핑
+        List<DirectMessageRoomDto> rooms = toRooms(ordered, myId, profileUrlMap);
+
+        log.info(DM_SERVICE + "대화방 목록 조회 완료 - rooms count: {}", rooms.size());
+        return new DirectMessageRoomListResponse(rooms);
+    }
+
+    /**
      * DirectMessage 엔티티를 생성·저장하고 알림까지 발송하는 서비스 메서드.
      *
      * <p>흐름:
@@ -178,5 +281,26 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         }
 
         throw new OtbooException(ErrorCode.UNAUTHORIZED);
+    }
+
+    private List<DirectMessageRoomDto> toRooms(List<DirectMessage> ordered, UUID myId, Map<UUID,String> profileUrlMap) {
+        return ordered.stream()
+            .map(dm -> {
+                User partner = partnerOf(dm, myId);
+                if (partner == null) {
+                    log.warn(DM_SERVICE + "partner is null. dmId={}", dm.getId());
+                    return null;
+                }
+                return directMessageMapper.toRoomDto(partner, dm, profileUrlMap);
+            })
+            .filter(Objects::nonNull)
+            .toList();
+    }
+
+    private User partnerOf(DirectMessage dm, UUID myId) {
+        User s = dm.getSender();
+        User r = dm.getReceiver();
+        if (s != null && myId.equals(s.getId())) return r;
+        return s;
     }
 }

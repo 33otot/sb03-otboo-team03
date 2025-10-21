@@ -11,6 +11,8 @@ spring:
       - org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration
       - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientWebSecurityAutoConfiguration
       - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 
   # 테스트용 인메모리 DB 설정
   datasource:
@@ -83,6 +85,11 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 # 테스트용 로깅 설정
 logging:
   level:
@@ -141,6 +148,9 @@ app:
     email: test-admin@otboo.com
     username: testadmin
     password: test123!
+
+websocket:
+  allowed-origins: "*"
 
 # ShedLock 설정 (테스트용)
 shedlock:

@@ -19,6 +19,7 @@ import com.samsamotot.otboo.user.dto.UserCreateRequest;
 import com.samsamotot.otboo.user.dto.UserDto;
 import com.samsamotot.otboo.user.dto.UserDtoCursorResponse;
 import com.samsamotot.otboo.user.dto.UserRoleUpdateRequest;
+import com.samsamotot.otboo.user.dto.UserLockRequest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -205,5 +206,29 @@ public interface UserApi {
     ResponseEntity<Void> changePassword(
         @Parameter(description = "사용자 ID") UUID userId,
         @Parameter(description = "비밀번호 변경 요청") ChangePasswordRequest request
+    );
+
+    @Operation(
+        summary = "계정 잠금 상태 변경",
+        description = "[어드민 기능] 계정 잠금 상태를 변경합니다.",
+        operationId = "updateUserLockStatus"
+    )
+    @ApiResponses(
+        value = {
+            @ApiResponse(
+                responseCode = "200",
+                description = "계정 잠금 상태 변경 성공",
+                content = @Content(mediaType = "*/*", schema = @Schema(implementation = UserDto.class))
+            ),
+            @ApiResponse(
+                responseCode = "404",
+                description = "계정 잠금 상태 변경 실패(사용자 없음)",
+                content = @Content(mediaType = "*/*", schema = @Schema(implementation = ErrorResponse.class))
+            )
+        }
+    )
+    ResponseEntity<UserDto> updateUserLockStatus(
+        @Parameter(description = "사용자 ID") UUID userId,
+        @Parameter(description = "계정 잠금 요청") UserLockRequest request
     );
 }
