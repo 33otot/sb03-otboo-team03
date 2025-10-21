@@ -14,9 +14,7 @@ public record ProfileDto (
         WeatherAPILocation location,
         String name,
         Gender gender,
-
         LocalDate birthDate,
-
         Double temperatureSensitivity,
         String profileImageUrl,
         boolean weatherNotificationEnabled
