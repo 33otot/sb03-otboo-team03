@@ -96,6 +96,11 @@ management:
     health:
       show-details: always
       show-components: always
+  health:
+    mail:
+      enabled: false # Disable Mail health check
+    elasticsearch:
+      enabled: false # Disable Elasticsearch health check (adjust name if using reactive)
 
 otboo:
   storage:
@@ -134,3 +139,12 @@ logging:
 server:
   port: ${SERVER_PORT:8080}
 
+# ShedLock 환경 네임스페이스
+shedlock:
+  env: "DEV"
+
+# 스케줄링 설정
+schedules:
+  cron:
+    # 로컬/개발 테스트용 cron: 매 5분마다 매시 0초에 실행
+    weather-batch: "0 */30 * * * *"

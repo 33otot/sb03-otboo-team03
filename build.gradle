@@ -117,6 +117,10 @@ dependencies {
 
     // OpenAI Chat
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
+
+	// ShedLock
+	implementation 'net.javacrumbs.shedlock:shedlock-spring:6.1.0'
+	implementation 'net.javacrumbs.shedlock:shedlock-provider-redis-spring:6.1.0'
 }
 
 // QueryDSL 설정

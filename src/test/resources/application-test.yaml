@@ -141,3 +141,13 @@ app:
     email: test-admin@otboo.com
     username: testadmin
     password: test123!
+
+# ShedLock 설정 (테스트용)
+shedlock:
+  env: "TEST" # 테스트 환경용 고유 네임스페이스 (DEV, PROD와 겹치지 않게)
+
+# 스케줄링 설정 (테스트용)
+schedules:
+  cron:
+    # 테스트 실행 중에는 스케줄러가 자동으로 실행되지 않도록 비활성화합니다.
+    weather-batch: "-"
