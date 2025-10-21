@@ -15,7 +15,6 @@ public record ProfileDto (
         String name,
         Gender gender,
 
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         LocalDate birthDate,
 
         Double temperatureSensitivity,
