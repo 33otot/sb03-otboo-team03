@@ -29,7 +29,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "spring.data.redis.repositories.enabled=false"
+})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import({TestConfig.class, SecurityTestConfig.class})

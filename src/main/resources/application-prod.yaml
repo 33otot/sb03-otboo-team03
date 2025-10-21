@@ -3,7 +3,7 @@ spring:
     activate:
       on-profile: prod
 #    # .env 파일을 속성 소스로 추가
-#    import: optional:file:.env[.properties]
+    import: optional:file:.env[.properties]
   
   # 운영환경에서는 SQL 초기화 비활성화 (이미 테이블이 존재)
   sql:
@@ -35,41 +35,44 @@ spring:
 
   elasticsearch:
     health-timeout-ms: 20000
-    uris: ${ELASTICSEARCH_URIS:localhost:9200}
+    uris: ${ELASTICSEARCH_URIS:172.31.36.45:9200}
 
   data:
     redis:
-      cluster:
-        nodes: ${REDIS_HOST:redis}:${REDIS_PORT:6380}
-        max-redirects: 3  # MOVED 명령을 따라갈 최대 횟수
+      # 단일 노드 설정
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6380}
       ssl:
         enabled: true
-      timeout: 2000ms  # 연결 타임아웃
+      timeout: 10000ms
+      connect-timeout: 10000ms
 
   kafka:
-    bootstrap-servers: ${CONFLUENT_BOOTSTRAP_SERVERS}
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
     properties:
       security.protocol: SASL_SSL
       sasl.mechanism: PLAIN
       sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="${CONFLUENT_API_KEY}" password="${CONFLUENT_API_SECRET}";
       session.timeout.ms: 45000
-      request.timeout.ms: 30000
+      request.timeout.ms: 60000
       reconnect.backoff.ms: 1000
       reconnect.backoff.max.ms: 10000
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all  # 모든 복제본에 메시지 저장 확인
       retries: 3 # 실패 시 재시도 횟수
 
     consumer:
       group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:otboo-group}
-      auto-offset-reset: earliest
+      auto-offset-reset: latest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       enable-auto-commit: false # 수동 커밋으로 메시지 손실 방지 (메시지 처리 실패 시 재처리 가능)
       properties:
+        max.poll.interval.ms: 300000
+        heartbeat.interval.ms: 3000
         spring.json.trusted.packages: "com.samsamotot.otboo.*" # 역직렬화 보안
 
 management:
@@ -88,7 +91,8 @@ otboo:
   security:
     cookie:
       secure: true  # 운영환경에서는 true
-      same-site: Strict  # 운영환경에서는 Strict
+      same-site: None  # 운영환경에서는 Strict
+      domain: samsam-otot.duckdns.org
 
   # JWT 설정
   jwt:
@@ -99,7 +103,7 @@ otboo:
 
   # CORS 설정
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://samsam-otot.duckdns.org}
 
   storage:
     type: ${STORAGE_TYPE:local}
@@ -115,6 +119,9 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: INFO
     org.springframework.security.web.access.intercept.FilterSecurityInterceptor: DEBUG
     com.samsamotot.otboo: INFO
+
+websocket:
+  allowed-origins: https://samsam-otot.duckdns.org
 
 server:
   port: ${SERVER_PORT:8080}

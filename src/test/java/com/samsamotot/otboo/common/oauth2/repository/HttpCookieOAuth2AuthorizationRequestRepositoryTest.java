@@ -154,6 +154,83 @@ class HttpCookieOAuth2AuthorizationRequestRepositoryTest {
         assertThat(loaded).isNull();
     }
 
+    @Test
+    void domain이_설정되어_있으면_쿠키에_domain_속성이_포함되어야_한다() {
+
+        // given
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        OAuth2AuthorizationRequest original = authReq();
+
+        when(securityProperties.getCookie()).thenReturn(cookieProps);
+        when(cookieProps.getSameSite()).thenReturn("Lax");
+        when(cookieProps.isSecure()).thenReturn(true);
+        when(cookieProps.getDomain()).thenReturn("example.com");
+
+        // when
+        repo.saveAuthorizationRequest(original, req, res);
+
+        // then
+        String setCookie = res.getHeader("Set-Cookie");
+        assertThat(setCookie)
+            .contains("OAUTH2_AUTH_REQUEST=")
+            .contains("Domain=example.com");
+    }
+
+    @Test
+    void domain이_null이면_쿠키에_domain_속성이_포함되지_않아야_한다() {
+
+        // given
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        OAuth2AuthorizationRequest original = authReq();
+
+        when(securityProperties.getCookie()).thenReturn(cookieProps);
+        when(cookieProps.getSameSite()).thenReturn("Lax");
+        when(cookieProps.isSecure()).thenReturn(true);
+        when(cookieProps.getDomain()).thenReturn(null);
+
+        // when
+        repo.saveAuthorizationRequest(original, req, res);
+
+        // then
+        String setCookie = res.getHeader("Set-Cookie");
+        assertThat(setCookie)
+            .contains("OAUTH2_AUTH_REQUEST=")
+            .doesNotContain("Domain=");
+    }
+
+    @Test
+    void 쿠키_삭제시_domain이_설정되어_있으면_domain_속성이_포함되어야_한다() {
+
+        // given
+        MockHttpServletRequest req = new MockHttpServletRequest();
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        when(securityProperties.getCookie()).thenReturn(cookieProps);
+        when(cookieProps.getSameSite()).thenReturn("Lax");
+        when(cookieProps.isSecure()).thenReturn(true);
+        when(cookieProps.getDomain()).thenReturn("example.com");
+
+        repo.saveAuthorizationRequest(authReq(), req, res);
+
+        MockHttpServletRequest req2 = new MockHttpServletRequest();
+        Cookie c = extractCookie(res, HttpCookieOAuth2AuthorizationRequestRepository.OAUTH2_AUTH_REQUEST_COOKIE_NAME);
+        assertThat(c).isNotNull();
+        req2.setCookies(c);
+        MockHttpServletResponse res2 = new MockHttpServletResponse();
+
+        // when
+        repo.removeAuthorizationRequest(req2, res2);
+
+        // then
+        String deleteHeader = res2.getHeader("Set-Cookie");
+        assertThat(deleteHeader)
+            .contains("OAUTH2_AUTH_REQUEST=")
+            .contains("Max-Age=0")
+            .contains("Domain=example.com");
+    }
+
     /* 쿠키에서 특정 이름의 쿠키를 추출 */
     private Cookie extractCookie(MockHttpServletResponse res, String name) {
         String header = res.getHeader("Set-Cookie");

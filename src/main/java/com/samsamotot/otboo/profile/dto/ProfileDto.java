@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.profile.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.samsamotot.otboo.profile.entity.Gender;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import lombok.Builder;
@@ -13,7 +14,10 @@ public record ProfileDto (
         WeatherAPILocation location,
         String name,
         Gender gender,
+
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         LocalDate birthDate,
+
         Double temperatureSensitivity,
         String profileImageUrl,
         boolean weatherNotificationEnabled

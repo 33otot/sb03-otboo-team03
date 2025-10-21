@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.common.config;
 
+import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -32,6 +33,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+
         registry.addEndpoint("/ws")
             .setAllowedOriginPatterns(allowedOrigins.split(","))
             .withSockJS()

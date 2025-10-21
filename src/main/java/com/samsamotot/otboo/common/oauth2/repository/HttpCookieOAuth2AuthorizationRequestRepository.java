@@ -101,32 +101,42 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements
     private void addCookie(HttpServletResponse response, String name, String value, int maxAgeSeconds) {
         String sameSite = securityProperties.getCookie().getSameSite();
         boolean secure = securityProperties.getCookie().isSecure();
+        String domain = securityProperties.getCookie().getDomain();
 
-        String setCookie = ResponseCookie.from(name, value)
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from(name, value)
             .httpOnly(true)
             .secure(secure)
             .path("/")
             .maxAge(Duration.ofSeconds(maxAgeSeconds))
-            .sameSite(sameSite)
-            .build()
-            .toString();
+            .sameSite(sameSite);
 
+        // domain이 설정되어 있으면 추가
+        if (domain != null && !domain.isEmpty()) {
+            cookieBuilder.domain(domain);
+        }
+
+        String setCookie = cookieBuilder.build().toString();
         response.addHeader("Set-Cookie", setCookie);
     }
 
     private void deleteCookie(HttpServletResponse response, String name) {
         String sameSite = securityProperties.getCookie().getSameSite();
         boolean secure = securityProperties.getCookie().isSecure();
+        String domain = securityProperties.getCookie().getDomain();
 
-        String setCookie = ResponseCookie.from(name, "")
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from(name, "")
             .httpOnly(true)
             .secure(secure)
             .path("/")
             .maxAge(Duration.ZERO)     // 즉시 만료
-            .sameSite(sameSite)
-            .build()
-            .toString();
+            .sameSite(sameSite);
 
+        // domain이 설정되어 있으면 추가
+        if (domain != null && !domain.isEmpty()) {
+            cookieBuilder.domain(domain);
+        }
+
+        String setCookie = cookieBuilder.build().toString();
         response.addHeader("Set-Cookie", setCookie);
     }
 
