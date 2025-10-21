@@ -88,7 +88,7 @@ public class NotificationListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onFollowCreated(FollowCreatedEvent e) {
-        notificationService.save(e.followeeId(), FOLLOW_TITLE, "작성자 [" + e.followerName() + "]", NotificationLevel.INFO);
+        notificationService.save(e.followeeId(), FOLLOW_TITLE, "팔로워 [" + e.followerName() + "]", NotificationLevel.INFO);
     }
 
     @Async

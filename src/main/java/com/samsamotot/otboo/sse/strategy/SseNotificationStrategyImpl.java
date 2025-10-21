@@ -9,9 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * PackageName  : com.samsamotot.otboo.sse.strategy
@@ -94,30 +97,30 @@ public class SseNotificationStrategyImpl implements SseNotificationStrategy {
      * Kafka를 통한 메시지 발행
      */
     private void publishViaKafka(UUID userId, String notificationData) {
+        final String topic = "sse-notifications";
+        final String key = userId.toString();
+
         if (kafkaTemplate == null) {
             log.warn(SSE_NOTIFICATION_STRATEGY_IMPL + "KafkaTemplate이 null입니다. Redis로 Fallback - userId: {}", userId);
             publishViaRedis(userId, notificationData);
             return;
         }
         
-        try {
-            String topic = "sse-notifications";
-            String key = userId.toString();
+        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(topic, key, notificationData);
 
-            kafkaTemplate.send(topic, key, notificationData)
-                .whenComplete((result, ex) -> {
-                    if (ex == null) {
-                        log.info(SSE_NOTIFICATION_STRATEGY_IMPL + "Kafka 발행 성공 - userId: {}, partition: {}, offset: {}",
-                                 userId, result.getRecordMetadata().partition(), result.getRecordMetadata().offset());
-                    } else {
-                        log.warn(SSE_NOTIFICATION_STRATEGY_IMPL + "Kafka 발행 실패, Redis로 Fallback - userId: {}", userId);
-                        publishViaRedis(userId, notificationData);
-                    }
-                });
-        } catch (Exception e) {
-            log.warn(SSE_NOTIFICATION_STRATEGY_IMPL + "Kafka 발행 실패, Redis로 Fallback - userId: {}", userId, e);
-            publishViaRedis(userId, notificationData);
-        }
+        // 전송 확인
+        future.orTimeout(500, TimeUnit.MILLISECONDS)
+            .whenComplete((res, ex) -> {
+                if (ex == null) {
+                    log.info(SSE_NOTIFICATION_STRATEGY_IMPL + "Kafka 발행 성공 - userId: {}, partition: {}, offset: {}",
+                        userId, res.getRecordMetadata().partition(), res.getRecordMetadata().offset());
+                } else {
+                    log.warn(SSE_NOTIFICATION_STRATEGY_IMPL +
+                            "Kafka 발행 지연/실패, Redis로 Fallback - userId: {}, reason={}",
+                        userId, ex.getClass().getSimpleName());
+                    publishViaRedis(userId, notificationData);
+                }
+            });
     }
 
     /**
