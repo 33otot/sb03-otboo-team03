@@ -5,6 +5,7 @@ import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 
 @Slf4j
@@ -21,40 +23,106 @@ import java.util.*;
 public class WeatherTransactionService {
 
     private static final String SERVICE_NAME = "[WeatherTransactionService] ";
-    
+
     private final WeatherRepository weatherRepository;
     private final WeatherDailyValueProvider weatherDailyValueProvider;
 
     /**
-     * 특정 격자(Grid)의 날씨 예보를 업데이트하고, 전날 대비 값을 계산하여 저장합니다.
+     * 특정 격자(Grid)의 날씨 예보를 업데이트하고, 전날 대비 값을 계산하여 저장합니다. (Upsert 방식 적용)
      * @param grid 날씨를 업데이트할 격자
      * @param newWeatherList API로부터 새로 수신한 예보 목록
      */
     public void updateWeather(Grid grid, List<Weather> newWeatherList) {
-        // 새 데이터가 비어있으면 기존 데이터를 보존합니다.
         if (newWeatherList == null || newWeatherList.isEmpty()) {
+            log.warn(SERVICE_NAME + "새 날씨 데이터 목록이 비어있어 업데이트를 건너뜁니다. Grid: {}", grid);
             return;
         }
 
         newWeatherList.sort(Comparator.comparing(Weather::getForecastAt));
 
-        // 1. [데이터 준비] comparedToDayBefore 필드에 필요한 모든 날씨 데이터 Map
+        // 1. [데이터 준비] 전날 비교를 위한 데이터 풀
         Map<Instant, Weather> comparisonWeather = new HashMap<>();
-
-        // 2. [DB 조회] FETCH 당일의 전날 데이터만 DB에서 조회
         fetchAndPoolYesterdayWeather(grid, newWeatherList.get(0), comparisonWeather);
 
-        // 3. [계산] 정렬된 예보 리스트를 순회하며 전날 대비 값 계산하고 다음 날 비교 위한 데이터 준비
+        // 2. [계산] 전날 대비 값 계산 및 최고/최저 기온 보간
         processAndPoolNewWeathers(newWeatherList, comparisonWeather);
         fillInMissingDailyTemperatures(grid, newWeatherList);
 
-        // 4. [DB 정리] 오래된 데이터와 중복될 수 있는 기존 데이터 삭제하여 DB 최신화
-        cleanupDatabase(grid, newWeatherList.get(0));
+        // 3. [저장 - Upsert] 새 데이터를 순회하며 있으면 수정, 없으면 삽입 (saveAll 대신 사용!)
+        saveOrUpdateWeathers(newWeatherList);
 
-        // 5. [저장] 전날 대비 값이 계산된 새로운 날씨 데이터 저장
-        weatherRepository.saveAll(newWeatherList);
+        // 4. [DB 정리] 오래된 데이터 및 구식 발표 데이터 삭제
+        cleanupDatabase(grid);
+
+        log.info(SERVICE_NAME + "날씨 정보 업데이트 및 정리 완료. Grid ID: {}", grid.getId());
     }
 
+    /**
+     * Upsert 로직: 엔티티를 조회하여 있으면 변경 감지(Dirty Checking)로 UPDATE, 없으면 INSERT.
+     * @param newWeatherList API로부터 받아 처리된 날씨 데이터 목록
+     */
+    private void saveOrUpdateWeathers(List<Weather> newWeatherList) {
+        AtomicInteger insertedCount = new AtomicInteger(0);
+        AtomicInteger updatedCount = new AtomicInteger(0);
+        for (Weather newWeather : newWeatherList) {
+            // UNIQUE 제약조건 컬럼(grid, forecastAt, forecastedAt)으로 기존 데이터 조회
+            Optional<Weather> existingWeatherOpt = weatherRepository.findByGridAndForecastedAtAndForecastAt(
+                    newWeather.getGrid(),
+                    newWeather.getForecastedAt(),
+                    newWeather.getForecastAt()
+            );
+
+            try {
+                if (existingWeatherOpt.isPresent()) {
+                    // 데이터가 있으면, 기존 엔티티의 값을 업데이트
+                    updateWeatherEntity(existingWeatherOpt.get(), newWeather);
+                    updatedCount.incrementAndGet();
+                } else {
+                    // 데이터가 없으면, 새로 저장
+                    weatherRepository.save(newWeather);
+                    insertedCount.incrementAndGet();
+                }
+            } catch (DataIntegrityViolationException ex) {
+                // 동시 삽입 경합으로 UNIQUE 제약조건 위반 시, 재조회 후 UPDATE로 전환
+                log.warn(SERVICE_NAME + "데이터 삽입 경합 발생. 업데이트로 전환합니다. Weather: {}", newWeather);
+                weatherRepository.findByGridAndForecastedAtAndForecastAt(
+                                newWeather.getGrid(), newWeather.getForecastedAt(), newWeather.getForecastAt())
+                        .ifPresentOrElse(
+                                retryWeather -> {
+                                    updateWeatherEntity(retryWeather, newWeather);
+                                    updatedCount.incrementAndGet();
+                                },
+                                () -> {
+                                    // 재조회 실패 시, 예측 못한 다른 원인이므로 예외를 다시 던짐
+                                    throw ex;
+                                }
+                        );
+            }
+        }
+        log.info(SERVICE_NAME + "날씨 데이터 Upsert 완료: 삽입={}, 업데이트={}. Grid ID: {}", 
+                insertedCount, updatedCount, newWeatherList.isEmpty() ? "N/A" : newWeatherList.get(0).getGrid().getId());
+    }
+
+    /**
+     * 기존 날씨 엔티티(existing)를 새로운 날씨 데이터(newData)로 업데이트합니다.
+     * @param existing DB에 이미 존재하는 엔티티
+     * @param newData API로부터 받은 새로운 데이터
+     */
+    private void updateWeatherEntity(Weather existing, Weather newData) {
+        existing.setTemperatureCurrent(newData.getTemperatureCurrent());
+        existing.setTemperatureComparedToDayBefore(newData.getTemperatureComparedToDayBefore());
+        existing.setTemperatureMin(newData.getTemperatureMin());
+        existing.setTemperatureMax(newData.getTemperatureMax());
+        existing.setSkyStatus(newData.getSkyStatus());
+        existing.setPrecipitationType(newData.getPrecipitationType());
+        existing.setPrecipitationAmount(newData.getPrecipitationAmount());
+        existing.setPrecipitationProbability(newData.getPrecipitationProbability());
+        existing.setHumidityCurrent(newData.getHumidityCurrent());
+        existing.setHumidityComparedToDayBefore(newData.getHumidityComparedToDayBefore());
+        existing.setWindSpeed(newData.getWindSpeed());
+        existing.setWindAsWord(newData.getWindAsWord());
+    }
+    
     /**
      * 새로운 예보 목록의 첫날과 비교하기 위한 바로 전날의 데이터를 DB에서 조회하여 데이터 풀에 추가합니다.
      */
@@ -137,13 +205,28 @@ public class WeatherTransactionService {
     }
 
     /**
-     * 새로운 데이터를 저장하기 전에 DB를 정리합니다.
+     * DB를 정리하는 로직을 2단계로 분리하여 안전하게 실행
+     * 1. 정말 오래된 데이터 (3일 이상 지난 forecast_at) 중 참조 안 된 것 삭제
+     * 2. 최신 예보로 대체된 오래된 발표 데이터 중 참조 안 된 것 삭제
      */
-    private void cleanupDatabase(Grid grid, Weather firstDayWeather) {
-        Instant baseDateTime = firstDayWeather.getForecastedAt();
-        weatherRepository.deleteByGridAndForecastedAt(grid, baseDateTime);
-
+    private void cleanupDatabase(Grid grid) {
+        // 단계 1: 정말 오래된 예보 데이터 삭제 (Feed 참조 없을 시)
         Instant deleteThreshold = Instant.now().minus(3, ChronoUnit.DAYS);
-        weatherRepository.deleteByGridAndForecastAtBefore(grid, deleteThreshold);
+        // 새로 만든 Repository 메서드를 호출합니다.
+        int deletedOldCount = weatherRepository.deleteOldAndUnreferencedWeather(grid, deleteThreshold);
+        if (deletedOldCount > 0) {
+            log.info(SERVICE_NAME + "참조되지 않는 오래된 날씨(3일+) 데이터 {}건 삭제 완료. Grid ID: {}", deletedOldCount, grid.getId());
+        }
+
+        // 단계 2: 최신 예보로 대체된 "오래된 발표" 데이터 삭제 (Feed 참조 없을 시)
+        // 새로 만든 Repository 메서드를 호출합니다.
+        int deletedOutdatedCount = weatherRepository.deleteOutdatedAndUnreferencedWeather(grid);
+        if (deletedOutdatedCount > 0) {
+            log.info(SERVICE_NAME + "참조되지 않는 오래된 발표 시각 날씨 데이터 {}건 삭제 완료. Grid ID: {}", deletedOutdatedCount, grid.getId());
+        }
+
+        if (deletedOldCount == 0 && deletedOutdatedCount == 0) {
+            log.info(SERVICE_NAME + "삭제할 오래된 날씨 데이터 없음 (또는 모두 참조 중). Grid ID: {}", grid.getId());
+        }
     }
 }

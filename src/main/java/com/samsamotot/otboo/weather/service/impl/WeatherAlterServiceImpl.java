@@ -182,7 +182,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
         // [온도 변화]에 대한 알림
         if (changes.tempComparedToDayBefore() != null) {
             double temp = changes.tempComparedToDayBefore();
-            String title = String.valueOf(WeatherAlterType.TEMPERATURE_CHANGE);
+            String title = "기온 변화 알림 🌡️";
             String message = temp > 0 ?
                     String.format("어제보다 기온이 %.1f도 높아요! 가벼운 옷차림은 어떠세요? ☀️", temp) :
                     String.format("어제보다 기온이 %.1f도 낮아요. 따뜻하게 입으세요! 🧣", Math.abs(temp));
@@ -193,7 +193,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
         // [습도 변화]에 대한 알림
         if (changes.humidComparedToDayBefore() != null) {
             double humid = changes.humidComparedToDayBefore();
-            String title = String.valueOf(WeatherAlterType.HUMIDITY_CHANGE);
+            String title = "습도 변화 알림 💦";
             String message = humid > 0 ?
                     String.format("어제보다 습도가 %.1f%%p 높아요! 불쾌 지수에 유의하세요! 🥹", humid) :
                     String.format("어제보다 습도가 %.1f%%p 낮아요. 즐거운 하루 되세요! ❤️", Math.abs(humid));
@@ -204,7 +204,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
         // [하늘 상태 변화]에 대한 알림
         if (changes.skyStatus() != null) {
             SkyStatus skyStatus = changes.skyStatus();
-            String title = String.valueOf(WeatherAlterType.SKY_STATUS_CHANGE);
+            String title = "하늘 변화 알림 💭";
             String message = switch (changes.skyStatus()) {
                 case MOSTLY_CLOUDY -> "어제보다 구름이 약간 많아요. 🌥️";
                 case CLOUDY -> "오늘은 날이 흐려요. ☁️";
@@ -217,8 +217,8 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
 
         // [강수 변화]에 대한 알림
         if (changes.precipitation() != null && changes.precipitation() != Precipitation.NONE) {
-            String title = String.valueOf(WeatherAlterType.PRECIPITATION_CHANGE);
-            String message = "곧 비나 눈이 올 수 있으니, 우산을 챙기는 걸 잊지 마세요! 🌧️";
+            String title = "강수 변화 알림 🌧️";
+            String message = "곧 비나 눈이 올 수 있으니, 우산을 챙기는 걸 잊지 마세요! ☔";
 
             usersToNotify.forEach(user -> notificationService.save(user.getId(), title, message, NotificationLevel.INFO));
         }
@@ -226,7 +226,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
         // [바람 상태 변화]에 대한 알림을 보냅니다.
         if (changes.windAsWord() != null && changes.windAsWord() != WindAsWord.WEAK) {
             String title = "바람 변화 알림 💨";
-            String message = String.format("바람이 어제보다 강하게 불고 있어요. 안전에 유의하세요! ⛑️");
+            String message = "바람이 어제보다 강하게 불고 있어요. 안전에 유의하세요! ⛑️";
 
             // 모든 대상 유저에게 '바람 변화' 알림 발송
             usersToNotify.forEach(user -> notificationService.save(user.getId(), title, message, NotificationLevel.INFO));
