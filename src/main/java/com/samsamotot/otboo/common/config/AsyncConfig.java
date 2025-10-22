@@ -8,6 +8,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskDecorator;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -16,6 +17,8 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Configuration
 @EnableAsync
@@ -53,6 +56,8 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setQueueCapacity(queue);
         executor.setKeepAliveSeconds(keepAlive);
         executor.setThreadNamePrefix(prefix + "-");
+
+        executor.setTaskDecorator(new SecurityContextTaskDecorator());
 
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);
@@ -169,6 +174,31 @@ public class AsyncConfig implements AsyncConfigurer {
                     // 일반적으로 로깅 중 발생한 예외는 무시하여 원본 오류 유지
                 }
             }
+        }
+    }
+    /**
+     * SecurityContext를 비동기 스레드에 전파하는 TaskDecorator입니다.
+     *
+     * <p>비동기 작업 실행 시 부모 스레드의 SecurityContext를 자식 스레드로 복사하여,
+     * 인증 정보가 유지되도록 합니다.</p>
+     */
+    private static class SecurityContextTaskDecorator implements TaskDecorator {
+
+        @Override
+        public Runnable decorate(Runnable runnable) {
+            // 현재 스레드(부모)의 SecurityContext 가져오기
+            SecurityContext context = SecurityContextHolder.getContext();
+
+            return () -> {
+                try {
+                    // 새 스레드(자식)에 SecurityContext 설정
+                    SecurityContextHolder.setContext(context);
+                    runnable.run();
+                } finally {
+                    // 작업 완료 후 SecurityContext 정리
+                    SecurityContextHolder.clearContext();
+                }
+            };
         }
     }
 }
