@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS feeds
     updated_at TIMESTAMPTZ,
 
     CONSTRAINT fk_feeds_author FOREIGN KEY (author_id) REFERENCES users (id) ON DELETE CASCADE,
-    CONSTRAINT fk_feeds_weather FOREIGN KEY (weather_id) REFERENCES weathers (id) ON DELETE SET NULL,
+    CONSTRAINT fk_feeds_weather FOREIGN KEY (weather_id) REFERENCES weathers (id) ON DELETE RESTRICT,
     CONSTRAINT ck_feeds_like_count_nonneg CHECK (like_count >= 0),
     CONSTRAINT ck_feeds_comment_count_nonneg CHECK (comment_count >= 0)
 );

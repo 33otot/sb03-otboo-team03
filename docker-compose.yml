@@ -35,6 +35,7 @@ services:
       # Redis 설정 (로컬 기본값: redis 서비스, 운영은 prod에서 덮어씀)
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
+      SPRING_DATA_REDIS_SSL_ENABLED: false
       REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass}
       # Kafka (로컬 기본값: kafka 서비스, 운영은 prod에서 덮어씀)
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
