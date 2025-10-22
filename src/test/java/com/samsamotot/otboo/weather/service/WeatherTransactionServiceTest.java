@@ -27,8 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WeatherTransactionServiceTest {
@@ -127,6 +126,26 @@ class WeatherTransactionServiceTest {
         }
 
         @Test
+        void 기존_날씨_데이터가_있으면_업데이트() {
+            // Given
+            Weather newWeather = WeatherFixture.createWeather(now.plus(1, ChronoUnit.HOURS), now, 25.0, 60.0);
+            Weather existingWeather = WeatherFixture.createWeather(now.plus(1, ChronoUnit.DAYS), now, 27.0, 65.0);
+            List<Weather> newWeatherList = new ArrayList<>(List.of(newWeather));
+
+            given(weatherRepository.findByGridAndForecastedAtAndForecastAt(
+                    newWeather.getGrid(), newWeather.getForecastedAt(), newWeather.getForecastAt()))
+                    .willReturn(Optional.of(existingWeather));
+
+            // When
+            weatherTransactionService.updateWeather(grid, newWeatherList);
+
+            // Then
+            verify(weatherRepository, times(0)).save(any(Weather.class));
+            assertThat(existingWeather.getTemperatureCurrent()).isEqualTo(newWeather.getTemperatureCurrent());
+            assertThat(existingWeather.getHumidityCurrent()).isEqualTo(newWeather.getHumidityCurrent());
+        }
+
+        @Test
         void DB_정리_로직이_정확한_인자와_함께_호출() {
 
             // Given
@@ -134,13 +153,22 @@ class WeatherTransactionServiceTest {
                     WeatherFixture.createWeather(now.plus(1, ChronoUnit.HOURS), now, 25.0, 60.0)
             ));
 
+            given(weatherRepository.deleteOldAndUnreferencedWeather(any(Grid.class), any(Instant.class))).willReturn(1);
+            given(weatherRepository.deleteOutdatedAndUnreferencedWeather(any(Grid.class))).willReturn(2);
+
             // When
             weatherTransactionService.updateWeather(grid, newWeatherList);
 
             // Then
-            verify(weatherRepository).deleteOldAndUnreferencedWeather(eq(grid), any(Instant.class));
+            // 1. 3일 이상 지난 데이터 삭제 메서드 호출 검증
+            ArgumentCaptor<Instant> oldThresholdCaptor = ArgumentCaptor.forClass(Instant.class);
+            verify(weatherRepository).deleteOldAndUnreferencedWeather(eq(grid), oldThresholdCaptor.capture());
 
-            ArgumentCaptor<Instant> thresholdCaptor = ArgumentCaptor.forClass(Instant.class);
+            // 임계값이 대략 3일 전인지 확인 (테스트 실행 시간에 따른 오차 감안)
+            long daysDifference = ChronoUnit.DAYS.between(oldThresholdCaptor.getValue(), Instant.now());
+            assertThat(daysDifference).isLessThanOrEqualTo(3);
+
+            // 2. 오래된 발표 시각 데이터 삭제 메서드 호출 검증
             verify(weatherRepository).deleteOutdatedAndUnreferencedWeather(eq(grid));
         }
 
