@@ -73,8 +73,6 @@ public class WeatherTransactionService {
             if (existingWeatherOpt.isPresent()) {
                 // 데이터가 있으면, 기존 엔티티의 값을 업데이트
                 Weather existingWeather = existingWeatherOpt.get();
-                // TODO: Weather 엔티티에 updateFrom(Weather source) 메서드를 만들어 호출하는 것을 권장합니다.
-                // 예시: existingWeather.updateFrom(newWeather);
                 existingWeather.setTemperatureCurrent(newWeather.getTemperatureCurrent());
                 existingWeather.setTemperatureComparedToDayBefore(newWeather.getTemperatureComparedToDayBefore());
                 existingWeather.setTemperatureMin(newWeather.getTemperatureMin());
