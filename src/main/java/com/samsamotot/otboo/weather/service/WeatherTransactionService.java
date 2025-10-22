@@ -5,6 +5,7 @@ import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 
 @Slf4j
@@ -60,8 +62,8 @@ public class WeatherTransactionService {
      * @param newWeatherList API로부터 받아 처리된 날씨 데이터 목록
      */
     private void saveOrUpdateWeathers(List<Weather> newWeatherList) {
-        int insertedCount = 0;
-        int updatedCount = 0;
+        AtomicInteger insertedCount = new AtomicInteger(0);
+        AtomicInteger updatedCount = new AtomicInteger(0);
         for (Weather newWeather : newWeatherList) {
             // UNIQUE 제약조건 컬럼(grid, forecastAt, forecastedAt)으로 기존 데이터 조회
             Optional<Weather> existingWeatherOpt = weatherRepository.findByGridAndForecastedAtAndForecastAt(
@@ -70,31 +72,57 @@ public class WeatherTransactionService {
                     newWeather.getForecastAt()
             );
 
-            if (existingWeatherOpt.isPresent()) {
-                // 데이터가 있으면, 기존 엔티티의 값을 업데이트
-                Weather existingWeather = existingWeatherOpt.get();
-                existingWeather.setTemperatureCurrent(newWeather.getTemperatureCurrent());
-                existingWeather.setTemperatureComparedToDayBefore(newWeather.getTemperatureComparedToDayBefore());
-                existingWeather.setTemperatureMin(newWeather.getTemperatureMin());
-                existingWeather.setTemperatureMax(newWeather.getTemperatureMax());
-                existingWeather.setSkyStatus(newWeather.getSkyStatus());
-                existingWeather.setPrecipitationType(newWeather.getPrecipitationType());
-                existingWeather.setPrecipitationAmount(newWeather.getPrecipitationAmount());
-                existingWeather.setPrecipitationProbability(newWeather.getPrecipitationProbability());
-                existingWeather.setHumidityCurrent(newWeather.getHumidityCurrent());
-                existingWeather.setHumidityComparedToDayBefore(newWeather.getHumidityComparedToDayBefore());
-                existingWeather.setWindSpeed(newWeather.getWindSpeed());
-                existingWeather.setWindAsWord(newWeather.getWindAsWord());
-                updatedCount++;
-            } else {
-                // 데이터가 없으면, 새로 저장
-                weatherRepository.save(newWeather);
-                insertedCount++;
+            try {
+                if (existingWeatherOpt.isPresent()) {
+                    // 데이터가 있으면, 기존 엔티티의 값을 업데이트
+                    updateWeatherEntity(existingWeatherOpt.get(), newWeather);
+                    updatedCount.incrementAndGet();
+                } else {
+                    // 데이터가 없으면, 새로 저장
+                    weatherRepository.save(newWeather);
+                    insertedCount.incrementAndGet();
+                }
+            } catch (DataIntegrityViolationException ex) {
+                // 동시 삽입 경합으로 UNIQUE 제약조건 위반 시, 재조회 후 UPDATE로 전환
+                log.warn(SERVICE_NAME + "데이터 삽입 경합 발생. 업데이트로 전환합니다. Weather: {}", newWeather);
+                weatherRepository.findByGridAndForecastedAtAndForecastAt(
+                                newWeather.getGrid(), newWeather.getForecastedAt(), newWeather.getForecastAt())
+                        .ifPresentOrElse(
+                                retryWeather -> {
+                                    updateWeatherEntity(retryWeather, newWeather);
+                                    updatedCount.incrementAndGet();
+                                },
+                                () -> {
+                                    // 재조회 실패 시, 예측 못한 다른 원인이므로 예외를 다시 던짐
+                                    throw ex;
+                                }
+                        );
             }
         }
-        log.info(SERVICE_NAME + "날씨 데이터 Upsert 완료: 삽입={}, 업데이트={}. Grid ID: {}", insertedCount, updatedCount, newWeatherList.isEmpty() ? "N/A" : newWeatherList.get(0).getGrid().getId());
+        log.info(SERVICE_NAME + "날씨 데이터 Upsert 완료: 삽입={}, 업데이트={}. Grid ID: {}", 
+                insertedCount, updatedCount, newWeatherList.isEmpty() ? "N/A" : newWeatherList.get(0).getGrid().getId());
     }
 
+    /**
+     * 기존 날씨 엔티티(existing)를 새로운 날씨 데이터(newData)로 업데이트합니다.
+     * @param existing DB에 이미 존재하는 엔티티
+     * @param newData API로부터 받은 새로운 데이터
+     */
+    private void updateWeatherEntity(Weather existing, Weather newData) {
+        existing.setTemperatureCurrent(newData.getTemperatureCurrent());
+        existing.setTemperatureComparedToDayBefore(newData.getTemperatureComparedToDayBefore());
+        existing.setTemperatureMin(newData.getTemperatureMin());
+        existing.setTemperatureMax(newData.getTemperatureMax());
+        existing.setSkyStatus(newData.getSkyStatus());
+        existing.setPrecipitationType(newData.getPrecipitationType());
+        existing.setPrecipitationAmount(newData.getPrecipitationAmount());
+        existing.setPrecipitationProbability(newData.getPrecipitationProbability());
+        existing.setHumidityCurrent(newData.getHumidityCurrent());
+        existing.setHumidityComparedToDayBefore(newData.getHumidityComparedToDayBefore());
+        existing.setWindSpeed(newData.getWindSpeed());
+        existing.setWindAsWord(newData.getWindAsWord());
+    }
+    
     /**
      * 새로운 예보 목록의 첫날과 비교하기 위한 바로 전날의 데이터를 DB에서 조회하여 데이터 풀에 추가합니다.
      */
