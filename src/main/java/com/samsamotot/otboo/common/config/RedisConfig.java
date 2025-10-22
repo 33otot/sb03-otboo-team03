@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration.LettuceClientConfigurationBuilder;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
@@ -37,6 +38,9 @@ public class RedisConfig {
     @Value("${spring.data.redis.port}")
     private int redisPort;
 
+    @Value("${spring.data.redis.ssl.enabled:false}")
+    boolean redisSsl;
+
     /**
      * LettuceConnectionFactory를 명시적으로 설정 (타임아웃 포함)
      */
@@ -49,7 +53,7 @@ public class RedisConfig {
         serverConfig.setPort(redisPort);
 
         // Lettuce 클라이언트 설정
-        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+        LettuceClientConfigurationBuilder builder = LettuceClientConfiguration.builder()
             .clientOptions(
                 ClientOptions.builder()
                     .socketOptions(
@@ -59,9 +63,13 @@ public class RedisConfig {
                     )
                     .build()
             )
-            .commandTimeout(Duration.ofSeconds(10))
-            .useSsl()
-            .build();
+            .commandTimeout(Duration.ofSeconds(10));
+
+        if (redisSsl) {
+            builder.useSsl();
+        }
+
+        LettuceClientConfiguration clientConfig = builder.build();
 
         log.info("[RedisConfig] LettuceConnectionFactory 생성 - host: {}, port: {}, timeout: 10s",
             redisHost, redisPort);
