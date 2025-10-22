@@ -146,6 +146,27 @@ class WeatherTransactionServiceTest {
         }
 
         @Test
+        void 최고_최저_기온이_이미_있으면_Provider_호출_안함() {
+            // Given
+            // 최고/최저 기온이 이미 채워진 날씨 데이터
+            Weather weatherWithTemps = Weather.builder()
+                    .grid(grid)
+                    .forecastAt(now)
+                    .forecastedAt(now)
+                    .temperatureMax(30.0)
+                    .temperatureMin(15.0)
+                    .build();
+            List<Weather> newWeatherList = new ArrayList<>(List.of(weatherWithTemps));
+
+            // When
+            weatherTransactionService.updateWeather(grid, newWeatherList);
+
+            // Then
+            // weatherDailyValueProvider가 한 번도 호출되지 않았는지 검증
+            verify(weatherDailyValueProvider, never()).findDailyTemperatureValue(any(Grid.class), any(LocalDate.class), anyBoolean());
+        }
+
+        @Test
         void DB_정리_로직이_정확한_인자와_함께_호출() {
 
             // Given
