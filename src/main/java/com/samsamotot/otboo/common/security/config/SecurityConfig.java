@@ -116,12 +116,34 @@ public class SecurityConfig {
             // CORS 설정
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
+            // SecurityContext 비동기 전파 설정
+            .securityContext(context -> context
+                .requireExplicitSave(false)  // SecurityContext 자동 저장
+            )
+
             // 세션 관리 (STATELESS로 설정하여 세션 사용 안함)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
             // 인증 실패 시 → 401 고정 (리다이렉트 방지)
-            .exceptionHandling(e -> e.authenticationEntryPoint(
-                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+            .exceptionHandling(e -> e
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+
+                //응답이 커밋된 상태에 따른 권한 오류 처리
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    // 응답이 이미 커밋되지 않은 경우만 처리
+                    if (!response.isCommitted()) {
+                        response.setStatus(HttpStatus.FORBIDDEN.value());
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write(
+                            "{\"error\":\"Access Denied\",\"message\":\"" +
+                                accessDeniedException.getMessage() + "\"}"
+                        );
+                    } else {
+                        // 이미 커밋된 경우 로그만 남김
+                        log.warn("[SecurityConfig] 응답 커밋 후 접근 거부 발생. URI: {}",
+                            request.getRequestURI());
+                    }
+                }
             ))
 
             // 요청별 권한 설정
