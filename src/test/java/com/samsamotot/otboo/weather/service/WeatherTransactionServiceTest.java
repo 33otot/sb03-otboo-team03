@@ -2,7 +2,6 @@ package com.samsamotot.otboo.weather.service;
 
 import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.WeatherFixture;
-import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
@@ -18,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -65,8 +63,8 @@ class WeatherTransactionServiceTest {
 
             // Then
             verify(weatherRepository, never()).saveAll(any());
-            verify(weatherRepository, never()).deleteByGridAndForecastedAt(any(), any());
-            verify(weatherRepository, never()).deleteByGridAndForecastAtBefore(any(), any());
+            verify(weatherRepository, never()).deleteOldAndUnreferencedWeather(any(), any());
+            verify(weatherRepository, never()).deleteOutdatedAndUnreferencedWeather(any());
         }
 
         @Test
@@ -92,9 +90,8 @@ class WeatherTransactionServiceTest {
             assertThat(tomorrowWeather.getTemperatureComparedToDayBefore()).isEqualTo(2.0);
             assertThat(tomorrowWeather.getHumidityComparedToDayBefore()).isEqualTo(5.0);
 
-            verify(weatherRepository).deleteByGridAndForecastedAt(eq(grid), eq(now));
-            verify(weatherRepository).deleteByGridAndForecastAtBefore(eq(grid), any(Instant.class));
-            verify(weatherRepository).saveAll(eq(newWeatherList));
+            verify(weatherRepository).deleteOldAndUnreferencedWeather(eq(grid), any());
+            verify(weatherRepository).deleteOutdatedAndUnreferencedWeather(eq(grid));
         }
 
         @Test
@@ -121,10 +118,10 @@ class WeatherTransactionServiceTest {
             weatherTransactionService.updateWeather(grid, newWeatherList);
 
             // Then
-            ArgumentCaptor<List<Weather>> captor = ArgumentCaptor.forClass(List.class);
-            verify(weatherRepository).saveAll(captor.capture());
+            ArgumentCaptor<Weather> captor = ArgumentCaptor.forClass(Weather.class);
+            verify(weatherRepository).save(captor.capture()); // 인자 값 캡쳐
 
-            Weather savedWeather = captor.getValue().get(0);
+            Weather savedWeather = captor.getValue();
             assertThat(savedWeather.getTemperatureMax()).isEqualTo(30.0);
             assertThat(savedWeather.getTemperatureMin()).isEqualTo(15.0);
         }
@@ -141,14 +138,10 @@ class WeatherTransactionServiceTest {
             weatherTransactionService.updateWeather(grid, newWeatherList);
 
             // Then
-            verify(weatherRepository).deleteByGridAndForecastedAt(grid, now);
+            verify(weatherRepository).deleteOldAndUnreferencedWeather(eq(grid), any(Instant.class));
 
-            ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
-            verify(weatherRepository).deleteByGridAndForecastAtBefore(eq(grid), captor.capture());
-
-            Instant captureThreshold = captor.getValue();
-            long daysDifference = ChronoUnit.DAYS.between(captureThreshold, Instant.now());
-            assertThat(daysDifference).isEqualTo(3);
+            ArgumentCaptor<Instant> thresholdCaptor = ArgumentCaptor.forClass(Instant.class);
+            verify(weatherRepository).deleteOutdatedAndUnreferencedWeather(eq(grid));
         }
 
         @Test
