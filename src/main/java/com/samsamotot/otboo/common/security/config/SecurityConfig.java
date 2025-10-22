@@ -104,7 +104,7 @@ public class SecurityConfig {
                     "/oauth2/**", "/login/oauth2/**",
                     "/api/weathers/**",
                     "/actuator/**",
-                    "/api/sse",
+                    "/api/sse/**",
                     "/api/follows/**",
                     "/api/direct-messages/**",
                     "/api/notifications/**",
@@ -159,7 +159,7 @@ public class SecurityConfig {
                 // 사용자 계정 잠금 기능은 ADMIN 유저만 가능
                 .requestMatchers(HttpMethod.PATCH, "/api/users/*/lock").hasRole("ADMIN")
 
-                .requestMatchers(HttpMethod.GET, "/api/sse").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/sse/**").authenticated()
                 // 프로필 날씨 알림 설정 변경은 인증된 유저만 가능
                 .requestMatchers(HttpMethod.PATCH, "/api/users/profiles/notification-weathers").authenticated()
 
