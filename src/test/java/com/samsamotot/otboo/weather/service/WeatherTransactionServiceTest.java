@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -164,6 +165,51 @@ class WeatherTransactionServiceTest {
             // Then
             // weatherDailyValueProvider가 한 번도 호출되지 않았는지 검증
             verify(weatherDailyValueProvider, never()).findDailyTemperatureValue(any(Grid.class), any(LocalDate.class), anyBoolean());
+        }
+
+        @Test
+        void 데이터_삽입_경합_발생_시_업데이트로_전환() {
+            // Given
+            Weather newWeather = WeatherFixture.createWeather(now.plus(1, ChronoUnit.HOURS), now, 25.0, 60.0);
+            Weather raceConditionWinner = WeatherFixture.createWeather(now.plus(1, ChronoUnit.HOURS), now, 24.0, 59.0);
+            List<Weather> newWeatherList = new ArrayList<>(List.of(newWeather));
+
+            // findBy...가 처음 호출되면 Optional.empty(), 두 번째 호출되면 raceConditionWinner를 반환하도록 설정
+            given(weatherRepository.findByGridAndForecastedAtAndForecastAt(
+                    newWeather.getGrid(), newWeather.getForecastedAt(), newWeather.getForecastAt()))
+                    .willReturn(Optional.empty(), Optional.of(raceConditionWinner));
+
+            // 2. save() 시도 시, 다른 스레드가 먼저 삽입하여 UNIQUE 제약조건 위반 예외가 발생했다고 가정
+            doThrow(DataIntegrityViolationException.class).when(weatherRepository).save(newWeather);
+
+            // When
+            weatherTransactionService.updateWeather(grid, newWeatherList);
+
+            // Then
+            // save는 실패했지만, 최종적으로 업데이트 로직이 수행되었는지 확인
+            assertThat(raceConditionWinner.getTemperatureCurrent()).isEqualTo(newWeather.getTemperatureCurrent());
+            assertThat(raceConditionWinner.getHumidityCurrent()).isEqualTo(newWeather.getHumidityCurrent());
+            verify(weatherRepository, times(1)).save(any(Weather.class)); // save는 1번 시도됨
+        }
+
+        @Test
+        void 전날_데이터의_필드가_null이면_비교값도_null() {
+            // Given
+            Weather todayWeather = WeatherFixture.createWeather(now.plus(1, ChronoUnit.HOURS), now, 25.0, 60.0);
+            Instant yesterdayForecastAt = todayWeather.getForecastAt().minus(1, ChronoUnit.DAYS);
+            // 기온과 습도가 null인 어제 날씨 데이터
+            Weather yesterdayWeather = Weather.builder().forecastAt(yesterdayForecastAt).temperatureCurrent(null).humidityCurrent(null).build();
+            List<Weather> newWeatherList = new ArrayList<>(List.of(todayWeather));
+
+            given(weatherRepository.findTopByGridAndForecastAtOrderByForecastedAtDesc(grid, yesterdayForecastAt))
+                    .willReturn(Optional.of(yesterdayWeather));
+
+            // When
+            weatherTransactionService.updateWeather(grid, newWeatherList);
+
+            // Then
+            assertThat(todayWeather.getTemperatureComparedToDayBefore()).isNull();
+            assertThat(todayWeather.getHumidityComparedToDayBefore()).isNull();
         }
 
         @Test
