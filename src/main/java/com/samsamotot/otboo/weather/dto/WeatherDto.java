@@ -11,10 +11,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @Builder
 public record WeatherDto(
     UUID id,
-    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
     LocalDateTime forecastedAt,
-
-    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second_millis)
     LocalDateTime forecastAt,
     WeatherAPILocation location,
     SkyStatus skyStatus,

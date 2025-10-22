@@ -14,10 +14,7 @@ public record ProfileDto (
         WeatherAPILocation location,
         String name,
         Gender gender,
-
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         LocalDate birthDate,
-
         Double temperatureSensitivity,
         String profileImageUrl,
         boolean weatherNotificationEnabled
