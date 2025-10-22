@@ -69,12 +69,12 @@ public class RedisConfig {
             builder.useSsl();
         }
 
-        LettuceClientConfiguration clientConfig = builder.build();
+        LettuceConnectionFactory factory = new LettuceConnectionFactory(serverConfig, builder.build());
+        factory.afterPropertiesSet();
+        log.info("[RedisConfig] LettuceConnectionFactory 생성 - host: {}, port: {}, ssl: {} timeout: 10s",
+            redisHost, redisPort, redisSsl);
 
-        log.info("[RedisConfig] LettuceConnectionFactory 생성 - host: {}, port: {}, timeout: 10s",
-            redisHost, redisPort);
-
-        return new LettuceConnectionFactory(serverConfig, clientConfig);
+        return factory;
     }
 
     /**
