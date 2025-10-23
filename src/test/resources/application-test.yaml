@@ -2,36 +2,93 @@ spring:
   config:
     activate:
       on-profile: test
-  
+  main:
+    allow-bean-definition-overriding: true
+  autoconfigure: # 테스트 보안 자동 설정 비활성화
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientWebSecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
   # 테스트용 인메모리 DB 설정
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
     username: sa
-    password: 
+    password:
     driver-class-name: org.h2.Driver
-  
+
   # JPA 설정
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         show_sql: false
         default_batch_fetch_size: 100
         format_sql: false
         dialect: org.hibernate.dialect.H2Dialect
-  
+        # H2에서 UUID 타입 지원을 위한 설정
+        type:
+          uuid: org.hibernate.type.UUIDCharType
+        # columnDefinition 인용 X
+        globally_quoted_identifiers_skip_column_definitions: true
+        # 키워드 "로 감싸는 설정
+        auto_quote_keyword: true
+
   # H2 콘솔 활성화 (테스트용)
   h2:
     console:
       enabled: true
       path: /h2-console
-  
+
+  # SQL 초기화 비활성화 (PostgreSQL 스키마 사용 안함)
+  sql:
+    init:
+      mode: never
+      schema-locations: ""
+      data-locations: ""
+
   # Batch 설정
   batch:
     jdbc:
       initialize-schema: always
+
+  # Mail 설정 (빌드를 위한 임시 설정)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: dummy@example.com
+    password: dummy-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+  # 테스트 환경에서 Kafka 비활성화
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: test-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 # 테스트용 로깅 설정
 logging:
@@ -39,6 +96,8 @@ logging:
     com.samsamotot.otboo: DEBUG
     org.springframework.web: DEBUG
     org.springframework.test: DEBUG
+    org.hibernate.tool.hbm2ddl: DEBUG
+    org.springframework.jdbc.core.StatementCreatorUtils: DEBUG
 
 # 테스트용 서버 설정
 server:
@@ -54,3 +113,41 @@ management:
   endpoint:
     health:
       show-details: always
+
+# 기상청 API 테스트용 설정
+kma:
+  base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
+  service-key: test-kma-api-key
+
+# Kakao API 테스트용 설정
+kakao.api:
+  base-url: https://dapi.kakao.com
+  key: test-api-key
+
+# 테스트용 S3 버킷 설정
+otboo:
+  storage:
+    type: s3
+    s3:
+      access-key: dummy-access
+      secret-key: dummy-secret
+      region: ap-northeast-2
+      bucket: test-bucket
+  # 테스트용 JWT 설정
+  jwt:
+    secret: test-secret
+    access-token-expiration: 3600000      # 1시간 (ms)
+    refresh-token-expiration: 604800000   # 7일 (ms)
+    issuer: otboo-test
+  security:
+    enable-filters: false
+
+# 테스트용 관리자 계정 설정
+app:
+  admin:
+    email: test-admin@otboo.com
+    username: testadmin
+    password: test123!
+
+websocket:
+  allowed-origins: "*"

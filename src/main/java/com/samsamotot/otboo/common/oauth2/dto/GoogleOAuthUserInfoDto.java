@@ -1,0 +1,33 @@
+package com.samsamotot.otboo.common.oauth2.dto;
+
+import java.util.Map;
+
+/**
+ * Google OAuth2 사용자 정보 DTO
+ */
+public class GoogleOAuthUserInfoDto extends OAuth2UserInfoDto {
+
+    public GoogleOAuthUserInfoDto(Map<String, Object> attributes) {
+        super(attributes);
+    }
+
+    @Override
+    public String getId() {
+        return (String) attributes.get("sub");
+    }
+
+    @Override
+    public String getName() {
+        return (String) attributes.get("name");
+    }
+
+    @Override
+    public String getEmail() {
+        return (String) attributes.get("email");
+    }
+
+    @Override
+    public String getImageUrl() {
+        return (String) attributes.get("picture");
+    }
+}

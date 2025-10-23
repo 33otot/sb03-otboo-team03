@@ -1,0 +1,871 @@
+package com.samsamotot.otboo.notification.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.notification.dto.NotificationListResponse;
+import com.samsamotot.otboo.notification.dto.NotificationRequest;
+import com.samsamotot.otboo.notification.entity.Notification;
+import com.samsamotot.otboo.notification.entity.NotificationLevel;
+import com.samsamotot.otboo.notification.repository.NotificationRepository;
+import com.samsamotot.otboo.sse.service.SseService;
+import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.user.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.lang.reflect.Constructor;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.*;
+
+/**
+ * PackageName  : com.samsamotot.otboo.notification.service
+ * FileName     : NotificationServiceImplTest
+ * Author       : dounguk
+ * Date         : 2025. 9. 29.
+ */
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Notification 서비스 단위 테스트")
+class NotificationServiceImplTest {
+
+    @InjectMocks
+    private NotificationServiceImpl notificationService;
+
+    @Mock
+    private NotificationRepository notificationRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private SseService sseService;
+    @Mock
+    private ObjectMapper objectMapper;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+    @Captor
+    private ArgumentCaptor<Object> eventCaptor;
+
+    private User newUserInstance() {
+        try {
+            Constructor<User> ctor = User.class.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            return ctor.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("User 기본 생성자 접근 실패", e);
+        }
+    }
+
+    private User newUserWith(String email, UUID id) {
+        User u = UserFixture.createUserWithEmail(email);
+        ReflectionTestUtils.setField(u, "id", id);
+        return u;
+    }
+
+    private void mockAuthUser(User user) {
+        var principal = new CustomUserDetails(user);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(principal, "pw", principal.getAuthorities())
+        );
+    }
+
+    private Notification newNotification(User receiver, Instant createdAt, UUID id, String title) {
+        try {
+            Constructor<Notification> ctor = Notification.class.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            Notification n = ctor.newInstance();
+            ReflectionTestUtils.setField(n, "id", id);
+            ReflectionTestUtils.setField(n, "receiver", receiver);
+            ReflectionTestUtils.setField(n, "createdAt", createdAt);
+            ReflectionTestUtils.setField(n, "title", title);
+            ReflectionTestUtils.setField(n, "content", "내용");
+            ReflectionTestUtils.setField(n, "level", NotificationLevel.INFO);
+            return n;
+        } catch (Exception e) {
+            throw new RuntimeException("Notification 기본 생성/세팅 실패", e);
+        }
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void 유저_인증한다_실패() {
+        // given
+        UUID receiverId = UUID.randomUUID();
+        given(userRepository.findById(receiverId)).willReturn(Optional.empty());
+
+        // when n then
+        OtbooException ex = assertThrows(OtbooException.class,
+            () -> notificationService.save(receiverId, "t", "c", NotificationLevel.INFO));
+        assertEquals(ErrorCode.UNAUTHORIZED, ex.getErrorCode());
+
+        then(notificationRepository).should(never()).save(any());
+        then(sseService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void sse_발행한다_실패() throws Exception {
+        // given
+        UUID receiverId = UUID.randomUUID();
+
+        given(userRepository.findById(receiverId)).willReturn(Optional.of(newUserInstance()));
+        given(notificationRepository.save(any(Notification.class)))
+            .willAnswer(inv -> inv.getArgument(0));
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
+        willThrow(new RuntimeException("boom"))
+            .given(sseService).sendNotification(eq(receiverId), anyString());
+
+        // when n then
+        assertDoesNotThrow(() ->
+            notificationService.save(receiverId, "title", "content", NotificationLevel.INFO)
+        );
+        then(notificationRepository).should().save(any(Notification.class));
+        then(sseService).should().sendNotification(eq(receiverId), anyString());
+    }
+
+    /*
+        알림 목록 조회 로직
+     */
+    @Test
+    void receiver_알람들_가져온다() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthUser(me);
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(2L);
+
+        Instant now = Instant.now();
+        Notification n1 = newNotification(me, now.minusSeconds(10), UUID.randomUUID(), "알림1");
+        Notification n2 = newNotification(me, now.minusSeconds(20), UUID.randomUUID(), "알림2");
+
+        NotificationRequest req = new NotificationRequest(null, null, 10);
+
+        given(notificationRepository.findLatest(eq(myId), any(Pageable.class)))
+            .willReturn(List.of(n1, n2));
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertFalse(res.hasNext());
+        assertEquals(2, res.data().size());
+        assertEquals(2L, res.totalCount());
+        assertEquals("DESCENDING", res.sortDirection());
+
+        then(notificationRepository).should()
+            .findLatest(eq(myId), argThat(p -> p.getPageSize() == 11));
+    }
+
+
+    @Test
+    void limit_만큼_가져온다() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthUser(me);
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(3L);
+
+        int limit = 2;
+        Instant base = Instant.now();
+
+        Notification a = newNotification(me, base.minusSeconds(1), UUID.randomUUID(), "A"); // 최신
+        Notification b = newNotification(me, base.minusSeconds(2), UUID.randomUUID(), "B");
+        Notification c = newNotification(me, base.minusSeconds(3), UUID.randomUUID(), "C");
+
+        NotificationRequest req = new NotificationRequest(null, null, limit);
+
+        given(notificationRepository.findLatest(eq(myId), any(Pageable.class)))
+            .willReturn(List.of(a, b, c));
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertTrue(res.hasNext());
+        assertEquals(limit, res.data().size());
+
+        var last = res.data().get(limit - 1);
+        assertEquals(b.getId(), last.getId());
+        assertNotNull(res.nextCursor());
+        assertNotNull(res.nextIdAfter());
+
+        then(notificationRepository).should()
+            .findLatest(eq(myId), argThat(p -> p.getPageSize() == limit + 1));
+    }
+
+
+    @Test
+    void cursor_기준_동일하면_보조_커서로_가져온다() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthUser(me);
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(2L);
+
+        Instant ts = Instant.now();
+        UUID idAfter = UUID.randomUUID();
+        int limit = 10;
+
+        Notification n1_sameTs_lowerId = newNotification(me, ts, UUID.randomUUID(), "동일시각-낮은ID");
+        Notification n2_older = newNotification(me, ts.minusSeconds(1), UUID.randomUUID(), "이전시각");
+
+        given(notificationRepository.findAllBefore(eq(myId), eq(ts), eq(idAfter), any(Pageable.class)))
+            .willReturn(List.of(n1_sameTs_lowerId, n2_older));
+
+        NotificationRequest req = new NotificationRequest(ts, idAfter, limit);
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertFalse(res.hasNext());
+        assertEquals(2, res.data().size());
+        then(notificationRepository).should()
+            .findAllBefore(eq(myId), eq(ts), eq(idAfter), argThat(p -> p.getPageSize() == limit + 1));
+    }
+
+    @Test
+    void 알림_권한_확인한다_실패() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID ownerId = UUID.randomUUID();
+        User owner = newUserWith("owner@" + email, ownerId);
+
+        UUID notificationId = UUID.randomUUID();
+        Notification otherOwnersNotification = newNotification(owner, Instant.now(), notificationId, "다른 사람 알림");
+
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.of(otherOwnersNotification));
+
+        // when
+        OtbooException ex = assertThrows(OtbooException.class,
+            () -> notificationService.delete(notificationId));
+
+        // then
+        assertEquals(ErrorCode.NOTIFICATION_NOT_FOUND, ex.getErrorCode());
+        then(notificationRepository).should(never()).delete(any(Notification.class));
+    }
+
+    @Test
+    void 알림_삭제한다() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID notificationId = UUID.randomUUID();
+        Notification mine = newNotification(me, Instant.now(), notificationId, "내 알림");
+
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.of(mine));
+
+        // when n then
+        assertDoesNotThrow(() -> notificationService.delete(notificationId));
+        then(notificationRepository).should(times(1)).delete(same(mine));
+    }
+
+    /*
+        배치 알림 저장 로직
+     */
+    @Test
+    void 배치_알림_저장한다() throws Exception {
+        // given
+        String title = "테스트 알림";
+        String content = "배치 알림 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        UUID user1Id = UUID.randomUUID();
+        UUID user2Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+        User user2 = newUserWith("user2@test.com", user2Id);
+
+        List<UUID> activeUserIds = List.of(user1Id, user2Id);
+        List<User> users = List.of(user1, user2);
+
+        given(userRepository.findActiveUserIds()).willReturn(activeUserIds);
+        given(userRepository.findAllById(activeUserIds)).willReturn(users);
+        given(notificationRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
+
+        // when
+        assertThrows(IllegalStateException.class, () ->
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should().findAllById(activeUserIds);
+        then(notificationRepository).should().saveAll(anyList());
+    }
+
+    @Test
+    void 배치_알림_저장한다_활성사용자없음() throws Exception {
+        // given
+        String title = "테스트 알림";
+        String content = "배치 알림 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        given(userRepository.findActiveUserIds()).willReturn(List.of());
+
+        // when
+        assertDoesNotThrow(() -> 
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should(never()).findAllById(anyList());
+        then(notificationRepository).should(never()).saveAll(anyList());
+        then(sseService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void 배치_알림_저장한다_SSE실패() throws Exception {
+        // given
+        String title = "테스트 알림";
+        String content = "배치 알림 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        UUID user1Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+
+        List<UUID> activeUserIds = List.of(user1Id);
+        List<User> users = List.of(user1);
+
+        given(userRepository.findActiveUserIds()).willReturn(activeUserIds);
+        given(userRepository.findAllById(activeUserIds)).willReturn(users);
+        given(notificationRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
+
+        // when
+        assertThrows(IllegalStateException.class, () ->
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should().findAllById(activeUserIds);
+        then(notificationRepository).should().saveAll(anyList());
+    }
+
+    @Test
+    void 배치_알림_저장한다_대량사용자() throws Exception {
+        // given
+        String title = "대량 알림";
+        String content = "대량 사용자 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        List<UUID> userIds = new java.util.ArrayList<>();
+        List<User> users = new java.util.ArrayList<>();
+        
+        for (int i = 0; i < 100; i++) {
+            UUID userId = UUID.randomUUID();
+            userIds.add(userId);
+            users.add(newUserWith("user" + i + "@test.com", userId));
+        }
+
+        given(userRepository.findActiveUserIds()).willReturn(userIds);
+        given(userRepository.findAllById(userIds)).willReturn(users);
+        given(notificationRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
+
+        // when
+        assertThrows(IllegalStateException.class, () ->
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should().findAllById(userIds);
+        then(notificationRepository).should().saveAll(anyList());
+    }
+
+    @Test
+    void 배치_알림_저장한다_NotificationRepository_예외() throws Exception {
+        // given
+        String title = "테스트 알림";
+        String content = "배치 알림 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        UUID user1Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+
+        List<UUID> activeUserIds = List.of(user1Id);
+        List<User> users = List.of(user1);
+
+        given(userRepository.findActiveUserIds()).willReturn(activeUserIds);
+        given(userRepository.findAllById(activeUserIds)).willReturn(users);
+        willThrow(new RuntimeException("NotificationRepository 오류"))
+            .given(notificationRepository).saveAll(anyList());
+
+        // when
+        assertThrows(RuntimeException.class, () ->
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should().findAllById(activeUserIds);
+        then(notificationRepository).should().saveAll(anyList());
+    }
+
+    @Test
+    void 배치_알림_저장한다_UserRepository_예외() throws Exception {
+        // given
+        String title = "테스트 알림";
+        String content = "배치 알림 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        UUID user1Id = UUID.randomUUID();
+        List<UUID> activeUserIds = List.of(user1Id);
+
+        given(userRepository.findActiveUserIds()).willReturn(activeUserIds);
+        willThrow(new RuntimeException("UserRepository 오류"))
+            .given(userRepository).findAllById(activeUserIds);
+
+        // when
+        assertThrows(RuntimeException.class, () ->
+            notificationService.saveBatchNotification(title, content, level)
+        );
+
+        // then
+        then(userRepository).should().findActiveUserIds();
+        then(userRepository).should().findAllById(activeUserIds);
+        then(notificationRepository).should(never()).saveAll(anyList());
+    }
+
+    @Test
+    void 알림_목록_조회한다_limit_0이면_1로_보정() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthUser(me);
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(0L);
+        given(notificationRepository.findLatest(eq(myId), any(Pageable.class)))
+            .willReturn(List.of());
+
+        NotificationRequest req = new NotificationRequest(null, null, 0); // limit이 0
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertEquals(0, res.data().size());
+        assertEquals(0L, res.totalCount());
+        assertFalse(res.hasNext());
+
+        then(notificationRepository).should()
+            .findLatest(eq(myId), argThat(p -> p.getPageSize() == 2));
+    }
+
+    @Test
+    void 알림_목록_조회한다_limit_음수면_1로_보정() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthUser(me);
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(0L);
+        given(notificationRepository.findLatest(eq(myId), any(Pageable.class)))
+            .willReturn(List.of());
+
+        NotificationRequest req = new NotificationRequest(null, null, -5);
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertEquals(0, res.data().size());
+        assertEquals(0L, res.totalCount());
+        assertFalse(res.hasNext());
+
+        then(notificationRepository).should()
+            .findLatest(eq(myId), argThat(p -> p.getPageSize() == 2));
+    }
+
+    @Test
+    void 알림_목록_조회한다_빈_결과() throws Exception {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+
+        mockAuthUser(me);
+        given(notificationRepository.countByReceiver_Id(myId)).willReturn(0L);
+        given(notificationRepository.findLatest(eq(myId), any(Pageable.class)))
+            .willReturn(List.of());
+
+        NotificationRequest req = new NotificationRequest(null, null, 10);
+
+        // when
+        NotificationListResponse res = notificationService.getNotifications(req);
+
+        // then
+        assertNotNull(res);
+        assertEquals(0, res.data().size());
+        assertEquals(0L, res.totalCount());
+        assertFalse(res.hasNext());
+        assertNull(res.nextCursor());
+        assertNull(res.nextIdAfter());
+    }
+
+    @Test
+    void sendBatchSseNotifications_정상_실행() throws Exception {
+        // given
+        UUID user1Id = UUID.randomUUID();
+        UUID user2Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+        User user2 = newUserWith("user2@test.com", user2Id);
+
+        Notification notification1 = newNotification(user1, Instant.now(), UUID.randomUUID(), "알림1");
+        Notification notification2 = newNotification(user2, Instant.now(), UUID.randomUUID(), "알림2");
+        List<Notification> notifications = List.of(notification1, notification2);
+
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
+
+        // when
+        notificationService.sendBatchSseNotifications(notifications);
+
+        // then
+        then(objectMapper).should(times(2)).writeValueAsString(any());
+        then(sseService).should(times(2)).sendNotification(any(UUID.class), anyString());
+    }
+
+    @Test
+    void sendBatchSseNotifications_ObjectMapper_예외() throws Exception {
+        // given
+        UUID user1Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+
+        Notification notification1 = newNotification(user1, Instant.now(), UUID.randomUUID(), "알림1");
+        List<Notification> notifications = List.of(notification1);
+
+        willThrow(new RuntimeException("ObjectMapper 오류"))
+            .given(objectMapper).writeValueAsString(any());
+
+        // when
+        notificationService.sendBatchSseNotifications(notifications);
+
+        // then
+        then(objectMapper).should(atLeastOnce()).writeValueAsString(any());
+        then(sseService).should(never()).sendNotification(any(UUID.class), anyString());
+    }
+
+    @Test
+    void sendBatchSseNotifications_SseService_예외() throws Exception {
+        // given
+        UUID user1Id = UUID.randomUUID();
+        User user1 = newUserWith("user1@test.com", user1Id);
+
+        Notification notification1 = newNotification(user1, Instant.now(), UUID.randomUUID(), "알림1");
+        List<Notification> notifications = List.of(notification1);
+
+        given(objectMapper.writeValueAsString(any())).willReturn("{}");
+        willThrow(new RuntimeException("SSE 서비스 오류"))
+            .given(sseService).sendNotification(any(UUID.class), anyString());
+
+        // when
+        notificationService.sendBatchSseNotifications(notifications);
+
+        // then
+        then(objectMapper).should(atLeastOnce()).writeValueAsString(any());
+        then(sseService).should(atLeastOnce()).sendNotification(any(UUID.class), anyString());
+    }
+
+    @Test
+    void sendBatchSseNotifications_빈_리스트() throws Exception {
+        // given
+        List<Notification> notifications = List.of();
+
+        // when
+        notificationService.sendBatchSseNotifications(notifications);
+
+        // then
+        then(objectMapper).shouldHaveNoInteractions();
+        then(sseService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void 사용자의_모든_알림_삭제() {
+        // given
+        UUID userId = UUID.randomUUID();
+
+        // when
+        notificationService.deleteAllByUserId(userId);
+
+        // then
+        then(notificationRepository).should().deleteAllByUserId(userId);
+        then(sseService).should().clearBacklog(userId);
+    }
+
+    @Test
+    void 사용자의_모든_알림_삭제_SSE_백로그_정리_실패() {
+        // given
+        UUID userId = UUID.randomUUID();
+        willThrow(new RuntimeException("SSE 백로그 정리 실패"))
+            .given(sseService).clearBacklog(userId);
+
+        // when
+        assertDoesNotThrow(() -> notificationService.deleteAllByUserId(userId));
+
+        // then
+        then(notificationRepository).should().deleteAllByUserId(userId);
+        then(sseService).should().clearBacklog(userId);
+    }
+
+    @Test
+    void 이미_삭제된_알림_삭제_시도() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID notificationId = UUID.randomUUID();
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.empty()); // 이미 삭제된 알림
+
+        // when
+        assertDoesNotThrow(() -> notificationService.delete(notificationId));
+
+        // then
+        then(notificationRepository).should().findById(notificationId);
+        then(notificationRepository).should(never()).delete(any(Notification.class));
+        then(sseService).should().removeNotificationFromBacklog(myId, notificationId);
+    }
+
+    @Test
+    void 이미_삭제된_알림_삭제_시도_SSE_백로그_정리_실패() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID notificationId = UUID.randomUUID();
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.empty()); // 이미 삭제된 알림
+
+        willThrow(new RuntimeException("SSE 백로그 정리 실패"))
+            .given(sseService).removeNotificationFromBacklog(myId, notificationId);
+
+        // when
+        assertDoesNotThrow(() -> notificationService.delete(notificationId));
+
+        // then
+        then(notificationRepository).should().findById(notificationId);
+        then(notificationRepository).should(never()).delete(any(Notification.class));
+        then(sseService).should().removeNotificationFromBacklog(myId, notificationId);
+    }
+
+    @Test
+    void 알림_삭제_시_SSE_백로그에서도_제거() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID notificationId = UUID.randomUUID();
+        Notification mine = newNotification(me, Instant.now(), notificationId, "내 알림");
+
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.of(mine));
+
+        // when
+        assertDoesNotThrow(() -> notificationService.delete(notificationId));
+
+        // then
+        then(notificationRepository).should().delete(same(mine));
+        then(sseService).should().removeNotificationFromBacklog(myId, notificationId);
+    }
+
+    @Test
+    void 알림_삭제_시_SSE_백로그_정리_실패해도_DB_삭제는_성공() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID notificationId = UUID.randomUUID();
+        Notification mine = newNotification(me, Instant.now(), notificationId, "내 알림");
+
+        given(notificationRepository.findById(notificationId))
+            .willReturn(Optional.of(mine));
+
+        willThrow(new RuntimeException("SSE 백로그 정리 실패"))
+            .given(sseService).removeNotificationFromBacklog(myId, notificationId);
+
+        // when
+        assertDoesNotThrow(() -> notificationService.delete(notificationId));
+
+        then(notificationRepository).should().delete(same(mine));
+        then(sseService).should().removeNotificationFromBacklog(myId, notificationId);
+    }
+
+    @Test
+    void 알림_저장_정상적인_경우() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID receiverId = UUID.randomUUID();
+        User receiver = newUserWith("receiver@test.com", receiverId);
+        String title = "테스트 알림";
+        String content = "알림 저장 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        given(userRepository.findById(receiverId)).willReturn(Optional.of(receiver));
+        given(notificationRepository.save(any(Notification.class))).willAnswer(invocation -> {
+            Notification notification = invocation.getArgument(0);
+            // Notification은 @Getter만 있으므로 ID 설정 불가, 그대로 반환
+            return notification;
+        });
+
+        // when
+        Notification result = notificationService.save(receiverId, title, content, level);
+
+        // then
+        assertNotNull(result);
+        assertEquals(title, result.getTitle());
+        assertEquals(content, result.getContent());
+        assertEquals(level, result.getLevel());
+        assertEquals(receiverId, result.getReceiver().getId());
+
+        then(userRepository).should().findById(receiverId);
+        then(notificationRepository).should().save(any(Notification.class));
+    }
+
+    @Test
+    void 알림_저장_존재하지_않는_사용자() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        UUID receiverId = UUID.randomUUID();
+        String title = "테스트 알림";
+        String content = "알림 저장 테스트";
+        NotificationLevel level = NotificationLevel.INFO;
+
+        given(userRepository.findById(receiverId)).willReturn(Optional.empty());
+
+        // when n then
+        assertThrows(OtbooException.class, () -> 
+            notificationService.save(receiverId, title, content, level));
+        then(userRepository).should().findById(receiverId);
+        then(notificationRepository).should(never()).save(any());
+    }
+
+    @Test
+    void 알림_목록_조회_정상적인_경우() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        NotificationRequest request = new NotificationRequest(null, null, 10);
+        
+        Notification notification1 = newNotification(me, Instant.now(), UUID.randomUUID(), "첫 번째 알림");
+        Notification notification2 = newNotification(me, Instant.now(), UUID.randomUUID(), "두 번째 알림");
+
+        List<Notification> notifications = List.of(notification1, notification2);
+
+        given(notificationRepository.findLatest(myId, PageRequest.of(0, 11)))
+            .willReturn(notifications);
+        given(notificationRepository.countByReceiver_Id(myId))
+            .willReturn(2L);
+
+        // when
+        NotificationListResponse result = notificationService.getNotifications(request);
+
+        // then
+        assertNotNull(result);
+        assertEquals(2, result.data().size());
+        assertEquals(2L, result.totalCount());
+
+        then(notificationRepository).should().findLatest(myId, PageRequest.of(0, 11));
+        then(notificationRepository).should().countByReceiver_Id(myId);
+    }
+
+    @Test
+    void 알림_목록_조회_빈_결과() {
+        // given
+        String email = UserFixture.VALID_EMAIL;
+        UUID myId = UUID.randomUUID();
+        User me = newUserWith(email, myId);
+        mockAuthUser(me);
+
+        NotificationRequest request = new NotificationRequest(null, null, 10);
+        
+        given(notificationRepository.findLatest(myId, PageRequest.of(0, 11)))
+            .willReturn(List.of());
+        given(notificationRepository.countByReceiver_Id(myId))
+            .willReturn(0L);
+
+        // when
+        NotificationListResponse result = notificationService.getNotifications(request);
+
+        // then
+        assertNotNull(result);
+        assertTrue(result.data().isEmpty());
+        assertEquals(0L, result.totalCount());
+    }
+
+    @Test
+    void 사용자의_모든_알림_삭제_SSE_백로그_정리_실패해도_DB_삭제는_성공() {
+        // given
+        UUID userId = UUID.randomUUID();
+        willThrow(new RuntimeException("SSE 백로그 정리 실패"))
+            .given(sseService).clearBacklog(userId);
+
+        // when n then
+        assertDoesNotThrow(() -> notificationService.deleteAllByUserId(userId));
+        
+        then(notificationRepository).should().deleteAllByUserId(userId);
+        then(sseService).should().clearBacklog(userId);
+    }
+}

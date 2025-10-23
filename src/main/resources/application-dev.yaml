@@ -1,39 +1,78 @@
 spring:
-  # 개발환경에서 보안 자동설정 비활성화
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
-      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+  config:
+    activate:
+      on-profile: dev
+    # .env 파일을 속성 소스로 추가
+    import: optional:file:.env[.properties]
+
+  # PostgreSQL 데이터베이스 초기화
   sql:
     init:
       mode: always
+      schema-locations: classpath:schema.sql
+      continue-on-error: true
   devtools:
     restart:
       additional-exclude: "**/mapper/**/*MapperImpl.class"
       log-condition-evaluation-delta: true
 
-  # DB 접속 정보
+  # Batch 설정
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: true
+
+  # PostgreSQL DB 접속 정보
   datasource:
-    url: jdbc:postgresql://postgres:5432/otboo
+    url: jdbc:postgresql://${POSTGRES_HOST:postgres}:${POSTGRES_PORT:5432}/${POSTGRES_DB:otboo}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
-  # JPA 설정
+  # JPA 설정 (PostgreSQL용)
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none  # schema.sql로 테이블 생성하므로 none
     properties:
       hibernate:
         show_sql: true
         default_batch_fetch_size: 100
         format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  elasticsearch:
+    health-timeout-ms: 10000
+    uris: elasticsearch:9200
 
-  # Batch 설정
-  batch:
-    jdbc:
-      initialize-schema: always
+  data:
+    redis:
+      host: redis
+      port: 6379
+      ssl:
+        enabled: false
+      password: ${REDIS_PASSWORD:}
+      repositories:
+        enabled: false  # 개발 단계 Redis Repository 비활성화
+
+  # Kafka 설정 (환경 변수로 제어)
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:}
+    consumer:
+      group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:otboo-sse-group}
+      auto-offset-reset: latest
+      enable-auto-commit: true
+      auto-commit-interval-ms: 1000
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 5
+      buffer-memory: 33554432
 
 management:
   endpoints:
@@ -46,5 +85,43 @@ management:
       show-details: always
       show-components: always
 
+otboo:
+  storage:
+    type: ${STORAGE_TYPE:local}
+    #    local:
+    #      root-path: ${STORAGE_LOCAL_ROOT_PATH:.otboo/storage}
+    s3:
+      access-key: ${AWS_S3_ACCESS_KEY}
+      secret-key: ${AWS_S3_SECRET_KEY}
+      region: ${AWS_S3_REGION}
+      bucket: ${AWS_S3_BUCKET}
+  
+  # JWT 설정
+  jwt:
+    secret: ${JWT_SECRET:otboo-jwt-secret-key-for-development-only-change-in-production}
+    access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600000}  # 1시간 (밀리초)
+    refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}  # 7일 (밀리초)
+    issuer: ${JWT_ISSUER:otboo}
+
+  # 보안 설정
+  security:
+    cookie:
+      secure: false  # 개발환경에서는 false
+      same-site: Lax  # 개발환경에서는 Lax
+  
+  # CORS 설정
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:8080,http://127.0.0.1:5173}
+
+logging:
+  level:
+    org.hibernate.sql: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.samsamotot.otboo: DEBUG
+
+websocket:
+  allowed-origins: http://localhost:3000,http://localhost:8080
+
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+

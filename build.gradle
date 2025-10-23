@@ -1,8 +1,11 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.5'
-	id 'io.spring.dependency-management' version '1.1.7'
-	id 'jacoco'
+    id 'java'
+    id 'org.springframework.boot' version '3.5.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+}
+ext {
+    springAiVersion = "1.0.3"
 }
 
 group = 'com.samsamotot.otboo'
@@ -10,148 +13,188 @@ version = '0.0.1-SNAPSHOT'
 description = 'Codeit Spring Backend final project-Otboo'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	// Spring Boot Core
-	implementation 'org.springframework.boot:spring-boot-starter-actuator' // 모니터링 및 관리
-	implementation 'org.springframework.boot:spring-boot-starter-batch' // 배치 처리
-	implementation 'org.springframework.boot:spring-boot-starter-cache' // 캐싱
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa' // JPA 데이터베이스
-	implementation 'org.springframework.boot:spring-boot-starter-data-redis' // Redis 데이터베이스
-	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' // OAuth2 클라이언트
-	implementation 'org.springframework.boot:spring-boot-starter-security' // 보안
-	implementation 'org.springframework.security:spring-security-messaging' // WebSocket 보안
-	implementation 'org.springframework.boot:spring-boot-starter-validation' // 데이터 검증
-	implementation 'org.springframework.boot:spring-boot-starter-web' // 웹 MVC
-	implementation 'org.springframework.boot:spring-boot-starter-websocket' // 웹소켓
-	implementation 'org.springframework.kafka:spring-kafka' // Kafka 메시지 처리
+    // Spring Boot Core
+    implementation 'org.springframework.boot:spring-boot-starter-actuator' // 모니터링 및 관리
+    implementation 'org.springframework.boot:spring-boot-starter-batch' // 배치 처리
+    implementation 'org.springframework.boot:spring-boot-starter-cache' // 캐싱
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa' // JPA 데이터베이스
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis' // Redis 데이터베이스
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' // OAuth2 클라이언트
+    implementation 'org.springframework.boot:spring-boot-starter-security' // 보안
+    implementation 'org.springframework.boot:spring-boot-starter-validation' // 데이터 검증
+    implementation 'org.springframework.boot:spring-boot-starter-web' // 웹 MVC
+    implementation 'org.springframework.boot:spring-boot-starter-websocket' // 웹소켓
+
+    implementation 'org.apache.kafka:kafka-clients'
+    implementation 'org.springframework.kafka:spring-kafka' // Kafka 메시지 처리
+
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+    implementation 'org.jsoup:jsoup:1.18.1'
+    implementation "com.squareup.okhttp3:okhttp:5.2.1"
+
     runtimeOnly  "io.micrometer:micrometer-registry-prometheus"
-	
-	// JWT
+
+    // JWT
     implementation 'com.nimbusds:nimbus-jose-jwt:10.3' // JWT 토큰 처리
-    
+
     // Lombok
     compileOnly 'org.projectlombok:lombok' // 코드 생성
     annotationProcessor 'org.projectlombok:lombok' // Lombok 어노테이션 처리
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 
-	// MapStruct
+    // MapStruct
     implementation 'org.mapstruct:mapstruct:1.6.3' // 객체 매핑
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3' // MapStruct 어노테이션 처리
-	
-	// Swagger UI
+
+    // MapStruct와 Lombok 연동
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+    // Swagger UI
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4' // API 문서화
-	// AWS S3
+    // AWS S3
     implementation 'software.amazon.awssdk:s3:2.31.7' // AWS S3 파일 저장소
-	// .env 파일 지원
-	implementation 'io.github.cdimascio:dotenv-java:3.0.0' // 환경변수 파일 로드
-	
-	// QueryDSL
+    // .env 파일 지원
+    implementation 'io.github.cdimascio:dotenv-java:3.0.0' // 환경변수 파일 로드
+
+    // QueryDSL
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'// QueryDSL JPA
     annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jakarta"// QueryDSL 어노테이션 처리
     annotationProcessor "jakarta.persistence:jakarta.persistence-api:3.1.0"// Jakarta JPA
     annotationProcessor 'jakarta.annotation:jakarta.annotation-api:2.1.1'// Jakarta 어노테이션
-    
-	// Development
-	developmentOnly 'org.springframework.boot:spring-boot-devtools' // 개발 도구
-	// Database
-	runtimeOnly 'com.h2database:h2' // H2 인메모리 데이터베이스
-	runtimeOnly 'org.postgresql:postgresql' // PostgreSQL 데이터베이스
-	// Testing
-	testImplementation 'org.springframework.boot:spring-boot-starter-test' // Spring Boot 테스트
-	testImplementation 'org.springframework.batch:spring-batch-test' // 배치 테스트
-	testImplementation 'org.springframework.kafka:spring-kafka-test' // Kafka 테스트
-	testImplementation 'org.springframework.security:spring-security-test' // 보안 테스트
-	
-	// TestContainer
-	testImplementation 'org.testcontainers:junit-jupiter:1.19.3' // 컨테이너 기반 테스트
-	testImplementation 'org.testcontainers:postgresql:1.19.3' // PostgreSQL 컨테이너 테스트
-	
-	// Mockito
+
+    // Development
+    developmentOnly 'org.springframework.boot:spring-boot-devtools' // 개발 도구
+    // Database
+    runtimeOnly 'com.h2database:h2' // H2 인메모리 데이터베이스
+    runtimeOnly 'org.postgresql:postgresql' // PostgreSQL 데이터베이스
+    implementation 'com.vladmihalcea:hibernate-types-60:2.21.1' // JSONB 매핑
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test' // Spring Boot 테스트
+    testImplementation 'org.springframework.batch:spring-batch-test' // 배치 테스트
+    testImplementation 'org.springframework.kafka:spring-kafka-test' // Kafka 테스트
+    testImplementation 'org.springframework.security:spring-security-test' // 보안 테스트
+
+    // TestContainer
+    testImplementation 'org.testcontainers:junit-jupiter' // 컨테이너 기반 테스트
+    testImplementation 'org.testcontainers:postgresql' // PostgreSQL 컨테이너 테스트
+    testImplementation "org.testcontainers:elasticsearch" // Elasticsearch 컨테이너 테스트
+
+    // Mockito
     testImplementation 'org.mockito:mockito-core' // 모킹 프레임워크
     testImplementation 'org.mockito:mockito-junit-jupiter' // JUnit 5 통합
-	
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // JUnit 플랫폼 런처
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // JUnit 플랫폼 런처
+
+    // WebClient
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // Mail
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // Direct Message
+    implementation "org.springframework.security:spring-security-messaging"
+
+    // Elasticsearch
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+
+    // OpenAI Chat
+    implementation "org.springframework.ai:spring-ai-starter-model-openai"
 }
 
 // QueryDSL 설정
-def querydslDir = "$buildDir/generated/querydsl"
+def querydslDir = layout.buildDirectory.dir("generated/querydsl").get().asFile
 
 sourceSets {
-    main.java.srcDirs += [querydslDir]
+    main.java.srcDirs += [ querydslDir ]
 }
 
-tasks.withType(JavaCompile) {
-    options.annotationProcessorGeneratedSourcesDirectory = file(querydslDir)
+tasks.withType(JavaCompile).configureEach {
+    options.generatedSourceOutputDirectory.set(querydslDir)
 }
 
-clean {
-    delete file(querydslDir)
+clean.doLast {
+    file(querydslDir).deleteDir()
 }
 
 // 테스트 설정
 tasks.named('test') {
-	useJUnitPlatform()
-	finalizedBy jacocoTestReport // 테스트 후 JaCoCo 리포트 생성
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport // 테스트 후 JaCoCo 리포트 생성
+    systemProperty 'spring.profiles.active', 'test' // 테스트 실행 시 프로필을 test로 강제
 }
 
 // JaCoCo 코드 커버리지 리포트 설정
 jacocoTestReport {
-	dependsOn test
-	reports {
-		xml.required = true // XML 리포트 생성
-		html.required = true // HTML 리포트 생성
-	}
-	
-	// 특정 패키지/클래스만 커버리지 측정
-	afterEvaluate {
-		classDirectories.setFrom(files(classDirectories.files.collect {
-			fileTree(dir: it, exclude: [
-				'**/config/**',           // 설정 클래스 제외
-				'**/dto/**',              // DTO 클래스 제외
-				'**/entity/**',           // Entity 클래스 제외
-				'**/exception/**',        // 예외 클래스 제외
-				'**/util/**',             // 유틸리티 클래스 제외
-				'**/OtbooApplication.class', // 메인 애플리케이션 클래스 제외
-				'**/OtbooApplicationTests.class' // 테스트 클래스 제외
-			])
-		}))
-	}
+    dependsOn test
+    reports {
+        xml.required = true // XML 리포트 생성
+        html.required = true // HTML 리포트 생성
+    }
+
+    // 특정 패키지/클래스만 커버리지 측정
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, include: [
+                    '**/common/storage/**',
+                    '**/service/**',          // Service 레이어만 포함
+                    '**/repository/**',       // Repository 레이어만 포함
+                    '**/controller/**'        // Controller 레이어만 포함
+            ])
+        }))
+    }
 }
 
 // JaCoCo 코드 커버리지 검증 설정
 jacocoTestCoverageVerification {
-	dependsOn jacocoTestReport
-	
-	// 특정 패키지/클래스만 커버리지 검증
-	afterEvaluate {
-		classDirectories.setFrom(files(classDirectories.files.collect {
-			fileTree(dir: it, include: [
-				'**/service/**',          // Service 레이어만 포함
-				'**/repository/**',       // Repository 레이어만 포함
-				'**/controller/**'        // Controller 레이어만 포함
-			])
-		}))
-	}
-	
-	violationRules {
-		rule {
-			limit {
-				minimum = 0.80 // 최소 80% 커버리지 요구
-			}
-		}
-	}
+    dependsOn jacocoTestReport
+
+    // 특정 패키지/클래스만 커버리지 검증
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, include: [
+                    '**/common/storage/**',
+                    '**/service/**',          // Service 레이어만 포함
+                    '**/repository/**',       // Repository 레이어만 포함
+                    '**/controller/**'        // Controller 레이어만 포함
+            ])
+        }))
+    }
+
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.80 // 최소 80% 커버리지 요구
+            }
+        }
+    }
+}
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
+        mavenBom "org.testcontainers:testcontainers-bom:1.21.3"
+    }
+}
+
+// 테스트 소스 컴파일 시 경고를 자세히 보기 위해 추가
+//  -Xlint:unchecked   : 제네릭 미지정/Raw 타입 등 'unchecked' 경고 상세 출력
+//  -Xlint:deprecation : 사용 중단(Deprecated) API 사용 경고 출력
+tasks.named('compileTestJava', JavaCompile).configure {
+    options.compilerArgs += ['-Xlint:unchecked','-Xlint:deprecation']
 }

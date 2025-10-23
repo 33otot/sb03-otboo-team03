@@ -1,8 +1,9 @@
 package com.samsamotot.otboo.common.exception;
 
+import org.springframework.http.HttpStatus;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
@@ -13,14 +14,14 @@ public enum ErrorCode {
     INVALID_TYPE_VALUE(HttpStatus.BAD_REQUEST, "E003", "잘못된 타입의 값입니다."),
     HANDLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "E004", "접근이 거부되었습니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "E005", "인증이 필요합니다."),
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "E006", "요청이 올바르지 않습니다"),
 
     // 사용자 관련 에러
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "US001", "사용자를 찾을 수 없습니다."),
-    USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "US002", "이미 존재하는 사용자입니다."),
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "US002", "이미 사용 중인 이메일입니다."),
     INVALID_EMAIL_FORMAT(HttpStatus.BAD_REQUEST, "US003", "올바르지 않은 이메일 형식입니다."),
-    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "US004", "비밀번호가 올바르지 않습니다."),
-    PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "US005", "비밀번호가 일치하지 않습니다."),
-    USER_LOCKED(HttpStatus.LOCKED, "US006", "계정이 잠겨있습니다."),
+    EMAIL_OR_PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, "US004", "이메일 혹은 비밀번호가 일치하지 않습니다."),
+    USER_LOCKED(HttpStatus.LOCKED, "US005", "계정을 이용할 수 없습니다."),
 
     // 인증 관련 에러
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "AU001", "토큰이 만료되었습니다."),
@@ -29,7 +30,7 @@ public enum ErrorCode {
     CSRF_TOKEN_MISSING(HttpStatus.FORBIDDEN, "AU004", "CSRF 토큰이 누락되었습니다."),
 
     // 프로필 관련 에러
-    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "PR001", "프로필을 찾을 수 없습니다."),
+    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "PR001", "유저 프로필을 찾을 수 없습니다."),
     INVALID_BIRTH_DATE(HttpStatus.BAD_REQUEST, "PR002", "올바르지 않은 생년월일입니다."),
     INVALID_TEMPERATURE_SENSITIVITY(HttpStatus.BAD_REQUEST, "PR003", "온도 민감도는 1-5 사이의 값이어야 합니다."),
 
@@ -37,18 +38,34 @@ public enum ErrorCode {
     CLOTHES_NOT_FOUND(HttpStatus.NOT_FOUND, "CL001", "의상을 찾을 수 없습니다."),
     INVALID_CLOTHES_TYPE(HttpStatus.BAD_REQUEST, "CL002", "올바르지 않은 의상 타입입니다."),
     CLOTHES_ATTRIBUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "CL003", "의상 속성을 찾을 수 없습니다."),
-    INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "CL004", "올바르지 않은 이미지 형식입니다."),
-    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CL005", "이미지 업로드에 실패했습니다."),
+    CLOTHES_OWNER_MISMATCH(HttpStatus.FORBIDDEN, "CL004", "해당 의상의 소유자가 아닙니다."),
+
+    CLOTHES_ATTRIBUTE_DEF_NOT_FOUND(HttpStatus.NOT_FOUND, "CL005", "의상 속성 정의를 찾을 수 없습니다."),
+    CLOTHES_ATTRIBUTE_DEF_ALREADY_EXISTS(HttpStatus.CONFLICT, "CL006", "이미 존재하는 의상 속성 정의입니다."),
+
+    INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "CL007", "올바르지 않은 이미지 형식입니다."),
+    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CL008", "이미지 업로드에 실패했습니다."),
+
+    CLOTHES_EXTRACTION_FAILED(HttpStatus.BAD_REQUEST, "CL009", "지원하지 않는 사이트입니다."),
 
     // 피드 관련 에러
     FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "FD001", "피드를 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "FD002", "댓글을 찾을 수 없습니다."),
+    FORBIDDEN_FEED_MODIFICATION(HttpStatus.FORBIDDEN, "FD003", "본인이 작성한 피드만 수정할 수 있습니다."),
+    FORBIDDEN_FEED_DELETION(HttpStatus.FORBIDDEN, "FD004", "본인이 작성한 피드만 삭제할 수 있습니다."),
+
+    // 피드 좋아요 관련 에러
+    FEED_ALREADY_LIKED(HttpStatus.CONFLICT, "FDL001", "이미 좋아요를 누른 피드입니다."),
+    FEED_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "FDL002", "피드 좋아요를 찾을 수 없습니다."),
 
     // 팔로우 관련 에러
     FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "FO001", "팔로우 관계를 찾을 수 없습니다."),
+    INVALID_FOLLOW_REQUEST(HttpStatus.BAD_REQUEST, "FO002", "팔로우 관계를 생성할 수 없습니다."),
+
 
     // 다이렉트 메시지 관련 에러
     DM_NOT_FOUND(HttpStatus.NOT_FOUND, "DM001", "메시지를 찾을 수 없습니다."),
+    INVALID_REQUEST_PARAMETER(HttpStatus.BAD_REQUEST, "DM002", "잘못된 커서 요청입니다."),
 
     // 알림 관련 에러
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NO001", "알림을 찾을 수 없습니다."),
@@ -57,13 +74,38 @@ public enum ErrorCode {
     WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "WE001", "날씨 정보를 찾을 수 없습니다."),
     WEATHER_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "WE002", "날씨 API 호출에 실패했습니다."),
     INVALID_LOCATION(HttpStatus.BAD_REQUEST, "WE003", "올바르지 않은 위치 정보입니다."),
+    API_RETRY_FAILURE(HttpStatus.GATEWAY_TIMEOUT, "WE004", "API 서버에서 데이터를 반환하지 않습니다"),
+
+    // 위치 정보 관련 에러
+    NOT_FOUND_GRID(HttpStatus.NOT_FOUND, "LO001", "격자 좌표를 찾을 수 없습니다."),
+    NOT_FOUND_LOCATION(HttpStatus.NOT_FOUND, "LO002", "위치 정보를 찾을 수 없습니다."),
+
+    // KAKAO API 관련 에러
+    NO_KAKAO_KEY(HttpStatus.INTERNAL_SERVER_ERROR, "KA001", "KAKAO API 키가 설정되지 않았습니다."),
+    API_NO_RESPONSE(HttpStatus.GATEWAY_TIMEOUT, "KA002", "KAKAO API 응답이 없습니다."),
+    API_CALL_ERROR(HttpStatus.BAD_GATEWAY, "KA003", "KAKAO API 호출을 실패했습니다."),
 
     // 관리자 관련 에러
     ADMIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "AD001", "관리자 권한이 필요합니다."),
-    USER_ROLE_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "AD002", "사용자 권한 업데이트에 실패했습니다.");
+    USER_ROLE_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "AD002", "사용자 권한 업데이트에 실패했습니다."),
+
+    // 이메일 관련 에러
+    EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EM001", "이메일 발송에 실패했습니다."),
+
+    // 커서 기반 페이지네이션 관련 에러
+    INVALID_CURSOR_FORMAT(HttpStatus.BAD_REQUEST, "P001", "잘못된 커서 형식입니다."),
+    INVALID_SORT_FIELD(HttpStatus.BAD_REQUEST,"P002", "지원하지 않는 정렬 필드입니다."),
+    INVALID_SORT_DIRECTION(HttpStatus.BAD_REQUEST,"P003", "지원하지 않는 정렬 방향입니다."),
+
+    // OAuth2 관련 에러
+    INVALID_OAUTH2_PROVIDER(HttpStatus.BAD_REQUEST, "OA001", "지원하지 않는 OAuth2 제공자입니다."),
+    OAUTH2_AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "OA002", "OAuth2 인증에 실패했습니다."),
+    OAUTH2_USER_INFO_NOT_FOUND(HttpStatus.UNAUTHORIZED, "OA003", "OAuth2 사용자 정보를 찾을 수 없습니다."),
+    OAUTH2_EMAIL_NOT_FOUND(HttpStatus.BAD_REQUEST, "OA004", "OAuth2 제공자에서 이메일을 찾을 수 없습니다."),
+    INVALID_OAUTH2_USER_INFO(HttpStatus.BAD_REQUEST, "OA005", "OAuth2 사용자 정보가 올바르지 않습니다."),
+    OAUTH2_EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "OA006", "OAuth2 제공자에서 이메일이 인증되지 않았습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;
-
 }

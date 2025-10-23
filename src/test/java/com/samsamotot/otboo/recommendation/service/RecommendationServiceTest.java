@@ -1,0 +1,443 @@
+package com.samsamotot.otboo.recommendation.service;
+
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import com.samsamotot.otboo.clothes.dto.OotdDto;
+import com.samsamotot.otboo.clothes.entity.Clothes;
+import com.samsamotot.otboo.clothes.entity.ClothesType;
+import com.samsamotot.otboo.clothes.repository.ClothesRepository;
+import com.samsamotot.otboo.common.exception.ErrorCode;
+import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.ClothesFixture;
+import com.samsamotot.otboo.common.fixture.GridFixture;
+import com.samsamotot.otboo.common.fixture.ProfileFixture;
+import com.samsamotot.otboo.common.fixture.UserFixture;
+import com.samsamotot.otboo.common.fixture.WeatherFixture;
+import com.samsamotot.otboo.profile.entity.Profile;
+import com.samsamotot.otboo.profile.repository.ProfileRepository;
+import com.samsamotot.otboo.recommendation.dto.RecommendationContextDto;
+import com.samsamotot.otboo.recommendation.dto.RecommendationDto;
+import com.samsamotot.otboo.recommendation.dto.RecommendationResult;
+import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.weather.entity.Grid;
+import com.samsamotot.otboo.weather.entity.Weather;
+import com.samsamotot.otboo.weather.repository.WeatherRepository;
+import java.time.Month;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.test.util.ReflectionTestUtils;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Recommendation 서비스 단위 테스트")
+public class RecommendationServiceTest {
+
+    @Mock
+    private ProfileRepository profileRepository;
+
+    @Mock
+    private WeatherRepository weatherRepository;
+
+    @Mock
+    private ClothesRepository clothesRepository;
+
+    @Mock
+    private ItemSelectorEngine itemSelectorEngine;
+
+    @Mock
+    private OpenAIEngine openAiEngine;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
+
+    @Mock
+    private HashOperations<String, Object, Object> hashOperations;
+
+    @InjectMocks
+    private RecommendationServiceImpl recommendationService;
+
+    User mockUser;
+    Profile mockProfile;
+    Weather mockWeather;
+    List<Clothes> mockClothesList;
+
+    @BeforeEach
+    void setUp() {
+
+        // Redis ValueOperations,HashOperations 모킹 설정 (테스트마다 필요하지 않을 수 있어 lenient 사용)
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.opsForHash()).thenReturn(hashOperations);
+
+        mockUser = UserFixture.createUser();
+        ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
+        mockProfile = ProfileFixture.createProfile(mockUser);
+        ReflectionTestUtils.setField(mockProfile, "id", UUID.randomUUID());
+
+        Grid grid = GridFixture.createGrid();
+        mockWeather = WeatherFixture.createWeather(grid);
+        ReflectionTestUtils.setField(mockWeather, "id", UUID.randomUUID());
+
+        Clothes clothes = ClothesFixture.createClothes();
+        ReflectionTestUtils.setField(clothes, "id", UUID.randomUUID());
+        mockClothesList = List.of(clothes);
+
+        lenient().when(itemSelectorEngine.createRecommendation(
+            anyList(),
+            any(RecommendationContextDto.class),
+            anyLong(),
+            anyMap()
+        )).thenReturn(new RecommendationResult(List.of(), true));
+    }
+
+    @Test
+    void 온도_민감도가_낮은_사용자는_체감온도를_더_낮게_보정한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+        double sensitivity = 1.0;
+        Profile profile = ProfileFixture.createProfile(mockUser, sensitivity);
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(profile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+
+        ArgumentCaptor<RecommendationContextDto> captor = ArgumentCaptor.forClass(RecommendationContextDto.class);
+
+        // 보정 전 기본 체감 온도
+        double baseApparentTemp = RecommendationServiceImpl.calculateFeelsLike(
+            mockWeather.getTemperatureCurrent(),
+            mockWeather.getWindSpeed(),
+            mockWeather.getHumidityCurrent()
+        );
+
+        // when
+        recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        verify(itemSelectorEngine).createRecommendation(any(), captor.capture(), anyLong(), any());
+
+        RecommendationContextDto capturedContext = captor.getValue();
+        assertThat(capturedContext.adjustedTemperature()).isLessThan(baseApparentTemp);
+    }
+
+    @Test
+    void 온도_민감도가_높은_사용자는_체감온도를_더_높게_보정한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+        double sensitivity = 5.0;
+        Profile profile = ProfileFixture.createProfile(mockUser, sensitivity);
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(profile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+
+        ArgumentCaptor<RecommendationContextDto> captor = ArgumentCaptor.forClass(RecommendationContextDto.class);
+
+        // 보정 전 기본 체감 온도
+        double baseApparentTemp = RecommendationServiceImpl.calculateFeelsLike(
+            mockWeather.getTemperatureCurrent(),
+            mockWeather.getWindSpeed(),
+            mockWeather.getHumidityCurrent()
+        );
+
+        // when
+        recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        verify(itemSelectorEngine).createRecommendation(any(), captor.capture(), anyLong(), any());
+
+        RecommendationContextDto capturedContext = captor.getValue();
+        assertThat(capturedContext.adjustedTemperature()).isGreaterThan(baseApparentTemp);
+    }
+
+    @Test
+    void Redis에서_roll_카운터와_cooldown_ID를_정상적으로_조회한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+        String rollCountKey = "rollCounter:" + userId;
+        String cooldownKey = "cooldownIdMap:" + userId;
+        Object cooldownField = ClothesType.TOP;
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+        given(valueOperations.get(rollCountKey)).willReturn(5L);
+        given(hashOperations.entries(cooldownKey)).willReturn(Map.of(cooldownField, UUID.randomUUID().toString()));
+
+        // when
+        recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        verify(valueOperations, times(1)).get(rollCountKey);
+        verify(hashOperations, times(1)).entries(cooldownKey);
+    }
+
+    @Test
+    void Redis에서_조회한_상태값을_ItemSelectorEngine에_올바르게_전달한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+        UUID randomClothesId = UUID.randomUUID();
+        String rollCountKey = "rollCounter:" + userId;
+        String cooldownKey = "cooldownIdMap:" + userId;
+        Object cooldownField = ClothesType.TOP;
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+        given(valueOperations.get(rollCountKey)).willReturn(5L);
+        given(hashOperations.entries(cooldownKey)).willReturn(Map.of(cooldownField, randomClothesId.toString()));
+
+        ArgumentCaptor<Long> rollCountCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Map> cooldownCaptor = ArgumentCaptor.forClass(Map.class);
+
+        // when
+        recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        // 엔진 호출 시 파라미터를 캡처
+        verify(itemSelectorEngine).createRecommendation(any(), any(), rollCountCaptor.capture(), cooldownCaptor.capture());
+        // 캡처된 파라미터가 Redis에서 조회한 값과 일치하는지 검증
+        assertThat(rollCountCaptor.getValue()).isEqualTo(5L);
+        assertThat(cooldownCaptor.getValue()).containsEntry(ClothesType.TOP, randomClothesId);
+    }
+
+    @Test
+    void Redis에_상태값이_없을경우_기본값으로_엔진을_호출한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+        given(valueOperations.get(any())).willReturn(null); // Redis에서 null 반환
+
+        ArgumentCaptor<Long> rollCountCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Map> cooldownCaptor = ArgumentCaptor.forClass(Map.class);
+
+        // when
+        recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        verify(itemSelectorEngine).createRecommendation(any(), any(), rollCountCaptor.capture(), cooldownCaptor.capture());
+        // rollCount는 0L, cooldownIds는 비어있는 상태로 호출되어야 함
+        assertThat(rollCountCaptor.getValue()).isEqualTo(0L);
+        assertThat(cooldownCaptor.getValue()).isEmpty();
+    }
+
+    @Test
+    void 추천이유가_정상적으로_반환된다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+
+        List<OotdDto> clothes = List.of(
+            OotdDto.builder()
+                .clothesId(UUID.randomUUID())
+                .type(ClothesType.TOP)
+                .name("테스트 상의")
+                .build()
+        );
+        RecommendationResult rr = new RecommendationResult(clothes, false);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
+
+        String expectedReason = "추천 이유 테스트 문구";
+        given(openAiEngine.generateRecommendationReason(
+            any(Double.class), any(Boolean.class), any(Month.class), any(Double.class), any(Double.class), any(List.class)
+        )).willReturn(expectedReason);
+
+        // when
+        RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        assertThat(result.reason()).isEqualTo(expectedReason);
+        verify(openAiEngine, times(1)).generateRecommendationReason(
+            any(Double.class), any(Boolean.class), any(Month.class), any(Double.class), any(Double.class), any(List.class)
+        );
+    }
+
+    @Test
+    void ItemSelectorEngine이_반환한_결과를_받아_새로운_상태를_Redis에_저장한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+        UUID randomClothesId = UUID.randomUUID();
+        String rollCountKey = "rollCounter:" + userId;
+        String cooldownKey = "cooldownIdMap:" + userId;
+        Object cooldownField = ClothesType.TOP;
+
+        OotdDto topDto = OotdDto.builder()
+                .clothesId(UUID.randomUUID())
+                .type(ClothesType.TOP)
+                .name("테스트 상의")
+                .build();
+
+        List<OotdDto> clothes = List.of(topDto);
+        RecommendationResult rr = new RecommendationResult(clothes, false);
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
+
+        doAnswer(invocation -> {
+            RedisCallback<?> callback = invocation.getArgument(0);
+            callback.doInRedis(null);
+            return null;
+        }).when(redisTemplate).executePipelined(any(RedisCallback.class));
+
+        // when
+        recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        verify(valueOperations, times(1)).set(eq(rollCountKey), eq(1L));
+        verify(hashOperations, times(1)).put(eq(cooldownKey), eq(topDto.type().name()), eq(topDto.clothesId().toString()));
+    }
+
+    @Test
+    void 엔진이_빈_결과를_반환하면_빈_추천_DTO를_반환한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+
+        List<OotdDto> clothes = List.of();
+        RecommendationResult rr = new RecommendationResult(clothes, false);
+
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
+
+        // when
+        RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        assertThat(result.clothes()).isEmpty();
+    }
+
+    @Test
+    void 옷장이_비어있을_경우_빈_추천을_반환한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(List.of()); // 빈 옷장
+
+        // when
+        RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        assertThat(result.clothes()).isEmpty();
+        verify(clothesRepository, times(1)).findAllByOwnerId(userId);
+        verifyNoInteractions(itemSelectorEngine);
+        verifyNoInteractions(openAiEngine);
+    }
+
+    @Test
+    void 유효하지_않은_weatherId면_예외가_발생한다() {
+
+        // given
+        UUID userId = mockUser.getId();
+        UUID invalidWeatherId = UUID.randomUUID();
+
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(invalidWeatherId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> recommendationService.recommendClothes(userId, invalidWeatherId))
+            .isInstanceOf(OtbooException.class)
+            .extracting(e -> ((OtbooException) e).getErrorCode())
+            .isEqualTo(ErrorCode.WEATHER_NOT_FOUND);
+    }
+
+    @Test
+    void 유효하지_않은_userId면_예외가_발생한다() {
+
+        // given
+        UUID invalidUserId = UUID.randomUUID();
+        UUID weatherId = mockWeather.getId();
+
+        given(profileRepository.findByUserId(invalidUserId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> recommendationService.recommendClothes(invalidUserId, weatherId))
+            .isInstanceOf(OtbooException.class)
+            .extracting(e -> ((OtbooException) e).getErrorCode())
+            .isEqualTo(ErrorCode.PROFILE_NOT_FOUND);
+    }
+
+    @Test
+    void 랜덤폴백_경로에서는_기본_추천이유를_사용한다() {
+        // given
+        UUID userId = mockUser.getId();
+        UUID weatherId = mockWeather.getId();
+        given(profileRepository.findByUserId(userId)).willReturn(Optional.of(mockProfile));
+        given(weatherRepository.findById(weatherId)).willReturn(Optional.of(mockWeather));
+        given(clothesRepository.findAllByOwnerId(userId)).willReturn(mockClothesList);
+
+        List<OotdDto> clothes = List.of(
+            OotdDto.builder()
+                .clothesId(UUID.randomUUID())
+                .type(ClothesType.TOP)
+                .name("임계값_미만_랜덤선택_상의")
+                .build()
+        );
+        RecommendationResult rr = new RecommendationResult(clothes, true);
+        given(itemSelectorEngine.createRecommendation(any(), any(), anyLong(), any())).willReturn(rr);
+
+        // when
+        RecommendationDto result = recommendationService.recommendClothes(userId, weatherId);
+
+        // then
+        assertThat(result.reason()).isEqualTo("오늘 날씨에 맞는 옷을 추천해드릴게요.");
+        verifyNoInteractions(openAiEngine);
+    }
+}
