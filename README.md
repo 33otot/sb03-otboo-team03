@@ -1,4 +1,4 @@
-# Otboo 프로젝트 [![codecov](https://codecov.io/gh/33otot/sb03-otboo-team03/graph/badge.svg)](https://codecov.io/gh/33otot/sb03-otboo-team03)
+# [옷장을 부탁해] 프로젝트 [![codecov](https://codecov.io/gh/33otot/sb03-otboo-team03/graph/badge.svg)](https://codecov.io/gh/33otot/sb03-otboo-team03)
 
 <img width="512" height="272" alt="samsam-otot mascot" src="https://github.com/user-attachments/assets/897d3742-d3d5-4e00-aa0e-e2c1f1c1ea69" />
 
@@ -9,7 +9,7 @@ Otboo는 날씨 기반 의상 추천 서비스입니다.
 - 프로젝트 기간: 2024.09.09 ~ 2024.10.24
 
 ### <팀 문서>
-🔗 [팀 협업 문서 바로가기](https://www.notion.so/ohgiraffers/2gether-Read-207649136c1180e8a801c3cb2d59b319)
+🔗 [팀 협업 문서 바로가기](https://ohgiraffers.notion.site/207649136c118047acdbf3238dccbc96?source=copy_link)
 
 ## 👥 팀원 구성
 
