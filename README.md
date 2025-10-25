@@ -131,6 +131,8 @@ Otboo는 날씨 기반 의상 추천 서비스입니다.
    
 - **OOTD 피드 API**
   - 피드 CRUD 기능
+ ![피드 crud 최종2](https://github.com/user-attachments/assets/686f3923-ba80-4ea4-8f63-f493be55622d)
+  
 - **UI 개선**
 
 ---
