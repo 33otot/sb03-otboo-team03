@@ -1,6 +1,6 @@
-# Otboo 프로젝트
+# Otboo 프로젝트 [![codecov](https://codecov.io/gh/33otot/sb03-otboo-team03/graph/badge.svg)](https://codecov.io/gh/33otot/sb03-otboo-team03)
 
-[![codecov](https://codecov.io/gh/33otot/sb03-otboo-team03/graph/badge.svg)](https://codecov.io/gh/33otot/sb03-otboo-team03)
+<img width="512" height="272" alt="samsam-otot mascot" src="https://github.com/user-attachments/assets/897d3742-d3d5-4e00-aa0e-e2c1f1c1ea69" />
 
 ## 🌤 프로젝트 개요
 
