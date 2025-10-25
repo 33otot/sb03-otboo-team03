@@ -117,6 +117,8 @@ Otboo는 날씨 기반 의상 추천 서비스입니다.
 
 - **의상 속성 관리 API**
   - 관리자의 의상 속성 CRUD 기능
+![녹화_2025_10_25_18_01_06_999](https://github.com/user-attachments/assets/76ae4a87-08ab-4fce-8718-b14d34eb98da)
+
 - **AWS 배포**
 
 ---
