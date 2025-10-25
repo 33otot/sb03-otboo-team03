@@ -2,196 +2,358 @@
 
 [![codecov](https://codecov.io/gh/33otot/sb03-otboo-team03/graph/badge.svg)](https://codecov.io/gh/33otot/sb03-otboo-team03)
 
-## 프로젝트 개요
+## 🌤 프로젝트 개요
 
 Otboo는 날씨 기반 의상 추천 서비스입니다.
+- 사용자가 등록한 옷과 날씨 데이터를 기반으로 개인 맞춤형 의상 조합을 추천해주는 플랫폼을 개발하고 안정적으로 배포
+- 프로젝트 기간: 2024.09.09 ~ 2024.10.24
 
-## 테스트 커버리지
-
-이 프로젝트는 80% 이상의 테스트 커버리지를 유지합니다. PR이 merge되려면 다음 조건을 만족해야 합니다:
-
-- ✅ 테스트 커버리지 80% 이상
-- ✅ 모든 테스트 통과
-- ✅ CI/CD 파이프라인 성공
-
-## 브랜치 보호 규칙
-
-- `main` 브랜치: 80% 이상 커버리지 필요
-- `dev` 브랜치: 80% 이상 커버리지 필요
-- PR merge 전 CI 성공 필수
-
-## 실행 방법
-
-### 로컬 개발 환경
-
-```bash
-make up
-```
-
-### 프로덕션 환경
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-```
-또는 Makefile의 prod 타겟을 사용할 수 있습니다.
-```bash
-make prod
-```
-# 🧑‍💻 삼삼옷옷
-
-> 프로그래밍 교육 사이트의 Spring 백엔드 시스템 구축  
-> 프로젝트 기간: **2024.08.13 ~ 2024.09.03**
-
-🔗 [팀 협업 문서 바로가기](링크를_여기에_입력하세요)
-
----
+### <팀 문서>
+🔗 [팀 협업 문서 바로가기](https://www.notion.so/ohgiraffers/2gether-Read-207649136c1180e8a801c3cb2d59b319)
 
 ## 👥 팀원 구성
 
 | 이름 | 역할 | Github |
 |------|------|---------|
-| 김동욱 | 팔로우 API/ DM 서비스 / 알림 서비스 | [김동욱 Github](https://github.com/bladnoch) |
-| 제이든 | 권한 관리 / 반응형 레이아웃 API | [제이든 Github](개인_Github_링크) |
-| 마크 | 수강생 관리 / 공용 Button API | [마크 Github](개인_Github_링크) |
-| 데이지 | 관리자 API / 회원 CRUD | [데이지 Github](개인_Github_링크) |
-| 제이 | 시간 정보 관리 / Modal API | [제이 Github](개인_Github_링크) |
+| 김동욱 | 팔로우 API / DM 서비스 / 알림 서비스 | [김동욱 Github](https://github.com/bladnoch)  |
+| 백은호 | 사용자 API / 팀장 | [백은호 Github](https://github.com/BackEunHo) |
+| 이지현 | 의상 추천 API / 피드 API / UI 개선 / PM | [이지현 Github](https://github.com/jhlee-codes) |
+| 임정현 | 날씨 데이터 API / 프로필 API | [임정현 Github](https://github.com/HuInDoL)  |
+| 황지인 | 의상 관리 API / 의상 속성 API / AWS 배포 | [황지인 Github](https://github.com/wangcoJiin) |
 
+## 🛠️ 기술 스택
+### Backend & Framework
+- Java 17
+- Spring Boot 3.5.5
+- Spring Data JPA (Hibernate 기반)
+- QueryDSL
+- Spring Batch (배치 작업)
+- Spring Security (보안 및 인증)
+- OAuth2 Client (소셜 로그인)
+- Spring WebSocket (실시간 통신)
+- Spring WebFlux (비동기 HTTP 클라이언트)
+- Spring Mail (이메일 발송)
+
+### Database & Cache
+- PostgreSQL (AWS RDS)
+- Redis (AWS ElastiCache Redis OSS)
+- H2 Database (테스트용 인메모리 DB)
+
+### Search & AI
+- Elasticsearch (검색 엔진)
+- Spring AI 1.0.3 (OpenAI 통합)
+
+### Messaging & Monitoring
+- Apache Kafka (Confluent Cloud)
+- Spring Kafka (Kafka 통합)
+
+### Storage & External APIs
+- AWS S3 2.31.7 (파일 스토리지)
+- Jsoup 1.18.1 (HTML 파싱)
+ 
+### Infrastructure & Deployment
+- Docker & Docker Compose
+- AWS ECS
+    - Spring Boot 컨테이너
+    - Nginx 컨테이너 (리버스 프록시, 로드 밸런서, HTTPS)
+- AWS CloudMap (서비스 디스커버리)
+
+## 💻 개발 환경
+- **IDE**: IntelliJ IDEA
+- **Build Tool**: Gradle 8.14.3
+- **Database**: PostgreSQL (AWS RDS), H2 (테스트용 인메모리 DB)
+- **Container**: Docker & Docker Compose
+- **Version Control**: Git
+- **Object Mapping**: MapStruct 1.6.3, Lombok
+- **API Documentation**: SpringDoc OpenAPI 2.8.4 (Swagger UI)
+- **Testing**: JUnit 5, Mockito, Spring Boot Test, Spring Security Test, Testcontainers 1.21.3
+- **Code Coverage**: JaCoCo (최소 80% 커버리지)
+
+## ✅ 테스트 커버리지
+
+이 프로젝트는 80% 이상의 테스트 커버리지를 유지합니다. PR이 merge되려면 다음 조건을 만족해야 합니다:
+
+- 테스트 커버리지 80% 이상
+- 모든 테스트 통과
+- CI/CD 파이프라인 성공
+
+## 🖐 브랜치 보호 규칙
+
+- `main` 브랜치: 80% 이상 커버리지 필요
+- `dev` 브랜치: 80% 이상 커버리지 필요
+- PR merge 전 CI 성공 필수
+  
 ---
+## 🎯 팀원별 구현 기능 상세
 
-## ⚙️ 기술 스택
-
-| 구분 | 기술 |
-|------|------|
-| **Backend** | Spring Boot, Spring Security, Spring Data JPA |
-| **Database** | MySQL |
-| **협업 Tool** | Git & Github, Discord |
-
----
-
-## 🚀 주요 기능
-
-### 🟢 김동욱
+### 🟢 벡은호
 (기능 관련 이미지 또는 GIF 첨부)
 
-- **소셜 로그인 API**
-  - Google OAuth 2.0 기반 소셜 로그인 구현
-  - 로그인 후 추가 정보 입력을 위한 RESTful API 엔드포인트 개발
-- **회원 추가 정보 입력 API**
-  - 회원 유형(관리자, 학생)에 따른 조건부 입력 처리 기능 구현
+- **사용자 관리 API**
+  - 회원가입, 로그인, 비밀번호 초기화 기능
+  - 관리자 계정의 일반 유저 계정 관리 기능
 
 ---
 
-### 🟣 제이든
+### 🟣 임정현
 (기능 관련 이미지 또는 GIF 첨부)
 
-- **회원별 권한 관리**
-  - Spring Security 기반 역할별 권한 부여
-  - 관리자 페이지 / 일반 사용자 페이지 라우팅 분리
-- **반응형 레이아웃 API**
-  - 반응형 화면 구성을 위한 API 엔드포인트 구현
+- **날씨 데이터 관리 API**
+  - 기상청 단기 예보 Open API를 활용해 날씨 데이터 수집
+  - Spring Batch를 사용 배치 작업
+- **프로필 관리 API**
+  - 프로필 조회, 수정 기능
 
 ---
 
-### 🔵 마크
+### 🟡 황지인
 (기능 관련 이미지 또는 GIF 첨부)
 
-- **수강생 정보 관리 API**
-  - 학생 수강정보 조회 및 CRUD 기능 구현 (`Spring Data JPA`)
-- **공용 Button API**
-  - 여러 페이지에서 사용할 공용 버튼 처리 로직 개발
+- **의상 관리 API**
+  - 의상 CRUD 기능
+  - 구매 링크로 의상 정보 추출 기능
+- **의상 속성 관리 API**
+  - 관리자의 의상 속성 CRUD 기능
+- **AWS 배포**
 
 ---
 
-### 🟠 데이지
+### 🟠 이지현
 (기능 관련 이미지 또는 GIF 첨부)
 
-- **관리자 API**
-  - `@PathVariable` 기반 동적 라우팅 기능 구현
-  - `PATCH`, `DELETE` 요청으로 학생 정보 수정 및 탈퇴 기능 구현
-- **CRUD 기능**
-  - 학생 정보 관리용 CRUD API 제공
-- **회원관리 슬라이더**
-  - 학생 목록을 `Carousel` 형식으로 조회하는 API 구현
+- **의상 추천**
+  - 날씨, 의상, 프로필 정보를 활용한 의상 추천 기능 (자체 구현 알고리즘)
+- 의상 추천 코멘트 (LLM)
+  
+- **OOTD 피드 API**
+  - 피드 CRUD 기능
+
+- **UI 개선**
 
 ---
 
-### 🟡 제이
+### 🔵 김동욱
 (기능 관련 이미지 또는 GIF 첨부)
 
-- **학생 시간 정보 관리 API**
-  - 학생별 시간 정보 조회(`GET`) 및 실시간 접속 현황 API 구현
-- **수정 및 탈퇴 API**
-  - `PATCH`, `DELETE` 요청으로 개인정보 수정 및 탈퇴 처리
-- **공용 Modal API**
-  - 전역 Modal 컴포넌트 로직 처리 API 구현
+- **팔로우와 DM API**
+  - 팔로우 기능
+  - 실시간 DM 기능 (web socket)
+    
+- **알림 API**
+  - 알림 기능 (SSE)
 
 ---
 
-## 📂 프로젝트 구조
+## 📁 프로젝트 구조
 
+```
+src/
+├── main/
+│   ├── java/com/samsamotot/otboo/
+│   │   ├── OtbooApplication.java
+│   │   ├── auth/                    # 인증 관련 기능
+│   │   │   ├── controller/
+│   │   │   │   ├── api/
+│   │   │   │   └── AuthController.java
+│   │   │   ├── dto/
+│   │   │   └── service/
+│   │   │       └── impl/
+│   │   ├── clothes/                 # 의류 관련 기능
+│   │   │   ├── controller/
+│   │   │   ├── dto/
+│   │   │   │   └── request/
+│   │   │   ├── entity/
+│   │   │   ├── exception/
+│   │   │   │   └── definition/
+│   │   │   ├── mapper/
+│   │   │   ├── repository/
+│   │   │   │   └── custom/
+│   │   │   ├── service/
+│   │   │   │   └── impl/
+│   │   │   └── util/
+│   │   ├── comment/                 # 댓글 관련 기능
+│   │   │   ├── controller/
+│   │   │   │   └── api/
+│   │   │   ├── dto/
+│   │   │   ├── entity/
+│   │   │   ├── mapper/
+│   │   │   ├── repository/
+│   │   │   └── service/
+│   │   ├── common/                  # 공통 기능
+│   │   │   ├── config/              # 설정 클래스들
+│   │   │   ├── dto/
+│   │   │   ├── email/               # 이메일 서비스
+│   │   │   ├── entity/
+│   │   │   ├── exception/           # 전역 예외 처리
+│   │   │   ├── oauth2/              # OAuth2 관련
+│   │   │   │   ├── dto/
+│   │   │   │   ├── handler/
+│   │   │   │   ├── principal/
+│   │   │   │   ├── repository/
+│   │   │   │   ├── service/
+│   │   │   │   └── util/
+│   │   │   ├── security/            # 보안 관련
+│   │   │   │   ├── config/
+│   │   │   │   ├── csrf/
+│   │   │   │   ├── jwt/
+│   │   │   │   └── service/
+│   │   │   ├── storage/             # S3 스토리지 연동
+│   │   │   ├── type/
+│   │   │   └── util/
+│   │   ├── directmessage/           # 다이렉트 메시지 (실시간 채팅)
+│   │   │   ├── controller/
+│   │   │   │   └── api/
+│   │   │   ├── dto/
+│   │   │   ├── entity/
+│   │   │   ├── interceptor/
+│   │   │   ├── mapper/
+│   │   │   ├── repository/
+│   │   │   └── service/
+│   │   ├── feed/                    # 피드 관련 기능
+│   │   │   ├── controller/
+│   │   │   │   └── api/
+│   │   │   ├── document/            # Elasticsearch 문서
+│   │   │   ├── dto/
+│   │   │   │   └── event/
+│   │   │   ├── entity/
+│   │   │   ├── listener/            # 이벤트 리스너
+│   │   │   ├── mapper/
+│   │   │   ├── repository/
+│   │   │   └── service/
+│   │   ├── follow/                  # 팔로우 관련 기능
+│   │   │   ├── controller/
+│   │   │   │   └── api/
+│   │   │   ├── dto/
+│   │   │   ├── entity/
+│   │   │   ├── mapper/
+│   │   │   ├── repository/
+│   │   │   └── service/
+│   │   ├── location/                # 위치 관련 기능
+│   │   │   ├── client/              # Kakao API 클라이언트
+│   │   │   ├── dto/
+│   │   │   ├── entity/
+│   │   │   ├── repository/
+│   │   │   └── service/
+│   │   │       └── impl/
+│   │   ├── notification/            # 알림 시스템
+│   │   │   ├── controller/
+│   │   │   │   └── api/
+│   │   │   ├── dto/
+│   │   │   │   └── event/           # 이벤트 기반 알림
+│   │   │   ├── entity/
+│   │   │   ├── listener/            # 이벤트 리스너
+│   │   │   ├── repository/
+│   │   │   └── service/
+│   │   ├── profile/                 # 프로필 관련 기능
+│   │   │   ├── dto/
+│   │   │   ├── entity/
+│   │   │   ├── mapper/
+│   │   │   ├── repository/
+│   │   │   └── service/
+│   │   │       └── impl/
+│   │   ├── recommendation/          # AI 의상 추천
+│   │   │   ├── controller/
+│   │   │   │   └── api/
+│   │   │   ├── dto/
+│   │   │   ├── entity/
+│   │   │   ├── prompt/              # AI 프롬프트 빌더
+│   │   │   ├── repository/
+│   │   │   ├── service/
+│   │   │   └── type/
+│   │   ├── sse/                     # Server-Sent Events (실시간 알림)
+│   │   │   ├── controller/
+│   │   │   │   └── api/
+│   │   │   ├── listener/
+│   │   │   ├── service/
+│   │   │   ├── strategy/
+│   │   │   └── transport/
+│   │   ├── user/                    # 사용자 관련 기능
+│   │   │   ├── config/
+│   │   │   ├── controller/
+│   │   │   │   └── api/
+│   │   │   ├── dto/
+│   │   │   ├── entity/
+│   │   │   ├── exception/
+│   │   │   ├── mapper/
+│   │   │   ├── repository/
+│   │   │   │   └── custom/
+│   │   │   └── service/
+│   │   │       └── impl/
+│   │   └── weather/                 # 날씨 관련 기능
+│   │       ├── client/              # 기상청 API 클라이언트
+│   │       ├── config/
+│   │       │   ├── batch/           # 배치 작업
+│   │       │   └── scheduler/       # 스케줄러
+│   │       ├── controller/
+│   │       │   └── api/
+│   │       ├── dto/
+│   │       ├── entity/
+│   │       ├── mapper/
+│   │       ├── repository/
+│   │       ├── service/
+│   │       │   └── impl/
+│   │       └── util/
+│   └── resources/
+│       ├── application.yaml              # 공통 설정
+│       ├── application-dev.yaml          # 개발 환경 설정
+│       ├── application-prod.yaml         # 운영 환경 설정
+│       ├── schema.sql                    # 데이터베이스 스키마
+│       ├── data.sql                      # 초기 데이터
+│       ├── logback-spring.xml            # 로깅 설정
+│       ├── elasticsearch/
+│       │   ├── feed-mapping.json         # Feed 인덱스 매핑
+│       │   └── feed-settings.json        # Feed 인덱스 설정
+│       └── static/                       # 정적 리소스
+│           ├── index.html
+│           └── assets/
+└── test/
+    ├── java/com/samsamotot/otboo/
+    │   ├── clothes/
+    │   ├── comment/
+    │   ├── config/                       # 테스트 설정
+    │   ├── feed/
+    │   ├── profile/
+    │   ├── weather/
+    │   └── ...
+    └── resources/
+        ├── application-test.yaml         # 테스트 환경 설정
+        ├── schema.sql                    # 테스트용 스키마
+        └── elasticsearch/
+            ├── feed-mapping.json
+            └── feed-settings.json
+```
 
-src
-┣ main
-┃ ┣ java/com/example
-┃ ┃ ┣ controller
-┃ ┃ ┃ ┣ AuthController.java
-┃ ┃ ┃ ┣ UserController.java
-┃ ┃ ┃ ┗ AdminController.java
-┃ ┃ ┣ model
-┃ ┃ ┃ ┣ User.java
-┃ ┃ ┃ ┗ Course.java
-┃ ┃ ┣ repository
-┃ ┃ ┃ ┣ UserRepository.java
-┃ ┃ ┃ ┗ CourseRepository.java
-┃ ┃ ┣ service
-┃ ┃ ┃ ┣ AuthService.java
-┃ ┃ ┃ ┣ UserService.java
-┃ ┃ ┃ ┗ AdminService.java
-┃ ┃ ┣ security
-┃ ┃ ┃ ┣ SecurityConfig.java
-┃ ┃ ┃ ┗ JwtAuthenticationEntryPoint.java
-┃ ┃ ┣ dto
-┃ ┃ ┃ ┣ LoginRequest.java
-┃ ┃ ┃ ┗ UserResponse.java
-┃ ┃ ┣ exception
-┃ ┃ ┃ ┣ GlobalExceptionHandler.java
-┃ ┃ ┃ ┗ ResourceNotFoundException.java
-┃ ┃ ┣ utils
-┃ ┃ ┃ ┣ JwtUtils.java
-┃ ┃ ┃ ┗ UserMapper.java
-┃ ┣ resources
-┃ ┃ ┣ application.properties
-┃ ┃ ┗ static/
-┃ ┃ ┣ css/style.css
-┃ ┃ ┗ js/script.js
-┣ test/java/com/example
-┃ ┣ AuthServiceTest.java
-┃ ┣ UserControllerTest.java
-┃ ┗ ApplicationTests.java
-┣ pom.xml
-┣ Application.java
-┣ application.properties
-┣ .gitignore
-┗ README.md
+## ✨ 기능
 
----
+### 핵심 기능
+- [x] **사용자 관리 시스템** - 회원가입, 로그인, 프로필 관리
+- [x] **외부 API 연동**
+    - [x] 기상청 API (날씨 데이터 수집)
+    - [x] Kakao API (위치 검색)
+- [x] **의상 시스템** - 의상 등록, 수정, 삭제, 구매링크로 등록 기능
+- [x] **피드 시스템** - 날씨와 의상 정보를 활용한 개인 피드 기능
+- [x] **파일 업로드** - AWS S3를 통한 이미지 업로드 및 스토리지
+- [x] **실시간 DM 시스템** - 웹소켓 기반 실시간 메시지 기능능
+- [x] **실시간 알림 시스템** - 이벤트 기반 알림 생성 및 관리
 
-## 🌐 구현 홈페이지
+### 기술적 특징
+- [x] **커서 기반 페이지네이션** - 대용량 데이터 효율적 처리
+- [x] **QueryDSL** - 타입 안전한 복잡한 쿼리 처리
+- [x] **멀티 프로필 지원** - 개발(dev), 운영(prod), 테스트(test) 환경 분리
+- [x] **이벤트 드리븐 아키텍처** - Spring Events를 통한 느슨한 결합
+- [x] **실시간 통신** - WebSocket (Direct Message), SSE (알림 전송)
+- [x] **검색 엔진 통합** - Elasticsearch 기반 피드 검색 및 동기화
+- [x] **분산 캐싱** - Redis 기반 캐싱 및 세션 관리
+- [x] **OAuth2 소셜 로그인** - Google, Kakao 연동
+- [x] **JWT 기반 인증** - Stateless 인증 구현
+- [x] **API 문서화** - SpringDoc OpenAPI 3 (Swagger UI)
+- [x] **컨테이너 지원** - Docker 및 Docker Compose 설정
+- [x] **테스트 커버리지** - JaCoCo를 통한 코드 품질 관리 (목표: 80%)
+- [x] **Testcontainers** - 컨테이너 기반 통합 테스트 (PostgreSQL, Elasticsearch)
+- [x] **로깅 시스템** - Logback 기반 구조화된 로깅
 
-🔗 [프로젝트 링크 바로가기](https://www.codeit.kr/)
+## 📖 구현 홈페이지
+🔗 https://samsam-otot.duckdns.org/
 
----
-
-## 💭 프로젝트 회고록
-
-📎 [발표자료 또는 회고록 링크 첨부](링크를_여기에_입력하세요)
-
----
-
-> 🎯 **Summary:**  
-> 본 프로젝트는 프로그래밍 교육 플랫폼의 백엔드 핵심 기능을 직접 설계 및 구현함으로써  
-> RESTful API 설계, 인증/인가, CRUD, 반응형 처리를 종합적으로 다루는 실습 프로젝트였습니다.
-
-
-프로젝트 회고록
-(제작한 발표자료 링크 혹은 첨부파일 첨부)
+## 💌 프로젝트 회고록
+🔗 [발표 자료](https://www.canva.com/design/DAG2AdjgTzY/ifmKeg-dr7N_JF4jQ5IK8Q/view?utm_content=DAG2AdjgTzY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hcdf25fd682)
