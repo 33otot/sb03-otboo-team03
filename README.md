@@ -138,13 +138,16 @@ Otboo는 날씨 기반 의상 추천 서비스입니다.
 ---
 
 ### 🔵 김동욱
-(기능 관련 이미지 또는 GIF 첨부)
-
 - **팔로우와 DM API**
   - 팔로우 기능
-  - 실시간 DM 기능 (web socket)  
+![Adobe Express - gif용_팔로우](https://github.com/user-attachments/assets/043ccb6b-ab1a-4037-b058-58c0ed6af4f5)
+
+  - 실시간 DM 기능 (web socket)
+![Adobe Express - gif용_메세지](https://github.com/user-attachments/assets/ae3b9f3e-50e9-4ac9-9889-603d954fd88f)
+
 - **알림 API**
   - 알림 기능 (SSE)
+![Adobe Express - gif용_알림](https://github.com/user-attachments/assets/3acfdc2d-9a67-4e46-a1ec-8985eb4e264b)
 
 ---
 
@@ -337,15 +340,17 @@ src/
 - [x] **의상 시스템** - 의상 등록, 수정, 삭제, 구매링크로 등록 기능
 - [x] **피드 시스템** - 날씨와 의상 정보를 활용한 개인 피드 기능
 - [x] **파일 업로드** - AWS S3를 통한 이미지 업로드 및 스토리지
-- [x] **실시간 DM 시스템** - 웹소켓 기반 실시간 메시지 기능능
+- [x] **실시간 DM 시스템** - 웹소켓 기반 실시간 메시지 기능
 - [x] **실시간 알림 시스템** - 이벤트 기반 알림 생성 및 관리
+- [x] 팔로우 시스템 - 사용자 간 팔로우/언팔로우 및 팔로잉 피드 조회
 
 ### 기술적 특징
 - [x] **커서 기반 페이지네이션** - 대용량 데이터 효율적 처리
 - [x] **QueryDSL** - 타입 안전한 복잡한 쿼리 처리
 - [x] **멀티 프로필 지원** - 개발(dev), 운영(prod), 테스트(test) 환경 분리
 - [x] **이벤트 드리븐 아키텍처** - Spring Events를 통한 느슨한 결합
-- [x] **실시간 통신** - WebSocket (Direct Message), SSE (알림 전송)
+- [x] **실시간 통신(WebSocket)** - STOMP 기반 실시간 Direct Message 전송
+- [x] **실시간 통신(SSE)** - Kafka→Redis→Memory Fallback 구조의 실시간 알림 전송
 - [x] **검색 엔진 통합** - Elasticsearch 기반 피드 검색 및 동기화
 - [x] **분산 캐싱** - Redis 기반 캐싱 및 세션 관리
 - [x] **OAuth2 소셜 로그인** - Google, Kakao 연동
