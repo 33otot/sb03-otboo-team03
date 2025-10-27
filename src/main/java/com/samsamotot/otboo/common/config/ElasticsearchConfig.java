@@ -17,7 +17,7 @@ import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfigurat
 import org.springframework.data.elasticsearch.core.convert.ElasticsearchCustomConversions;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
-@Configuration
+//@Configuration
 @EnableElasticsearchRepositories(basePackages = "com.samsamotot.otboo.feed.repository")
 public class ElasticsearchConfig extends ElasticsearchConfiguration {
 

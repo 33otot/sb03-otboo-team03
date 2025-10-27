@@ -33,9 +33,9 @@ spring:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  elasticsearch:
-    health-timeout-ms: 20000
-    uris: ${ELASTICSEARCH_URIS:172.31.36.45:9200}
+  #  elasticsearch:
+#    health-timeout-ms: 20000
+#    uris: ${ELASTICSEARCH_URIS:172.31.36.45:9200}
 
   data:
     redis:

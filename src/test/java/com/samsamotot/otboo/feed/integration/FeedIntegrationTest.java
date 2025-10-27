@@ -16,19 +16,15 @@ import com.samsamotot.otboo.clothes.entity.Clothes;
 import com.samsamotot.otboo.clothes.repository.ClothesRepository;
 import com.samsamotot.otboo.common.config.SecurityTestConfig;
 import com.samsamotot.otboo.common.fixture.ClothesFixture;
-import com.samsamotot.otboo.common.fixture.FeedFixture;
 import com.samsamotot.otboo.common.fixture.GridFixture;
 import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.config.TestConfig;
-import com.samsamotot.otboo.feed.document.FeedDocument;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
-import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
-import com.samsamotot.otboo.feed.service.FeedDataSyncService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.weather.entity.Grid;
@@ -39,7 +35,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -49,9 +44,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.IndexOperations;
-import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
@@ -63,7 +55,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -92,22 +83,11 @@ public class FeedIntegrationTest {
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17");
 
-    @Container
-    static ElasticsearchContainer es =
-        new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.14.0")
-            .withEnv("discovery.type", "single-node")
-            .withEnv("xpack.security.enabled", "false")
-            .withCommand("sh", "-c",
-                "bin/elasticsearch-plugin install analysis-nori --batch && exec /usr/local/bin/docker-entrypoint.sh");
-
     @DynamicPropertySource
     static void overrideProps(DynamicPropertyRegistry reg) {
         reg.add("spring.datasource.url", postgres::getJdbcUrl);
         reg.add("spring.datasource.username", postgres::getUsername);
         reg.add("spring.datasource.password", postgres::getPassword);
-        // Elasticsearch 설정
-        reg.add("spring.elasticsearch.uris", es::getHttpHostAddress);
-        reg.add("spring.data.elasticsearch.index-prefix", () -> "test");
     }
 
     @Autowired
@@ -115,9 +95,6 @@ public class FeedIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Autowired
-    private FeedDataSyncService feedDataSyncService;
 
     @Autowired
     private FeedRepository feedRepository;
@@ -133,9 +110,6 @@ public class FeedIntegrationTest {
 
     @Autowired
     private ClothesRepository clothesRepository;
-
-    @Autowired
-    private ElasticsearchOperations operations;
 
     private User testUser;
     private User otherUser;
@@ -153,30 +127,6 @@ public class FeedIntegrationTest {
                 .mapToObj(i -> ClothesFixture.createClothes(testUser))
                 .collect(Collectors.toList())
         );
-    }
-
-    @BeforeEach
-    void bootstrapIndex() {
-        var indexOps = operations.indexOps(FeedDocument.class);
-
-        if (indexOps.exists()) indexOps.delete();
-
-        // @Setting/@Mapping에 연결된 파일을 이용해 생성
-        var settings = Document.from(indexOps.createSettings());
-        var mapping  = indexOps.createMapping(FeedDocument.class);
-
-        if (settings != null && !settings.isEmpty()) indexOps.create(settings);
-        else indexOps.create();
-
-        if (mapping != null && !mapping.isEmpty()) indexOps.putMapping(mapping);
-    }
-
-    @AfterEach
-    void tearDown() {
-        IndexOperations indexOps = operations.indexOps(FeedDocument.class);
-        if (indexOps.exists()) {
-            indexOps.delete();   // 인덱스 전체 삭제
-        }
     }
 
     @Nested
@@ -240,27 +190,24 @@ public class FeedIntegrationTest {
 
         @BeforeEach
         void setUp() {
-            // 테스트용 피드 5개 생성 (Elasticsearch 동기화)
+            // 테스트용 피드 5개 생성
             for (int i = 0; i < 5; i++) {
-                Feed feed = feedRepository.save(
+                feedRepository.save(
                     Feed.builder()
                         .author(testUser)
                         .weather(testWeather)
                         .content("피드 " + i)
                         .build()
                 );
-                FeedDto feedDto = FeedFixture.createFeedDto(feed);
-                feedDataSyncService.syncFeedToElasticsearch(feedDto);
             }
 
-            Feed deletedFeed = feedRepository.save(Feed.builder()
+            Feed deletedFeed = Feed.builder()
                 .author(testUser)
                 .weather(testWeather)
                 .content("삭제된 피드")
-                .build());
-            FeedDto deletedFeedDto = FeedFixture.createFeedDto(deletedFeed);
-            feedDataSyncService.syncFeedToElasticsearch(deletedFeedDto);
-            feedDataSyncService.softDeleteFeedFromElasticsearch(deletedFeed.getId());
+                .build();
+            deletedFeed.delete(); // 논리적 삭제 처리
+            feedRepository.save(deletedFeed);
         }
 
         @Test
