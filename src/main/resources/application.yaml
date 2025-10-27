@@ -16,7 +16,8 @@ spring:
       enable-statistics: true
   batch:
     job:
-      enabled: false
+      enabled: true
+      name: weatherJob
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}

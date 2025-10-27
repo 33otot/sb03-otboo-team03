@@ -47,7 +47,7 @@ public class FeedBatchConfig {
     private int chunkSize;
 
     // Job 정의
-    @Bean
+    @Bean(name = "deleteSoftDeletedFeedsJob")
     public Job deleteSoftDeletedFeedsJob(JobRepository jobRepository, Step deleteSoftDeletedFeedsStep) {
         return new JobBuilder(JOB_NAME, jobRepository)
             .start(deleteSoftDeletedFeedsStep)
