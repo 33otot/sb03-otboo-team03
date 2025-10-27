@@ -107,6 +107,15 @@ public class ProfileServiceImpl implements ProfileService {
 
         // 3. [저장] 프로필 업데이트
         existingProfile.update(request, location, newImageUrl);
+
+        // 4. User.username 동기화
+        User user = existingProfile.getUser();
+        if (user == null) {
+            throw new OtbooException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        user.updateUserInfo(request.name());
+
         log.info(SERVICE_NAME + "사용자 프로필 수정 완료 - 프로필 ID: {}", existingProfile.getId());
 
         return profileMapper.toDto(existingProfile);
