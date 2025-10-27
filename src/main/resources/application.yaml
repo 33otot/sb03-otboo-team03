@@ -17,8 +17,6 @@ spring:
   batch:
     job:
       enabled: false
-    feed:
-      chunk-size: 100
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
@@ -130,5 +128,8 @@ llm:
     max-length: 60
 
 otboo:
+  batch:
+    feed:
+      chunk-size: 100
   scheduler:
     delete-soft-deleted-feeds-cron: "0 0 4 * * *"
