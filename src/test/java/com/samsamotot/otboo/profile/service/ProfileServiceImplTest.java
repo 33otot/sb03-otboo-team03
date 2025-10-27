@@ -15,7 +15,6 @@ import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.mapper.ProfileMapper;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.profile.service.impl.ProfileServiceImpl;
-import com.samsamotot.otboo.user.repository.UserRepository;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.repository.GridRepository;
@@ -23,13 +22,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.mockito.invocation.InvocationOnMock;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -269,6 +266,7 @@ public class ProfileServiceImplTest {
     }
 
     @Nested
+    @DisplayName("날씨 알림 수신 여부 수정 테스트")
     class UpdateWeatherNotificationEnabled {
 
         @Test
