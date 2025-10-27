@@ -145,6 +145,33 @@ class S3ImageStorageTest {
             assertThat(resultUrl).isNotNull();
             assertThat(resultUrl).startsWith("https://" + bucketName + ".s3." + region + ".amazonaws.com/" + folderPath);
         }
+
+        @Test
+        void extracted_prefix가_있으면_파일명을_그대로_반환한다() {
+            // given
+            String extractedFilename = "extracted-169583ce-b68a-433a-b95a-98a7cb276c88.webp";
+
+            // when
+            String result = s3ImageStorage.createFileName(extractedFilename);
+
+            // then
+            assertThat(result).isEqualTo(extractedFilename);
+            assertThat(result).startsWith("extracted-");
+        }
+
+        @Test
+        void 일반_파일명은_UUID로_재생성된다() {
+            // given
+            String normalFilename = "myimage.jpg";
+
+            // when
+            String result = s3ImageStorage.createFileName(normalFilename);
+
+            // then
+            assertThat(result).isNotEqualTo(normalFilename);
+            assertThat(result).doesNotStartWith("extracted-");
+            assertThat(result).endsWith(".jpg");
+        }
     }
 
     @Nested
