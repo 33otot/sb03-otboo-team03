@@ -147,6 +147,16 @@ class S3ImageStorageTest {
         }
 
         @Test
+        void createFileName에_null을_전달하면_예외가_발생한다() {
+            // given
+            String nullFilename = null;
+
+            // when & then
+            assertThatThrownBy(() -> s3ImageStorage.createFileName(nullFilename))
+                .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
         void extracted_prefix가_있으면_파일명을_그대로_반환한다() {
             // given
             String extractedFilename = "extracted-169583ce-b68a-433a-b95a-98a7cb276c88.webp";
