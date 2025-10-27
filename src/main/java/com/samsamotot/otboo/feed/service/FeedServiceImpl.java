@@ -17,7 +17,6 @@ import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.feed.mapper.FeedMapper;
 import com.samsamotot.otboo.feed.repository.FeedLikeRepository;
 import com.samsamotot.otboo.feed.repository.FeedRepository;
-import com.samsamotot.otboo.feed.repository.FeedSearchRepository;
 import com.samsamotot.otboo.notification.dto.event.FeedCreatedEvent;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
@@ -28,6 +27,7 @@ import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +58,6 @@ public class FeedServiceImpl implements FeedService {
     private final WeatherRepository weatherRepository;
     private final ClothesRepository clothesRepository;
     private final FeedLikeRepository feedLikeRepository;
-    private final FeedSearchRepository feedSearchRepository;
     private final FeedMapper feedMapper;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -116,8 +115,6 @@ public class FeedServiceImpl implements FeedService {
         Feed saved = feedRepository.save(feed);
         FeedDto result = feedMapper.toDto(saved);
 
-        // Elasticsearch 동기화
-        eventPublisher.publishEvent(new FeedSyncEvent(saved.getId()));
         log.debug(SERVICE + "피드 등록 완료: feedId = {}", saved.getId());
 
         eventPublisher.publishEvent(new FeedCreatedEvent(author));
@@ -155,10 +152,12 @@ public class FeedServiceImpl implements FeedService {
         validateCursorRequest(cursor, sortBy);
 
         int safeLimit = (limit == null || limit <= 0) ? 20 : Math.min(limit, 50);
-        CursorResponse<FeedDto> result = feedSearchRepository.findByCursor(
+
+        // RDB 활용
+        List<Feed> feeds = feedRepository.findByCursor(
             cursor,
             idAfter,
-            safeLimit,
+            safeLimit + 1,
             sortBy,
             sortDirection,
             keywordLike,
@@ -167,32 +166,30 @@ public class FeedServiceImpl implements FeedService {
             authorIdEqual
         );
 
-        List<FeedDto> feedDtos = result.data();
-        List<FeedDto> newFeedDtos =feedDtos;
+        boolean hasNext = feeds.size() > safeLimit;
+        String nextCursor = null;
+        UUID nextIdAfter = null;
 
-        // 현재 사용자의 좋아요 여부 반영
-        if (userId != null && !feedDtos.isEmpty()) {
-            List<UUID> feedIds = feedDtos.stream().map(FeedDto::id).toList();
-            Set<UUID> likedFeedIds = feedLikeRepository.findFeedLikeIdsByUserIdAndFeedIdIn(userId, feedIds);
-            newFeedDtos = feedDtos.stream()
-                .map(feedDto -> {
-                    if (likedFeedIds.contains(feedDto.id())) {
-                        return feedDto.toBuilder().likedByMe(true).build();
-                    }
-                    return feedDto;
-                }).toList();
-            }
+        if (hasNext) {
+            Feed lastFeed =  feeds.get(safeLimit - 1);
+            nextCursor = resolveNextCursor(lastFeed, sortBy);
+            nextIdAfter = lastFeed.getId();
+            feeds = feeds.subList(0, safeLimit);
+        }
 
+        long totalCount = feedRepository.countByFilter(keywordLike, skyStatusEqual, precipitationTypeEqual, authorIdEqual);
 
-        log.debug(SERVICE + "피드 목록 조회 완료 - 조회된 피드 수:{}, hasNext: {}", newFeedDtos.size(), result.hasNext());
+        List<FeedDto> feedDtos = convertToDtos(feeds, userId);
+
+        log.info("[FeedServiceImpl] 피드 목록 조회 완료 - 조회된 피드 수:{}, hasNext: {}", feedDtos.size(), hasNext);
         return new CursorResponse<>(
-            newFeedDtos,
-            result.nextCursor(),
-            result.nextIdAfter(),
-            result.hasNext(),
-            result.totalCount(),
-            result.sortBy(),
-            result.sortDirection()
+            feedDtos,
+            nextCursor,
+            nextIdAfter,
+            hasNext,
+            totalCount,
+            sortBy,
+            sortDirection
         );
     }
 
@@ -223,9 +220,6 @@ public class FeedServiceImpl implements FeedService {
         log.debug(SERVICE + "피드 수정 완료: feedId = {}, userId = {}", feedId, userId);
         FeedDto result = convertToDto(feed, userId);
 
-        // Elasticsearch 동기화
-        eventPublisher.publishEvent(new FeedSyncEvent(feedId));
-
         return result;
     }
 
@@ -252,8 +246,6 @@ public class FeedServiceImpl implements FeedService {
         }
 
         feed.delete();
-        // Elasticsearch에서 소프트 삭제 처리
-        eventPublisher.publishEvent(new FeedDeleteEvent(feedId));
         log.debug(SERVICE + "피드 삭제 완료: feedId = {}, userId = {}", feedId, userId);
 
         return feed;
@@ -273,6 +265,14 @@ public class FeedServiceImpl implements FeedService {
         }
     }
 
+    private String resolveNextCursor(Feed feed, String sortBy) {
+        return switch(sortBy) {
+            case SORT_BY_CREATED_AT -> feed.getCreatedAt().toString();
+            case SORT_BY_LIKE_COUNT -> String.valueOf(feed.getLikeCount());
+            default -> throw new OtbooException(ErrorCode.INVALID_SORT_FIELD);
+        };
+    }
+
     private FeedDto convertToDto(Feed feed, UUID currentUserId) {
 
         boolean likedByMe = false;
@@ -286,6 +286,29 @@ public class FeedServiceImpl implements FeedService {
         }
 
         return feedDto.toBuilder().likedByMe(likedByMe).build();
+    }
+
+    private List<FeedDto> convertToDtos(List<Feed> feeds, UUID currentUserId) {
+
+        if (feeds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<UUID> feedIds = feeds.stream()
+            .map(Feed::getId)
+            .toList();
+
+        Set<UUID> likedFeedIds = (currentUserId == null)
+            ? Collections.emptySet()
+            : feedLikeRepository.findFeedLikeIdsByUserIdAndFeedIdIn(currentUserId, feedIds);
+
+        return feeds.stream()
+            .map(feed -> {
+                FeedDto dto = feedMapper.toDto(feed);
+                boolean likedByMe = (currentUserId != null) && likedFeedIds.contains(feed.getId());
+                return dto.toBuilder().likedByMe(likedByMe).build();
+            })
+            .toList();
     }
 
     private Instant parseInstant(String cursorValue) {

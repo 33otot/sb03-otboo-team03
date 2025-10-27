@@ -19,7 +19,7 @@ import org.springframework.data.elasticsearch.core.document.Document;
 
 @Slf4j
 @Profile("!test")
-@Configuration
+//@Configuration
 @RequiredArgsConstructor
 public class ElasticsearchIndexConfig implements CommandLineRunner {
 
