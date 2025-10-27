@@ -53,6 +53,9 @@ public class Profile extends BaseEntity {
 
     public void update(ProfileUpdateRequest request, Location location, String newImageUrl) {
         this.name = request.name();
+        if (this.user != null) {
+            this.user.updateUserInfo(request.name());
+        }
 
         if (request.gender() != null) {
             this.gender = request.gender();
