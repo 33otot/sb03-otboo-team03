@@ -131,13 +131,36 @@ jobs:
             --desired-count 1 \
             --force-new-deployment
 
-      - name: Wait for ECS service to stabilize
+      - name: Wait for task to start running
         run: |
-          echo "새 Task 시작 대기 중..."
-          aws ecs wait services-stable \
-            --cluster ${{ vars.ECS_CLUSTER }} \
-            --services ${{ vars.ECS_SERVICE }}
-        timeout-minutes: 5
+          echo "Spring Boot Task 시작 확인 중..."
+          
+          MAX_ATTEMPTS=24  # 최대 2분 대기 (5초 * 24회)
+          ATTEMPT=0
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            RUNNING_COUNT=$(aws ecs describe-services \
+              --cluster ${{ vars.ECS_CLUSTER }} \
+              --service ${{ vars.ECS_SERVICE }} \
+              --query 'services[0].runningCount' \
+              --output text)
+          
+            echo "현재 실행 중인 Task 수: $RUNNING_COUNT"
+          
+            if [ "$RUNNING_COUNT" -ge "1" ]; then
+              echo "Spring Boot Task가 정상적으로 실행 중입니다."
+              break
+            fi
+          
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "대기 중... ($ATTEMPT/$MAX_ATTEMPTS)"
+            sleep 5
+          done
+          
+          if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+            echo "ERROR: Task가 시작되지 않았습니다."
+            exit 1
+          fi
 
   redeploy-nginx:
     name: Force Redeploy Nginx Service
@@ -165,11 +188,4 @@ jobs:
             --cluster ${{ vars.NGINX_ECS_CLUSTER }} \
             --service ${{ vars.NGINX_ECS_SERVICE }} \
             --force-new-deployment
-
-      - name: Wait for Nginx service to stabilize
-        run: |
-          echo "Nginx 서비스 안정화 대기 중..."
-          aws ecs wait services-stable \
-            --cluster ${{ vars.NGINX_ECS_CLUSTER }} \
-            --services ${{ vars.NGINX_ECS_SERVICE }}
-        timeout-minutes: 3
+          echo "Nginx 재배포 명령 완료"
