@@ -14,6 +14,9 @@ spring:
     type: redis
     redis:
       enable-statistics: true
+  batch:
+    job:
+      enabled: false
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}

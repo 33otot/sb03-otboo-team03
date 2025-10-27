@@ -13,6 +13,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Builder
 @Entity
@@ -26,6 +28,7 @@ public class FeedLike extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "feed_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Feed feed;
 
     @ManyToOne(fetch = FetchType.LAZY)
