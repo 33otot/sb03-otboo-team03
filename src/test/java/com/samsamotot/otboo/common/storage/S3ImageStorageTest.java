@@ -3,6 +3,7 @@ package com.samsamotot.otboo.common.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -85,6 +87,64 @@ class S3ImageStorageTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("S3 업로드 경로(folderPath)가 비어있습니다.");
         }
+
+        @Test
+        void originalFilename이_null이면_기본_파일명으로_처리된다() {
+            // given
+            MockMultipartFile fileNoName = new MockMultipartFile(
+                "file",
+                null,
+                "image/jpeg",
+                "test-image-content".getBytes()
+            );
+            String folderPath = "clothes/";
+
+            // when
+            String resultUrl = s3ImageStorage.uploadImage(fileNoName, folderPath);
+
+            // then
+            assertThat(resultUrl).isNotNull();
+            assertThat(resultUrl).startsWith("https://" + bucketName + ".s3." + region + ".amazonaws.com/" + folderPath);
+        }
+
+        @Test
+        void originalFilename이_빈_문자열이면_기본_파일명으로_처리된다() {
+            // given
+            MockMultipartFile emptyNameFile = new MockMultipartFile(
+                "file",
+                "",  // originalFilename이 빈 문자열
+                "image/jpeg",
+                "test-image-content".getBytes()
+            );
+            String folderPath = "clothes/";
+
+            // when
+            String resultUrl = s3ImageStorage.uploadImage(emptyNameFile, folderPath);
+
+            // then
+            assertThat(resultUrl).isNotNull();
+            assertThat(resultUrl).startsWith("https://" + bucketName + ".s3." + region + ".amazonaws.com/" + folderPath);
+        }
+
+        @Test
+        @DisplayName("originalFilename이 공백이면 defaultImage.jpg로 처리된다")
+        void originalFilename이_공백이면_기본_파일명으로_처리된다() {
+            // given
+            MockMultipartFile blankNameFile = new MockMultipartFile(
+                "file",
+                "   ",
+                "image/jpeg",
+                "test-image-content".getBytes()
+            );
+            String folderPath = "clothes/";
+
+            // when
+            String resultUrl = s3ImageStorage.uploadImage(blankNameFile, folderPath);
+
+            // then
+            assertThat(resultUrl).isNotNull();
+            assertThat(resultUrl).startsWith("https://" + bucketName + ".s3." + region + ".amazonaws.com/" + folderPath);
+        }
     }
 
     @Nested
@@ -132,6 +192,24 @@ class S3ImageStorageTest {
             assertThatThrownBy(() -> s3ImageStorage.deleteImage(invalidUrl))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("이미지 삭제 중 오류가 발생했습니다.");
+        }
+
+        @Test
+        void S3_삭제_중_Exception_발생시_SERVICE_UNAVAILABLE_예외를_던진다() {
+            // given
+            MockMultipartFile file = S3ImageFixture.createSampleImageFile();
+            String folderPath = "profile/";
+            String imageUrl = s3ImageStorage.uploadImage(file, folderPath);
+
+            // s3Client.deleteObject()에서 예외 발생하도록 설정
+            doThrow(new RuntimeException("S3 삭제 오류"))
+                .when(s3Client).deleteObject(any(DeleteObjectRequest.class));
+
+            // when & then
+            assertThatThrownBy(() -> s3ImageStorage.deleteImage(imageUrl))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("S3 이미지 삭제 중 외부 서비스 오류가 발생했습니다.")
+                .matches(ex -> ((ResponseStatusException) ex).getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 }
