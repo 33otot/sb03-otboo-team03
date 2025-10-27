@@ -17,6 +17,8 @@ spring:
   batch:
     job:
       enabled: false
+    feed:
+      chunk-size: 100
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}

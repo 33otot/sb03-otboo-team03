@@ -4,7 +4,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -21,7 +23,7 @@ public class FeedBatchScheduler {
 
     private static final String SCHEDULER_NAME = "[FeedBatchScheduler] ";
 
-    @Scheduled(cron = "0 0 4 * * *")
+    @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
     public void runDeleteSoftDeletedFeedsJob() {
         try {
             Instant deadline = Instant.now().minus(7, ChronoUnit.DAYS);
@@ -32,8 +34,12 @@ public class FeedBatchScheduler {
                     .addString("deadline", deadline.toString())
                     .toJobParameters();
 
-            jobLauncher.run(deleteSoftDeletedFeedsJob, params);
-            log.info(SCHEDULER_NAME + "배치 작업 성공적으로 실행 완료");
+            JobExecution jobExecution = jobLauncher.run(deleteSoftDeletedFeedsJob, params);
+            if (jobExecution.getExitStatus().equals(ExitStatus.COMPLETED)) {
+                log.info(SCHEDULER_NAME + "배치 작업 성공적으로 실행 완료");
+            } else {
+                log.error(SCHEDULER_NAME + "배치 작업 실행 실패. ExitStatus: {}", jobExecution.getExitStatus());
+            }
         } catch (Exception e) {
             log.error(SCHEDULER_NAME + "배치 작업 실행 중 오류 발생", e);
         }

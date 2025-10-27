@@ -1,12 +1,13 @@
 package com.samsamotot.otboo.feed.batch;
 
 import com.samsamotot.otboo.feed.repository.FeedRepository;
-import jakarta.persistence.EntityManagerFactory;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.sql.DataSource;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,17 +20,17 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.JpaCursorItemReader;
-import org.springframework.batch.item.database.builder.JpaCursorItemReaderBuilder;
+import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.Order;
+import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
+import org.springframework.batch.item.database.support.PostgresPagingQueryProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Slf4j
 @Configuration
-@EnableScheduling
 @RequiredArgsConstructor
 public class FeedBatchConfig {
 
@@ -38,10 +39,11 @@ public class FeedBatchConfig {
     public static final String READER_NAME = "softDeletedFeedReader";
     public static final String CONFIG_NAME = "[FeedBatchConfig] ";
 
-    private final EntityManagerFactory entityManagerFactory;
+    private final DataSource dataSource;
     private final FeedRepository feedRepository;
 
-    private static final int CHUNK_SIZE = 100;
+    @Value("${batch.feed.chunk-size:100}")
+    private int chunkSize;
 
     // Job 정의
     @Bean
@@ -56,7 +58,7 @@ public class FeedBatchConfig {
     @Bean
     public Step deleteSoftDeletedFeedsStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
         return new StepBuilder(STEP_NAME, jobRepository)
-            .<UUID, UUID>chunk(CHUNK_SIZE, transactionManager)
+            .<UUID, UUID>chunk(chunkSize, transactionManager)
             .reader(softDeletedFeedReader(null))
             .writer(softDeletedFeedWriter())
             .build();
@@ -65,16 +67,26 @@ public class FeedBatchConfig {
     // ItemReader 정의
     @Bean
     @StepScope
-    public JpaCursorItemReader<UUID> softDeletedFeedReader(
+    public JdbcPagingItemReader<UUID> softDeletedFeedReader(
         @Value("#{jobParameters['deadline']}") String deadlineStr
     ) {
         Instant deadline = Instant.parse(deadlineStr);
-        return new JpaCursorItemReaderBuilder<UUID>()
+
+        PostgresPagingQueryProvider qp = new PostgresPagingQueryProvider();
+        qp.setSelectClause("f.id");
+        qp.setFromClause("from feeds f");
+        qp.setWhereClause("where f.is_deleted = true and f.updated_at < :deadline");
+        qp.setSortKeys(Map.of("id", Order.ASCENDING));
+
+        return new JdbcPagingItemReaderBuilder<UUID>()
             .name(READER_NAME)
-            .entityManagerFactory(entityManagerFactory)
-            .queryString("SELECT f.id FROM Feed f WHERE f.isDeleted = true AND f.updatedAt < :deadline")
-            .parameterValues(Map.of("deadline", deadline))
-            .saveState(false)
+            .dataSource(dataSource)
+            .queryProvider(qp)
+            .parameterValues(Map.of("deadline", Timestamp.from(deadline)))
+            .pageSize(chunkSize)
+            .fetchSize(chunkSize)
+            .rowMapper((rs, i) -> rs.getObject("id", UUID.class))
+            .saveState(true)
             .build();
     }
 
