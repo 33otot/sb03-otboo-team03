@@ -43,7 +43,7 @@ public class FeedBatchConfig {
     private final DataSource dataSource;
     private final FeedRepository feedRepository;
 
-    @Value("${batch.feed.chunk-size:100}")
+    @Value("${otboo.batch.feed.chunk-size:100}")
     private int chunkSize;
 
     // Job 정의
