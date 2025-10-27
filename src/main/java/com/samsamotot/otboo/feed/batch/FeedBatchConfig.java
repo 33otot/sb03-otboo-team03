@@ -16,6 +16,7 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.job.DefaultJobParametersValidator;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -51,6 +52,10 @@ public class FeedBatchConfig {
         return new JobBuilder(JOB_NAME, jobRepository)
             .start(deleteSoftDeletedFeedsStep)
             .listener(jobExecutionListener())
+            .validator(new DefaultJobParametersValidator(
+                new String[] {"deadline"},
+                new String[] {}
+            ))
             .build();
     }
 
@@ -70,7 +75,16 @@ public class FeedBatchConfig {
     public JdbcPagingItemReader<UUID> softDeletedFeedReader(
         @Value("#{jobParameters['deadline']}") String deadlineStr
     ) {
-        Instant deadline = Instant.parse(deadlineStr);
+        if (deadlineStr == null) {
+            throw new IllegalArgumentException("Job 파라미터 'deadline'이 누락되었습니다.");
+        }
+
+        Instant deadline;
+        try {
+            deadline = Instant.parse(deadlineStr);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Job 파라미터 'deadline'은 Instant 형식이어야 합니다. 입력값: " + deadlineStr, e);
+        }
 
         PostgresPagingQueryProvider qp = new PostgresPagingQueryProvider();
         qp.setSelectClause("f.id");

@@ -23,7 +23,7 @@ public class FeedBatchScheduler {
 
     private static final String SCHEDULER_NAME = "[FeedBatchScheduler] ";
 
-    @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "${otboo.scheduler.delete-soft-deleted-feeds-cron}", zone = "Asia/Seoul")
     public void runDeleteSoftDeletedFeedsJob() {
         try {
             Instant deadline = Instant.now().minus(7, ChronoUnit.DAYS);

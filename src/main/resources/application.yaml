@@ -128,3 +128,7 @@ app:
 llm:
   reason:
     max-length: 60
+
+otboo:
+  scheduler:
+    delete-soft-deleted-feeds-cron: "0 0 4 * * *"
