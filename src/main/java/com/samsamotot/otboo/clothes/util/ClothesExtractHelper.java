@@ -367,8 +367,6 @@ public class ClothesExtractHelper {
             return ClothesType.ETC;
         }
 
-        String lowerName = name.toLowerCase();
-
         for (Map.Entry<ClothesType, Pattern> entry : CATEGORY_PATTERNS.entrySet()) {
             if (entry.getValue().matcher(name).matches()) {
                 return entry.getKey();
