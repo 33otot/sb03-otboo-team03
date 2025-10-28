@@ -251,6 +251,22 @@ public class FeedServiceImpl implements FeedService {
         return feed;
     }
 
+    /**
+     * 특정 피드를 물리적으로 삭제 처리합니다.
+     * @param feedId 삭제할 피드의 ID
+     * @throws OtbooException 피드를 찾을 수 없는 경우 (FEED_NOT_FOUND)
+     */
+    @Override
+    public void deleteHard(UUID feedId) {
+        log.debug(SERVICE + "피드 물리 삭제 시작: feedId = {}", feedId);
+
+        Feed feed = feedRepository.findById(feedId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
+
+        feedRepository.delete(feed);
+        log.debug(SERVICE + "피드 물리 삭제 완료: feedId = {}", feedId);
+    }
+
     private void validateCursorRequest(String cursor, String sortBy) {
 
         if (sortBy == null || (!sortBy.equals(SORT_BY_CREATED_AT) && !sortBy.equals(SORT_BY_LIKE_COUNT))) {

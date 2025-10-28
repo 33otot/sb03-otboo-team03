@@ -150,4 +150,39 @@ public interface FeedApi {
     ResponseEntity<Void> deleteFeed(
         @PathVariable UUID feedId
     );
+
+    @Operation(summary = "피드 물리 삭제")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "204",
+            description = "피드 삭제 성공"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "피드 미존재",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "관리자 아님",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "피드 삭제 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    ResponseEntity<Void> deleteHardFeed(
+        @PathVariable UUID feedId
+    );
 }

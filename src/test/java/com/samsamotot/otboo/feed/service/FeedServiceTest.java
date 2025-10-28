@@ -749,4 +749,41 @@ public class FeedServiceTest {
                 .isEqualTo(ErrorCode.FORBIDDEN_FEED_DELETION);
         }
     }
+
+    @Nested
+    @DisplayName("피드 물리 삭제 테스트")
+    class FeedHardDeleteTest {
+
+        @Test
+        void 피드를_물리_삭제_하면_레포지토리_delete가_호출된다() {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            Feed feed = FeedFixture.createFeed(mockUser, mockWeather);
+            ReflectionTestUtils.setField(feed, "id", feedId);
+
+            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.of(feed));
+
+            // when
+            feedService.deleteHard(feedId);
+
+            // then
+            verify(feedRepository).delete(feed);
+        }
+
+        @Test
+        void 존재하지_않는_피드_삭제_요청시_예외가_발생한다() {
+
+            // given
+            UUID invalidFeedId = UUID.randomUUID();
+
+            given(feedRepository.findById(any(UUID.class))).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> feedService.deleteHard(invalidFeedId))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FEED_NOT_FOUND);
+        }
+    }
 }

@@ -14,6 +14,10 @@ spring:
     type: redis
     redis:
       enable-statistics: true
+  batch:
+    job:
+      enabled: true
+      name: weatherJob
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
@@ -123,3 +127,10 @@ app:
 llm:
   reason:
     max-length: 60
+
+otboo:
+  batch:
+    feed:
+      chunk-size: 100
+  scheduler:
+    delete-soft-deleted-feeds-cron: "0 0 4 * * *"

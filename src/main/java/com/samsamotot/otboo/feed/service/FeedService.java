@@ -17,4 +17,6 @@ public interface FeedService {
     FeedDto update(UUID feedId, UUID userId, FeedUpdateRequest request);
 
     Feed delete(UUID feedId, UUID userId);
+
+    void deleteHard(UUID feedId);
 }

@@ -1,5 +1,21 @@
 package com.samsamotot.otboo.feed.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.clothes.dto.OotdDto;
 import com.samsamotot.otboo.common.config.SecurityTestConfig;
@@ -21,10 +37,13 @@ import com.samsamotot.otboo.feed.service.FeedService;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
-import com.samsamotot.otboo.weather.entity.Grid;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,25 +53,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @WebMvcTest(FeedController.class)
@@ -706,6 +710,39 @@ public class FeedControllerTest {
                             .with(user(mockPrincipal)))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FORBIDDEN_FEED_DELETION.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 물리 삭제 테스트")
+    class FeedHardDeleteTest {
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void 피드를_물리_삭제_하면_204가_반환된다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{id}/hard", feedId))
+                .andExpect(status().isNoContent());
+
+            verify(feedService).deleteHard(feedId);
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void 관리자가_아니라면_403이_반환된다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{id}/hard", feedId))
+                .andExpect(status().isForbidden());
+
+            verify(feedService, never()).deleteHard(feedId);
         }
     }
 }

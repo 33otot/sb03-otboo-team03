@@ -22,7 +22,7 @@ public class WeatherBatchConfig {
     private final WeatherBatchTasklet weatherBatchTasklet;
 
     // Job 정의
-    @Bean
+    @Bean(name = "weatherJob")
     public Job weatherJob() {
         return new JobBuilder("weatherJob", jobRepository)
                 .start(weatherTaskletStep())

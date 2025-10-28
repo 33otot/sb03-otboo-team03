@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -122,6 +123,27 @@ public class FeedController implements FeedApi {
         feedService.delete(feedId, userId);
 
         log.info("[FeedController] 피드 삭제 완료: feedId = {}, userId = {}", feedId, userId);
+
+        return ResponseEntity
+            .status(HttpStatus.NO_CONTENT)
+            .build();
+    }
+
+    /**
+     * 특정 피드를 삭제합니다. (물리 삭제)
+     *
+     * @param feedId 삭제할 피드의 ID
+     * @return 내용 없이 HTTP 204 No Content 상태 코드를 담은 ResponseEntity
+     */
+    @Override
+    @DeleteMapping("/{feedId}/hard")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteHardFeed(@PathVariable UUID feedId) {
+        log.info("[FeedController] 피드 물리 삭제 요청: feedId = {}", feedId);
+
+        feedService.deleteHard(feedId);
+
+        log.info("[FeedController] 피드 물리 삭제 완료: feedId = {}", feedId);
 
         return ResponseEntity
             .status(HttpStatus.NO_CONTENT)
