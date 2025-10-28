@@ -1,7 +1,6 @@
 package com.samsamotot.otboo.common.storage;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -99,6 +98,12 @@ public class S3ImageStorage {
 
     // 파일명을 난수화하기 위해 UUID 를 활용하여 난수를 돌린다.
     public String createFileName(String fileName){
+
+        // "extracted-"로 시작하는 파일명은 이미 UUID이므로 그대로 사용
+        if (fileName != null && fileName.startsWith("extracted-")) {
+            return fileName;  // UUID 재생성하지 않음
+        }
+
         return UUID.randomUUID().toString().concat(getFileExtension(fileName));
     }
 

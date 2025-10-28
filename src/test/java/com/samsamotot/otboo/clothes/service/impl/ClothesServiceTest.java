@@ -227,6 +227,91 @@ class ClothesServiceTest {
             assertThat(result.attributes().get(0).definitionName()).isEqualTo("계절");
             assertThat(result.attributes().get(0).value()).isEqualTo("봄");
         }
+
+        @Test
+        void 추출된_이미지로_의상_등록시_재업로드를_건너뛰어야_한다() {
+            // given
+            UUID ownerId = mockUser.getId();
+
+            ClothesCreateRequest request = new ClothesCreateRequest(
+                UUID.randomUUID(),
+                "에이블리 티셔츠",
+                ClothesType.TOP,
+                Collections.emptyList()
+            );
+
+            // extracted- prefix가 있는 파일 (추출 단계에서 이미 저장된 파일)
+            String extractedFilename = "extracted-169583ce-b68a-433a-b95a-98a7cb276c88.webp";
+            MockMultipartFile extractedFile = new MockMultipartFile(
+                "file",
+                extractedFilename,
+                "image/webp",
+                "dummy-image".getBytes()
+            );
+
+            Clothes savedClothes = Clothes.createClothes(request.name(), request.type(), mockUser);
+
+            when(userRepository.findById(ownerId)).thenReturn(Optional.of(mockUser));
+            when(clothesRepository.save(any(Clothes.class))).thenReturn(savedClothes);
+
+            // when
+            ClothesDto result = clothesService.create(ownerId, request, extractedFile);
+
+            // then
+            assertThat(result.name()).isEqualTo("에이블리 티셔츠");
+            assertThat(result.imageUrl()).contains("extracted-169583ce-b68a-433a-b95a-98a7cb276c88.webp");
+            assertThat(result.imageUrl()).startsWith("https://");
+            assertThat(result.imageUrl()).contains(".s3.");
+            assertThat(result.imageUrl()).contains("amazonaws.com/clothes/");
+
+            // S3 업로드가 호출되지 않았는지 검증
+            verify(s3ImageStorage, never()).uploadImage(any(), any());
+        }
+
+        @Test
+        void 추출된_이미지와_속성으로_의상_등록이_가능해야_한다() {
+            // given
+            UUID ownerId = mockUser.getId();
+
+            // 속성 정의와 옵션 미리 준비
+            ClothesAttributeDef defEntity = ClothesAttributeDefFixture.createClothesAttributeDef();
+            ClothesAttributeDto attrDto = new ClothesAttributeDto(defEntity.getId(), "여름");
+
+            ClothesCreateRequest request = new ClothesCreateRequest(
+                UUID.randomUUID(),
+                "네이버 쇼핑 반팔",
+                ClothesType.TOP,
+                List.of(attrDto)
+            );
+
+            // extracted- prefix가 있는 파일
+            String extractedFilename = "extracted-807060f1-9e88-4698-b592-d527ddf6e80b.webp";
+            MockMultipartFile extractedFile = new MockMultipartFile(
+                "file",
+                extractedFilename,
+                "image/webp",
+                new byte[0]
+            );
+
+            Clothes savedClothes = Clothes.createClothes(request.name(), request.type(), mockUser);
+
+            when(userRepository.findById(ownerId)).thenReturn(Optional.of(mockUser));
+            when(defRepository.findById(defEntity.getId())).thenReturn(Optional.of(defEntity));
+            when(clothesRepository.save(any(Clothes.class))).thenReturn(savedClothes);
+
+            // when
+            ClothesDto result = clothesService.create(ownerId, request, extractedFile);
+
+            // then
+            assertThat(result.name()).isEqualTo("네이버 쇼핑 반팔");
+            assertThat(result.imageUrl()).contains("extracted-807060f1-9e88-4698-b592-d527ddf6e80b.webp");
+            assertThat(result.imageUrl()).contains("amazonaws.com/clothes/");
+            assertThat(result.attributes()).hasSize(1);
+            assertThat(result.attributes().get(0).value()).isEqualTo("여름");
+
+            // S3 업로드가 호출되지 않았는지 검증
+            verify(s3ImageStorage, never()).uploadImage(any(), any());
+        }
     }
 
     @Nested

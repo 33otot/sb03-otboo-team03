@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -54,6 +55,12 @@ public class ClothesServiceImpl implements ClothesService {
     private final S3ImageStorage s3ImageStorage;
     private final ClothesMapper clothesMapper;
     private final ClothesServiceHelper clothesServiceHelper;
+
+    @Value("${otboo.storage.s3.bucket}")
+    private String bucketName;
+
+    @Value("${otboo.storage.s3.region}")
+    private String region;
 
     // 이미지 없는 생성
     @Override
@@ -115,8 +122,19 @@ public class ClothesServiceImpl implements ClothesService {
 
         // imageUrl 처리
         String imageUrl;
-        log.debug(SERVICE_NAME + "S3에 의상 이미지 업로드 요청: {}", clothesImage.getOriginalFilename());
-        imageUrl = s3ImageStorage.uploadImage(clothesImage, "clothes/");
+
+        String originalFilename = clothesImage.getOriginalFilename();
+        log.debug(SERVICE_NAME + "전달된 이미지 파일명: {}", originalFilename);
+
+        // "extracted-"로 시작하면 이미 S3에 저장된 파일
+        if (originalFilename != null && originalFilename.startsWith("extracted-")) {
+            log.info(SERVICE_NAME + "추출 단계에서 이미 저장된 이미지입니다. 재업로드를 건너뜁니다.");
+            imageUrl = String.format("https://%s.s3.%s.amazonaws.com/clothes/%s",
+                bucketName, region, originalFilename);
+        } else {
+            log.debug(SERVICE_NAME + "S3에 의상 이미지 업로드 요청: {}", clothesImage.getOriginalFilename());
+            imageUrl = s3ImageStorage.uploadImage(clothesImage, "clothes/");
+        }
 
         clothes.updateImageUrl(imageUrl);
         Clothes saved = clothesRepository.save(clothes);

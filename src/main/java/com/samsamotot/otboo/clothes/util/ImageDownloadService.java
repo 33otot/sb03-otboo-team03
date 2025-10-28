@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -87,7 +88,7 @@ public class ImageDownloadService {
 
                 MultipartFile file = new SimpleMultipartFile(
                     "file",
-                    "downloaded." + ext,
+                    "extracted-" + UUID.randomUUID().toString() + "." + ext,
                     finalContentType,
                     bytes
                 );
