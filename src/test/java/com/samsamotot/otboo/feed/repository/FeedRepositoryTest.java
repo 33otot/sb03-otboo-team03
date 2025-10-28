@@ -601,4 +601,116 @@ public class FeedRepositoryTest {
             .doesNotContain(deleted.getId());
         assertThat(count).isEqualTo(1L);
     }
+
+    @Test
+    void 특정_사용자의_논리_삭제된_피드를_createdAt_내림차순으로_조회한다() {
+        // given
+        int limit = 5;
+        String sortBy = "createdAt";
+        SortDirection sortDirection = SortDirection.DESCENDING;
+
+        for (int i = 0; i < 10; i++) {
+            Feed feed = FeedFixture.createFeed(author, weather);
+            if (i % 2 == 0) {
+                ReflectionTestUtils.setField(feed, "isDeleted", true);
+            }
+            em.persist(feed);
+        }
+        em.flush();
+        em.clear();
+
+        // when
+        List<Feed> result = feedRepository.findDeletedByCursor(
+            null, null, limit, sortBy, sortDirection, author.getId()
+        );
+
+        // then
+        assertThat(result).hasSize(limit);
+        assertThat(result).allSatisfy(feed -> {
+            assertThat(feed.isDeleted()).isTrue();
+            assertThat(feed.getAuthor().getId()).isEqualTo(author.getId());
+        });
+        assertThat(result).isSortedAccordingTo(Comparator.comparing(Feed::getCreatedAt).reversed());
+    }
+
+    @Test
+    void 커서가_주어졌을_때_논리_삭제된_피드의_이후_데이터만_조회된다() {
+        // given
+        int limit = 3;
+        String sortBy = "createdAt";
+        SortDirection sortDirection = SortDirection.DESCENDING;
+
+        List<Feed> deletedFeeds = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            Feed feed = FeedFixture.createFeedWithCreatedAt(author, weather, Instant.now().minusSeconds(i * 1000));
+            ReflectionTestUtils.setField(feed, "isDeleted", true);
+            em.persist(feed);
+            deletedFeeds.add(feed);
+        }
+        em.flush();
+        em.clear();
+
+        deletedFeeds.sort(Comparator.comparing(Feed::getCreatedAt).reversed());
+        Feed cursorFeed = deletedFeeds.get(1);
+        String cursor = cursorFeed.getCreatedAt().toString();
+        UUID idAfter = cursorFeed.getId();
+
+        // when
+        List<Feed> result = feedRepository.findDeletedByCursor(
+            cursor, idAfter, limit, sortBy, sortDirection, author.getId()
+        );
+
+        // then
+        assertThat(result).hasSize(3);
+        assertThat(result.get(0).getCreatedAt()).isBeforeOrEqualTo(cursorFeed.getCreatedAt());
+        assertThat(result).isSortedAccordingTo(Comparator.comparing(Feed::getCreatedAt).reversed());
+    }
+
+    @Test
+    void 특정_사용자의_논리_삭제된_피드_개수를_반환한다() {
+        // given
+        User otherAuthor = UserFixture.createUser();
+        ReflectionTestUtils.setField(otherAuthor, "email", "other+" + UUID.randomUUID() + "@test.com");
+        em.persist(otherAuthor);
+
+        for (int i = 0; i < 5; i++) {
+            Feed feed = FeedFixture.createFeed(author, weather);
+            ReflectionTestUtils.setField(feed, "isDeleted", true);
+            em.persist(feed);
+        }
+        for (int i = 0; i < 3; i++) {
+            Feed feed = FeedFixture.createFeed(otherAuthor, weather);
+            ReflectionTestUtils.setField(feed, "isDeleted", true);
+            em.persist(feed);
+        }
+        for (int i = 0; i < 2; i++) {
+            Feed feed = FeedFixture.createFeed(author, weather);
+            em.persist(feed);
+        }
+        em.flush();
+        em.clear();
+
+        // when
+        long count = feedRepository.countDeletedByAuthorId(author.getId());
+
+        // then
+        assertThat(count).isEqualTo(5L);
+    }
+
+    @Test
+    void 삭제된_피드가_없을_때_0을_반환한다() {
+        // given
+        for (int i = 0; i < 5; i++) {
+            Feed feed = FeedFixture.createFeed(author, weather);
+            em.persist(feed);
+        }
+        em.flush();
+        em.clear();
+
+        // when
+        long count = feedRepository.countDeletedByAuthorId(author.getId());
+
+        // then
+        assertThat(count).isEqualTo(0L);
+    }
 }

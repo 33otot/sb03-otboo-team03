@@ -28,6 +28,7 @@ import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.common.type.SortDirection;
+import com.samsamotot.otboo.feed.dto.DeletedFeedCursorRequest; // Import the new DTO
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
@@ -768,6 +769,120 @@ public class FeedControllerTest {
                 .andExpect(jsonPath("$.id").value(feedId.toString()));
 
             verify(feedService).restore(eq(feedId), eq(mockUser.getId()));
+        }
+    }
+
+    @Nested
+    @DisplayName("삭제된 피드 목록 조회 테스트")
+    class DeletedFeedListGetTest {
+
+        @Test
+        void 요청_조건대로_정렬된_삭제된_피드목록과_200이_반환된다() throws Exception {
+            // given
+            Instant base = Instant.parse("2025-09-16T10:00:00Z");
+            FeedDto oldFeed = FeedFixture.createFeedDtoWithCreatedAt("deleted content1", null, null, List.of(), base.minusSeconds(1000));
+            FeedDto newFeed = FeedFixture.createFeedDtoWithCreatedAt("deleted content2", null, null, List.of(), base);
+            List<FeedDto> feedDtos = List.of(newFeed, oldFeed);
+
+            CursorResponse<FeedDto> expected = new CursorResponse<>(
+                feedDtos,
+                null,
+                null,
+                false,
+                2L,
+                "createdAt",
+                SortDirection.DESCENDING
+            );
+
+            given(feedService.getDeletedFeeds(any(DeletedFeedCursorRequest.class), any(UUID.class)))
+                .willReturn(expected);
+
+            // when & then
+            mockMvc.perform(get("/api/feeds/deleted")
+                            .param("limit", String.valueOf(10))
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data", hasSize(2)))
+                    .andExpect(jsonPath("$.data[0].content").value("deleted content2"))
+                    .andExpect(jsonPath("$.data[1].content").value("deleted content1"))
+                    .andExpect(jsonPath("$.totalCount").value(2L));
+
+            ArgumentCaptor<DeletedFeedCursorRequest> captor = ArgumentCaptor.forClass(DeletedFeedCursorRequest.class);
+            verify(feedService).getDeletedFeeds(captor.capture(), eq(mockUser.getId()));
+            DeletedFeedCursorRequest actual = captor.getValue();
+            assertThat(actual.limit()).isEqualTo(10);
+        }
+
+        @Test
+        void 커서_조건이_적용된_삭제된_피드목록과_200이_반환된다() throws Exception {
+            // given
+            Instant base = Instant.parse("2025-09-16T10:00:00Z");
+            FeedDto cursorFeed = FeedFixture.createFeedDtoWithCreatedAt("cursor deleted", null, null, List.of(), base);
+            FeedDto newFeed1 = FeedFixture.createFeedDtoWithCreatedAt("deleted content3", null, null, List.of(), base.plusSeconds(1000));
+            FeedDto newFeed2 = FeedFixture.createFeedDtoWithCreatedAt("deleted content4", null, null, List.of(), base.plusSeconds(2000));
+            List<FeedDto> feedDtos = List.of(newFeed1, newFeed2);
+
+            String cursor = cursorFeed.createdAt().toString();
+            UUID idAfter = cursorFeed.id();
+
+            CursorResponse<FeedDto> expected = new CursorResponse<>(
+                feedDtos,
+                null,
+                null,
+                false,
+                2L,
+                "createdAt",
+                SortDirection.DESCENDING
+            );
+
+            given(feedService.getDeletedFeeds(any(DeletedFeedCursorRequest.class), any(UUID.class)))
+                .willReturn(expected);
+
+            ArgumentCaptor<DeletedFeedCursorRequest> captor = ArgumentCaptor.forClass(DeletedFeedCursorRequest.class);
+
+            // when & then
+            mockMvc.perform(get("/api/feeds/deleted")
+                            .param("cursor", cursor)
+                            .param("idAfter", idAfter.toString())
+                            .param("limit", "10")
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data", hasSize(2)))
+                    .andExpect(jsonPath("$.data[0].content").value("deleted content3"))
+                    .andExpect(jsonPath("$.data[1].content").value("deleted content4"))
+                    .andExpect(jsonPath("$.totalCount").value(2L));
+
+            verify(feedService).getDeletedFeeds(captor.capture(), eq(mockUser.getId()));
+            DeletedFeedCursorRequest actual = captor.getValue();
+            assertThat(actual.cursor()).isEqualTo(cursor);
+            assertThat(actual.idAfter()).isEqualTo(idAfter);
+            assertThat(actual.limit()).isEqualTo(10);
+        }
+
+        @Test
+        void 잘못된_커서포맷이면_400이_반환된다() throws Exception {
+            // given
+            given(feedService.getDeletedFeeds(any(DeletedFeedCursorRequest.class), any(UUID.class)))
+                .willThrow(new OtbooException(ErrorCode.INVALID_CURSOR_FORMAT));
+
+            // when & then
+            mockMvc.perform(get("/api/feeds/deleted")
+                            .param("cursor", "invalidCursor")
+                            .param("limit", "10")
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.exceptionName").value(ErrorCode.INVALID_CURSOR_FORMAT.name()));
+        }
+
+        @Test
+        void limit가_음수이면_400이_반환된다() throws Exception {
+            mockMvc.perform(get("/api/feeds/deleted")
+                            .param("limit", "-1")
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isBadRequest());
         }
     }
 }
