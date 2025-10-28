@@ -18,6 +18,9 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedRepositor
     // 논리적으로 삭제되지 않는 피드를 id로 조회합니다.
     Optional<Feed> findByIdAndIsDeletedFalse(UUID id);
 
+    // 논리적으로 삭제된 피드를 id로 조회합니다.
+    Optional<Feed> findByIdAndIsDeletedTrue(UUID id);
+
     // 특정 피드의 좋아요 수를 1 증가시킵니다.
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
@@ -63,4 +66,6 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedRepositor
     // 특정 격자에서 피드가 참조하는 날씨 데이터 ID들을 조회합니다.
     @Query("select f.weather.id from Feed f where f.weather.grid = :grid and f.weather is not null")
     Set<UUID> findWeatherIdsByGrid(@Param("grid") Grid grid);
+
+    Feed findByIdAndIsDeletedTrueAndAuthorId(UUID id, boolean isDeleted, UUID authorId);
 }

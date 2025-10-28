@@ -19,4 +19,6 @@ public interface FeedService {
     Feed delete(UUID feedId, UUID userId);
 
     void deleteHard(UUID feedId);
+
+    FeedDto restore(UUID feedId, UUID userId);
 }

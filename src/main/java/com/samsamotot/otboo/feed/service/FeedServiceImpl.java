@@ -267,6 +267,34 @@ public class FeedServiceImpl implements FeedService {
         log.debug(SERVICE + "피드 물리 삭제 완료: feedId = {}", feedId);
     }
 
+    /**
+     * 특정 피드를 복구합니다.
+     *
+     * @param feedId 복구할 피드의 ID
+     * @param userId 현재 사용자의 ID
+     * @return 복구 처리된 Feed 객체
+     * @throws OtbooException 피드를 찾을 수 없는 경우 (FEED_NOT_FOUND)
+     *                        삭제 권한이 없는 경우 (FORBIDDEN_FEED_DELETION)
+     */
+    @Override
+    public FeedDto restore(UUID feedId, UUID userId) {
+        log.debug(SERVICE + "피드 복구 시작: feedId = {}, userId = {}", feedId, userId);
+
+        Feed feed = feedRepository.findByIdAndIsDeletedTrue(feedId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
+
+        if (!feed.getAuthor().getId().equals(userId)) {
+            throw new OtbooException(ErrorCode.FORBIDDEN_FEED_MODIFICATION,
+                Map.of("feedId", feedId.toString(), "userId", userId.toString()));
+        }
+
+        feed.restore();
+        log.debug(SERVICE + "피드 복구 완료: feedId = {}, userId = {}", feedId, userId);
+        FeedDto result = convertToDto(feed, userId);
+
+        return result;
+    }
+
     private void validateCursorRequest(String cursor, String sortBy) {
 
         if (sortBy == null || (!sortBy.equals(SORT_BY_CREATED_AT) && !sortBy.equals(SORT_BY_LIKE_COUNT))) {

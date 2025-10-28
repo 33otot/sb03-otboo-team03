@@ -149,4 +149,24 @@ public class FeedController implements FeedApi {
             .status(HttpStatus.NO_CONTENT)
             .build();
     }
+
+    /**
+     * 논리 삭제된 특정 피드를 복구합니다.
+     *
+     * @param feedId 복구할 피드 ID
+     * @return 복구된 피드 정보를 담은 ResponseEntity (HTTP 200 OK)
+     */
+    @Override
+    public ResponseEntity<FeedDto> restoreFeed(UUID feedId) {
+        log.info("[FeedController] 피드 복구 요청: feedId = {}", feedId);
+
+        UUID userId = getAuthenticatedUserId();
+        FeedDto result = feedService.restore(feedId, userId);
+
+        log.info("[FeedController] 피드 수정 완료: feedId = {}", feedId);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(result);
+    }
 }
