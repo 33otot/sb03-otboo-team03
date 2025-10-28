@@ -137,6 +137,7 @@ public class FeedController implements FeedApi {
      */
     @Override
     @DeleteMapping("/{feedId}/hard")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteHardFeed(@PathVariable UUID feedId) {
         log.info("[FeedController] 피드 물리 삭제 요청: feedId = {}", feedId);
 
