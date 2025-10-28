@@ -113,6 +113,7 @@ public class FeedIntegrationTest {
 
     private User testUser;
     private User otherUser;
+    private User adminUser;
     private Weather testWeather;
     private List<Clothes> testClothes;
 
@@ -120,6 +121,7 @@ public class FeedIntegrationTest {
     void setUp() {
         testUser = userRepository.save(UserFixture.createUserWithEmail("testuser@example.com"));
         otherUser = userRepository.save(UserFixture.createUserWithEmail("otheruser@example.com"));
+        adminUser = userRepository.save(UserFixture.createAdminUserWithEmail("admin@example.com"));
         Grid grid = gridRepository.save(GridFixture.createGrid());
         testWeather = weatherRepository.save(WeatherFixture.createWeather(grid));
         testClothes = clothesRepository.saveAll(
@@ -326,6 +328,52 @@ public class FeedIntegrationTest {
         void 다른_사람이_작성한_피드는_삭제할_수_없다() throws Exception {
             // when & then
             mockMvc.perform(delete("/api/feeds/" + userFeed.getId())
+                    .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andDo(print());
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 물리 삭제 테스트")
+    class FeedHardDeleteTest {
+
+        private Feed userFeed;
+
+        @BeforeEach
+        void setUp() {
+            userFeed = feedRepository.save(
+                Feed.builder()
+                    .author(testUser)
+                    .weather(testWeather)
+                    .content("삭제될 피드")
+                    .build()
+            );
+        }
+
+        @Test
+        @WithUserDetails(
+            value = "admin@example.com",
+            setupBefore = TestExecutionEvent.TEST_EXECUTION
+        )
+        void 관리자는_피드를_물리적으로_삭제할_수_있다() throws Exception {
+            // when & then
+            mockMvc.perform(delete("/api/feeds/" + userFeed.getId() + "/hard")
+                    .with(csrf()))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+
+            assertThat(feedRepository.findById(userFeed.getId())).isEmpty();
+        }
+
+        @Test
+        @WithUserDetails(
+            value = "testuser@example.com",
+            setupBefore = TestExecutionEvent.TEST_EXECUTION
+        )
+        void 일반_사용자는_피드를_물리적으로_삭제할_수_없다() throws Exception {
+            // when & then
+            mockMvc.perform(delete("/api/feeds/" + userFeed.getId() + "/hard")
                     .with(csrf()))
                 .andExpect(status().isForbidden())
                 .andDo(print());

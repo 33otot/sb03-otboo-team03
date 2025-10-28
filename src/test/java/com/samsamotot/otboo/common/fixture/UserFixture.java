@@ -76,6 +76,18 @@ public class UserFixture {
             .build();
     }
 
+    public static User createAdminUserWithEmail(String email) {
+        return User.builder()
+            .email(email)
+            .username("관리자")
+            .password("encodedPassword")
+            .provider(Provider.LOCAL)
+            .providerId(null)
+            .role(Role.ADMIN)
+            .isLocked(false)
+            .build();
+    }
+
     public static User createLockedUser() {
         return User.builder()
             .email("locked@example.com")
