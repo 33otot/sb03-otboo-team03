@@ -1,5 +1,6 @@
 package com.samsamotot.otboo.clothes.util;
 
+import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.exception.ClothesExtractionFailedException;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -9,6 +10,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -20,6 +23,65 @@ import org.springframework.web.server.ResponseStatusException;
 @Component
 public class ClothesExtractHelper {
     private static final String SERVICE_NAME = "[ClothesExtractHelper] ";
+
+    // 카테고리 분류 패턴
+    private static final Map<ClothesType, Pattern> CATEGORY_PATTERNS = Map.ofEntries(
+
+        // 아우터
+        Map.entry(ClothesType.OUTER,
+            Pattern.compile(".*(집업|후드집업|자켓|점퍼|코트|패딩|야상|바람막이|가디건|블루종|무스탕|트렌치|파카|플리스|후리스).*",
+                Pattern.CASE_INSENSITIVE)),
+
+        // 상의
+        Map.entry(ClothesType.TOP,
+            Pattern.compile(".*(반팔|티셔츠|슬리브|긴팔|셔츠|니트|후드티|후드|hoodie|맨투맨|블라우스|조끼|폴라).*",
+                Pattern.CASE_INSENSITIVE)),
+
+        // 하의
+        Map.entry(ClothesType.BOTTOM,
+            Pattern.compile(".*(청바지|팬츠|슬랙스|바지|데님|진|레깅스|조거|트레이닝|스커트|치마).*",
+                Pattern.CASE_INSENSITIVE)),
+
+        // 신발
+        Map.entry(ClothesType.SHOES,
+            Pattern.compile(".*(신발|스니커즈|구두|부츠|운동화|로퍼|샌들|슬리퍼|워커|크록스|슈즈|어그).*",
+                Pattern.CASE_INSENSITIVE)),
+
+        // 원피스
+        Map.entry(ClothesType.DRESS,
+            Pattern.compile(".*(원피스|드레스).*",
+                Pattern.CASE_INSENSITIVE)),
+
+        // 가방
+        Map.entry(ClothesType.BAG,
+            Pattern.compile(".*(가방|백팩|크로스백|숄더백|토트백|클러치|파우치|보부상).*",
+                Pattern.CASE_INSENSITIVE)),
+
+        // 모자
+        Map.entry(ClothesType.HAT,
+            Pattern.compile(".*(모자|캡|비니|버킷햇|헌팅캡|베레모|헤어밴드|머리띠).*",
+                Pattern.CASE_INSENSITIVE)),
+
+        // 액세서리
+        Map.entry(ClothesType.ACCESSORY,
+            Pattern.compile(".*(악세서리|액세서리|목걸이|팔찌|반지|귀걸이|시계|벨트|ring|워치|선글라스|안경|뿔테|아이웨어).*",
+                Pattern.CASE_INSENSITIVE)),
+
+        // 양말
+        Map.entry(ClothesType.SOCKS,
+            Pattern.compile(".*(양말|스타킹|타이즈|삭스|socks|레그워머).*",
+                Pattern.CASE_INSENSITIVE)),
+
+        // 속옷
+        Map.entry(ClothesType.UNDERWEAR,
+            Pattern.compile(".*(속옷|언더웨어|브라|팬티|트렁크|드로즈|캡나시|내장캡).*",
+                Pattern.CASE_INSENSITIVE)),
+
+        // 스카프
+        Map.entry(ClothesType.SCARF,
+            Pattern.compile(".*(스카프|목도리|넥워머|머플러).*",
+                Pattern.CASE_INSENSITIVE))
+    );
 
     // 허용되는 프로토콜
     private static final List<String> ALLOWED_PROTOCOLS = List.of("http", "https");
@@ -293,5 +355,27 @@ public class ClothesExtractHelper {
      */
     public boolean isRedirectResponse(int responseCode) {
         return responseCode >= 300 && responseCode < 400;
+    }
+
+    /**
+     * 의상 이름에서 키워드를 기반으로 카테고리를 분류
+     * @param name 의상 이름
+     * @return 카테고리 (매칭되지 않으면 "기타")
+     */
+    public ClothesType classifyCategoryByName(String name) {
+        if (name == null || name.isEmpty()) {
+            return ClothesType.ETC;
+        }
+
+        String lowerName = name.toLowerCase();
+
+        for (Map.Entry<ClothesType, Pattern> entry : CATEGORY_PATTERNS.entrySet()) {
+            if (entry.getValue().matcher(name).matches()) {
+                return entry.getKey();
+            }
+        }
+
+        // 매칭되지 않으면 기타
+        return ClothesType.ETC;
     }
 }
