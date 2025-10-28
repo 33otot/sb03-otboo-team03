@@ -157,13 +157,14 @@ public class FeedController implements FeedApi {
      * @return 복구된 피드 정보를 담은 ResponseEntity (HTTP 200 OK)
      */
     @Override
-    public ResponseEntity<FeedDto> restoreFeed(UUID feedId) {
-        log.info("[FeedController] 피드 복구 요청: feedId = {}", feedId);
+    @PatchMapping("/{feedId}/restore")
+    public ResponseEntity<FeedDto> restoreFeed(@PathVariable UUID feedId) {
 
         UUID userId = getAuthenticatedUserId();
-        FeedDto result = feedService.restore(feedId, userId);
+        log.info("[FeedController] 피드 복구 요청: feedId = {}, userId = {}", feedId, userId);
 
-        log.info("[FeedController] 피드 수정 완료: feedId = {}", feedId);
+        FeedDto result = feedService.restore(feedId, userId);
+        log.info("[FeedController] 피드 복구 완료: feedId = {}, userId = {}", feedId, userId);
 
         return ResponseEntity
             .status(HttpStatus.OK)

@@ -745,4 +745,29 @@ public class FeedControllerTest {
             verify(feedService, never()).deleteHard(feedId);
         }
     }
+
+    @Nested
+    @DisplayName("피드 복구 테스트")
+    class FeedRestoreTest {
+
+        @Test
+        void 작성자는_삭제된_피드를_복구할_수_있다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            Feed mockFeed = FeedFixture.createFeed(mockUser, WeatherFixture.createWeather(GridFixture.createGrid()));
+            ReflectionTestUtils.setField(mockFeed, "id", feedId);
+            FeedDto feedDto = FeedFixture.createFeedDto(mockFeed);
+
+            given(feedService.restore(any(UUID.class), any(UUID.class))).willReturn(feedDto);
+
+            // when & then
+            mockMvc.perform(patch("/api/feeds/{id}/restore", feedId)
+                            .with(user(mockPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(feedId.toString()));
+
+            verify(feedService).restore(eq(feedId), eq(mockUser.getId()));
+        }
+    }
 }

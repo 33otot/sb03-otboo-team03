@@ -786,4 +786,86 @@ public class FeedServiceTest {
                 .isEqualTo(ErrorCode.FEED_NOT_FOUND);
         }
     }
+
+    @Nested
+    @DisplayName("피드 복구 테스트")
+    class FeedRestoreTest {
+
+        @Test
+        void 복구_요청시_삭제된_피드가_복구된다() {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            Feed feed = FeedFixture.createFeed(mockUser, mockWeather);
+            ReflectionTestUtils.setField(feed, "id", feedId);
+            ReflectionTestUtils.setField(feed, "isDeleted", true);
+            UUID userId = mockUser.getId();
+
+            FeedDto expectedDto = FeedFixture.createFeedDto(feed);
+
+            given(feedRepository.findByIdAndIsDeletedTrue(any(UUID.class))).willReturn(Optional.of(feed));
+            given(feedMapper.toDto(any(Feed.class))).willReturn(expectedDto);
+
+            // when
+            FeedDto result = feedService.restore(feedId, userId);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(feed.isDeleted()).isFalse();
+        }
+
+        @Test
+        void 존재하지_않는_피드_복구_요청시_예외가_발생한다() {
+
+            // given
+            UUID invalidFeedId = UUID.randomUUID();
+            UUID userId = mockUser.getId();
+
+            given(feedRepository.findByIdAndIsDeletedTrue(any(UUID.class))).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> feedService.restore(invalidFeedId, userId))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FEED_NOT_FOUND);
+        }
+
+        @Test
+        void 삭제되지_않은_피드_복구_요청시_예외가_발생한다() {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            Feed feed = FeedFixture.createFeed(mockUser, mockWeather);
+            ReflectionTestUtils.setField(feed, "id", feedId);
+            UUID userId = mockUser.getId();
+
+            given(feedRepository.findByIdAndIsDeletedTrue(any(UUID.class))).willReturn(
+                Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> feedService.restore(feedId, userId))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FEED_NOT_FOUND);
+        }
+
+        @Test
+        void 작성자가_아닌_유저가_피드_복구_요청시_예외가_발생한다() {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            Feed feed = FeedFixture.createFeed(mockUser, mockWeather);
+            ReflectionTestUtils.setField(feed, "id", feedId);
+            feed.delete();
+            UUID otherUserId = UUID.randomUUID();
+
+            given(feedRepository.findByIdAndIsDeletedTrue(any(UUID.class))).willReturn(Optional.of(feed));
+
+            // when & then
+            assertThatThrownBy(() -> feedService.restore(feedId, otherUserId))
+                .isInstanceOf(OtbooException.class)
+                .extracting(e -> ((OtbooException) e).getErrorCode())
+                .isEqualTo(ErrorCode.FORBIDDEN_FEED_MODIFICATION);
+        }
+    }
 }
