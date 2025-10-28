@@ -2,6 +2,7 @@ package com.samsamotot.otboo.feed.repository;
 
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.weather.entity.Grid;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -66,6 +67,4 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedRepositor
     // 특정 격자에서 피드가 참조하는 날씨 데이터 ID들을 조회합니다.
     @Query("select f.weather.id from Feed f where f.weather.grid = :grid and f.weather is not null")
     Set<UUID> findWeatherIdsByGrid(@Param("grid") Grid grid);
-
-    Feed findByIdAndIsDeletedTrueAndAuthorId(UUID id, boolean isDeleted, UUID authorId);
 }

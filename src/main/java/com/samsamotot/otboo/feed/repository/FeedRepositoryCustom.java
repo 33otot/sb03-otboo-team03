@@ -29,5 +29,14 @@ public interface FeedRepositoryCustom {
         UUID authorIdEqual
     );
 
+    List<Feed> findDeletedByCursor(
+        String cursor,
+        UUID idAfter,
+        int limit,
+        String sortBy,
+        SortDirection sortDirection,
+        UUID authorId
+    );
 
+    long countDeletedByAuthorId(UUID authorId);
 }
