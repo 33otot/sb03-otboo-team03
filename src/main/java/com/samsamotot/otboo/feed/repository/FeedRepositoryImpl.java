@@ -185,4 +185,66 @@ public class FeedRepositoryImpl implements FeedRepositoryCustom{
             default -> throw new OtbooException(ErrorCode.INVALID_SORT_FIELD);
         };
     }
+
+    /**
+     * 커서 기반 페이지네이션을 사용하여 논리 삭제된 피드 목록을 조회합니다.
+     *
+     * @param cursor        페이지네이션의 기준 커서 값 (createdAt)
+     * @param idAfter       마지막으로 조회된 피드 ID
+     * @param limit         조회할 피드의 최대 개수
+     * @param sortBy        정렬 기준 필드 ("createdAt")
+     * @param sortDirection 정렬 방향 (DESCENDING)
+     * @param authorId      특정 작성자의 피드만 조회할 경우 작성자 ID
+     * @return 조회된 피드 엔티티 목록
+     */
+    @Override
+    public List<Feed> findDeletedByCursor(
+        String cursor,
+        UUID idAfter,
+        int limit,
+        String sortBy,
+        SortDirection sortDirection,
+        UUID authorId
+    ) {
+        BooleanBuilder where = new BooleanBuilder();
+        where.and(qFeed.isDeleted.isTrue());
+        where.and(qFeed.author.id.eq(authorId));
+
+        if (cursor != null && !cursor.isBlank()) {
+            if (idAfter == null) {
+                throw new OtbooException(ErrorCode.INVALID_CURSOR_FORMAT);
+            }
+            where.and(createCursorCondition(sortBy, sortDirection, cursor, idAfter));
+        }
+
+        OrderSpecifier<?> orderSpecifier = createOrderSpecifier(sortBy, sortDirection);
+        OrderSpecifier<?> idOrderSpecifier = sortDirection == SortDirection.ASCENDING ? qFeed.id.asc() : qFeed.id.desc();
+
+        List<Feed> result = queryFactory
+            .selectFrom(qFeed)
+            .where(where)
+            .orderBy(orderSpecifier, idOrderSpecifier)
+            .limit(limit)
+            .fetch();
+
+        log.debug("[FeedRepositoryImpl] findDeletedByCursor result size: {}", result.size());
+        return result;
+    }
+
+    /**
+     * 특정 작성자의 논리 삭제된 피드 총 개수를 조회합니다.
+     *
+     * @param authorId 작성자 ID
+     * @return 논리 삭제된 피드의 총 개수
+     */
+    @Override
+    public long countDeletedByAuthorId(UUID authorId) {
+        Long count = queryFactory
+            .select(qFeed.count())
+            .from(qFeed)
+            .where(qFeed.isDeleted.isTrue().and(qFeed.author.id.eq(authorId)))
+            .fetchOne();
+
+        return count != null ? count : 0L;
+    }
 }

@@ -100,7 +100,7 @@ public class CommentServiceImpl implements CommentService {
 
         log.debug(SERVICE + "댓글 목록 조회 시작: request = {}, feedId = {}", request, feedId);
 
-        Feed feed = feedRepository.findByIdAndIsDeletedFalse(feedId)
+        Feed feed = feedRepository.findById(feedId)
             .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
 
         String cursor = request.cursor();

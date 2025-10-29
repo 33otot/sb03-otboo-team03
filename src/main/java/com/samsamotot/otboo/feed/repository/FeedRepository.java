@@ -2,6 +2,7 @@ package com.samsamotot.otboo.feed.repository;
 
 import com.samsamotot.otboo.feed.entity.Feed;
 import com.samsamotot.otboo.weather.entity.Grid;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -17,6 +18,9 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedRepositor
 
     // 논리적으로 삭제되지 않는 피드를 id로 조회합니다.
     Optional<Feed> findByIdAndIsDeletedFalse(UUID id);
+
+    // 논리적으로 삭제된 피드를 id로 조회합니다.
+    Optional<Feed> findByIdAndIsDeletedTrue(UUID id);
 
     // 특정 피드의 좋아요 수를 1 증가시킵니다.
     @Modifying(flushAutomatically = true, clearAutomatically = true)

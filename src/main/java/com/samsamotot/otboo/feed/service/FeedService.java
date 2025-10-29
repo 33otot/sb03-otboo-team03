@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.feed.service;
 
 import com.samsamotot.otboo.common.dto.CursorResponse;
+import com.samsamotot.otboo.feed.dto.DeletedFeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
@@ -19,4 +20,8 @@ public interface FeedService {
     Feed delete(UUID feedId, UUID userId);
 
     void deleteHard(UUID feedId);
+
+    FeedDto restore(UUID feedId, UUID userId);
+
+    CursorResponse<FeedDto> getDeletedFeeds(DeletedFeedCursorRequest request, UUID userId);
 }

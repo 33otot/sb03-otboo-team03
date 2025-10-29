@@ -7,6 +7,7 @@ import com.samsamotot.otboo.common.entity.BaseEntity;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.type.SortDirection;
+import com.samsamotot.otboo.feed.dto.DeletedFeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
@@ -265,6 +266,91 @@ public class FeedServiceImpl implements FeedService {
 
         feedRepository.delete(feed);
         log.debug(SERVICE + "피드 물리 삭제 완료: feedId = {}", feedId);
+    }
+
+    /**
+     * 특정 피드를 복구합니다.
+     *
+     * @param feedId 복구할 피드의 ID
+     * @param userId 현재 사용자의 ID
+     * @return 복구 처리된 Feed 객체
+     * @throws OtbooException 피드를 찾을 수 없는 경우 (FEED_NOT_FOUND)
+     *                        삭제 권한이 없는 경우 (FORBIDDEN_FEED_DELETION)
+     */
+    @Override
+    public FeedDto restore(UUID feedId, UUID userId) {
+        log.debug(SERVICE + "피드 복구 시작: feedId = {}, userId = {}", feedId, userId);
+
+        Feed feed = feedRepository.findByIdAndIsDeletedTrue(feedId)
+            .orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND, Map.of("feedId", feedId.toString())));
+
+        if (!feed.getAuthor().getId().equals(userId)) {
+            throw new OtbooException(ErrorCode.FORBIDDEN_FEED_MODIFICATION,
+                Map.of("feedId", feedId.toString(), "userId", userId.toString()));
+        }
+
+        feed.restore();
+        log.debug(SERVICE + "피드 복구 완료: feedId = {}, userId = {}", feedId, userId);
+        FeedDto result = convertToDto(feed, userId);
+
+        return result;
+    }
+
+    /**
+     * 사용자의 논리 삭제된 피드 목록을 조회합니다.
+     *
+     * @param request 페이징 요청 DTO
+     * @param userId 현재 사용자의 ID
+     * @return 조회된 피드 목록, 다음 커서 정보, 전체 개수 등을 포함하는 CursorResponse<FeedDto>
+     */
+    @Override
+    public CursorResponse<FeedDto> getDeletedFeeds(@Valid DeletedFeedCursorRequest request, UUID userId) {
+        log.debug(SERVICE + "삭제된 피드 목록 조회 시작: request = {}, userId = {}", request, userId);
+
+        String cursor = request.cursor();
+        UUID idAfter = request.idAfter();
+        Integer limit = request.limit();
+        String sortBy = SORT_BY_CREATED_AT;
+        SortDirection sortDirection = SortDirection.DESCENDING;
+
+        validateCursorRequest(cursor, sortBy);
+
+        int safeLimit = (limit == null || limit <= 0) ? 20 : Math.min(limit, 50);
+
+        List<Feed> deletedFeeds = feedRepository.findDeletedByCursor(
+            cursor,
+            idAfter,
+            safeLimit + 1,
+            sortBy,
+            sortDirection,
+            userId
+        );
+
+        boolean hasNext = deletedFeeds.size() > safeLimit;
+        String nextCursor = null;
+        UUID nextIdAfter = null;
+
+        if (hasNext) {
+            Feed lastFeed =  deletedFeeds.get(safeLimit - 1);
+            nextCursor = resolveNextCursor(lastFeed, sortBy);
+            nextIdAfter = lastFeed.getId();
+            deletedFeeds = deletedFeeds.subList(0, safeLimit);
+        }
+
+        long totalCount = feedRepository.countDeletedByAuthorId(userId);
+
+        List<FeedDto> feedDtos = convertToDtos(deletedFeeds, userId);
+
+        log.info("[FeedServiceImpl] 삭제된 피드 목록 조회 완료 - 조회된 피드 수:{}, hasNext: {}", feedDtos.size(), hasNext);
+        return new CursorResponse<>(
+            feedDtos,
+            nextCursor,
+            nextIdAfter,
+            hasNext,
+            totalCount,
+            sortBy,
+            sortDirection
+        );
     }
 
     private void validateCursorRequest(String cursor, String sortBy) {

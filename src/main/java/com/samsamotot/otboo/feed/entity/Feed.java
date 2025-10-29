@@ -91,4 +91,8 @@ public class Feed extends BaseEntity {
     public void delete() {
         this.isDeleted = true;
     }
+
+    public void restore() {
+        this.isDeleted = false;
+    }
 }

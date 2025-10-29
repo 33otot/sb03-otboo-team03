@@ -5,6 +5,7 @@ import static com.samsamotot.otboo.common.util.AuthUtil.getAuthenticatedUserId;
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.feed.controller.api.FeedApi;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
+import com.samsamotot.otboo.feed.dto.DeletedFeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
 import com.samsamotot.otboo.feed.dto.FeedUpdateRequest;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -148,5 +150,49 @@ public class FeedController implements FeedApi {
         return ResponseEntity
             .status(HttpStatus.NO_CONTENT)
             .build();
+    }
+
+    /**
+     * 논리 삭제된 특정 피드를 복구합니다.
+     *
+     * @param feedId 복구할 피드 ID
+     * @return 복구된 피드 정보를 담은 ResponseEntity (HTTP 200 OK)
+     */
+    @Override
+    @PatchMapping("/{feedId}/restore")
+    public ResponseEntity<FeedDto> restoreFeed(@PathVariable UUID feedId) {
+
+        UUID userId = getAuthenticatedUserId();
+        log.info("[FeedController] 피드 복구 요청: feedId = {}, userId = {}", feedId, userId);
+
+        FeedDto result = feedService.restore(feedId, userId);
+        log.info("[FeedController] 피드 복구 완료: feedId = {}, userId = {}", feedId, userId);
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(result);
+    }
+
+    /**
+     * 특정 사용자의 논리 삭제된 피드 목록을 조회합니다.
+     *
+     * @param request
+     * @return 조회된 피드 목록을 담은 ResponseEntity (HTTP 200 OK)
+     */
+    @Override
+    @GetMapping("/deleted")
+    public ResponseEntity<CursorResponse<FeedDto>> getDeletedFeeds(
+        @Valid @ModelAttribute DeletedFeedCursorRequest request
+    ) {
+        UUID userId = getAuthenticatedUserId();
+        log.info("[FeedController] 논리 삭제된 피드 목록 조회 요청: userId = {}, request = {}", userId, request);
+
+        CursorResponse<FeedDto> result = feedService.getDeletedFeeds(request, userId);
+
+        log.info("[FeedController] 논리 삭제된 피드 목록 조회 완료: {}개", result.totalCount());
+
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(result);
     }
 }
