@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
+import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.exception.ClothesExtractionFailedException;
 import com.samsamotot.otboo.clothes.util.ClothesExtractHelper;
 import com.samsamotot.otboo.clothes.util.ImageDownloadService;
@@ -83,6 +84,10 @@ public class ClothesExtractServiceTest {
         String url = "https://store.musinsa.com/product/12345";
         doReturn(VALID_HTML).when(clothesExtractHelper).fetchHtml(anyString());
 
+        // 카테고리 분류 Mock 설정
+        when(clothesExtractHelper.classifyCategoryByName(anyString()))
+            .thenReturn(ClothesType.TOP);
+
         // when
         ClothesDto dto = clothesExtractService.extract(url);
 
@@ -102,6 +107,9 @@ public class ClothesExtractServiceTest {
         // HTML 파싱 결과를 Mock으로 대체
         doReturn(ABLY_HTML).when(clothesExtractHelper).fetchHtml(anyString());
 
+        when(clothesExtractHelper.classifyCategoryByName(anyString()))
+            .thenReturn(ClothesType.DRESS);
+
         // S3 업로드 Mock (즉시 완료 future 리턴)
         String expectedS3Url = "https://test-bucket.s3.ap-northeast-2.amazonaws.com/clothes/ably98765.jpg";
         CompletableFuture<String> mockFuture = CompletableFuture.completedFuture(expectedS3Url);
@@ -115,6 +123,8 @@ public class ClothesExtractServiceTest {
         assertEquals("[에이블리] 플라워 원피스", dto.name());
         assertEquals(expectedS3Url, dto.imageUrl());  // mockFuture 결과가 반영되었는지 확인
 
+        assertEquals(ClothesType.DRESS, dto.type());
+
         // verify
         verify(imageDownloadService, times(1))
             .downloadAndUploadAsync(anyString(), eq("clothes/"));
@@ -126,6 +136,9 @@ public class ClothesExtractServiceTest {
         String url = "https://store.musinsa.com/product/invalid";
         doReturn(INVALID_HTML).when(clothesExtractHelper).fetchHtml(anyString());
 
+        when(clothesExtractHelper.classifyCategoryByName(anyString()))
+            .thenReturn(ClothesType.ETC);
+
         // when
         ClothesDto dto = clothesExtractService.extract(url);
 
@@ -133,6 +146,7 @@ public class ClothesExtractServiceTest {
         assertNotNull(dto);
         assertEquals("(이름 없음)", dto.name());
         assertNull(dto.imageUrl());
+        assertEquals(ClothesType.ETC, dto.type());
         verify(imageDownloadService, never()).downloadAndUploadAsync(any(), any());
     }
 
@@ -208,6 +222,9 @@ public class ClothesExtractServiceTest {
 
         doReturn(html).when(clothesExtractHelper).fetchHtml(anyString());
 
+        when(clothesExtractHelper.classifyCategoryByName(anyString()))
+            .thenReturn(ClothesType.TOP);
+
         // when
         ClothesDto dto = clothesExtractService.extract(url);
 
@@ -215,5 +232,84 @@ public class ClothesExtractServiceTest {
         assertNotNull(dto);
         assertEquals("이미지 없는 상품", dto.name());
         assertNull(dto.imageUrl());  // 빈 문자열은 null로 변환
+        assertEquals(ClothesType.TOP, dto.type());
+    }
+
+    @Test
+    void 카테고리_분류_결과가_null이면_ETC로_반환된다() throws Exception {
+        // given
+        String url = "https://store.musinsa.com/product/12345";
+        doReturn(VALID_HTML).when(clothesExtractHelper).fetchHtml(anyString());
+
+        // 카테고리 분류가 null 반환
+        when(clothesExtractHelper.classifyCategoryByName(anyString()))
+            .thenReturn(null);
+
+        // when
+        ClothesDto dto = clothesExtractService.extract(url);
+
+        // then
+        assertNotNull(dto);
+        assertEquals("[무신사] 베이직 티셔츠", dto.name());
+
+        // null이 ETC로 보정되는지?
+        assertEquals(ClothesType.ETC, dto.type());
+    }
+
+    @Test
+    void 다양한_의상_타입이_올바르게_분류된다() throws Exception {
+        // given
+        String url = "https://store.musinsa.com/product/shoes";
+        doReturn(VALID_HTML).when(clothesExtractHelper).fetchHtml(anyString());
+
+        // 신발 타입 반환
+        when(clothesExtractHelper.classifyCategoryByName(anyString()))
+            .thenReturn(ClothesType.SHOES);
+
+        // when
+        ClothesDto dto = clothesExtractService.extract(url);
+
+        // then
+        assertNotNull(dto);
+        assertEquals(ClothesType.SHOES, dto.type());
+    }
+
+    @Test
+    void 네이버쇼핑_링크의_경우_이미지_업로드가_수행되고_S3_URL이_반환된다() throws Exception {
+        // given
+        String url = "https://shopping.naver.com/product/12345";
+        String naverHtml = """
+        <html>
+          <head>
+            <meta property="og:title" content="[네이버쇼핑] 데님 팬츠">
+            <meta property="og:image" content="https://shop-phinf.pstatic.net/images/product.jpg">
+          </head>
+          <body>
+            <span data-mds="Typography">[네이버쇼핑] 데님 팬츠</span>
+          </body>
+        </html>
+        """;
+
+        doReturn(naverHtml).when(clothesExtractHelper).fetchHtml(anyString());
+        when(clothesExtractHelper.classifyCategoryByName(anyString()))
+            .thenReturn(ClothesType.BOTTOM);
+
+        String expectedS3Url = "https://test-bucket.s3.ap-northeast-2.amazonaws.com/clothes/naver12345.jpg";
+        CompletableFuture<String> mockFuture = CompletableFuture.completedFuture(expectedS3Url);
+        when(imageDownloadService.downloadAndUploadAsync(anyString(), eq("clothes/")))
+            .thenReturn(mockFuture);
+
+        // when
+        ClothesDto dto = clothesExtractService.extract(url);
+
+        // then
+        assertNotNull(dto);
+        assertEquals("[네이버쇼핑] 데님 팬츠", dto.name());
+        assertEquals(expectedS3Url, dto.imageUrl());
+        assertEquals(ClothesType.BOTTOM, dto.type());
+
+        // 네이버쇼핑도 이미지 업로드가 수행되는지 확인
+        verify(imageDownloadService, times(1))
+            .downloadAndUploadAsync(anyString(), eq("clothes/"));
     }
 }
