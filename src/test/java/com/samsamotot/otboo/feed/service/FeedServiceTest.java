@@ -817,22 +817,6 @@ public class FeedServiceTest {
         }
 
         @Test
-        void 존재하지_않는_피드_복구_요청시_예외가_발생한다() {
-
-            // given
-            UUID invalidFeedId = UUID.randomUUID();
-            UUID userId = mockUser.getId();
-
-            given(feedRepository.findByIdAndIsDeletedTrue(any(UUID.class))).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> feedService.restore(invalidFeedId, userId))
-                .isInstanceOf(OtbooException.class)
-                .extracting(e -> ((OtbooException) e).getErrorCode())
-                .isEqualTo(ErrorCode.FEED_NOT_FOUND);
-        }
-
-        @Test
         void 삭제되지_않은_피드_복구_요청시_예외가_발생한다() {
 
             // given

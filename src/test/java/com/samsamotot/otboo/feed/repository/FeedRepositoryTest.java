@@ -610,7 +610,7 @@ public class FeedRepositoryTest {
         SortDirection sortDirection = SortDirection.DESCENDING;
 
         for (int i = 0; i < 10; i++) {
-            Feed feed = FeedFixture.createFeed(author, weather);
+            Feed feed = FeedFixture.createFeedWithCreatedAt(author, weather, baseTime.plusSeconds(i));
             if (i % 2 == 0) {
                 ReflectionTestUtils.setField(feed, "isDeleted", true);
             }
