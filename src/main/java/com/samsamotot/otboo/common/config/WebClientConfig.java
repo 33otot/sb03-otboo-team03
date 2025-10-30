@@ -46,15 +46,33 @@ public class WebClientConfig {
      * @return 구성된 HttpClient 인스턴스
      */
     @Bean
+    @Qualifier("defaultHttpClient")
     public HttpClient httpClient() {
         return HttpClient.create()
                 // Connection Timeout
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 // Response Timeout
-                .responseTimeout(Duration.ofMillis(10000))
+                .responseTimeout(Duration.ofMillis(5000))
                 .doOnConnected(conn -> conn
                         .addHandlerLast(new ReadTimeoutHandler(5, TimeUnit.SECONDS)) // Read Timeout
                         .addHandlerLast(new WriteTimeoutHandler(5, TimeUnit.SECONDS)));
+    }
+
+    /**
+     * KMA API 호출을 위한 HttpClient 설정을 생성합니다.
+     * 배치 작업의 병렬 처리 및 외부 API 응답 지연을 고려하여 더 긴 타임아웃을 설정합니다.
+     * - Connection Timeout: 10초
+     * - Read Timeout: 20초
+     * @return KMA API용으로 구성된 HttpClient 인스턴스
+     */
+    @Bean
+    @Qualifier("kmaHttpClient")
+    public HttpClient kmaHttpClient() {
+        return HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000) // 10초
+                .doOnConnected(conn -> conn
+                        .addHandlerLast(new ReadTimeoutHandler(20, TimeUnit.SECONDS)) // 20초
+                        .addHandlerLast(new WriteTimeoutHandler(20, TimeUnit.SECONDS)));
     }
 
     /**
@@ -77,7 +95,7 @@ public class WebClientConfig {
      */
     @Bean
     @Qualifier("kakaoWebClient")
-    public WebClient kakaoWebClient(HttpClient httpClient) {
+    public WebClient kakaoWebClient(@Qualifier("defaultHttpClient") HttpClient httpClient) {
         return WebClient.builder()
                 .baseUrl(baseUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
@@ -86,7 +104,7 @@ public class WebClientConfig {
 
     @Bean
     @Qualifier("kmaWebClient")
-    public WebClient kmaWebClient(HttpClient httpClient) {
+    public WebClient kmaWebClient(@Qualifier("kmaHttpClient") HttpClient httpClient) {
         return WebClient.builder()
                 .baseUrl(kmaBaseUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))

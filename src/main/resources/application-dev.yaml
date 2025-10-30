@@ -60,7 +60,7 @@ spring:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:}
     consumer:
       group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:otboo-sse-group}
-      auto-offset-reset: latest
+      auto-offset-reset: earliest
       enable-auto-commit: true
       auto-commit-interval-ms: 1000
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer

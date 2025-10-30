@@ -1,13 +1,10 @@
 package com.samsamotot.otboo.common.config;
 
 import static org.springframework.kafka.listener.ContainerProperties.AckMode.BATCH;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +16,11 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.support.serializer.JsonSerializer;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * PackageName  : com.samsamotot.otboo.common.config
@@ -43,9 +45,10 @@ public class KafkaConfig {
     }
 
     /**
-     * Kafka Producer 설정
+     * [String용] Kafka Producer 설정
      */
     @Bean
+    // 기본 ProducerFactory는 String을 처리하도록 유지
     public ProducerFactory<String, String> producerFactory() {
         if (kafkaProperties.getBootstrapServers() == null || kafkaProperties.getBootstrapServers().isEmpty()) {
             log.warn(KAFKA_CONFIG + "Kafka 비활성화 - bootstrapServers가 설정되지 않음");
@@ -77,7 +80,7 @@ public class KafkaConfig {
     }
 
     /**
-     * Kafka Template Bean
+     * [String용] Kafka Template Bean
      */
     @Bean
     public KafkaTemplate<String, String> kafkaTemplate() {
@@ -92,9 +95,39 @@ public class KafkaConfig {
     }
 
     /**
-     * Kafka Consumer 설정
+     * [JSON용] Kafka Producer 설정
      */
     @Bean
+    public ProducerFactory<String, Object> jsonProducerFactory() {
+        Map<String, Object> props = kafkaProperties.buildProducerProperties(null);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class); // Value는 JsonSerializer 사용
+        props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, true); // 타입 정보 헤더 추가
+
+        log.info(KAFKA_CONFIG + "JSON Producer Factory 설정 완료");
+
+        return new DefaultKafkaProducerFactory<>(props);
+    }
+
+    /**
+     * [JSON용] Kafka Template Bean
+     */
+    @Bean
+    public KafkaTemplate<String, Object> kafkaJsonTemplate() {
+        ProducerFactory<String, Object> factory = jsonProducerFactory();
+        if (factory == null) {
+            log.warn(KAFKA_CONFIG + "JSON KafkaTemplate 비활성화 - jsonProducerFactory가 null");
+            return null;
+        }
+        log.info(KAFKA_CONFIG + "JSON KafkaTemplate Bean 생성");
+        return new KafkaTemplate<>(factory);
+    }
+
+
+    /**
+     * [String용] Kafka Consumer 설정
+     */
+    @Bean
+    // 기본 ConsumerFactory는 String을 처리하도록 유지
     public ConsumerFactory<String, String> consumerFactory() {
         if (kafkaProperties.getBootstrapServers() == null || kafkaProperties.getBootstrapServers().isEmpty()) {
             log.warn(KAFKA_CONFIG + "Kafka Consumer 비활성화 - bootstrapServers가 설정되지 않음");
@@ -129,9 +162,10 @@ public class KafkaConfig {
     }
 
     /**
-     * Kafka Listener Container Factory 설정
+     * [String용] Kafka Listener Container Factory 설정
      */
     @Bean
+    // 기본 ListenerFactory는 String을 처리하도록 유지
     public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
         ConsumerFactory<String, String> consumerFactory = consumerFactory();
         if (consumerFactory == null) {
@@ -152,6 +186,46 @@ public class KafkaConfig {
         }));
 
         log.info(KAFKA_CONFIG + "Listener Container Factory 설정 완료 - AckMode: BATCH, PollTimeout: 3s");
+
+        return factory;
+    }
+
+    /**
+     * [JSON용] Kafka Consumer 설정
+     */
+    @Bean
+    public ConsumerFactory<String, Object> jsonConsumerFactory() {
+        Map<String, Object> props = kafkaProperties.buildConsumerProperties(null);
+        props.remove(ConsumerConfig.GROUP_ID_CONFIG);
+
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class); // Value는 JsonDeserializer 사용
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.samsamotot.otboo.*");
+        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
+
+        log.info(KAFKA_CONFIG + "JSON Consumer Factory 설정 완료");
+        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new JsonDeserializer<>(Object.class));
+    }
+
+    /**
+     * [JSON용] Kafka Listener Container Factory 설정
+     */
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaJsonListenerContainerFactory() {
+        ConsumerFactory<String, Object> consumerFactory = jsonConsumerFactory();
+        if (consumerFactory == null) {
+            log.warn(KAFKA_CONFIG + "JSON Kafka Listener Container Factory 비활성화 - jsonConsumerFactory가 null");
+            return null;
+        }
+
+        log.info(KAFKA_CONFIG + "JSON Kafka Listener Container Factory 설정 시작");
+
+        ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory);
+
+        factory.getContainerProperties().setAckMode(BATCH);
+        factory.setCommonErrorHandler(new DefaultErrorHandler((record, exception) -> {
+            log.error(KAFKA_CONFIG + "JSON Kafka 메시지 처리 중 오류 발생: {}", exception.getMessage(), exception);
+        }));
 
         return factory;
     }

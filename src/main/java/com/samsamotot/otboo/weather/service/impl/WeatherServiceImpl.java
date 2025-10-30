@@ -16,11 +16,8 @@ import com.samsamotot.otboo.weather.service.WeatherService;
 import com.samsamotot.otboo.weather.service.WeatherTransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,7 +25,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
@@ -60,39 +56,28 @@ public class WeatherServiceImpl implements WeatherService {
     private final WeatherAlterService weatherAlterService;
 
     /**
-     * 특정 격자(Grid)의 날씨 정보를 비동기적으로 갱신합니다.
-     * 기상청 API로부터 최신 예보를 가져와 DB에 저장하고, 저장이 성공하면
-     * 날씨 알림 서비스를 호출하여 변화 감지 및 알림 발송 절차를 시작합니다.
+     * [비동기 처리용] 격자 좌표(x, y)를 사용하여 외부 API로부터 날씨 정보를 가져와 DB에 저장합니다.
+     * 이 메서드는 Kafka Consumer에 의해 호출됩니다.
      *
-     * @param gridId 날씨를 갱신할 격자의 UUID
-     * @return 작업의 완료를 나타내는 CompletableFuture<Void>
+     * @param x 격자 X 좌표
+     * @param y 격자 Y 좌표
      */
     @Override
-    @Async("weatherApiTaskExecutor")
-    public CompletableFuture<Void> updateWeatherForGrid(UUID gridId) {
-        Grid grid = gridRepository.findById(gridId)
+    public void updateWeatherForGrid(int x, int y) {
+        Grid grid = gridRepository.findByXAndY(x, y)
                 .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_GRID));
 
-        return kmaClient.fetchWeather(grid.getX(), grid.getY())
-                .publishOn(Schedulers.boundedElastic())
-                .flatMap(weatherForecastResponse -> {
-                    if (!isValid(weatherForecastResponse)) {
-                        log.warn(SERVICE_NAME + "API 응답 데이터가 비어있습니다. X={}, Y={}.", grid.getX(), grid.getY());
-                        return Mono.empty(); // 데이터가 유효하지 않으면 여기서 체인 종료
-                    }
+        log.info(SERVICE_NAME + "비동기 요청으로 날씨 정보 업데이트 시작. Grid ID: {}", grid.getId());
+        WeatherForecastResponse response = kmaClient.fetchWeather(x, y).block();
 
-                    List<Weather> weatherList = convertToEntities(weatherForecastResponse, grid);
-
-                    // DB 날씨 데이터 갱신
-                    return Mono.fromRunnable(() -> weatherTransactionService.updateWeather(grid, weatherList))
-                            .doOnSuccess(aVoid -> {
-                                weatherList.forEach(weatherAlterService::checkAndSendAlerts);
-                            });
-                })
-                .doOnError(e -> log.error(SERVICE_NAME + "비동기 날씨 업데이트 작업 실패. X={}, Y={}", grid.getX(), grid.getY(), e))
-                .then() // Mono<Void>로 변환
-                .toFuture(); // CompletableFuture<Void>로 최종 변환
-
+        if (response != null && isValid(response)) {
+            List<Weather> newWeathers = convertToEntities(response, grid);
+            weatherTransactionService.updateWeather(grid, newWeathers);
+            newWeathers.forEach(weatherAlterService::checkAndSendAlerts);
+            log.info(SERVICE_NAME + "비동기 날씨 정보 업데이트 완료. Grid ID: {}", grid.getId());
+        } else {
+            log.warn(SERVICE_NAME + "날씨 정보 업데이트 실패. 유효하지 않은 API 응답. Grid ID: {}", grid.getId());
+        }
     }
 
     @Override
@@ -104,10 +89,10 @@ public class WeatherServiceImpl implements WeatherService {
         Grid grid = gridRepository.findByXAndY(location.x(), location.y())
                 .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_GRID));
 
-        // --- 2. 데이터 조회 및 API 호출 (기존 코드와 동일) ---
+        // --- 2. 데이터 조회 및 API 호출 ---
         List<Weather> weatherList = weatherRepository.findAllByGrid(grid);
 
-        // DB에 데이터가 없으면 API 호출하여 데이터 수집
+        // --- DB에 데이터가 없으면, 사용자 경험 위해 동기적으로 API 호출하여 즉시 데이터 제공 ---
         if (weatherList.isEmpty()) {
             log.info(SERVICE_NAME + "DB에 날씨 데이터가 없어 API 호출하여 수집합니다. X={}, Y={}", grid.getX(), grid.getY());
 
@@ -289,6 +274,4 @@ public class WeatherServiceImpl implements WeatherService {
                 dto.response().body().items() != null &&
                 !dto.response().body().items().item().isEmpty();
     }
-
-
 }
