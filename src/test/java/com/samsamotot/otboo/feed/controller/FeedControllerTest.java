@@ -1,5 +1,21 @@
 package com.samsamotot.otboo.feed.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samsamotot.otboo.clothes.dto.OotdDto;
 import com.samsamotot.otboo.common.config.SecurityTestConfig;
@@ -12,6 +28,7 @@ import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.common.type.SortDirection;
+import com.samsamotot.otboo.feed.dto.DeletedFeedCursorRequest; // Import the new DTO
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
@@ -21,10 +38,13 @@ import com.samsamotot.otboo.feed.service.FeedService;
 import com.samsamotot.otboo.user.dto.AuthorDto;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
+import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
-import com.samsamotot.otboo.weather.entity.Grid;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,25 +54,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @WebMvcTest(FeedController.class)
@@ -706,6 +711,178 @@ public class FeedControllerTest {
                             .with(user(mockPrincipal)))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.exceptionName").value(ErrorCode.FORBIDDEN_FEED_DELETION.name()));
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 물리 삭제 테스트")
+    class FeedHardDeleteTest {
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void 피드를_물리_삭제_하면_204가_반환된다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{id}/hard", feedId))
+                .andExpect(status().isNoContent());
+
+            verify(feedService).deleteHard(feedId);
+        }
+
+        @Test
+        @WithMockUser(roles = "USER")
+        void 관리자가_아니라면_403이_반환된다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{id}/hard", feedId))
+                .andExpect(status().isForbidden());
+
+            verify(feedService, never()).deleteHard(feedId);
+        }
+    }
+
+    @Nested
+    @DisplayName("피드 복구 테스트")
+    class FeedRestoreTest {
+
+        @Test
+        void 작성자는_삭제된_피드를_복구할_수_있다() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+            Feed mockFeed = FeedFixture.createFeed(mockUser, WeatherFixture.createWeather(GridFixture.createGrid()));
+            ReflectionTestUtils.setField(mockFeed, "id", feedId);
+            FeedDto feedDto = FeedFixture.createFeedDto(mockFeed);
+
+            given(feedService.restore(any(UUID.class), any(UUID.class))).willReturn(feedDto);
+
+            // when & then
+            mockMvc.perform(patch("/api/feeds/{id}/restore", feedId)
+                            .with(user(mockPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(feedId.toString()));
+
+            verify(feedService).restore(eq(feedId), eq(mockUser.getId()));
+        }
+    }
+
+    @Nested
+    @DisplayName("삭제된 피드 목록 조회 테스트")
+    class DeletedFeedListGetTest {
+
+        @Test
+        void 요청_조건대로_정렬된_삭제된_피드목록과_200이_반환된다() throws Exception {
+            // given
+            Instant base = Instant.parse("2025-09-16T10:00:00Z");
+            FeedDto oldFeed = FeedFixture.createFeedDtoWithCreatedAt("deleted content1", null, null, List.of(), base.minusSeconds(1000));
+            FeedDto newFeed = FeedFixture.createFeedDtoWithCreatedAt("deleted content2", null, null, List.of(), base);
+            List<FeedDto> feedDtos = List.of(newFeed, oldFeed);
+
+            CursorResponse<FeedDto> expected = new CursorResponse<>(
+                feedDtos,
+                null,
+                null,
+                false,
+                2L,
+                "createdAt",
+                SortDirection.DESCENDING
+            );
+
+            given(feedService.getDeletedFeeds(any(DeletedFeedCursorRequest.class), any(UUID.class)))
+                .willReturn(expected);
+
+            // when & then
+            mockMvc.perform(get("/api/feeds/deleted")
+                            .param("limit", String.valueOf(10))
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data", hasSize(2)))
+                    .andExpect(jsonPath("$.data[0].content").value("deleted content2"))
+                    .andExpect(jsonPath("$.data[1].content").value("deleted content1"))
+                    .andExpect(jsonPath("$.totalCount").value(2L));
+
+            ArgumentCaptor<DeletedFeedCursorRequest> captor = ArgumentCaptor.forClass(DeletedFeedCursorRequest.class);
+            verify(feedService).getDeletedFeeds(captor.capture(), eq(mockUser.getId()));
+            DeletedFeedCursorRequest actual = captor.getValue();
+            assertThat(actual.limit()).isEqualTo(10);
+        }
+
+        @Test
+        void 커서_조건이_적용된_삭제된_피드목록과_200이_반환된다() throws Exception {
+            // given
+            Instant base = Instant.parse("2025-09-16T10:00:00Z");
+            FeedDto cursorFeed = FeedFixture.createFeedDtoWithCreatedAt("cursor deleted", null, null, List.of(), base);
+            FeedDto newFeed1 = FeedFixture.createFeedDtoWithCreatedAt("deleted content3", null, null, List.of(), base.plusSeconds(1000));
+            FeedDto newFeed2 = FeedFixture.createFeedDtoWithCreatedAt("deleted content4", null, null, List.of(), base.plusSeconds(2000));
+            List<FeedDto> feedDtos = List.of(newFeed1, newFeed2);
+
+            String cursor = cursorFeed.createdAt().toString();
+            UUID idAfter = cursorFeed.id();
+
+            CursorResponse<FeedDto> expected = new CursorResponse<>(
+                feedDtos,
+                null,
+                null,
+                false,
+                2L,
+                "createdAt",
+                SortDirection.DESCENDING
+            );
+
+            given(feedService.getDeletedFeeds(any(DeletedFeedCursorRequest.class), any(UUID.class)))
+                .willReturn(expected);
+
+            ArgumentCaptor<DeletedFeedCursorRequest> captor = ArgumentCaptor.forClass(DeletedFeedCursorRequest.class);
+
+            // when & then
+            mockMvc.perform(get("/api/feeds/deleted")
+                            .param("cursor", cursor)
+                            .param("idAfter", idAfter.toString())
+                            .param("limit", "10")
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data", hasSize(2)))
+                    .andExpect(jsonPath("$.data[0].content").value("deleted content3"))
+                    .andExpect(jsonPath("$.data[1].content").value("deleted content4"))
+                    .andExpect(jsonPath("$.totalCount").value(2L));
+
+            verify(feedService).getDeletedFeeds(captor.capture(), eq(mockUser.getId()));
+            DeletedFeedCursorRequest actual = captor.getValue();
+            assertThat(actual.cursor()).isEqualTo(cursor);
+            assertThat(actual.idAfter()).isEqualTo(idAfter);
+            assertThat(actual.limit()).isEqualTo(10);
+        }
+
+        @Test
+        void 잘못된_커서포맷이면_400이_반환된다() throws Exception {
+            // given
+            given(feedService.getDeletedFeeds(any(DeletedFeedCursorRequest.class), any(UUID.class)))
+                .willThrow(new OtbooException(ErrorCode.INVALID_CURSOR_FORMAT));
+
+            // when & then
+            mockMvc.perform(get("/api/feeds/deleted")
+                            .param("cursor", "invalidCursor")
+                            .param("limit", "10")
+                            .with(user(mockPrincipal))
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.exceptionName").value(ErrorCode.INVALID_CURSOR_FORMAT.name()));
+        }
+
+        @Test
+        void limit가_음수이면_400이_반환된다() throws Exception {
+            mockMvc.perform(get("/api/feeds/deleted")
+                            .param("limit", "-1")
+                            .with(user(mockPrincipal)))
+                    .andExpect(status().isBadRequest());
         }
     }
 }

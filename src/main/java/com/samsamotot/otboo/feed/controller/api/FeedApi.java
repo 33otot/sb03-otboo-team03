@@ -2,6 +2,7 @@ package com.samsamotot.otboo.feed.controller.api;
 
 import com.samsamotot.otboo.common.dto.CursorResponse;
 import com.samsamotot.otboo.common.exception.ErrorResponse;
+import com.samsamotot.otboo.feed.dto.DeletedFeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedCreateRequest;
 import com.samsamotot.otboo.feed.dto.FeedCursorRequest;
 import com.samsamotot.otboo.feed.dto.FeedDto;
@@ -149,5 +150,98 @@ public interface FeedApi {
     })
     ResponseEntity<Void> deleteFeed(
         @PathVariable UUID feedId
+    );
+
+    @Operation(summary = "피드 물리 삭제")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "204",
+            description = "피드 삭제 성공"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "피드 미존재",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "관리자 아님",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "피드 삭제 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    ResponseEntity<Void> deleteHardFeed(
+        @PathVariable UUID feedId
+    );
+
+    @Operation(summary = "삭제된 피드 복구")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "피드 복구 성공"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "피드 미존재",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "작성자 아님",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "피드 복구 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    ResponseEntity<FeedDto> restoreFeed(
+        @PathVariable UUID feedId
+    );
+
+    @Operation(summary = "논리 삭제된 피드 목록 조회")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "논리 삭제된 피드 목록 조회 성공",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = CursorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "논리 삭제된 피드 목록 조회 실패",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    ResponseEntity<CursorResponse<FeedDto>> getDeletedFeeds(
+        @Valid @ModelAttribute DeletedFeedCursorRequest request
     );
 }

@@ -188,6 +188,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/notifications/**").authenticated()
                 // DM 대화방 목록 조회는 인증된 유저만 가능
                 .requestMatchers(HttpMethod.GET, "/api/direct-messages/rooms").authenticated()
+                // 피드 물리삭제는 ADMIN 유저만 가능
+                .requestMatchers(HttpMethod.DELETE, "/api/feeds/{id}/hard").hasRole("ADMIN")
 
                 // 나머지 모든 요청은 인증 필요
                 .anyRequest().authenticated()

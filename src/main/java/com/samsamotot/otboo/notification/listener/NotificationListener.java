@@ -61,7 +61,7 @@ public class NotificationListener {
     public void onFeedLiked(FeedLikedEvent e) {
         User liker = userRepository.findById(e.likerId()).orElseThrow(() -> new OtbooException(ErrorCode.USER_NOT_FOUND));
         Feed feed = feedRepository.findById(e.feedId()).orElseThrow(() -> new OtbooException(ErrorCode.FEED_NOT_FOUND));
-        notificationService.save(feed.getAuthor().getId(), LIKE_TITLE, "[" + liker.getUsername() + "] 가 좋아요를 눌렀습니다", NotificationLevel.INFO);
+        notificationService.save(feed.getAuthor().getId(), LIKE_TITLE, "[" + liker.getUsername() + "] 가 좋아요를 눌렀습니다, 피드: ["+shortenContent(feed.getContent())+"]", NotificationLevel.INFO);
     }
 
     @Async
