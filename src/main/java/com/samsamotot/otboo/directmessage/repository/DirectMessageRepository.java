@@ -80,21 +80,6 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
      * 1. 각 대화방의 마지막 메시지 ID를 찾는 네이티브 쿼리.
      * ROW_NUMBER()를 사용하여 동률 문제를 해결하고, 가장 효율적으로 ID만 선택합니다.
      */
-//    @Query(value = """
-//        SELECT DISTINCT ON (
-//          LEAST(sender_id, receiver_id),
-//          GREATEST(sender_id, receiver_id)
-//        ) id
-//        FROM direct_messages
-//        WHERE sender_id = :userId OR receiver_id = :userId
-//        ORDER BY
-//          LEAST(sender_id, receiver_id),
-//          GREATEST(sender_id, receiver_id),
-//          created_at DESC,
-//          id DESC
-//        """, nativeQuery = true)
-//    List<UUID> findLastMessageIdsOfConversations(@Param("userId") UUID userId);
-
     @Query(value = """
         SELECT id
         FROM (
