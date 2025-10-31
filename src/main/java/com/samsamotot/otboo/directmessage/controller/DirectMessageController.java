@@ -11,6 +11,7 @@ import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.service.DirectMessageService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.UUID;
@@ -72,10 +73,10 @@ public class DirectMessageController implements DirectMessageApi {
      */
     @GetMapping("/rooms")
     public ResponseEntity<DirectMessageRoomListResponse> getConversationRooms(
-        @AuthenticationPrincipal CustomUserDetails userDetails,
         @RequestParam(required = false) Instant cursor,
         @RequestParam(required = false) UUID idAfter,
-        @RequestParam Integer limit
+        @RequestParam(defaultValue = "10") @Min(1) Integer limit,
+        @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         DirectMessageRoomCursorRequest request = new DirectMessageRoomCursorRequest(cursor, idAfter, limit);
         return ResponseEntity.ok().body(directMessageService.getConversationList(request));

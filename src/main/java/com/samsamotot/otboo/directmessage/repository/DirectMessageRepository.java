@@ -126,7 +126,7 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
                 (sender_id = :userId OR receiver_id = :userId)
         ) AS sub
         WHERE rn = 1
-        AND (created_at < :cursor OR (created_at = :cursor AND id < :idAfter))
+        AND (created_at < :cursor OR (created_at = :cursor AND (:idAfter IS NULL OR id < :idAfter)))
         ORDER BY created_at DESC, id DESC
         LIMIT :limit
         """, nativeQuery = true)
