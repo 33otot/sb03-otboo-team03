@@ -33,17 +33,14 @@ spring:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  #  elasticsearch:
-#    health-timeout-ms: 20000
-#    uris: ${ELASTICSEARCH_URIS:172.31.36.45:9200}
-
   data:
     redis:
       # 단일 노드 설정
       host: ${REDIS_HOST}
-      port: ${REDIS_PORT:6380}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
       ssl:
-        enabled: true
+        enabled: false
       timeout: 10000ms
       connect-timeout: 10000ms
 
