@@ -22,7 +22,12 @@ public class WeatherEventProducer {
 
     public void sendWeatherUpdateEvent(int x, int y) {
         WeatherUpdateEvent event = new WeatherUpdateEvent(x, y);
-        kafkaTemplate.send(TOPIC, event);
-        log.info(SERVICE_NAME + "날씨 업데이트 이벤트 발행 완료. Topic: {}, Event: {}", TOPIC, event);
+        try {
+            kafkaTemplate.send(TOPIC, event);
+            log.info(SERVICE_NAME + "날씨 업데이트 이벤트 발행 완료. Topic: {}, Event: {}", TOPIC, event);
+        } catch (Exception e) {
+            log.error(SERVICE_NAME + "날씨 업데이트 이벤트 발행 실패. Topic: {}, Event: {}", TOPIC, event, e);
+            throw new RuntimeException(e);
+        }
     }
 }

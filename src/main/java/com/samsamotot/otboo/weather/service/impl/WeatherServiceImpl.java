@@ -19,10 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -68,7 +65,7 @@ public class WeatherServiceImpl implements WeatherService {
                 .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_GRID));
 
         log.info(SERVICE_NAME + "비동기 요청으로 날씨 정보 업데이트 시작. Grid ID: {}", grid.getId());
-        WeatherForecastResponse response = kmaClient.fetchWeather(x, y).block();
+        WeatherForecastResponse response = kmaClient.fetchWeather(x, y).block(Duration.ofSeconds(10));
 
         if (response != null && isValid(response)) {
             List<Weather> newWeathers = convertToEntities(response, grid);
@@ -98,7 +95,7 @@ public class WeatherServiceImpl implements WeatherService {
 
             try {
                 // 동기적으로 API 호출하여 데이터 수집
-                WeatherForecastResponse response = kmaClient.fetchWeather(grid.getX(), grid.getY()).block();
+                WeatherForecastResponse response = kmaClient.fetchWeather(grid.getX(), grid.getY()).block(Duration.ofSeconds(10));
 
                 if (response != null && isValid(response)) {
                     List<Weather> newWeatherList = convertToEntities(response, grid);

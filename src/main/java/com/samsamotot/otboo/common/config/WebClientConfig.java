@@ -70,6 +70,7 @@ public class WebClientConfig {
     public HttpClient kmaHttpClient() {
         return HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000) // 10초
+                .responseTimeout(Duration.ofMillis(20000)) // 20초
                 .doOnConnected(conn -> conn
                         .addHandlerLast(new ReadTimeoutHandler(20, TimeUnit.SECONDS)) // 20초
                         .addHandlerLast(new WriteTimeoutHandler(20, TimeUnit.SECONDS)));
