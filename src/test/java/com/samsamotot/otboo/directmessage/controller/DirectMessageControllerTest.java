@@ -17,6 +17,7 @@ import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomCursorRequest;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse;
 import com.samsamotot.otboo.directmessage.dto.DmTopicKey;
@@ -156,6 +157,10 @@ class DirectMessageControllerTest {
     @Test
     void 정상적으로_대화방_목록을_가져온다() throws Exception {
         // given
+        final Instant cursor = Instant.now();
+        final UUID idAfter = UUID.randomUUID();
+        final int limit = 10;
+
         DirectMessageRoomDto mockRoomDto = DirectMessageRoomDto.builder()
             .partner(AuthorDto.builder()
                 .userId(UUID.randomUUID())
@@ -165,10 +170,18 @@ class DirectMessageControllerTest {
             .lastMessageSentAt(Instant.now())
             .build();
 
+        DirectMessageRoomCursorRequest request = new DirectMessageRoomCursorRequest(cursor, idAfter, limit);
+
         DirectMessageRoomListResponse mockResponse = DirectMessageRoomListResponse.builder()
             .rooms(List.of(mockRoomDto))
+            .nextCursor(cursor.toString())
+            .nextIdAfter(idAfter)
+            .hasNext(true)
+            .totalCount(1L)
+            .sortBy("createdAt")
+            .sortDirection("DESCENDING")
             .build();
-        given(directMessageService.getConversationList()).willReturn(mockResponse);
+        given(directMessageService.getConversationList(request)).willReturn(mockResponse);
 
         User mockUser = UserFixture.createValidUser();
         ReflectionTestUtils.setField(mockUser, "id", UUID.randomUUID());
@@ -176,10 +189,14 @@ class DirectMessageControllerTest {
 
         // when & then
         mockMvc.perform(get("/api/direct-messages/rooms")
+                .param("cursor", cursor.toString())
+                .param("idAfter", idAfter.toString())
+                .param("limit", String.valueOf(limit))
                 .with(user(mockPrincipal)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.rooms.length()").value(1));
+            .andExpect(jsonPath("$.rooms.length()").value(1))
+            .andExpect(jsonPath("$.hasNext").value(true));
 
-        then(directMessageService).should().getConversationList();
+        then(directMessageService).should().getConversationList(request);
     }
 }
