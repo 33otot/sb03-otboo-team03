@@ -37,6 +37,9 @@ public class WeatherEventProducerTest {
 
         // Then
         verify(kafkaJsonTemplate).send(ArgumentCaptor.forClass(String.class).capture(), eventCaptor.capture());
+        ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
+        verify(kafkaJsonTemplate).send(topicCaptor.capture(), eventCaptor.capture());
+        assertThat(topicCaptor.getValue()).isEqualTo("weather-update-topic");
         assertThat(eventCaptor.getValue().x()).isEqualTo(60);
         assertThat(eventCaptor.getValue().y()).isEqualTo(127);
     }

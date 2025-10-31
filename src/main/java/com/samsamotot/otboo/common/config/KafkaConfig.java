@@ -201,6 +201,7 @@ public class KafkaConfig {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class); // Value는 JsonDeserializer 사용
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.samsamotot.otboo.*");
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "com.samsamotot.otboo.weather.dto.event.WeatherUpdateEvent");
 
         log.info(KAFKA_CONFIG + "JSON Consumer Factory 설정 완료");
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new JsonDeserializer<>(Object.class));
@@ -221,7 +222,7 @@ public class KafkaConfig {
 
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
-
+        factory.setConcurrency(3);
         factory.getContainerProperties().setAckMode(BATCH);
         factory.setCommonErrorHandler(new DefaultErrorHandler((record, exception) -> {
             log.error(KAFKA_CONFIG + "JSON Kafka 메시지 처리 중 오류 발생: {}", exception.getMessage(), exception);
