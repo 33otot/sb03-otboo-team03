@@ -1,6 +1,7 @@
 package com.samsamotot.otboo.clothes.service.impl;
 
 import com.samsamotot.otboo.clothes.dto.request.ClothesDto;
+import com.samsamotot.otboo.clothes.entity.ClothesType;
 import com.samsamotot.otboo.clothes.service.ClothesExtractService;
 import com.samsamotot.otboo.clothes.util.ClothesExtractHelper;
 import com.samsamotot.otboo.clothes.util.ImageDownloadService;
@@ -42,7 +43,7 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
             String html = clothesExtractHelper.fetchHtml(url);
             Document doc = Jsoup.parse(html);
 
-            // 무신사 기본 구조 기반 파싱
+            // 구조 파싱
             String imageUrl = null;
             String name = null;
 
@@ -71,11 +72,16 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
             log.info(SERVICE_NAME + "의상 이름 추출 결과: {}", name);
             log.info(SERVICE_NAME + "의상 이미지 추출 결과: {}", imageUrl);
 
+            ClothesType clothesType = clothesExtractHelper.classifyCategoryByName(name);
+            log.info(SERVICE_NAME + "이름 기반 카테고리 분류: {}", clothesType);
+
             // 기본값 보정
             if (name.isEmpty())
                 name = "(이름 없음)";
             if (imageUrl.isEmpty())
                 imageUrl = null;
+            if(clothesType == null)
+                clothesType = ClothesType.ETC;
 
             // 에이블리 / 네이버 쇼핑 링크 여부 판별
             boolean isAblyLink = url.contains("a-bly.com") || url.contains("applink.a-bly.com");
@@ -106,7 +112,7 @@ public class ClothesExtractServiceImpl implements ClothesExtractService {
                 null,
                 name,
                 finalImageUrl,
-                null,
+                clothesType,
                 null
             );
 
