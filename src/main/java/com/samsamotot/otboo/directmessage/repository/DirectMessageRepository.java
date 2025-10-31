@@ -108,7 +108,25 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
                 (sender_id = :userId OR receiver_id = :userId)
         ) AS sub
         WHERE rn = 1
-        AND (:cursor IS NULL OR created_at < :cursor OR (created_at = :cursor AND id < :idAfter))
+        ORDER BY created_at DESC, id DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<UUID> findLastMessageIdsOfConversationsFirstPage(@Param("userId") UUID userId, @Param("limit") int limit);
+
+    @Query(value = """
+        SELECT id
+        FROM (
+            SELECT
+                id,
+                created_at,
+                ROW_NUMBER() OVER (PARTITION BY LEAST(sender_id, receiver_id), GREATEST(sender_id, receiver_id) ORDER BY created_at DESC, id DESC) as rn
+            FROM
+                direct_messages
+            WHERE
+                (sender_id = :userId OR receiver_id = :userId)
+        ) AS sub
+        WHERE rn = 1
+        AND (created_at < :cursor OR (created_at = :cursor AND id < :idAfter))
         ORDER BY created_at DESC, id DESC
         LIMIT :limit
         """, nativeQuery = true)

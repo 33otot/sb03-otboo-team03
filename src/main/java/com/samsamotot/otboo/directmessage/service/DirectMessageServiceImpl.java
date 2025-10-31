@@ -156,8 +156,12 @@ public class DirectMessageServiceImpl implements DirectMessageService {
         int limit = Math.max(1, Math.min(request.limit(), 50));
 
         // 커서 기준으로 마지막 메시지 ID 목록 조회 (정렬: createdAt DESC, id DESC)
-        List<UUID> lastMessageIds = Optional.ofNullable(directMessageRepository
-            .findLastMessageIdsOfConversationsWithCursor(myId, cursor, idAfter, limit + 1)).orElseGet(List::of);
+        List<UUID> lastMessageIds;
+        if (cursor == null) {
+            lastMessageIds = Optional.ofNullable(directMessageRepository.findLastMessageIdsOfConversationsFirstPage(myId, limit + 1)).orElseGet(List::of);
+        } else {
+            lastMessageIds = Optional.ofNullable(directMessageRepository.findLastMessageIdsOfConversationsWithCursor(myId, cursor, idAfter, limit + 1)).orElseGet(List::of);
+        }
         boolean hasNext = lastMessageIds.size() > limit;
         List<UUID> dataIds = hasNext ? lastMessageIds.subList(0, limit) : lastMessageIds;
 

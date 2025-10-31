@@ -487,7 +487,7 @@ class DirectMessageServiceImplTest {
         // given
         loginAsUserId(myId, myEmail);
         DirectMessageRoomCursorRequest request = new DirectMessageRoomCursorRequest(null, null, 10);
-        given(directMessageRepository.findLastMessageIdsOfConversationsWithCursor(myId, null, null, 11)).willReturn(messageIds);
+        given(directMessageRepository.findLastMessageIdsOfConversationsFirstPage(myId, 11)).willReturn(messageIds);
 
         // when
         DirectMessageRoomListResponse response = directMessageService.getConversationList(request);
@@ -497,7 +497,7 @@ class DirectMessageServiceImplTest {
         assertThat(response.rooms()).isEmpty();
         assertThat(response.hasNext()).isFalse();
 
-        then(directMessageRepository).should().findLastMessageIdsOfConversationsWithCursor(myId, null, null, 11);
+        then(directMessageRepository).should().findLastMessageIdsOfConversationsFirstPage(myId, 11);
         then(directMessageRepository).should(never()).findWithUsersByIds(any());
         then(profileRepository).should(never()).findByUserIdIn(any());
         then(directMessageMapper).shouldHaveNoInteractions();
@@ -529,7 +529,7 @@ class DirectMessageServiceImplTest {
         when(dm2.getReceiver()).thenReturn(me);
 
         List<UUID> messageIds = List.of(dm1Id, dm2Id);
-        given(directMessageRepository.findLastMessageIdsOfConversationsWithCursor(myId, null, null, 11))
+        given(directMessageRepository.findLastMessageIdsOfConversationsFirstPage(myId,  11))
             .willReturn(messageIds);
 
         given(directMessageRepository.findWithUsersByIds(messageIds)).willReturn(List.of(dm2, dm1));
@@ -556,7 +556,7 @@ class DirectMessageServiceImplTest {
         assertThat(response).isNotNull();
         assertThat(response.rooms()).hasSize(2);
 
-        then(directMessageRepository).should().findLastMessageIdsOfConversationsWithCursor(myId, null, null, 11);
+        then(directMessageRepository).should().findLastMessageIdsOfConversationsFirstPage(myId, 11);
         then(directMessageRepository).should().findWithUsersByIds(messageIds);
         then(profileRepository).should().findByUserIdIn(Set.of(otherId, partner2Id));
         then(directMessageMapper).should(times(2))
@@ -575,7 +575,7 @@ class DirectMessageServiceImplTest {
         when(dm.getSender()).thenReturn(null);
         when(dm.getReceiver()).thenReturn(null);
 
-        given(directMessageRepository.findLastMessageIdsOfConversationsWithCursor(myId, null, null, 11))
+        given(directMessageRepository.findLastMessageIdsOfConversationsFirstPage(myId, 11))
             .willReturn(List.of(dmId));
         given(directMessageRepository.findWithUsersByIds(List.of(dmId)))
             .willReturn(List.of(dm));
