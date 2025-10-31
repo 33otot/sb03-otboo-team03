@@ -69,25 +69,55 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, UU
         """)
     long countBetween(@Param("me") UUID me, @Param("other") UUID other);
 
+    @Query(value = """
+        SELECT COUNT(DISTINCT (LEAST(sender_id, receiver_id), GREATEST(sender_id, receiver_id)))
+        FROM direct_messages
+        WHERE sender_id = :userId OR receiver_id = :userId
+        """, nativeQuery = true)
+    long countConversations(@Param("userId") UUID userId);
 
     /**
      * 1. 각 대화방의 마지막 메시지 ID를 찾는 네이티브 쿼리.
      * ROW_NUMBER()를 사용하여 동률 문제를 해결하고, 가장 효율적으로 ID만 선택합니다.
      */
+//    @Query(value = """
+//        SELECT DISTINCT ON (
+//          LEAST(sender_id, receiver_id),
+//          GREATEST(sender_id, receiver_id)
+//        ) id
+//        FROM direct_messages
+//        WHERE sender_id = :userId OR receiver_id = :userId
+//        ORDER BY
+//          LEAST(sender_id, receiver_id),
+//          GREATEST(sender_id, receiver_id),
+//          created_at DESC,
+//          id DESC
+//        """, nativeQuery = true)
+//    List<UUID> findLastMessageIdsOfConversations(@Param("userId") UUID userId);
+
     @Query(value = """
-        SELECT DISTINCT ON (
-          LEAST(sender_id, receiver_id),
-          GREATEST(sender_id, receiver_id)
-        ) id
-        FROM direct_messages
-        WHERE sender_id = :userId OR receiver_id = :userId
-        ORDER BY
-          LEAST(sender_id, receiver_id),
-          GREATEST(sender_id, receiver_id),
-          created_at DESC,
-          id DESC
+        SELECT id
+        FROM (
+            SELECT
+                id,
+                created_at,
+                ROW_NUMBER() OVER (PARTITION BY LEAST(sender_id, receiver_id), GREATEST(sender_id, receiver_id) ORDER BY created_at DESC, id DESC) as rn
+            FROM
+                direct_messages
+            WHERE
+                (sender_id = :userId OR receiver_id = :userId)
+        ) AS sub
+        WHERE rn = 1
+        AND (:cursor IS NULL OR created_at < :cursor OR (created_at = :cursor AND id < :idAfter))
+        ORDER BY created_at DESC, id DESC
+        LIMIT :limit
         """, nativeQuery = true)
-    List<UUID> findLastMessageIdsOfConversations(@Param("userId") UUID userId);
+    List<UUID> findLastMessageIdsOfConversationsWithCursor(
+        @Param("userId") UUID userId,
+        @Param("cursor") Instant cursor,
+        @Param("idAfter") UUID idAfter,
+        @Param("limit") int limit
+    );
 
     /**
      * 2. ID 목록을 받아 DirectMessage와 연관된 User 엔티티를 JOIN FETCH로 한 번에 조회합니다.

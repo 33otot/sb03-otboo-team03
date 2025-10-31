@@ -4,6 +4,7 @@ import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.controller.api.DirectMessageApi;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomCursorRequest;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse;
 import com.samsamotot.otboo.directmessage.dto.DmTopicKey;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
@@ -71,9 +72,13 @@ public class DirectMessageController implements DirectMessageApi {
      */
     @GetMapping("/rooms")
     public ResponseEntity<DirectMessageRoomListResponse> getConversationRooms(
-        @AuthenticationPrincipal CustomUserDetails userDetails
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        @RequestParam(required = false) Instant cursor,
+        @RequestParam(required = false) UUID idAfter,
+        @RequestParam Integer limit
     ) {
-        return ResponseEntity.ok().body(directMessageService.getConversationList());
+        DirectMessageRoomCursorRequest request = new DirectMessageRoomCursorRequest(cursor, idAfter, limit);
+        return ResponseEntity.ok().body(directMessageService.getConversationList(request));
     }
 
     /**

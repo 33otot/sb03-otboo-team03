@@ -2,6 +2,7 @@ package com.samsamotot.otboo.directmessage.service;
 
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomCursorRequest;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
 import com.samsamotot.otboo.directmessage.dto.SendDmRequest;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse; // Added
@@ -22,5 +23,5 @@ public interface DirectMessageService {
 
     DirectMessageDto sendMessage(UUID senderId, SendDmRequest request);
 
-    DirectMessageRoomListResponse getConversationList();
+    DirectMessageRoomListResponse getConversationList(DirectMessageRoomCursorRequest request);
 }
