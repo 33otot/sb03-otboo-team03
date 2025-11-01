@@ -5,8 +5,10 @@ import static java.util.function.UnaryOperator.identity;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
+import com.samsamotot.otboo.common.type.SortDirection;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomCursorRequest;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
@@ -34,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.suggest.response.SortBy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -144,39 +147,47 @@ public class DirectMessageServiceImpl implements DirectMessageService {
      * @return 대화방 목록 및 마지막 메시지 정보를 담은 응답 객체
      */
     @Override
-    public DirectMessageRoomListResponse getConversationList() {
+    public DirectMessageRoomListResponse getConversationList(DirectMessageRoomCursorRequest request) {
         UUID myId = currentUserId();
         log.info(DM_SERVICE + "대화방 목록 조회 시작 - userId: {}", myId);
 
-        // 마지막 메시지 ID 목록
-        List<UUID> lastMessageIds = Optional
-            .ofNullable(directMessageRepository.findLastMessageIdsOfConversations(myId))
-            .orElseGet(List::of);
+        Instant cursor = request.cursor();
+        UUID idAfter = request.idAfter();
+        int limit = Math.max(1, Math.min(request.limit(), 50));
 
-        if (lastMessageIds.isEmpty()) {
-            return new DirectMessageRoomListResponse(List.of());
+        // 커서 기준으로 마지막 메시지 ID 목록 조회 (정렬: createdAt DESC, id DESC)
+        List<UUID> lastMessageIds;
+        if (cursor == null) {
+            lastMessageIds = Optional.ofNullable(directMessageRepository.findLastMessageIdsOfConversationsFirstPage(myId, limit + 1)).orElseGet(List::of);
+        } else {
+            lastMessageIds = Optional.ofNullable(directMessageRepository.findLastMessageIdsOfConversationsWithCursor(myId, cursor, idAfter, limit + 1)).orElseGet(List::of);
+        }
+        boolean hasNext = lastMessageIds.size() > limit;
+        List<UUID> dataIds = hasNext ? lastMessageIds.subList(0, limit) : lastMessageIds;
+
+        if (dataIds.isEmpty()) {
+            return new DirectMessageRoomListResponse(List.of(), null, null, false, 0, "createdAt",
+                SortDirection.DESCENDING.name());
         }
 
         // 메시지 + 유저 로드 (JOIN FETCH)
-        List<DirectMessage> conversations = Optional
-            .ofNullable(directMessageRepository.findWithUsersByIds(lastMessageIds))
-            .orElseGet(List::of);
-
-        if (conversations.isEmpty()) {
-            return new DirectMessageRoomListResponse(List.of());
-        }
+        List<DirectMessage> conversations = directMessageRepository.findWithUsersByIds(dataIds);
 
         // 마지막 메시지 ID 순서대로 정렬
         Map<UUID, DirectMessage> dmById = conversations.stream()
             .collect(Collectors.toMap(DirectMessage::getId, Function.identity()));
-        List<DirectMessage> ordered = lastMessageIds.stream()
+        List<DirectMessage> ordered = dataIds.stream()
             .map(dmById::get)
             .filter(Objects::nonNull)
             .toList();
 
-        if (ordered.isEmpty()) {
-            log.warn(DM_SERVICE + "lastMessageIds는 있으나 조회 결과가 비어 재정렬 실패 - size={}", lastMessageIds.size());
-            return new DirectMessageRoomListResponse(List.of());
+        // nextCursor/nextIdAfter 계산
+        String nextCursor = null;
+        UUID nextIdAfter = null;
+        if (hasNext && !ordered.isEmpty()) {
+            DirectMessage last = ordered.get(ordered.size() - 1);
+            nextCursor = last.getCreatedAt().toString();
+            nextIdAfter = last.getId();
         }
 
         // 대화 상대 userId 수집
@@ -188,37 +199,27 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             .filter(Objects::nonNull)
             .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        // 파트너가 하나도 없으면 프로필 조회 생략 후 바로 매핑
-        if (partnerIds.isEmpty()) {
-            log.info(DM_SERVICE + "파트너가 없어 프로필 조회 생략 - userId: {}", myId);
+        Map<UUID, String> profileUrlMap = Map.of();
 
-            List<DirectMessageRoomDto> rooms = toRooms(ordered, myId, Map.of());
-
-            log.info(DM_SERVICE + "대화방 목록 조회 완료 - rooms count: {}", rooms.size());
-            return new DirectMessageRoomListResponse(rooms);
-        }
-
-        // 프로필 배치 조회
-        List<Profile> profiles = Optional
-            .ofNullable(profileRepository.findByUserIdIn(partnerIds))
-            .orElseGet(List::of);
-
-        // userId -> profileImageUrl 맵 구성
-        Map<UUID, String> profileUrlMap = partnerIds.stream()
-            .collect(Collectors.toMap(identity(), id -> ""));
-
-        for (Profile p : profiles) {
-            if (p != null && p.getUser() != null && p.getUser().getId() != null) {
-                profileUrlMap.put(p.getUser().getId(),
-                    Optional.ofNullable(p.getProfileImageUrl()).orElse(""));
+        if (!partnerIds.isEmpty()) {
+            List<Profile> profiles = profileRepository.findByUserIdIn(partnerIds);
+            Map<UUID, String> tmp = partnerIds.stream()
+                .collect(Collectors.toMap(Function.identity(), id -> ""));
+            for (Profile p : profiles) {
+                if (p != null && p.getUser() != null && p.getUser().getId() != null) {
+                    tmp.put(p.getUser().getId(), Optional.ofNullable(p.getProfileImageUrl()).orElse(""));
+                }
             }
+            profileUrlMap = tmp;
         }
 
         // DTO 매핑
         List<DirectMessageRoomDto> rooms = toRooms(ordered, myId, profileUrlMap);
 
-        log.info(DM_SERVICE + "대화방 목록 조회 완료 - rooms count: {}", rooms.size());
-        return new DirectMessageRoomListResponse(rooms);
+        long totalCount = directMessageRepository.countConversations(myId);
+
+        log.info(DM_SERVICE + "대화방 목록 조회 완료 - rooms count: {}, hasNext: {}", rooms.size(), hasNext);
+        return new DirectMessageRoomListResponse(rooms, nextCursor, nextIdAfter, hasNext, totalCount, "createdAt", SortDirection.DESCENDING.name());
     }
 
     /**

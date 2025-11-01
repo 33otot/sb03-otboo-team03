@@ -3,6 +3,7 @@ package com.samsamotot.otboo.directmessage.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.BDDMockito.anyMap;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.atLeast;
@@ -18,9 +19,11 @@ import static org.mockito.BDDMockito.willAnswer;
 
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
+import com.samsamotot.otboo.common.fixture.UserFixture;
 import com.samsamotot.otboo.common.security.service.CustomUserDetails;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageListResponse;
+import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomCursorRequest;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomDto;
 import com.samsamotot.otboo.directmessage.dto.DirectMessageRoomListResponse;
 import com.samsamotot.otboo.directmessage.dto.MessageRequest;
@@ -57,6 +60,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * PackageName  : com.samsamotot.otboo.directmessage.service
@@ -401,89 +405,80 @@ class DirectMessageServiceImplTest {
     }
 
     @Test
-    void 정상적으로_대화방_목록을_가져온다() throws Exception {
+    void 정상적으로_대화방_목록을_가져온다() {
         // given
         loginAsUserId(myId, myEmail);
 
-        List<DirectMessage> fetched = new ArrayList<>();
-        List<User> partners = new ArrayList<>();
-        Set<UUID> partnerIds = new HashSet<>();
+        Instant cursor = Instant.parse("2025-10-31T00:00:00Z");
+        UUID idAfter = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        int limit = 10;
+        DirectMessageRoomCursorRequest request =
+            new DirectMessageRoomCursorRequest(cursor, idAfter, limit);
+
+        // 리포지토리가 반환할 ID들: limit+1 (hasNext = true)
         List<UUID> lastMessageIds = new ArrayList<>();
+        for (int i = 0; i < limit + 1; i++) lastMessageIds.add(UUID.randomUUID());
 
-        // lastMessageIds와 dm(id) 동기화
-        for (int i = 0; i < 25; i++) {
-            User sender = stubUser(myId, false);
-            UUID partnerId = UUID.nameUUIDFromBytes(("partner-" + i).getBytes(StandardCharsets.UTF_8));
-            User receiver = stubUser(partnerId, false);
+        // page에 실릴 ID들 (앞의 limit개)
+        List<UUID> pageIds = lastMessageIds.subList(0, limit);
+        UUID expectedNextIdAfter = pageIds.get(limit - 1);
 
-            UUID dmId = UUID.nameUUIDFromBytes(("dm-" + i).getBytes(StandardCharsets.UTF_8));
-
-            DirectMessage dm = mock(DirectMessage.class);
-            when(dm.getId()).thenReturn(dmId);        // ★ 중요: id 스텁
-            when(dm.getSender()).thenReturn(sender);
-            when(dm.getReceiver()).thenReturn(receiver);
-
-            fetched.add(dm);
-            partners.add(receiver);
-            partnerIds.add(partnerId);
-            lastMessageIds.add(dmId);
-        }
-
-        // DB가 순서를 보장하지 않는 상황을 흉내: return 순서를 섞는다
-        Collections.shuffle(fetched);
-
-        // mapper는 호출 순서 검증을 위해 dm.id를 담아주도록 스텁
-        when(directMessageMapper.toRoomDto(any(User.class), any(DirectMessage.class), anyMap()))
-            .thenAnswer(inv -> {
-                DirectMessage dm = inv.getArgument(1, DirectMessage.class);
-                return DirectMessageRoomDto.builder()
-                    .partner(AuthorDto.builder().userId(UUID.randomUUID()).name("x").build())
-                    .lastMessage("msg")
-                    .lastMessageSentAt(Instant.now())
-                    .build();
-            });
-
-        given(directMessageRepository.findLastMessageIdsOfConversations(myId))
+        given(directMessageRepository.findLastMessageIdsOfConversationsWithCursor(myId, cursor, idAfter, limit + 1))
             .willReturn(lastMessageIds);
-        given(directMessageRepository.findWithUsersByIds(argThat(ids ->
-            ids != null && ids.size() == lastMessageIds.size() && ids.containsAll(lastMessageIds)
-        ))).willReturn(fetched);
+        given(directMessageRepository.countConversations(myId)).willReturn(20L);
 
-        // 배치 프로필 조회
-        List<Profile> profileList = partners.stream()
-            .map(u -> Profile.builder()
-                .user(u)
-                .profileImageUrl("https://cdn.example.com/" + u.getId() + ".png")
-                .build())
-            .toList();
-        given(profileRepository.findByUserIdIn(argThat(ids -> ids.containsAll(partnerIds))))
-            .willReturn(profileList);
+        Instant base = Instant.parse("2025-10-31T12:00:00Z");
+        List<DirectMessage> fetched = new ArrayList<>();
+        User me = UserFixture.createUser();
+        ReflectionTestUtils.setField(me, "id", myId);
+        User other = UserFixture.createUser();
+        ReflectionTestUtils.setField(other, "id", UUID.randomUUID());
+        for (int i = 0; i < pageIds.size(); i++) {
+            UUID msgId = pageIds.get(i);
+            DirectMessage dm = mock(DirectMessage.class);
+            when(dm.getId()).thenReturn(msgId);
+            when(dm.getSender()).thenReturn(me);
+            when(dm.getReceiver()).thenReturn(other);
+            fetched.add(dm);
+        }
+        DirectMessage last = fetched.get(limit - 1);
+        when(last.getCreatedAt()).thenReturn(base.minusSeconds(limit - 1));
+
+        given(directMessageRepository.findWithUsersByIds(argThat(ids -> ids.equals(pageIds))))
+            .willReturn(fetched);
+
+        given(profileRepository.findByUserIdIn(anySet())).willReturn(List.of());
+
+        // 매퍼 스텁
+        given(directMessageMapper.toRoomDto(any(User.class), any(DirectMessage.class), anyMap()))
+            .willReturn(mock(DirectMessageRoomDto.class));
 
         // when
-        DirectMessageRoomListResponse response = directMessageService.getConversationList();
+        DirectMessageRoomListResponse response = directMessageService.getConversationList(request);
 
         // then
         assertThat(response).isNotNull();
-        assertThat(response.rooms()).hasSize(25);
+        assertThat(response.rooms()).hasSize(limit);
+        assertThat(response.hasNext()).isTrue();
+        assertThat(response.totalCount()).isEqualTo(20L);
 
-        // 레포 호출 검증
-        then(directMessageRepository).should().findLastMessageIdsOfConversations(myId);
-        ArgumentCaptor<List<UUID>> idsCaptor = ArgumentCaptor.forClass(List.class);
-        then(directMessageRepository).should().findWithUsersByIds(idsCaptor.capture());
-        assertThat(idsCaptor.getValue()).containsExactlyInAnyOrderElementsOf(lastMessageIds);
+        // nextCursor/nextIdAfter는 "현재 페이지의 마지막 요소" 기준
+        assertThat(response.nextCursor()).isEqualTo(base.minusSeconds(limit - 1).toString());
+        assertThat(response.nextIdAfter()).isEqualTo(expectedNextIdAfter);
 
-        then(profileRepository).should()
-            .findByUserIdIn(argThat(ids -> ids.containsAll(partnerIds)));
+        // 순서 보존 검증: 매퍼에 들어간 DirectMessage ID 순서 = pageIds
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<DirectMessage> dmCaptor = ArgumentCaptor.forClass(DirectMessage.class);
+        then(directMessageMapper).should(times(limit))
+            .toRoomDto(any(User.class), dmCaptor.capture(), anyMap());
+        List<UUID> passedIds = dmCaptor.getAllValues().stream().map(DirectMessage::getId).toList();
+        assertThat(passedIds).containsExactlyElementsOf(pageIds);
 
-        // mapper 호출 순서가 lastMessageIds와 같은지: DirectMessage 인자 캡처
-        ArgumentCaptor<DirectMessage> dmArgCaptor = ArgumentCaptor.forClass(DirectMessage.class);
-        then(directMessageMapper).should(times(25))
-            .toRoomDto(any(User.class), dmArgCaptor.capture(), anyMap());
-
-        List<UUID> mappedOrder = dmArgCaptor.getAllValues().stream()
-            .map(DirectMessage::getId)
-            .toList();
-        assertThat(mappedOrder).containsExactlyElementsOf(lastMessageIds); // ★ 정렬 보장 검증
+        then(directMessageRepository).should()
+            .findLastMessageIdsOfConversationsWithCursor(myId, cursor, idAfter, limit + 1);
+        then(directMessageRepository).should().countConversations(myId);
+        then(directMessageRepository).should().findWithUsersByIds(pageIds);
+        then(profileRepository).should().findByUserIdIn(anySet());
     }
 
     @ParameterizedTest
@@ -491,15 +486,18 @@ class DirectMessageServiceImplTest {
     void 대화_목록이_없을_때_빈_리스트를_반환한다(List<UUID> messageIds) {
         // given
         loginAsUserId(myId, myEmail);
-        given(directMessageRepository.findLastMessageIdsOfConversations(myId)).willReturn(messageIds);
+        DirectMessageRoomCursorRequest request = new DirectMessageRoomCursorRequest(null, null, 10);
+        given(directMessageRepository.findLastMessageIdsOfConversationsFirstPage(myId, 11)).willReturn(messageIds);
 
         // when
-        DirectMessageRoomListResponse response = directMessageService.getConversationList();
+        DirectMessageRoomListResponse response = directMessageService.getConversationList(request);
 
         // then
         assertThat(response).isNotNull();
         assertThat(response.rooms()).isEmpty();
-        then(directMessageRepository).should().findLastMessageIdsOfConversations(myId);
+        assertThat(response.hasNext()).isFalse();
+
+        then(directMessageRepository).should().findLastMessageIdsOfConversationsFirstPage(myId, 11);
         then(directMessageRepository).should(never()).findWithUsersByIds(any());
         then(profileRepository).should(never()).findByUserIdIn(any());
         then(directMessageMapper).shouldHaveNoInteractions();
@@ -509,6 +507,7 @@ class DirectMessageServiceImplTest {
     void 프로필_이미지가_없는_사용자가_있어도_정상_동작한다() {
         // given
         loginAsUserId(myId, myEmail);
+        DirectMessageRoomCursorRequest request = new DirectMessageRoomCursorRequest(null, null, 10);
 
         User me = stubUser(myId, false);
         User partner1 = stubUser(otherId, false);
@@ -529,11 +528,10 @@ class DirectMessageServiceImplTest {
         when(dm2.getSender()).thenReturn(partner2);
         when(dm2.getReceiver()).thenReturn(me);
 
-        // lastMessageIds는 ordered로 가정 (dm1, dm2)
         List<UUID> messageIds = List.of(dm1Id, dm2Id);
-        given(directMessageRepository.findLastMessageIdsOfConversations(myId)).willReturn(messageIds);
+        given(directMessageRepository.findLastMessageIdsOfConversationsFirstPage(myId,  11))
+            .willReturn(messageIds);
 
-        // fetched는 순서 섞여도 상관없게 (서비스가 재정렬)
         given(directMessageRepository.findWithUsersByIds(messageIds)).willReturn(List.of(dm2, dm1));
 
         // 프로필: partner1은 이미지 있음, partner2는 null
@@ -548,20 +546,17 @@ class DirectMessageServiceImplTest {
         given(profileRepository.findByUserIdIn(Set.of(partner1.getId(), partner2.getId())))
             .willReturn(List.of(profile1, profile2));
 
-        // mapper는 호출만 되면 OK
         when(directMessageMapper.toRoomDto(any(User.class), any(DirectMessage.class), anyMap()))
-            .thenReturn(DirectMessageRoomDto.builder()
-                .partner(AuthorDto.builder().userId(UUID.randomUUID()).name("p").build())
-                .lastMessage("m").lastMessageSentAt(Instant.now()).build());
+            .thenReturn(mock(DirectMessageRoomDto.class));
 
         // when
-        DirectMessageRoomListResponse response = directMessageService.getConversationList();
+        DirectMessageRoomListResponse response = directMessageService.getConversationList(request);
 
         // then
         assertThat(response).isNotNull();
         assertThat(response.rooms()).hasSize(2);
 
-        then(directMessageRepository).should().findLastMessageIdsOfConversations(myId);
+        then(directMessageRepository).should().findLastMessageIdsOfConversationsFirstPage(myId, 11);
         then(directMessageRepository).should().findWithUsersByIds(messageIds);
         then(profileRepository).should().findByUserIdIn(Set.of(otherId, partner2Id));
         then(directMessageMapper).should(times(2))
@@ -572,6 +567,7 @@ class DirectMessageServiceImplTest {
     void 파트너가_없으면_프로필_조회를_생략하고_반환한다() {
         // given
         loginAsUserId(myId, myEmail);
+        DirectMessageRoomCursorRequest request = new DirectMessageRoomCursorRequest(null, null, 10);
 
         DirectMessage dm = mock(DirectMessage.class);
         UUID dmId = UUID.randomUUID();
@@ -579,13 +575,13 @@ class DirectMessageServiceImplTest {
         when(dm.getSender()).thenReturn(null);
         when(dm.getReceiver()).thenReturn(null);
 
-        given(directMessageRepository.findLastMessageIdsOfConversations(myId))
+        given(directMessageRepository.findLastMessageIdsOfConversationsFirstPage(myId, 11))
             .willReturn(List.of(dmId));
         given(directMessageRepository.findWithUsersByIds(List.of(dmId)))
             .willReturn(List.of(dm));
 
         // when
-        DirectMessageRoomListResponse response = directMessageService.getConversationList();
+        DirectMessageRoomListResponse response = directMessageService.getConversationList(request);
 
         // then
         assertThat(response).isNotNull();

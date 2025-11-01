@@ -77,6 +77,9 @@ public interface DirectMessageApi {
     })
     @GetMapping("/rooms")
     ResponseEntity<DirectMessageRoomListResponse> getConversationRooms(
+        @RequestParam(required = false) Instant cursor,
+        @RequestParam(required = false) UUID idAfter,
+        @RequestParam(defaultValue = "10") @Min(1) Integer limit,
         @AuthenticationPrincipal CustomUserDetails userDetails
     );
 }
