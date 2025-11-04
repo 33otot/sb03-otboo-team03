@@ -4,8 +4,6 @@ import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.entity.Grid;
 
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 날씨 수집 서비스 인터페이스
@@ -26,24 +24,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface WeatherService {
 
-    /**
-     * 특정 격자 좌표에 대한 최신 날씨 정보를 가져와 데이터베이스를 업데이트합니다.
-     * 
-     * <p>기상청 단기예보 API를 호출하여 해당 격자 좌표의 날씨 정보를 조회하고,
-     * 응답 데이터를 파싱하여 데이터베이스에 저장합니다.</p>
-     * 
-     * <p>처리 과정:</p>
-     * <ol>
-     *   <li>기상청 API 호출</li>
-     *   <li>응답 데이터 파싱</li>
-     *   <li>기존 데이터 삭제 (해당 격자, 예보 시간)</li>
-     *   <li>새로운 데이터 저장</li>
-     * </ol>
-     * 
-     * @param gridId 날씨 정보를 업데이트할 격자 좌표
-     * @return CompletableFuture&lt;Void&gt; 비동기 처리 결과
-     */
-    CompletableFuture<Void> updateWeatherForGrid(UUID gridId);
+    void updateWeatherForGrid(int x, int y);
 
     List<WeatherDto> getWeatherList(double longitude, double latitude);
 }

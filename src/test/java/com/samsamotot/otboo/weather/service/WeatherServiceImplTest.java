@@ -35,7 +35,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,14 +95,14 @@ public class WeatherServiceImplTest {
             );
 
             // Mockito를 사용하여 가짜 객체들 행동 정의
-            given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
+            given(gridRepository.findByXAndY(grid.getX(), grid.getY())).willReturn(Optional.of(grid));
             given(kmaClient.fetchWeather(grid.getX(), grid.getY()))
                     .willReturn(Mono.just(fakeFcstResponse));
 
 
             // When
             // @Async로 비동기 처리 join()으로 비동기 작업 끝날 때까지 기다림
-            weatherService.updateWeatherForGrid(grid.getId()).join();
+            weatherService.updateWeatherForGrid(grid.getX(), grid.getY());
 
 
             // Then
@@ -127,18 +126,17 @@ public class WeatherServiceImplTest {
 
             // Mockito 설정:
             // kmaClient.fetchWeather가 호출되면, 비어있는 가짜 응답을 반환
-            given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
+            given(gridRepository.findByXAndY(grid.getX(), grid.getY())).willReturn(Optional.of(grid));
             given(kmaClient.fetchWeather(grid.getX(), grid.getY()))
                     .willReturn(Mono.just(fakeFcstResponse));
 
 
             // When
-            CompletableFuture<Void> future = weatherService.updateWeatherForGrid(grid.getId());
+            weatherService.updateWeatherForGrid(grid.getX(), grid.getY());
 
             // Then
             // WeatherServiceImpl의 exceptionally 블록으로 인해 예외가 발생하지 않고 정상 완료됨
-            assertThat(future.isCompletedExceptionally()).isFalse();
-            assertThat(future.join()).isNull(); // exceptionally에서 null을 반환
+            // isValid()에서 false를 반환하므로, 후속 작업이 호출되지 않아야 함
 
             // 유효하지 않은 데이터이므로 DB 접근 불가
             verify(weatherTransactionService, times(0)).updateWeather(any(Grid.class), any(List.class));
@@ -181,7 +179,7 @@ public class WeatherServiceImplTest {
             );
 
             // Mockito 설정
-            given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
+            given(gridRepository.findByXAndY(grid.getX(), grid.getY())).willReturn(Optional.of(grid));
             given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                     .willReturn(Mono.just(fakeFcstResponse));
 
@@ -191,7 +189,7 @@ public class WeatherServiceImplTest {
 
 
             // When (실행)
-            weatherService.updateWeatherForGrid(grid.getId()).join();
+            weatherService.updateWeatherForGrid(grid.getX(), grid.getY());
 
 
             // Then (검증)
@@ -260,7 +258,7 @@ public class WeatherServiceImplTest {
             );
 
             // Mockito 설정
-            given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
+            given(gridRepository.findByXAndY(grid.getX(), grid.getY())).willReturn(Optional.of(grid));
             given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                     .willReturn(Mono.just(fakeFcstResponse));
 
@@ -270,7 +268,7 @@ public class WeatherServiceImplTest {
 
 
             // When (실행)
-            weatherService.updateWeatherForGrid(grid.getId()).join();
+            weatherService.updateWeatherForGrid(grid.getX(), grid.getY());
 
 
             // Then (검증)
@@ -327,7 +325,7 @@ public class WeatherServiceImplTest {
                     )
             );
 
-            given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
+            given(gridRepository.findByXAndY(grid.getX(), grid.getY())).willReturn(Optional.of(grid));
             given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                     .willReturn(Mono.just(fakeResponse));
 
@@ -335,7 +333,7 @@ public class WeatherServiceImplTest {
             ArgumentCaptor<List<Weather>> captor = ArgumentCaptor.forClass(List.class);
 
             // When (실행)
-            weatherService.updateWeatherForGrid(grid.getId()).join();
+            weatherService.updateWeatherForGrid(grid.getX(), grid.getY());
 
             // Then (검증)
             verify(weatherTransactionService).updateWeather(any(Grid.class), captor.capture());
@@ -387,7 +385,7 @@ public class WeatherServiceImplTest {
                     )
             );
 
-            given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
+            given(gridRepository.findByXAndY(grid.getX(), grid.getY())).willReturn(Optional.of(grid));
             given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
                     .willReturn(Mono.just(fakeResponse));
 
@@ -395,7 +393,7 @@ public class WeatherServiceImplTest {
             ArgumentCaptor<List<Weather>> captor = ArgumentCaptor.forClass(List.class);
 
             // When (실행)
-            weatherService.updateWeatherForGrid(grid.getId()).join();
+            weatherService.updateWeatherForGrid(grid.getX(), grid.getY());
 
             // Then (검증)
             verify(weatherTransactionService).updateWeather(any(Grid.class), captor.capture());
@@ -548,18 +546,16 @@ public class WeatherServiceImplTest {
                                     1, 1, 10))
                             );
 
-            when(gridRepository.findById(grid.getId()))
-                    .thenReturn(Optional.of(grid));
+            given(gridRepository.findByXAndY(grid.getX(), grid.getY()))
+                    .willReturn(Optional.of(grid));
             when(kmaClient.fetchWeather(grid.getX(), grid.getY()))
                     .thenReturn(Mono.just(mockResponse));
             doNothing().when(weatherTransactionService).updateWeather(any(Grid.class), anyList());
 
             // When
-            CompletableFuture<Void> future = weatherService.updateWeatherForGrid(grid.getId());
+            weatherService.updateWeatherForGrid(grid.getX(), grid.getY());
 
             // Then
-            future.get();
-
             verify(weatherTransactionService, times(1)).updateWeather(eq(grid), anyList());
         }
     }
