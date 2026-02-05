@@ -5,7 +5,6 @@ import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.entity.User;
-import com.samsamotot.otboo.weather.dto.WeatherAlterType;
 import com.samsamotot.otboo.weather.dto.WeatherChangeDto;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
@@ -203,7 +202,6 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
 
         // [하늘 상태 변화]에 대한 알림
         if (changes.skyStatus() != null) {
-            SkyStatus skyStatus = changes.skyStatus();
             String title = "하늘 변화 알림 💭";
             String message = switch (changes.skyStatus()) {
                 case MOSTLY_CLOUDY -> "어제보다 구름이 약간 많아요. 🌥️";
