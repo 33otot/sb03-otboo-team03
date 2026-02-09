@@ -121,6 +121,37 @@ public class NotificationServiceImpl implements NotificationService {
                 }
             });
     }
+
+    /**
+     * 특정 사용자 목록에게 알림을 전송합니다.
+     *
+     * @param receiverIds 수신자 ID 목록
+     * @param title 알림 제목
+     * @param content 알림 내용
+     * @param level 알림 수준
+     */
+    @Transactional
+    @Override
+    public void sendNotifications(List<UUID> receiverIds, String title, String content, NotificationLevel level) {
+        if (receiverIds == null || receiverIds.isEmpty()) {
+            log.info(NOTIFICATION_SERVICE + "존재하지 않는 사용자. 날씨 알림 서비스 중단");
+            return;
+        }
+
+        log.info(NOTIFICATION_SERVICE + "다수 사용자 알림 전송 시작 - 수신자 수: {}, title: '{}'", receiverIds.size(), title);
+
+        // 1. 배치로 알림 저장
+        List<Notification> savedNotifications = saveBatchNotifications(receiverIds, title, content, level);
+
+        // 2. 트랜잭션 커밋 후 SSE 발행
+        TransactionSynchronizationManager
+                .registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        sendBatchSseNotifications(savedNotifications);
+                    }
+                });
+    }
     
     /**
      * 사용자 목록에 대해 배치로 알림을 저장한다.

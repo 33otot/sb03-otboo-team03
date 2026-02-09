@@ -11,10 +11,8 @@ import java.util.UUID;
  * Description  : 날씨 변화 감지 시 발송되는 알림 이벤트
  */
 public record WeatherNotificationEvent(
-        List<UUID> receiverId,
+        List<UUID> receiverIds,
         String title,
         String content,
         NotificationLevel level
-) {
-
-}
+) { }

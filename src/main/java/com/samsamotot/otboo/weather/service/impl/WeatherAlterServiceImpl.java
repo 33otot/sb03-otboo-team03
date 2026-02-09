@@ -1,11 +1,11 @@
 package com.samsamotot.otboo.weather.service.impl;
 
 import com.samsamotot.otboo.notification.entity.NotificationLevel;
-import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.weather.dto.WeatherChangeDto;
+import com.samsamotot.otboo.weather.dto.event.WeatherNotificationEvent;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
@@ -14,6 +14,7 @@ import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import com.samsamotot.otboo.weather.service.WeatherAlterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,8 +43,8 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
     private static final double HUMID_STANDARD = 50.0;
 
     private final WeatherRepository weatherRepository;
-    private final NotificationService notificationService;
     private final ProfileRepository profileRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 새로운 날씨 데이터를 기준으로 변화를 감지하고 알림을 발송하는 메인 메소드입니다.
@@ -178,6 +179,8 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
      * @param changes       변화된 날씨 정보가 담긴 DTO
      */
     private void sendNotifications(List<User> usersToNotify, WeatherChangeDto changes) {
+        List<UUID> receiverIds = usersToNotify.stream().map(User::getId).toList();
+
         // [온도 변화]에 대한 알림
         if (changes.tempComparedToDayBefore() != null) {
             double temp = changes.tempComparedToDayBefore();
@@ -186,7 +189,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
                     String.format("어제보다 기온이 %.1f도 높아요! 가벼운 옷차림은 어떠세요? ☀️", temp) :
                     String.format("어제보다 기온이 %.1f도 낮아요. 따뜻하게 입으세요! 🧣", Math.abs(temp));
 
-            usersToNotify.forEach(user -> notificationService.save(user.getId(), title, message, NotificationLevel.INFO));
+            eventPublisher.publishEvent(new WeatherNotificationEvent(receiverIds, title, message, NotificationLevel.INFO));
         }
 
         // [습도 변화]에 대한 알림
@@ -197,7 +200,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
                     String.format("어제보다 습도가 %.1f%%p 높아요! 불쾌 지수에 유의하세요! 🥹", humid) :
                     String.format("어제보다 습도가 %.1f%%p 낮아요. 즐거운 하루 되세요! ❤️", Math.abs(humid));
 
-            usersToNotify.forEach(user -> notificationService.save(user.getId(), title, message, NotificationLevel.INFO));
+            eventPublisher.publishEvent(new WeatherNotificationEvent(receiverIds, title, message, NotificationLevel.INFO));
         }
 
         // [하늘 상태 변화]에 대한 알림
@@ -208,17 +211,15 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
                 case CLOUDY -> "오늘은 날이 흐려요. ☁️";
                 default -> "오늘은 날이 맑아요! 오늘 하루는 좋은 사람과 지내는건 어때요? 👩‍👧‍👦";
             };
-            usersToNotify.forEach(user -> notificationService.save(user.getId(), title, message, NotificationLevel.INFO));
+            eventPublisher.publishEvent(new WeatherNotificationEvent(receiverIds, title, message, NotificationLevel.INFO));
         }
-
-
 
         // [강수 변화]에 대한 알림
         if (changes.precipitation() != null && changes.precipitation() != Precipitation.NONE) {
             String title = "강수 변화 알림 🌧️";
             String message = "곧 비나 눈이 올 수 있으니, 우산을 챙기는 걸 잊지 마세요! ☔";
 
-            usersToNotify.forEach(user -> notificationService.save(user.getId(), title, message, NotificationLevel.INFO));
+            eventPublisher.publishEvent(new WeatherNotificationEvent(receiverIds, title, message, NotificationLevel.INFO));
         }
 
         // [바람 상태 변화]에 대한 알림을 보냅니다.
@@ -226,8 +227,7 @@ public class WeatherAlterServiceImpl implements WeatherAlterService {
             String title = "바람 변화 알림 💨";
             String message = "바람이 어제보다 강하게 불고 있어요. 안전에 유의하세요! ⛑️";
 
-            // 모든 대상 유저에게 '바람 변화' 알림 발송
-            usersToNotify.forEach(user -> notificationService.save(user.getId(), title, message, NotificationLevel.INFO));
+            eventPublisher.publishEvent(new WeatherNotificationEvent(receiverIds, title, message, NotificationLevel.INFO));
         }
     }
 }
