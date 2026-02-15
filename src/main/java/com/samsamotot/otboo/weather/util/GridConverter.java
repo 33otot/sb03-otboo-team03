@@ -69,7 +69,7 @@ public final class GridConverter {
      * @param ny 격자 Y 좌표
      * @return 위경도 좌표
      */
-    public static LatLonCoordinate toLatLon(int nx, int ny) {
+    public static LatLon toLatLon(int nx, int ny) {
         double re = RE / GRID;
         double slat1 = SLAT1 * DEGRAD;
         double slat2 = SLAT2 * DEGRAD;
@@ -113,7 +113,7 @@ public final class GridConverter {
         double lat = alat * 180.0 / Math.PI;
         double lon = alon * 180.0 / Math.PI;
 
-        return new LatLonCoordinate(lat, lon);
+        return new LatLon(lat, lon);
     }
 
     /**
@@ -123,7 +123,7 @@ public final class GridConverter {
     public static void main(String[] args) {
         // 기상청 공식 예제 검증
         int testX = 59, testY = 125;
-        LatLonCoordinate result = toLatLon(testX, testY);
+        LatLon result = toLatLon(testX, testY);
         
         System.out.printf("X = %d, Y = %d ---> lon.= %.6f, lat.= %.6f%n", 
                          testX, testY, result.longitude(), result.latitude());
@@ -142,6 +142,8 @@ public final class GridConverter {
      * @param ny 격자 Y
      */
     public record GridPoint(int nx, int ny) {}
+
+    public record LatLon(double latitude, double longitude) {}
 }
 
 
