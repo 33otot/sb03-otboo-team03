@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 @Component
-public class KmaClient {
+public class KmaClient implements WeatherClient {
 
     private static final String CLIENT_NAME = "[KmaClient] ";
 
@@ -51,6 +51,7 @@ public class KmaClient {
      * @return WeatherForecastResponse를 담은 Mono
      * @exception WebClientResponseException
      */
+    @Override
     public Mono<WeatherForecastResponse> fetchWeather(int nx, int ny) {
 
         BaseDateTime baseDateTime = calculateBaseDateTime();
