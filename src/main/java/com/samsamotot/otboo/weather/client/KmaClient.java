@@ -38,7 +38,7 @@ public class KmaClient implements WeatherClient {
     private static final String DATA_TYPE = "JSON";
 
     public KmaClient(@Qualifier("kmaWebClient") WebClient webClient,
-                     @Value("${kma.service-key}") String authKey) {
+                     @Value("${weather.kma.service-key}") String authKey) {
         this.webClient = webClient;
         this.authKey = authKey;
     }

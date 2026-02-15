@@ -75,10 +75,13 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
-kma:
-  base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
-  alt-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0
-  service-key: ${AUTH_KEY}
+weather:
+  kma:
+    base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
+    alt-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0
+    service-key: ${AUTH_KEY}
+  open:
+    service-key: ${OPEN_WEATHER_KEY}
 
 kakao.api:
   base-url: https://dapi.kakao.com
