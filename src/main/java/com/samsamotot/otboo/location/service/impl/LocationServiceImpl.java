@@ -53,6 +53,7 @@ public class LocationServiceImpl implements LocationService {
     private final LocationRepository locationRepository;
     private final KakaoApiClient kakaoApiClient;
     private final GridRepository gridRepository;
+    private final GridConverter gridConverter;
 
     /**
      * 좌표를 기반으로 현재 위치 정보를 조회합니다.
@@ -132,7 +133,7 @@ public class LocationServiceImpl implements LocationService {
 
 
         // WGS84 좌표를 기상청 격자 좌표로 변환
-        GridConverter.GridPoint gridPoint = GridConverter.toGrid(latitude, longitude);
+        GridConverter.GridPoint gridPoint = gridConverter.toGrid(latitude, longitude);
         Grid grid = findOrCreateGrid(gridPoint);
 
         // 기존 위치 업데이트
@@ -148,7 +149,7 @@ public class LocationServiceImpl implements LocationService {
         KakaoAddressResponse response = callKakaoApi(longitude, latitude);
 
         // WGS84 좌표를 기상청 격자 좌표로 변환
-        GridConverter.GridPoint gridPoint = GridConverter.toGrid(latitude, longitude);
+        GridConverter.GridPoint gridPoint = gridConverter.toGrid(latitude, longitude);
         Grid grid = findOrCreateGrid(gridPoint);
 
         // 새 위치 생성

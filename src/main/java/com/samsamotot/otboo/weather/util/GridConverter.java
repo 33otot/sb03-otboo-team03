@@ -12,9 +12,7 @@ import org.springframework.stereotype.Component;
  * @author HuInDoL
  */
 @Component
-public final class GridConverter {
-
-    private GridConverter() {}
+public class GridConverter {
 
     // Lambert Conformal Conic parameters (KMA DFS)
     private static final double RE = 6371.00877;     // 지구 반경(km)
@@ -27,6 +25,7 @@ public final class GridConverter {
     private static final double YO = 135.0;          // 기준점 Y좌표 (675/5.0)
 
     private static final double DEGRAD = Math.PI / 180.0;
+    private static final double RADDEG = 180.0 / Math.PI;
 
     /**
      * 위경도를 DFS 격자(nx, ny)로 변환합니다.
@@ -35,7 +34,7 @@ public final class GridConverter {
      * @param longitude WGS84 경도
      * @return          격자 좌표
      */
-    public static GridPoint toGrid(double latitude, double longitude) {
+    public GridPoint toGrid(double latitude, double longitude) {
         double re = RE / GRID;
         double slat1 = SLAT1 * DEGRAD;
         double slat2 = SLAT2 * DEGRAD;
@@ -69,7 +68,7 @@ public final class GridConverter {
      * @param ny 격자 Y 좌표
      * @return 위경도 좌표
      */
-    public static LatLon toLatLon(int nx, int ny) {
+    public LatLon toLatLon(int nx, int ny) {
         double re = RE / GRID;
         double slat1 = SLAT1 * DEGRAD;
         double slat2 = SLAT2 * DEGRAD;
@@ -110,29 +109,10 @@ public final class GridConverter {
         }
         
         double alon = theta / sn + olon;
-        double lat = alat * 180.0 / Math.PI;
-        double lon = alon * 180.0 / Math.PI;
+        double lat = alat * RADDEG;
+        double lon = alon * RADDEG;
 
         return new LatLon(lat, lon);
-    }
-
-    /**
-     * 좌표 변환 정확성을 검증합니다.
-     * 기상청 공식 예제: X=59, Y=125 → lon=126.929810, lat=37.488201
-     */
-    public static void main(String[] args) {
-        // 기상청 공식 예제 검증
-        int testX = 59, testY = 125;
-        LatLon result = toLatLon(testX, testY);
-        
-        System.out.printf("X = %d, Y = %d ---> lon.= %.6f, lat.= %.6f%n", 
-                         testX, testY, result.longitude(), result.latitude());
-        System.out.println("기상청 공식 결과: lon.= 126.929810, lat.= 37.488201");
-        
-        // 역변환 검증
-        GridPoint reverse = toGrid(result.latitude(), result.longitude());
-        System.out.printf("역변환: lat=%.6f, lon=%.6f ---> X = %d, Y = %d%n",
-                         result.latitude(), result.longitude(), reverse.nx(), reverse.ny());
     }
 
     /**
@@ -145,5 +125,3 @@ public final class GridConverter {
 
     public record LatLon(double latitude, double longitude) {}
 }
-
-
