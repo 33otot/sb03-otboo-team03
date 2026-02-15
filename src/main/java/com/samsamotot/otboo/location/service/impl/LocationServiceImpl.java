@@ -10,12 +10,11 @@ import com.samsamotot.otboo.location.service.LocationService;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.repository.GridRepository;
-import com.samsamotot.otboo.weather.util.KmaGridConverter;
+import com.samsamotot.otboo.weather.util.GridConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -133,7 +132,7 @@ public class LocationServiceImpl implements LocationService {
 
 
         // WGS84 좌표를 기상청 격자 좌표로 변환
-        KmaGridConverter.GridPoint gridPoint = KmaGridConverter.toGrid(latitude, longitude);
+        GridConverter.GridPoint gridPoint = GridConverter.toGrid(latitude, longitude);
         Grid grid = findOrCreateGrid(gridPoint);
 
         // 기존 위치 업데이트
@@ -149,7 +148,7 @@ public class LocationServiceImpl implements LocationService {
         KakaoAddressResponse response = callKakaoApi(longitude, latitude);
 
         // WGS84 좌표를 기상청 격자 좌표로 변환
-        KmaGridConverter.GridPoint gridPoint = KmaGridConverter.toGrid(latitude, longitude);
+        GridConverter.GridPoint gridPoint = GridConverter.toGrid(latitude, longitude);
         Grid grid = findOrCreateGrid(gridPoint);
 
         // 새 위치 생성
@@ -189,7 +188,7 @@ public class LocationServiceImpl implements LocationService {
         }
     }
 
-    private Grid findOrCreateGrid(KmaGridConverter.GridPoint gridPoint) {
+    private Grid findOrCreateGrid(GridConverter.GridPoint gridPoint) {
         // 1. 먼저 조회를 시도합니다.
         Optional<Grid> gridOpt = gridRepository.findByXAndY(gridPoint.nx(), gridPoint.ny());
         if (gridOpt.isPresent()) {

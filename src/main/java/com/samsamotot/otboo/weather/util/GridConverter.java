@@ -1,5 +1,7 @@
 package com.samsamotot.otboo.weather.util;
 
+import org.springframework.stereotype.Component;
+
 /**
  * KMA(기상청) 단기예보 DFS(5km, Lambert Conformal Conic) 좌표 변환 유틸.
  * <p>
@@ -9,9 +11,10 @@ package com.samsamotot.otboo.weather.util;
  *
  * @author HuInDoL
  */
-public final class KmaGridConverter {
+@Component
+public final class GridConverter {
 
-    private KmaGridConverter() {}
+    private GridConverter() {}
 
     // Lambert Conformal Conic parameters (KMA DFS)
     private static final double RE = 6371.00877;     // 지구 반경(km)
