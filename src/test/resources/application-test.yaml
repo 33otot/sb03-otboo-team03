@@ -115,14 +115,17 @@ management:
       show-details: always
 
 # 기상청 API 테스트용 설정
-kma:
-  base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
-  service-key: test-kma-api-key
+weather:
+  kma:
+    base-url: "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0"
+    service-key: "test-kma-api-key"
+    alt-url: "https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0"
 
 # Kakao API 테스트용 설정
-kakao.api:
-  base-url: https://dapi.kakao.com
-  key: test-api-key
+kakao:
+  api:
+    base-url: "https://dapi.kakao.com"
+    key: "test-kakao-api-key"
 
 # 테스트용 S3 버킷 설정
 otboo:

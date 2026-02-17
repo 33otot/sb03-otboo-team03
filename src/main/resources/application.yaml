@@ -81,11 +81,13 @@ weather:
     alt-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0
     service-key: ${AUTH_KEY}
   open:
+    base-url: https://api.openweathermap.org/data/2.5/weather
     service-key: ${OPEN_WEATHER_KEY}
 
-kakao.api:
-  base-url: https://dapi.kakao.com
-  key: ${KAKAO_API_KEY}
+kakao:
+  api:
+    base-url: https://dapi.kakao.com
+    key: ${KAKAO_API_KEY}
 
 # 비동기 실행 설정
 async:
