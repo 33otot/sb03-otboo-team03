@@ -118,10 +118,8 @@ dependencies {
     // OpenAI Chat
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
 
-//    // Resilence4j
-//    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.3.0'
-//    implementation 'io.github.resilience4j:resilience4j-reactor:2.3.0'
-//    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    // Spring Cloud Circuit Breaker (Resilience4j)
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
 }
 
 // QueryDSL 설정
