@@ -38,6 +38,9 @@ public class WebClientConfig {
     @Value("${weather.kma.alt-url:}")
     private String kmaBaseUrl;
 
+    @Value("${weather.open.base-url}")
+    private String openWeatherMapBaseUrl;
+
     /**
      * WebClient를 위한 공통 HttpClient 설정을 생성합니다.
      * - Connection Timeout: 5초
@@ -89,6 +92,15 @@ public class WebClientConfig {
     public WebClient kmaWebClient(HttpClient httpClient) {
         return WebClient.builder()
                 .baseUrl(kmaBaseUrl)
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .build();
+    }
+
+    @Bean
+    @Qualifier("openWeatherMapClient")
+    public WebClient openWeatherMapClient(HttpClient httpClient) {
+        return WebClient.builder()
+                .baseUrl(openWeatherMapBaseUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
     }
