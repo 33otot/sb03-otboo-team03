@@ -119,7 +119,7 @@ dependencies {
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
 
     // Spring Cloud Circuit Breaker (Resilience4j)
-    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j:5.0.1'
 }
 
 // QueryDSL 설정
