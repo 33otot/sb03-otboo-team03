@@ -3,7 +3,7 @@ package com.samsamotot.otboo.weather.service.impl;
 import com.samsamotot.otboo.common.exception.ErrorCode;
 import com.samsamotot.otboo.common.exception.OtbooException;
 import com.samsamotot.otboo.location.service.LocationService;
-import com.samsamotot.otboo.weather.client.KmaClient;
+import com.samsamotot.otboo.weather.client.WeatherClient;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
@@ -51,7 +51,7 @@ public class WeatherServiceImpl implements WeatherService {
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
-    private final KmaClient kmaClient;
+    private final WeatherClient weatherClient;
     private final WeatherRepository weatherRepository;
     private final WeatherTransactionService weatherTransactionService;
     private final WeatherMapper weatherMapper;
@@ -73,7 +73,7 @@ public class WeatherServiceImpl implements WeatherService {
         Grid grid = gridRepository.findById(gridId)
                 .orElseThrow(() -> new OtbooException(ErrorCode.NOT_FOUND_GRID));
 
-        return kmaClient.fetchWeather(grid.getX(), grid.getY())
+        return weatherClient.fetchWeather(grid.getX(), grid.getY())
                 .publishOn(Schedulers.boundedElastic())
                 .flatMap(weatherForecastResponse -> {
                     if (!isValid(weatherForecastResponse)) {
@@ -113,7 +113,7 @@ public class WeatherServiceImpl implements WeatherService {
 
             try {
                 // 동기적으로 API 호출하여 데이터 수집
-                WeatherForecastResponse response = kmaClient.fetchWeather(grid.getX(), grid.getY()).block();
+                WeatherForecastResponse response = weatherClient.fetchWeather(grid.getX(), grid.getY()).block();
 
                 if (response != null && isValid(response)) {
                     List<Weather> newWeatherList = convertToEntities(response, grid);
