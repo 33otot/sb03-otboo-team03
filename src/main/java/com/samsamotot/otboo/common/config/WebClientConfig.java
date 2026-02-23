@@ -97,7 +97,7 @@ public class WebClientConfig {
     }
 
     @Bean
-    @Qualifier("owmClient")
+    @Qualifier("owmWebClient")
     public WebClient openWeatherMapWebClient(HttpClient httpClient) {
         return WebClient.builder()
                 .baseUrl(openWeatherMapBaseUrl)

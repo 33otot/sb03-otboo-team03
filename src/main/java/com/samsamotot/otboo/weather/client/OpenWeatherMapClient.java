@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-@Component
+@Component("openWeatherMapClient")
 public class OpenWeatherMapClient implements WeatherClient {
 
     private final WebClient webClient;
@@ -26,7 +26,7 @@ public class OpenWeatherMapClient implements WeatherClient {
     private final String apiKey;
     private final String baseUrl;
 
-    public OpenWeatherMapClient(@Qualifier("owmClient") WebClient webClient,
+    public OpenWeatherMapClient(@Qualifier("owmWebClient") WebClient webClient,
                                 GridConverter gridConverter,
                                 @Value("${weather.open.service-key}") String apiKey,
                                 @Value("${weather.open.base-url}") String baseUrl) {
