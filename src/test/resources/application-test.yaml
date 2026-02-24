@@ -120,6 +120,9 @@ weather:
     base-url: "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0"
     service-key: "test-kma-api-key"
     alt-url: "https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0"
+  open:
+    base-url: "http://localhost:8080/owm-test"
+    service-key: "test-owm-key"
 
 # Kakao API 테스트용 설정
 kakao:
