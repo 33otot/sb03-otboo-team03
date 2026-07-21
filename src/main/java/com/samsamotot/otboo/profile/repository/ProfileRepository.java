@@ -10,12 +10,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface ProfileRepository extends JpaRepository<Profile, UUID> {
+public interface ProfileRepository extends JpaRepository<Profile, UUID>, ProfileRepositoryCustom {
     Optional<Profile> findByUserId(UUID userId);
-
-    List<Profile> findAllByLocationGridId(UUID gridId);
-
-    @Query("select p from Profile p where p.user.id in :userIds")
-    List<Profile> findByUserIdIn(@Param("userIds") Collection<UUID> userIds);
 }
 
