@@ -120,6 +120,8 @@ dependencies {
 
     // Spring Cloud Circuit Breaker (Resilience4j)
     implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j:5.0.1'
+
+    testImplementation 'io.projectreactor:reactor-test'
 }
 
 // QueryDSL 설정

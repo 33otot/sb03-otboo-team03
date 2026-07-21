@@ -72,7 +72,7 @@ public class KmaClient implements WeatherClient {
                 .retrieve()
                 .bodyToMono(WeatherForecastResponse.class)
                 .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
-                        .filter(throwable -> throwable instanceof WebClientResponseException)
+                        .filter(this::isRetryable)
                         .onRetryExhaustedThrow(((retryBackoffSpec, retrySignal) -> {
                                 throw new OtbooException(ErrorCode.API_RETRY_FAILURE, retrySignal.failure().getMessage());
                         })));
