@@ -6,6 +6,7 @@ plugins {
 }
 ext {
     springAiVersion = "1.0.3"
+    springCloudVersion = "2025.0.1"
 }
 
 group = 'com.samsamotot.otboo'
@@ -116,6 +117,11 @@ dependencies {
 
     // OpenAI Chat
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
+
+    // Spring Cloud Circuit Breaker (Resilience4j)
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j:5.0.1'
+
+    testImplementation 'io.projectreactor:reactor-test'
 }
 
 // QueryDSL 설정
@@ -189,6 +195,7 @@ dependencyManagement {
     imports {
         mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
         mavenBom "org.testcontainers:testcontainers-bom:1.21.3"
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
     }
 }
 

@@ -2,22 +2,22 @@ package com.samsamotot.otboo.weather.service;
 
 import com.samsamotot.otboo.common.fixture.*;
 import com.samsamotot.otboo.location.entity.Location;
-import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.profile.entity.Profile;
 import com.samsamotot.otboo.profile.repository.ProfileRepository;
 import com.samsamotot.otboo.user.entity.User;
+import com.samsamotot.otboo.weather.dto.event.WeatherNotificationEvent;
 import com.samsamotot.otboo.weather.entity.Grid;
 import com.samsamotot.otboo.weather.entity.Precipitation;
 import com.samsamotot.otboo.weather.entity.SkyStatus;
 import com.samsamotot.otboo.weather.entity.Weather;
 import com.samsamotot.otboo.weather.repository.WeatherRepository;
 import com.samsamotot.otboo.weather.service.impl.WeatherAlterServiceImpl;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -25,11 +25,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -45,7 +42,7 @@ class WeatherAlterServiceTest {
     private ProfileRepository profileRepository;
 
     @Mock
-    private NotificationService notificationService;
+    private ApplicationEventPublisher eventPublisher;
 
     @Test
     void 기온_하강과_강수_변화_감지_시_2개의_알림_발송() {
@@ -70,8 +67,6 @@ class WeatherAlterServiceTest {
         User user = UserFixture.createUser();
         Profile profile = ProfileFixture.createLocationProfile(user, location, true);
 
-        List<User> usersToNotify = List.of(user);
-
         // Mock 설정
         given(weatherRepository.findByGridAndForecastedAtAndForecastAt(any(), any(), any()))
                 .willReturn(Optional.of(previousWeather));
@@ -82,8 +77,8 @@ class WeatherAlterServiceTest {
         weatherAlterService.checkAndSendAlerts(newWeather);
 
         // Then: 결과 검증
-        // 2개의 알림(기온, 강수)이 각각 발송되었는지 확인
-        verify(notificationService, times(2)).save(any(), anyString(), anyString(), any());
+        // 2개의 알림(기온, 강수) 이벤트가 각각 발행되었는지 확인
+        verify(eventPublisher, times(2)).publishEvent(any(WeatherNotificationEvent.class));
     }
 
     @Test
@@ -100,7 +95,7 @@ class WeatherAlterServiceTest {
 
         // Then
         // 어떤 알림 로직도 호출되지 않아야 함
-        verify(notificationService, never()).save(any(), anyString(), anyString(), any());
+        verify(eventPublisher, never()).publishEvent(any());
         verify(profileRepository, never()).findAllByLocationGridId(any());
     }
 
@@ -126,7 +121,7 @@ class WeatherAlterServiceTest {
         weatherAlterService.checkAndSendAlerts(newWeather);
 
         // Then
-        verify(notificationService, never()).save(any(), anyString(), anyString(), any());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -153,6 +148,6 @@ class WeatherAlterServiceTest {
         weatherAlterService.checkAndSendAlerts(newWeather);
 
         // Then
-        verify(notificationService, never()).save(any(), anyString(), anyString(), any());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 }

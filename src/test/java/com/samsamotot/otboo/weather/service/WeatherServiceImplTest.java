@@ -7,7 +7,7 @@ import com.samsamotot.otboo.common.fixture.LocationFixture;
 import com.samsamotot.otboo.common.fixture.WeatherFixture;
 import com.samsamotot.otboo.location.entity.Location;
 import com.samsamotot.otboo.location.service.LocationService;
-import com.samsamotot.otboo.weather.client.KmaClient;
+import com.samsamotot.otboo.weather.client.WeatherClient;
 import com.samsamotot.otboo.weather.dto.WeatherAPILocation;
 import com.samsamotot.otboo.weather.dto.WeatherDto;
 import com.samsamotot.otboo.weather.dto.WeatherForecastResponse;
@@ -52,7 +52,7 @@ public class WeatherServiceImplTest {
     private WeatherServiceImpl weatherService;
 
     @Mock
-    private KmaClient kmaClient;
+    private WeatherClient weatherClient;
 
     @Mock
     private WeatherTransactionService weatherTransactionService;
@@ -97,7 +97,7 @@ public class WeatherServiceImplTest {
 
             // Mockito를 사용하여 가짜 객체들 행동 정의
             given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
-            given(kmaClient.fetchWeather(grid.getX(), grid.getY()))
+            given(weatherClient.fetchWeather(grid.getX(), grid.getY()))
                     .willReturn(Mono.just(fakeFcstResponse));
 
 
@@ -128,7 +128,7 @@ public class WeatherServiceImplTest {
             // Mockito 설정:
             // kmaClient.fetchWeather가 호출되면, 비어있는 가짜 응답을 반환
             given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
-            given(kmaClient.fetchWeather(grid.getX(), grid.getY()))
+            given(weatherClient.fetchWeather(grid.getX(), grid.getY()))
                     .willReturn(Mono.just(fakeFcstResponse));
 
 
@@ -182,7 +182,7 @@ public class WeatherServiceImplTest {
 
             // Mockito 설정
             given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
-            given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
+            given(weatherClient.fetchWeather(any(Integer.class), any(Integer.class)))
                     .willReturn(Mono.just(fakeFcstResponse));
 
             // updateWeather 메소드가 호출될 때, 전달되는 List<Weather>를 캡쳐하기 위한 설정
@@ -261,7 +261,7 @@ public class WeatherServiceImplTest {
 
             // Mockito 설정
             given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
-            given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
+            given(weatherClient.fetchWeather(any(Integer.class), any(Integer.class)))
                     .willReturn(Mono.just(fakeFcstResponse));
 
             // updateWeather 메소드가 호출될 때, 전달되는 List<Weather>를 캡쳐하기 위한 설정
@@ -328,7 +328,7 @@ public class WeatherServiceImplTest {
             );
 
             given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
-            given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
+            given(weatherClient.fetchWeather(any(Integer.class), any(Integer.class)))
                     .willReturn(Mono.just(fakeResponse));
 
             @SuppressWarnings("unchecked")
@@ -388,7 +388,7 @@ public class WeatherServiceImplTest {
             );
 
             given(gridRepository.findById(grid.getId())).willReturn(Optional.of(grid));
-            given(kmaClient.fetchWeather(any(Integer.class), any(Integer.class)))
+            given(weatherClient.fetchWeather(any(Integer.class), any(Integer.class)))
                     .willReturn(Mono.just(fakeResponse));
 
             @SuppressWarnings("unchecked")
@@ -452,7 +452,7 @@ public class WeatherServiceImplTest {
             assertThat(result).isNotNull();
             assertThat(result.size()).isGreaterThan(0);
 
-            verify(kmaClient, never()).fetchWeather(any(Integer.class), any(Integer.class));
+            verify(weatherClient, never()).fetchWeather(any(Integer.class), any(Integer.class));
             verify(weatherTransactionService, never()).updateWeather(any(), any());
         }
 
@@ -493,7 +493,7 @@ public class WeatherServiceImplTest {
                     .thenReturn(Collections.emptyList())
                     .thenReturn(convertedWeatherList);
 
-            when(kmaClient.fetchWeather(grid.getX(), grid.getY()))
+            when(weatherClient.fetchWeather(grid.getX(), grid.getY()))
                     .thenReturn(Mono.just(mockResponse));
             doNothing().when(weatherTransactionService).updateWeather(any(Grid.class), anyList());
             when(weatherMapper.toDto(any(Weather.class), eq(locationDto)))
@@ -506,7 +506,7 @@ public class WeatherServiceImplTest {
             assertThat(result).isNotNull();
             assertThat(result).hasSize(1);
 
-            verify(kmaClient, times(1)).fetchWeather(grid.getX(), grid.getY());
+            verify(weatherClient, times(1)).fetchWeather(grid.getX(), grid.getY());
             verify(weatherTransactionService, times(1)).updateWeather(eq(grid), anyList());
             verify(weatherRepository, times(2)).findAllByGrid(eq(grid));
         }
@@ -550,7 +550,7 @@ public class WeatherServiceImplTest {
 
             when(gridRepository.findById(grid.getId()))
                     .thenReturn(Optional.of(grid));
-            when(kmaClient.fetchWeather(grid.getX(), grid.getY()))
+            when(weatherClient.fetchWeather(grid.getX(), grid.getY()))
                     .thenReturn(Mono.just(mockResponse));
             doNothing().when(weatherTransactionService).updateWeather(any(Grid.class), anyList());
 

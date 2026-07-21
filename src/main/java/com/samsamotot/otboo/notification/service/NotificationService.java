@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -22,6 +23,8 @@ public interface NotificationService {
     Notification save(UUID receiverId, String title, String content, NotificationLevel level);
 
     void saveBatchNotification(String title, String content, NotificationLevel level);
+
+    void sendNotifications(List<UUID> receiverIds, String title, String content, NotificationLevel level);
 
     NotificationListResponse getNotifications(@Valid NotificationRequest request);
 

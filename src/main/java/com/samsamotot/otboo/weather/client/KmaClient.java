@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 @Component
-public class KmaClient {
+public class KmaClient implements WeatherClient {
 
     private static final String CLIENT_NAME = "[KmaClient] ";
 
@@ -38,7 +38,7 @@ public class KmaClient {
     private static final String DATA_TYPE = "JSON";
 
     public KmaClient(@Qualifier("kmaWebClient") WebClient webClient,
-                     @Value("${kma.service-key}") String authKey) {
+                     @Value("${weather.kma.service-key}") String authKey) {
         this.webClient = webClient;
         this.authKey = authKey;
     }
@@ -51,6 +51,7 @@ public class KmaClient {
      * @return WeatherForecastResponse를 담은 Mono
      * @exception WebClientResponseException
      */
+    @Override
     public Mono<WeatherForecastResponse> fetchWeather(int nx, int ny) {
 
         BaseDateTime baseDateTime = calculateBaseDateTime();
@@ -71,7 +72,7 @@ public class KmaClient {
                 .retrieve()
                 .bodyToMono(WeatherForecastResponse.class)
                 .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
-                        .filter(throwable -> throwable instanceof WebClientResponseException)
+                        .filter(this::isRetryable)
                         .onRetryExhaustedThrow(((retryBackoffSpec, retrySignal) -> {
                                 throw new OtbooException(ErrorCode.API_RETRY_FAILURE, retrySignal.failure().getMessage());
                         })));

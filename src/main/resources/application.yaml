@@ -75,14 +75,19 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
-kma:
-  base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
-  alt-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0
-  service-key: ${AUTH_KEY}
+weather:
+  kma:
+    base-url: http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
+    alt-url: https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0
+    service-key: ${AUTH_KEY}
+  open:
+    base-url: https://api.openweathermap.org/data/2.5/weather
+    service-key: ${OPEN_WEATHER_KEY}
 
-kakao.api:
-  base-url: https://dapi.kakao.com
-  key: ${KAKAO_API_KEY}
+kakao:
+  api:
+    base-url: https://dapi.kakao.com
+    key: ${KAKAO_API_KEY}
 
 # 비동기 실행 설정
 async:
@@ -93,9 +98,9 @@ async:
       queue-capacity: 200
       keep-alive-seconds: 60
     weather:
-      core-size: 5
-      max-size: 10
-      queue-capacity: 1000
+      core-size: 20
+      max-size: 20
+      queue-capacity: 2020
       keep-alive-seconds: 60
     image:
       core-size: 3

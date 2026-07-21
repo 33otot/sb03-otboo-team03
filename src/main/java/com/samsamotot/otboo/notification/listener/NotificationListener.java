@@ -10,6 +10,7 @@ import com.samsamotot.otboo.notification.entity.NotificationLevel;
 import com.samsamotot.otboo.notification.service.NotificationService;
 import com.samsamotot.otboo.user.entity.User;
 import com.samsamotot.otboo.user.repository.UserRepository;
+import com.samsamotot.otboo.weather.dto.event.WeatherNotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -105,5 +106,11 @@ public class NotificationListener {
             return content.substring(0, 10) + "...";
         }
         return content;
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onWeatherNotification(WeatherNotificationEvent e) {
+        notificationService.sendNotifications(e.receiverIds(), e.title(), e.content(), e.level());
     }
 }
